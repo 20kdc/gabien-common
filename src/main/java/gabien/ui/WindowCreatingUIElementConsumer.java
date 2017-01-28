@@ -22,12 +22,14 @@ import java.util.LinkedList;
 public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     private LinkedList<ActiveWindow> activeWindows = new LinkedList<ActiveWindow>();
     private LinkedList<ActiveWindow> incomingWindows = new LinkedList<ActiveWindow>();
+    public int createScale = 1;
+
     @Override
     public void accept(UIElement o) {
         ActiveWindow aw = new ActiveWindow();
         Rect bounds = o.getBounds();
         WindowSpecs ws = GaBIEn.defaultWindowSpecs(o.toString(), bounds.width, bounds.height);
-        ws.scale = 1;
+        ws.scale = createScale;
         ws.resizable = true;
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
         aw.ue = o;
