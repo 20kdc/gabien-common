@@ -36,6 +36,14 @@ public class ScissorGrInDriver implements IGrInDriver {
 
     @Override
     public void drawText(int x, int y, int r, int g, int b, int i, String text) {
+        if (x < workLeft)
+            return;
+        if (y < workTop)
+            return;
+        if (x >= workRight)
+            return;
+        if (y >= workBottom)
+            return;
         inner.drawText(x, y, r, g, b, i, text);
     }
 
