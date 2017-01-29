@@ -24,7 +24,7 @@ public class UILabel extends UIPanel {
 
     public static Rect getRecommendedSize(String text, int height) {
         int margin = ((height / 8) * 2);
-        return new Rect(0, 0, getTextLength(text, height) + margin, height + margin);
+        return new Rect(0, 0, getTextLength(text, height) + margin, (height - 1) + margin);
     }
 
     @Override
