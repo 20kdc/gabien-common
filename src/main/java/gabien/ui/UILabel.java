@@ -20,11 +20,11 @@ public class UILabel extends UIPanel {
     public UILabel(String text, boolean x2) {
         this.x2 = x2;
         Text = text;
-        setRecommendedSize();
+        setBounds(getRecommendedSize(text, x2));
     }
 
-    public void setRecommendedSize() {
-        setBounds(new Rect(0, 0, ((x2 ? 16 : 8) * Text.length()) + (x2 ? 4 : 2), x2 ? 18 : 9));
+    public static Rect getRecommendedSize(String text, boolean x2) {
+        return new Rect(0, 0, getTextLength(text, x2) + (x2 ? 4 : 2), x2 ? 18 : 9);
     }
 
     @Override
@@ -37,23 +37,21 @@ public class UILabel extends UIPanel {
         }
     }
 
+    private static boolean useSystemFont(String text, boolean x2) {
+        int l = text.length();
+        for (int p = 0; p < l; p++)
+            if (text.charAt(p) >= 128)
+                return true;
+        if (iDislikeTheFont && x2)
+            return true;
+        return iAmAbsolutelySureIHateTheFont;
+    }
+
     public static void drawString(IGrInDriver igd, int xptr, int oy, String text, boolean bck, boolean x2) {
         IImage font = GaBIEn.getImage(x2 ? "font2x.png" : "font.png", 0, 0, 0);
-        int l = text.length();
-        if (iDislikeTheFont) {
-            if (x2) {
-                igd.drawText(xptr, oy, 255, 255, 255, 16, text);
-                return;
-            } else if (iAmAbsolutelySureIHateTheFont) {
-                igd.drawText(xptr, oy, 255, 255, 255, 8, text);
-                return;
-            }
-        }
-        for (int p = 0; p < l; p++) {
-            if (text.charAt(p) >= 128) {
-                igd.drawText(xptr, oy, 255, 255, 255, x2?16:8, text);
-                return;
-            }
+        if (useSystemFont(text, x2)) {
+            igd.drawText(xptr, oy, 255, 255, 255, x2 ? 16 : 8, text);
+            return;
         }
         byte[] ascii = text.getBytes();
         for (int p = 0; p < ascii.length; p++) {
@@ -62,7 +60,7 @@ public class UILabel extends UIPanel {
         }
     }
 
-    public static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, boolean bck, boolean x2) {
+    private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, boolean bck, boolean x2) {
         int chSize = x2 ? 14 : 7;
         if (cc < 256) {
             if (bck) {
@@ -79,10 +77,16 @@ public class UILabel extends UIPanel {
         }
     }
 
+    public static int getTextLength(String text, boolean x2) {
+        if (useSystemFont(text, x2))
+            return GaBIEn.measureText(x2 ? 16 : 8, text);
+        return (x2 ? 16 : 8) * text.length();
+    }
+
     public static int drawLabel(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
         IImage i = GaBIEn.getImage("textButton.png", 255, 0, 255);
         if (wid == 0)
-            wid = (string.length() * 8) + 2;
+            wid = getRecommendedSize(string, false).width;
         igd.blitImage(selected ? 3 : 0, 10, 1, 9, ox, oy, i);
         for (int pp = 1; pp < wid - 1; pp++)
             igd.blitImage(selected ? 4 : 1, 10, 1, 9, ox + pp, oy, i);
@@ -95,7 +99,7 @@ public class UILabel extends UIPanel {
     public static void drawLabelx2(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
         IImage i = GaBIEn.getImage("textButton.png", 255, 0, 255);
         if (wid == 0)
-            wid = (string.length() * 16) + 4;
+            wid = getRecommendedSize(string, true).width;
         int selectedOfs = selected ? 6 : 0;
         igd.blitImage(6 + selectedOfs, 20, 2, 18, ox, oy, i);
         for (int pp = 2; pp < wid - 1; pp += 2)

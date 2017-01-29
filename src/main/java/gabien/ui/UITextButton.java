@@ -26,11 +26,11 @@ public class UITextButton extends UIElement {
         OnClick = onClick;
         this.x2 = x2;
         Text = text;
-        setRecommendedSize();
+        setBounds(getRecommendedSize(text, x2));
     }
 
-    public void setRecommendedSize() {
-        setBounds(new Rect(0, 0, ((x2 ? 16 : 8) * Text.length()) + (x2 ? 4 : 2), x2 ? 20 : 10));
+    public static Rect getRecommendedSize(String text, boolean x2) {
+        return new Rect(0, 0, UILabel.getTextLength(text, x2) + (x2 ? 4 : 2), x2 ? 20 : 10);
     }
 
     public UITextButton togglable() {

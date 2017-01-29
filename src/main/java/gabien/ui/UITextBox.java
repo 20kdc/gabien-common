@@ -18,6 +18,11 @@ public class UITextBox extends UIElement {
 
     public UITextBox(boolean x2) {
         this.x2 = x2;
+        setBounds(getRecommendedSize(x2));
+    }
+
+    public static Rect getRecommendedSize(boolean x2) {
+        return new Rect(0, 0, 32, x2 ? 18 : 9);
     }
 
     public String text = "";
@@ -70,5 +75,4 @@ public class UITextBox extends UIElement {
     @Override
     public void handleClick(int x, int y, int button) {
     }
-
 }

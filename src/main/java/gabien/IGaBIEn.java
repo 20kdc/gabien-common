@@ -54,4 +54,6 @@ public interface IGaBIEn {
     public IGrInDriver.IImage createImage(int[] colours, int width, int height);
 
     public void hintFlushAllTheCaches();
+
+    public int measureText(int i, String text);
 }

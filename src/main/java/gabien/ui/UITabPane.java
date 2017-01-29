@@ -40,9 +40,9 @@ public class UITabPane extends UIPanel {
         igd.clearRect(0, 0, 0, ox, oy, bounds.width, 10);
         int pos = 0;
         for (int i = 0; i < tabElems.length; i++) {
-            int tabW = 8 * (tabNames[i].length() + 2);
+            int tabW = UILabel.getTextLength(tabNames[i], false) + 8;
             igd.clearRect(0, (i == tab) ? 32 : 0, ((i & 1) != 0) ? 32 : 0, ox + pos, oy, tabW, 10);
-            UILabel.drawString(igd, ox + pos, oy, "/" + tabNames[i] + "\\", true, false);
+            UILabel.drawString(igd, ox + pos + 4, oy, tabNames[i], true, false);
             pos += tabW;
         }
     }
@@ -52,7 +52,7 @@ public class UITabPane extends UIPanel {
         if (y < 10) {
             int pos = 0;
             for (int i = 0; i < tabElems.length; i++) {
-                pos += 8 * (tabNames[i].length() + 2);
+                pos += UILabel.getTextLength(tabNames[i], false) + 8;
                 if (x < pos) {
                     allElements.clear();
                     allElements.add(tabElems[i]);

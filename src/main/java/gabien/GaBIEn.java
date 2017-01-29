@@ -70,4 +70,8 @@ public class GaBIEn {
     public static void hintFlushAllTheCaches() {
         internal.hintFlushAllTheCaches();
     }
+
+    public static int measureText(int i, String text) {
+        return internal.measureText(i, text);
+    }
 }
