@@ -32,6 +32,7 @@ public class UIAdjuster extends UIPanel implements IConsumer<String> {
         int ibh = incButton.getBounds().height;
         int nbh = numberDisplay.getBounds().height;
         int dbh = decButton.getBounds().height;
+
         int rbh = ibh;
         if (nbh > rbh)
             rbh = nbh;

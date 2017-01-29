@@ -30,8 +30,9 @@ public class UITextButton extends UIElement {
     }
 
     public static Rect getRecommendedSize(String text, int txh) {
+        // See UILabel for the logic behind only adding margin once to the rectangle
         int margin = txh / 8;
-        return new Rect(0, 0, UILabel.getTextLength(text, txh) + (margin * 2), (txh - 1) + (margin * 2));
+        return new Rect(0, 0, UILabel.getTextLength(text, txh) + (margin * 2), txh + margin);
     }
 
     public UITextButton togglable() {

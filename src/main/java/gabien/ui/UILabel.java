@@ -23,8 +23,9 @@ public class UILabel extends UIPanel {
     }
 
     public static Rect getRecommendedSize(String text, int height) {
-        int margin = ((height / 8) * 2);
-        return new Rect(0, 0, getTextLength(text, height) + margin, (height - 1) + margin);
+        int margin = height / 8;
+        // one of the margins is "removed" because actual font glyph size should be 7, 14, etc.
+        return new Rect(0, 0, getTextLength(text, height) + margin, height + margin);
     }
 
     @Override
