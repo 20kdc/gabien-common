@@ -22,4 +22,12 @@ public abstract class UIElement {
     public void handleDrag(int x, int y) {
 
     }
+
+    // Useful for various things
+    public static int sensibleCellDiv(int y, int sz) {
+        int r = y / sz;
+        if (y < 0)
+            r--;
+        return r;
+    }
 }

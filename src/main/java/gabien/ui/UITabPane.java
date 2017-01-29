@@ -16,7 +16,8 @@ public class UITabPane extends UIPanel {
     public int tab = 0;
     public int tabTextHeight = 8;
     public boolean tabUpdated = false;
-    public UITabPane(String[] strings, UIElement[] tabs) {
+    public UITabPane(String[] strings, UIElement[] tabs, int h) {
+        tabTextHeight = h;
         tabNames = strings;
         tabElems = tabs;
         allElements.add(tabs[0]);
@@ -50,7 +51,7 @@ public class UITabPane extends UIPanel {
 
     @Override
     public void handleClick(int x, int y, int button) {
-        if (y < 10) {
+        if (y < (tabTextHeight + 2)) {
             int pos = 0;
             for (int i = 0; i < tabElems.length; i++) {
                 pos += UILabel.getTextLength(tabNames[i], tabTextHeight) + 8;

@@ -14,11 +14,11 @@ public class UIPopupMenu extends UIElement {
     public String[] menuItems;
     public Runnable[] menuExecs;
     public boolean canResize = false;
-    public boolean x2 = false;
-    public UIPopupMenu(String[] strings, Runnable[] tilesets, boolean ex2, boolean rsz) {
+    public int textHeight;
+    public UIPopupMenu(String[] strings, Runnable[] tilesets, int h, boolean rsz) {
         menuItems = strings;
         menuExecs = tilesets;
-        x2 = ex2;
+        textHeight = h;
         canResize = true;
         setBounds(new Rect(0, 0, 320, 10));
         canResize = rsz;
@@ -29,16 +29,16 @@ public class UIPopupMenu extends UIElement {
         Rect b = getBounds();
         if (!canResize)
             igd.clearRect(0, 0, 0, ox, oy, b.width, b.height);
-        int sz = x2 ? 18 : 9;
+        int sz = UILabel.getRecommendedSize("", textHeight).height;
         int i = 0;
         int mx = igd.getMouseX();
         int my = igd.getMouseY();
         int selectedIdx = -1;
         if (mx >= ox)
             if (mx < (ox + b.width))
-                selectedIdx = (my - oy) / sz;
+                selectedIdx = UIElement.sensibleCellDiv(my - oy, sz);
         for (String s : menuItems) {
-            UILabel.drawLabel(igd, b.width, ox, oy, s, (i++) == selectedIdx, x2 ? 16 : 8);
+            UILabel.drawLabel(igd, b.width, ox, oy, s, (i++) == selectedIdx, textHeight);
             oy += sz;
         }
     }
@@ -46,7 +46,7 @@ public class UIPopupMenu extends UIElement {
     @Override
     public void setBounds(Rect b) {
         if (canResize) {
-            int sz = x2 ? 18 : 9;
+            int sz = UILabel.getRecommendedSize("", textHeight).height;
             if (b.height != (menuItems.length * sz)) {
                 super.setBounds(new Rect(b.x, b.y, b.width, menuItems.length * sz));
             } else {
@@ -59,8 +59,8 @@ public class UIPopupMenu extends UIElement {
 
     @Override
     public void handleClick(int x, int y, int button) {
-        int sz = x2 ? 18 : 9;
-        int b = y / sz;
+        int sz = UILabel.getRecommendedSize("", textHeight).height;
+        int b = UIElement.sensibleCellDiv(y, sz);
         if (b < 0)
             return;
         if (b >= menuItems.length)
