@@ -22,6 +22,7 @@ public class UITabPane extends UIPanel {
         tabElems = tabs;
         allElements.add(tabs[0]);
         selectedElement = tabs[0];
+        useScissoring = true;
     }
 
     @Override
