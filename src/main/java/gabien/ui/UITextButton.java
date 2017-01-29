@@ -30,7 +30,7 @@ public class UITextButton extends UIElement {
     }
 
     public static Rect getRecommendedSize(String text, boolean x2) {
-        return new Rect(0, 0, UILabel.getTextLength(text, x2) + (x2 ? 4 : 2), x2 ? 20 : 10);
+        return new Rect(0, 0, UILabel.getTextLength(text, x2 ? 16 : 8) + (x2 ? 4 : 2), x2 ? 20 : 10);
     }
 
     public UITextButton togglable() {
@@ -52,7 +52,7 @@ public class UITextButton extends UIElement {
         for (int pp = (x2?2:1); pp < elementBounds.width - 1; pp+=(x2?2:1))
             igd.blitBCKImage((x2?8:1) + po, 0, (x2?2:1), (x2?20:10), ox + pp, oy, i);
         igd.blitBCKImage((x2?10:2) + po, 0, (x2?2:1), (x2?20:10), ox + (elementBounds.width - (x2?2:1)), oy, i);
-        UILabel.drawString(igd, ox + (x2 ? 2 : 1), oy + (state ? (x2 ? 4 : 2) : (x2 ? 2 : 1)), Text, true, x2);
+        UILabel.drawString(igd, ox + (x2 ? 2 : 1), oy + (state ? (x2 ? 4 : 2) : (x2 ? 2 : 1)), Text, true, x2 ? 16 : 8);
     }
 
     @Override

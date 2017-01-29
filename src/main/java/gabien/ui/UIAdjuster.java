@@ -30,7 +30,7 @@ public class UIAdjuster extends UIPanel implements IConsumer<String> {
             }
         });
         allElements.add(decButton);
-        numberDisplay = new UILabel("ERR", x2);
+        numberDisplay = new UILabel("ERR", x2 ? 16 : 8);
         allElements.add(numberDisplay);
     }
 

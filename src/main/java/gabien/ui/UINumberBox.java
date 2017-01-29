@@ -11,15 +11,15 @@ import gabien.IGrInDriver;
  *
  */
 public class UINumberBox extends UIElement {
-    public boolean x2 = false;
+    public int textHeight;
 
-    public UINumberBox(boolean x2) {
-        this.x2 = x2;
-        setBounds(getRecommendedSize(x2));
+    public UINumberBox(int h) {
+        textHeight = h;
+        setBounds(getRecommendedSize(textHeight));
     }
 
-    public static Rect getRecommendedSize(boolean x2) {
-        return new Rect(0, 0, 32, x2 ? 18 : 9);
+    public static Rect getRecommendedSize(int height) {
+        return UILabel.getRecommendedSize("12344957", height);
     }
 
     // The caching exists so that edits have to be confirmed for onEdit usage.
@@ -71,11 +71,7 @@ public class UINumberBox extends UIElement {
             number = NNum;
             editingNLast = number;
         }
-        if (x2) {
-            UILabel.drawLabelx2(igd, elementBounds.width, ox, oy, Integer.toString(number), selected);
-        } else {
-            UILabel.drawLabel(igd, elementBounds.width, ox, oy, Integer.toString(number), selected);
-        }
+        UILabel.drawLabel(igd, elementBounds.width, ox, oy, Integer.toString(number), selected, textHeight);
     }
 
     @Override

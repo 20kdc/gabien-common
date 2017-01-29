@@ -30,7 +30,7 @@ public class UIPanel extends UIElement {
             uie.updateAndRender(ox + r.x, oy + r.y, deltaTime, (selectedElement == uie) && select, igd);
         }
     }
-    //The click is within the (0,0,my width-1,my height-1) range.
+    //The click is within the (0,0,my width-1,my textHeight-1) range.
     @Override
     public void handleClick(int x, int y,int button) {
         selectedElement=null;

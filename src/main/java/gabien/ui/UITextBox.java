@@ -14,15 +14,15 @@ import gabien.IGrInDriver;
 // 2. onEdit is called when enter is pressed, and otherwise the text will revert.
 //    (This makes it useful for property-editor interfaces which need that kind of confirmation.)
 public class UITextBox extends UIElement {
-    public boolean x2 = false;
+    public int height;
 
-    public UITextBox(boolean x2) {
-        this.x2 = x2;
-        setBounds(getRecommendedSize(x2));
+    public UITextBox(int h) {
+        height = h;
+        setBounds(getRecommendedSize(height));
     }
 
-    public static Rect getRecommendedSize(boolean x2) {
-        return new Rect(0, 0, 32, x2 ? 18 : 9);
+    public static Rect getRecommendedSize(int height) {
+        return UILabel.getRecommendedSize("the quick brown fox jumped over the lazy dog", height);
     }
 
     public String text = "";
@@ -63,13 +63,7 @@ public class UITextBox extends UIElement {
             text = NT;
             textLastSeen = text;
         }
-        if (x2) {
-            UILabel.drawLabelx2(igd, elementBounds.width, ox, oy,
-                    text, selected);
-        } else {
-            UILabel.drawLabel(igd, elementBounds.width, ox, oy,
-                    text, selected);
-        }
+        UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected, height);
     }
 
     @Override

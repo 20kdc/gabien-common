@@ -14,6 +14,7 @@ public class UITabPane extends UIPanel {
     public String[] tabNames;
     public UIElement[] tabElems;
     public int tab = 0;
+    public int tabTextHeight = 8;
     public boolean tabUpdated = false;
     public UITabPane(String[] strings, UIElement[] tabs) {
         tabNames = strings;
@@ -25,7 +26,7 @@ public class UITabPane extends UIPanel {
     @Override
     public void setBounds(Rect r) {
         for (UIElement tab : tabElems)
-            tab.setBounds(new Rect(0, 10, r.width, r.height - 10));
+            tab.setBounds(new Rect(0, tabTextHeight + 2, r.width, r.height - (tabTextHeight + 2)));
         super.setBounds(r);
     }
 
@@ -40,9 +41,9 @@ public class UITabPane extends UIPanel {
         igd.clearRect(0, 0, 0, ox, oy, bounds.width, 10);
         int pos = 0;
         for (int i = 0; i < tabElems.length; i++) {
-            int tabW = UILabel.getTextLength(tabNames[i], false) + 8;
-            igd.clearRect(0, (i == tab) ? 32 : 0, ((i & 1) != 0) ? 32 : 0, ox + pos, oy, tabW, 10);
-            UILabel.drawString(igd, ox + pos + 4, oy, tabNames[i], true, false);
+            int tabW = UILabel.getTextLength(tabNames[i], tabTextHeight) + 8;
+            igd.clearRect(0, (i == tab) ? 32 : 0, ((i & 1) != 0) ? 32 : 0, ox + pos, oy, tabW, tabTextHeight + 2);
+            UILabel.drawString(igd, ox + pos + 4, oy, tabNames[i], true, tabTextHeight);
             pos += tabW;
         }
     }
@@ -52,7 +53,7 @@ public class UITabPane extends UIPanel {
         if (y < 10) {
             int pos = 0;
             for (int i = 0; i < tabElems.length; i++) {
-                pos += UILabel.getTextLength(tabNames[i], false) + 8;
+                pos += UILabel.getTextLength(tabNames[i], tabTextHeight) + 8;
                 if (x < pos) {
                     allElements.clear();
                     allElements.add(tabElems[i]);

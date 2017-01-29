@@ -26,6 +26,10 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
     public Rect currentlyFullscreen = null;
     public boolean clearKeysLater = false;
     public boolean backingSelected = false;
+
+    // This ought to be used for frame calculations
+    public int windowTextHeight = 16;
+
     @Override
     public void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd) {
         windowList.addAll(upcomingWindowList);
@@ -58,7 +62,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             boolean winSelected = selected && (remaining == 0);
             Rect b = uie.getBounds();
             igd.clearRect(0, 64, 192, ox + b.x + b.width - 16, oy + b.y + b.height - 16, 20, 20);
-            UILabel.drawLabelx2(igd, b.width, ox + b.x, (oy + b.y) - 18, uie.toString(), winSelected);
+            UILabel.drawLabel(igd, b.width, ox + b.x, (oy + b.y) - 18, uie.toString(), winSelected, windowTextHeight);
             igd.clearRect(128, 64, 64, ox + b.x + b.width - 15, oy + b.y - 15, 12, 12);
             igd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
             uie.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, igd);

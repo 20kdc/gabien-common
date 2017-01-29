@@ -38,11 +38,7 @@ public class UIPopupMenu extends UIElement {
             if (mx < (ox + b.width))
                 selectedIdx = (my - oy) / sz;
         for (String s : menuItems) {
-            if (!x2) {
-                UILabel.drawLabel(igd, b.width, ox, oy, s, (i++) == selectedIdx);
-            } else {
-                UILabel.drawLabelx2(igd, b.width, ox, oy, s, (i++) == selectedIdx);
-            }
+            UILabel.drawLabel(igd, b.width, ox, oy, s, (i++) == selectedIdx, x2 ? 16 : 8);
             oy += sz;
         }
     }
