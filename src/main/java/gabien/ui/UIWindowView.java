@@ -28,7 +28,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
     public boolean backingSelected = false;
 
     // This ought to be used for frame calculations
-    public int windowTextHeight = 16;
+    public int windowTextHeight = 12;
 
     @Override
     public void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd) {
@@ -45,6 +45,9 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             backing.updateAndRender(ox, oy, deltaTime, selected && backingSelected, igd);
         }
         LinkedList<UIElement> wantsDeleting = new LinkedList<UIElement>();
+        int closeButtonMargin = getCloseButtonMargin();
+        int closeButtonSize = getCloseButtonSize();
+        int windowFrameHeight = getWindowFrameHeight();
         for (UIElement uie : windowList) {
             if (uie instanceof IWindowElement)
                 if (((IWindowElement) uie).wantsSelfClose()) {
@@ -62,8 +65,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             boolean winSelected = selected && (remaining == 0);
             Rect b = uie.getBounds();
             igd.clearRect(0, 64, 192, ox + b.x + b.width - 16, oy + b.y + b.height - 16, 20, 20);
-            UILabel.drawLabel(igd, b.width, ox + b.x, (oy + b.y) - 18, uie.toString(), winSelected, windowTextHeight);
-            igd.clearRect(128, 64, 64, ox + b.x + b.width - 15, oy + b.y - 15, 12, 12);
+            UILabel.drawLabel(igd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.toString(), winSelected, windowTextHeight);
+            igd.clearRect(128, 64, 64, ox + b.x + b.width - (closeButtonSize + closeButtonMargin), (oy + b.y) - (closeButtonSize + closeButtonMargin), closeButtonSize, closeButtonSize);
             igd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
             uie.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, igd);
         }
@@ -79,13 +82,16 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
         lastMX = x;
         lastMY = y;
         int index = windowList.size();
+        int frameHeight = getWindowFrameHeight();
+        int closeSize = getCloseButtonSize();
+        int closeMargin = getCloseButtonMargin();
         for (Iterator<UIElement> i = windowList.descendingIterator() ; i.hasNext();) {
             index--;
             UIElement uie = i.next();
             Rect innerWindow = uie.getBounds();
-            Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - 20, innerWindow.width, 20);
+            Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
             Rect windowSz = new Rect(innerWindow.x + innerWindow.width - 16, innerWindow.y + innerWindow.height - 16, 24, 24);
-            Rect windowX = new Rect((windowFrame.x + windowFrame.width) - 14, windowFrame.y + 2, 12, 12);
+            Rect windowX = new Rect((windowFrame.x + windowFrame.width) - (closeMargin + closeSize), innerWindow.y - (closeMargin + closeSize), closeSize, closeSize);
             if (innerWindow.contains(x, y)) {
                 clearKeysLater = true;
                 backingSelected = false;
@@ -118,7 +124,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                         return;
                     }
                     currentlyFullscreen = innerWindow;
-                    uie.setBounds(new Rect(0, 18, getBounds().width, getBounds().height - 18));
+                    uie.setBounds(new Rect(0, frameHeight, getBounds().width, getBounds().height - frameHeight));
                 }
                 return;
             }
@@ -185,5 +191,17 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
         }
         lastMX = x;
         lastMY = y;
+    }
+
+    public int getWindowFrameHeight() {
+        return UILabel.getRecommendedSize("", windowTextHeight).height;
+    }
+
+    public int getCloseButtonMargin() {
+        return 3;
+    }
+
+    public int getCloseButtonSize() {
+        return getWindowFrameHeight() - (getCloseButtonMargin() * 2);
     }
 }
