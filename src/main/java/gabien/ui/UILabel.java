@@ -23,7 +23,8 @@ public class UILabel extends UIPanel {
     }
 
     public static Rect getRecommendedSize(String text, int height) {
-        return new Rect(0, 0, getTextLength(text, height) + 2, height + 2);
+        int margin = ((height / 8) * 2);
+        return new Rect(0, 0, getTextLength(text, height) + margin, height + margin);
     }
 
     @Override
@@ -33,6 +34,9 @@ public class UILabel extends UIPanel {
     }
 
     private static boolean useSystemFont(String text, int height) {
+        if (height != 16)
+            if (height != 8)
+                return true;
         int l = text.length();
         for (int p = 0; p < l; p++)
             if (text.charAt(p) >= 128)
@@ -105,8 +109,22 @@ public class UILabel extends UIPanel {
     }
 
     public static int drawLabel(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected, int height) {
-        if (height > 8)
+        if (height == 16)
             return drawLabelx2(igd, wid, ox, oy, string, selected);
-        return drawLabelx1(igd, wid, ox, oy, string, selected);
+        if (height == 8)
+            return drawLabelx1(igd, wid, ox, oy, string, selected);
+        // switch from bitmaps to something else
+        Rect res = getRecommendedSize(string, height);
+        if (wid == 0)
+            wid = res.width;
+        if (selected) {
+            igd.clearRect(255, 255, 255, ox, oy, wid, res.height);
+        } else {
+            igd.clearRect(64, 64, 64, ox, oy, wid, res.height);
+        }
+        int margin = height / 8;
+        igd.clearRect(32, 32, 32, ox + margin, oy + margin, wid - (margin * 2), res.height - (margin * 2));
+        UILabel.drawString(igd, ox + margin, oy + margin, string, true, height);
+        return wid;
     }
 }
