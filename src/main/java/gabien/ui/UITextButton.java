@@ -54,9 +54,9 @@ public class UITextButton extends UIElement {
                 // no bitmaps here
                 int margin = textHeight / 8;
                 Rect bounds = getBounds();
-                int c1 = 32;
-                int c2 = 64;
-                int c3 = 48;
+                int c1 = 32; // shadow
+                int c2 = 64; // lit
+                int c3 = 48; // middle
                 int ooy = 0;
                 if (state) {
                     c2 = 32;
@@ -64,9 +64,9 @@ public class UITextButton extends UIElement {
                     c3 = 16;
                     ooy = margin;
                 }
-                igd.clearRect(c1, c1, c1, ox, oy + ooy, bounds.width, bounds.height);
-                igd.clearRect(c2, c2, c2, ox, oy + ooy, bounds.width - margin, bounds.height - margin);
-                igd.clearRect(c3, c3, c3, ox + margin, oy + ooy + margin, bounds.width - (margin * 2), bounds.height - (margin * 2));
+                drawButton(c1 * 3, c2 * 3, c3, ox, oy + ooy, margin, bounds.width, bounds.height, igd, false);
+                int m2 = 1 + (margin / 3);
+                drawButton(c1, c2, c3, ox + m2, oy + m2 + ooy, margin - m2, bounds.width - (m2 * 2), bounds.height - (m2 * 2), igd, true);
                 UILabel.drawString(igd, ox + margin, oy + margin + ooy, Text, true, textHeight);
                 return;
             }
@@ -77,6 +77,13 @@ public class UITextButton extends UIElement {
             igd.blitBCKImage((x2?8:1) + po, 0, (x2?2:1), (x2?20:10), ox + pp, oy, i);
         igd.blitBCKImage((x2?10:2) + po, 0, (x2?2:1), (x2?20:10), ox + (elementBounds.width - (x2?2:1)), oy, i);
         UILabel.drawString(igd, ox + (x2 ? 2 : 1), oy + (state ? (x2 ? 4 : 2) : (x2 ? 2 : 1)), Text, true, textHeight);
+    }
+
+    private void drawButton(int c1, int c2, int c3, int ox, int oy, int margin, int width, int height, IGrInDriver igd, boolean drawBack) {
+        igd.clearRect(c1, c1, c1, ox, oy, width, height);
+        igd.clearRect(c2, c2, c2, ox, oy, width - margin, height - margin);
+        if (drawBack)
+            igd.clearRect(c3, c3, c3, ox + margin, oy + margin, width - (margin * 2), height - (margin * 2));
     }
 
     @Override
