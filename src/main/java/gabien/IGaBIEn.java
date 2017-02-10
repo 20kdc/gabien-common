@@ -38,7 +38,7 @@ public interface IGaBIEn {
 	//Means that only one IGrInDriver can be active at a time.
 	//Typically,the last will be active,and all others will be ignored.	
 	public boolean singleWindowApp();
-	public ISoundDriver getSound();//This is a singleton.
+    public IRawAudioDriver getRawAudio(); // This is a singleton.
 	public void ensureQuit();
 	//On SingleWindowApp-style platforms,where windowing doesn't exist,ignore windowspecs.
 	public IGrInDriver makeGrIn(String name,int w,int h,WindowSpecs windowspecs);

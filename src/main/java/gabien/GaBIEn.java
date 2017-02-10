@@ -10,6 +10,7 @@ import java.io.OutputStream;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
+    private static RawAudioToAudioDriver soundImpl;
 
     public static double getTime() {
         return internal.getTime();
@@ -35,7 +36,14 @@ public class GaBIEn {
     }
 
     public static ISoundDriver getSound() {
-        return internal.getSound();
+        if (soundImpl == null)
+            soundImpl = new RawAudioToAudioDriver();
+        internal.getRawAudio().setRawAudioSource(soundImpl);
+        return soundImpl;
+    }
+
+    public static IRawAudioDriver getRawAudio() {
+        return internal.getRawAudio();
     }
 
     public static void ensureQuit() {

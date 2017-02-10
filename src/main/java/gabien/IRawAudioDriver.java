@@ -15,5 +15,7 @@ public interface IRawAudioDriver {
         // can be called from another thread!
         short[] pullData(int samples);
     }
-    void setRawAudioSource(IRawAudioSource src);
+
+    // Set a new audio source, replacing the previous.
+    IRawAudioSource setRawAudioSource(IRawAudioSource src);
 }
