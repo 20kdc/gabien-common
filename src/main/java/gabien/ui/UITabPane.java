@@ -16,6 +16,8 @@ public class UITabPane extends UIPanel {
     public int tab = 0;
     public int tabTextHeight = 8;
     public boolean tabUpdated = false;
+    private boolean shortTabs = false;
+
     public UITabPane(String[] strings, UIElement[] tabs, int h) {
         tabTextHeight = h;
         tabNames = strings;
@@ -27,8 +29,13 @@ public class UITabPane extends UIPanel {
 
     @Override
     public void setBounds(Rect r) {
-        for (UIElement tab : tabElems)
+        int tl = 0;
+        for (int i = 0; i < tabElems.length; i++) {
+            UIElement tab = tabElems[i];
             tab.setBounds(new Rect(0, tabTextHeight + 2, r.width, r.height - (tabTextHeight + 2)));
+            tl += UILabel.getTextLength(tabNames[i], tabTextHeight) + 8;
+        }
+        shortTabs = tl > r.width;
         super.setBounds(r);
     }
 
@@ -40,14 +47,28 @@ public class UITabPane extends UIPanel {
         }
         super.updateAndRender(ox, oy, DeltaTime, select, igd);
         Rect bounds = getBounds();
-        igd.clearRect(0, 0, 0, ox, oy, bounds.width, tabTextHeight + 2);
+        igd.clearRect(16, 16, 16, ox, oy, bounds.width, tabTextHeight + 2);
+        igd.clearRect(32, 32, 32, ox, oy + (tabTextHeight / 2), bounds.width, 2);
         int pos = 0;
         for (int i = 0; i < tabElems.length; i++) {
-            int tabW = UILabel.getTextLength(tabNames[i], tabTextHeight) + 8;
-            igd.clearRect(0, (i == tab) ? 32 : 0, ((i & 1) != 0) ? 32 : 0, ox + pos, oy, tabW, tabTextHeight + 2);
-            UILabel.drawString(igd, ox + pos + 4, oy + 1, tabNames[i], true, tabTextHeight);
+            int tabW = UILabel.getTextLength(getVisibleTabName(i), tabTextHeight) + 8;
+            int base = ((i & 1) != 0) ? 64 : 32;
+            if (i == tab)
+                base = 128;
+            igd.clearRect(base, base, base, ox + pos, oy, tabW, tabTextHeight + 2);
+            // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
+            igd.clearRect(base / 2, base / 2, base / 2, ox + pos + 1, oy + 1, tabW - 2, tabTextHeight);
+
+            UILabel.drawString(igd, ox + pos + 4, oy + 1, getVisibleTabName(i), true, tabTextHeight);
             pos += tabW;
         }
+    }
+
+    private String getVisibleTabName(int i) {
+        if (shortTabs)
+            if (tabNames[i].length() > 0)
+                return tabNames[i].substring(0, 1);
+        return tabNames[i];
     }
 
     @Override
@@ -55,7 +76,7 @@ public class UITabPane extends UIPanel {
         if (y < (tabTextHeight + 2)) {
             int pos = 0;
             for (int i = 0; i < tabElems.length; i++) {
-                pos += UILabel.getTextLength(tabNames[i], tabTextHeight) + 8;
+                pos += UILabel.getTextLength(getVisibleTabName(i), tabTextHeight) + 8;
                 if (x < pos) {
                     allElements.clear();
                     allElements.add(tabElems[i]);
