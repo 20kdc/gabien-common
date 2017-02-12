@@ -32,7 +32,8 @@ public class UITextButton extends UIElement {
     public static Rect getRecommendedSize(String text, int txh) {
         // See UILabel for the logic behind only adding margin once to the rectangle
         int margin = txh / 8;
-        return new Rect(0, 0, UILabel.getTextLength(text, txh) + (margin * 2), txh + margin);
+        // Notably, there's an additional horizontal bit of margin for contrast against the (light) sides of the button.
+        return new Rect(0, 0, UILabel.getTextLength(text, txh) + (margin * 2) + 2, txh + margin);
     }
 
     public UITextButton togglable() {
@@ -67,7 +68,7 @@ public class UITextButton extends UIElement {
                 drawButton(c1 * 3, c2 * 3, c3, ox, oy + ooy, margin, bounds.width, bounds.height, igd, false);
                 int m2 = 1 + (margin / 3);
                 drawButton(c1, c2, c3, ox + m2, oy + m2 + ooy, margin - m2, bounds.width - (m2 * 2), bounds.height - (m2 * 2), igd, true);
-                UILabel.drawString(igd, ox + margin, oy + margin + ooy, Text, true, textHeight);
+                UILabel.drawString(igd, ox + 1 + margin, oy + margin + ooy, Text, true, textHeight);
                 return;
             }
         int po = state ? (x2?6:3) : 0;
@@ -76,7 +77,7 @@ public class UITextButton extends UIElement {
         for (int pp = (x2?2:1); pp < elementBounds.width - 1; pp+=(x2?2:1))
             igd.blitBCKImage((x2?8:1) + po, 0, (x2?2:1), (x2?20:10), ox + pp, oy, i);
         igd.blitBCKImage((x2?10:2) + po, 0, (x2?2:1), (x2?20:10), ox + (elementBounds.width - (x2?2:1)), oy, i);
-        UILabel.drawString(igd, ox + (x2 ? 2 : 1), oy + (state ? (x2 ? 4 : 2) : (x2 ? 2 : 1)), Text, true, textHeight);
+        UILabel.drawString(igd, ox + 1 + (x2 ? 2 : 1), oy + (state ? (x2 ? 4 : 2) : (x2 ? 2 : 1)), Text, true, textHeight);
     }
 
     private void drawButton(int c1, int c2, int c3, int ox, int oy, int margin, int width, int height, IGrInDriver igd, boolean drawBack) {
