@@ -31,7 +31,12 @@ public class ScissorGrInDriver implements IGrInDriver {
 
     @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
-        commonBlitImage(srcx, srcy, srcw, srch, x, y, i, false);
+        commonBlitImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, false);
+    }
+
+    @Override
+    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
+        commonBlitImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, false);
     }
 
     @Override
@@ -49,12 +54,12 @@ public class ScissorGrInDriver implements IGrInDriver {
 
     @Override
     public void blitBCKImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
-        commonBlitImage(srcx, srcy, srcw, srch, x, y, i, true);
+        commonBlitImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, true);
     }
 
-    private void commonBlitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i, boolean bck) {
+    private void commonBlitImage(int srcx, int srcy, int srcw, int srch, int x, int y, int scrw, int scrh, IImage i, boolean bck) {
         Rect spriteSpace = new Rect(srcx, srcy, srcw, srch);
-        Rect screenSpace = new Rect(x, y, srcw, srch);
+        Rect screenSpace = new Rect(x, y, scrw, scrh);
 
         Rect alteredScreenspace = screenSpace.getIntersection(new Rect(workLeft, workTop, workRight - workLeft, workBottom - workTop));
         if (alteredScreenspace == null)
@@ -71,7 +76,11 @@ public class ScissorGrInDriver implements IGrInDriver {
         if (bck) {
             inner.blitBCKImage(spriteSpace.x, spriteSpace.y, spriteSpace.width, spriteSpace.height, screenSpace.x, screenSpace.y, i);
         } else {
-            inner.blitImage(spriteSpace.x, spriteSpace.y, spriteSpace.width, spriteSpace.height, screenSpace.x, screenSpace.y, i);
+            if ((scrw != srcw) || (scrh != srch)) {
+                inner.blitScaledImage(spriteSpace.x, spriteSpace.y, spriteSpace.width, spriteSpace.height, screenSpace.x, screenSpace.y, screenSpace.width, screenSpace.height, i);
+            } else {
+                inner.blitImage(spriteSpace.x, spriteSpace.y, spriteSpace.width, spriteSpace.height, screenSpace.x, screenSpace.y, i);
+            }
         }
     }
 

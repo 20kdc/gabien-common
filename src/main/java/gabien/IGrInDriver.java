@@ -122,8 +122,10 @@ public interface IGrInDriver {
     public int getWidth();
 
     public int getHeight();
-
+    
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
+    // Support optional but recommended. Lack of support should result in a RuntimeException.
+    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
 
     // Now as official as you can get for a graphics interface nobody uses.
     // This is "The Way" that text is drawn if the "styled" way doesn't work.
