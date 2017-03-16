@@ -113,7 +113,7 @@ public interface IGrInDriver {
     public static interface IImage {
         public int getWidth();
         public int getHeight();
-        // 0xAARRGGBB
+        // 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
         public int[] getPixels();
     }
 
@@ -126,6 +126,9 @@ public interface IGrInDriver {
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
     // Support optional but recommended. Lack of support should result in a RuntimeException.
     public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
+    // Support optional. Should not be used unless absolutely required - cannot be scissored.
+    // Lack of support should result in a RuntimeException. When scissoring, this is just directly forwarded - nothing can be done here.
+    public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
 
     // Now as official as you can get for a graphics interface nobody uses.
     // This is "The Way" that text is drawn if the "styled" way doesn't work.
