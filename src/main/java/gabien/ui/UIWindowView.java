@@ -7,7 +7,6 @@ package gabien.ui;
 
 import gabien.IGrInDriver;
 
-
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -85,7 +84,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
         int frameHeight = getWindowFrameHeight();
         int closeSize = getCloseButtonSize();
         int closeMargin = getCloseButtonMargin();
-        for (Iterator<UIElement> i = windowList.descendingIterator() ; i.hasNext();) {
+        for (Iterator<UIElement> i = windowList.descendingIterator(); i.hasNext(); ) {
             index--;
             UIElement uie = i.next();
             Rect innerWindow = uie.getBounds();

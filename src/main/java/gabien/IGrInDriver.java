@@ -112,7 +112,9 @@ public interface IGrInDriver {
     // BASIC
     public static interface IImage {
         public int getWidth();
+
         public int getHeight();
+
         // 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
         public int[] getPixels();
     }
@@ -122,10 +124,12 @@ public interface IGrInDriver {
     public int getWidth();
 
     public int getHeight();
-    
+
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
+
     // Support optional but recommended. Lack of support should result in a RuntimeException.
     public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
+
     // Support optional. Should not be used unless absolutely required - cannot be scissored.
     // Lack of support should result in a RuntimeException. When scissoring, this is just directly forwarded - nothing can be done here.
     public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
@@ -151,14 +155,14 @@ public interface IGrInDriver {
     public boolean isKeyDown(int KEYID);
 
     public boolean isKeyJustPressed(int KEYID);// Note that if this returns
-                                               // true,it won't return true
-                                               // again for any other call for
-                                               // that key until another press
-                                               // happens.
+    // true,it won't return true
+    // again for any other call for
+    // that key until another press
+    // happens.
 
     public void clearKeys();// This will clear all key-related buffers.
-                            // This includes the Typist extension's
-                            // keybuffer,and the mouse.
+    // This includes the Typist extension's
+    // keybuffer,and the mouse.
     // INPUT-ADVANCED
     // Note that these are only guaranteed to apply when the mouse is down (on touch devices)
 
@@ -169,11 +173,11 @@ public interface IGrInDriver {
     public boolean getMouseDown();
 
     public boolean getMouseJustDown();// Note that if this returns true,it won't
-                                      // return true again for any other call
-                                      // until another press happens.
+    // return true again for any other call
+    // until another press happens.
 
     public int getMouseButton();// Get the Mouse button currently pressed.
-                                // 0:None 1:Left,3:Right
+    // 0:None 1:Left,3:Right
     // if it's completely impossible to provide 320x240,or the player requests
     // it,put the true values in and hope it works.
     // INPUT-TYPIST

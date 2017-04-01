@@ -13,10 +13,10 @@ import java.util.LinkedList;
 
 /**
  * Utility class useful for dealing with the boilerplate UI bootstrap code
- *  to hook up the IGD and outermost UIElement.
+ * to hook up the IGD and outermost UIElement.
  * If dealing with single-window-mode, use this once (to get a root window),
  * then create a UIWindowView for your root window's element,
- *  and take the highest resolution you can get.
+ * and take the highest resolution you can get.
  * Created on 12/30/16.
  */
 public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {

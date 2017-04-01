@@ -10,6 +10,7 @@ package gabien.ui;
  */
 public class Rect {
     public int x, y, width, height;
+
     public Rect(int i, int i0, int i1, int i2) {
         x = i;
         y = i0;

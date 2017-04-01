@@ -5,10 +5,6 @@
 
 package gabien;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-
 /**
  * Created on 09/12/15.
  */
@@ -160,8 +156,8 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
                 R[px] = 32767;
             if (R[px] < -32768)
                 R[px] = -32768;
-            data[px*2] = (short) L[px];
-            data[(px*2)+1] = (short) R[px];
+            data[px * 2] = (short) L[px];
+            data[(px * 2) + 1] = (short) R[px];
         }
         return data;
     }

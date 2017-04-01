@@ -5,10 +5,11 @@
 
 package gabien.ui;
 
-import java.util.LinkedList;
 import gabien.IGrInDriver;
 import gabien.IGrInDriver.IImage;
 import gabien.ScissorGrInDriver;
+
+import java.util.LinkedList;
 
 /**
  * UIPanel allows multiple elements to be grouped together.
@@ -43,6 +44,7 @@ public class UIPanel extends UIElement {
             uie.updateAndRender(ox + r.x, oy + r.y, deltaTime, (selectedElement == uie) && select, igd);
         }
     }
+
     //The click is within the (0,0,my width-1,my textHeight-1) range.
     @Override
     public void handleClick(int x, int y, int button) {
@@ -56,6 +58,7 @@ public class UIPanel extends UIElement {
             }
         }
     }
+
     @Override
     public void handleDrag(int x, int y) {
         for (UIElement uie : allElements) {

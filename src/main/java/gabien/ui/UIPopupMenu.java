@@ -15,6 +15,7 @@ public class UIPopupMenu extends UIElement {
     public Runnable[] menuExecs;
     public boolean canResize = false;
     public int textHeight;
+
     public UIPopupMenu(String[] strings, Runnable[] tilesets, int h, boolean rsz) {
         menuItems = strings;
         menuExecs = tilesets;

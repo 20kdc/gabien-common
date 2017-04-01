@@ -20,29 +20,34 @@ import java.io.OutputStream;
  */
 
 public interface IGaBIEn {
-	public double getTime();
-	public double timeDelta(boolean reset);	
+    public double getTime();
 
-	// Gets a resource from the application binary.
+    public double timeDelta(boolean reset);
+
+    // Gets a resource from the application binary.
     // Failing that, returns null.
-	public InputStream getResource(String resource);
-	
-	// Runs getResource, then looks for a file in the data directory.
-	// Failing that, returns null.
-	public InputStream getFile(String resource);
-	
-	// Creates or overwrites a file in the data directory.
-	// Failing that, returns null.
+    public InputStream getResource(String resource);
+
+    // Runs getResource, then looks for a file in the data directory.
+    // Failing that, returns null.
+    public InputStream getFile(String resource);
+
+    // Creates or overwrites a file in the data directory.
+    // Failing that, returns null.
     public OutputStream getOutFile(String resource);
-    
-	//Means that only one IGrInDriver can be active at a time.
-	//Typically,the last will be active,and all others will be ignored.	
-	public boolean singleWindowApp();
+
+    //Means that only one IGrInDriver can be active at a time.
+    //Typically,the last will be active,and all others will be ignored.
+    public boolean singleWindowApp();
+
     public IRawAudioDriver getRawAudio(); // This is a singleton.
-	public void ensureQuit();
-	//On SingleWindowApp-style platforms,where windowing doesn't exist,ignore windowspecs.
-	public IGrInDriver makeGrIn(String name,int w,int h,WindowSpecs windowspecs);
-	public WindowSpecs defaultWindowSpecs(String name, int w, int h);
+
+    public void ensureQuit();
+
+    //On SingleWindowApp-style platforms,where windowing doesn't exist,ignore windowspecs.
+    public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs);
+
+    public WindowSpecs defaultWindowSpecs(String name, int w, int h);
 
     // Get an image. See GaBIEn.getFile for how this works.
     // Notably, the image format supports ARGB.

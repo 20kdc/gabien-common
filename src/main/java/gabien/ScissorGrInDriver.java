@@ -14,6 +14,7 @@ public class ScissorGrInDriver implements IGrInDriver {
     public int workLeft, workTop;
     public int workRight, workBottom;
     public IGrInDriver inner;
+
     @Override
     public boolean stillRunning() {
         return inner.stillRunning();

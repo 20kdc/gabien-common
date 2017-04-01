@@ -2,6 +2,7 @@
 !build.gradle
 !README.md
 !.gitignore
+!IDEA-Code-Style.xml
 !src
 !src/
 !src/main

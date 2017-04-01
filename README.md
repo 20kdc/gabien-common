@@ -33,3 +33,15 @@ Do something similar with your Eclipse workspace if you use Eclipse,
  or repeat some of the steps for every application being edited.
 
 (This is as simple a system as I could work out.)
+
+## Notes on Code Style
+
+The code style isn't really documented as such, but it's basically the IDEA default with one change.
+
+Which is that `new int[]{` or such is wrong, and should be `new int[] {`.
+
+Pedantic, I know.
+
+Otherwise, 4-spaces indentation, and do NOT use any "rearrange definitions" feature.
+
+Sometimes there's a method to the definition order. (Sometimes there isn't, but still.)

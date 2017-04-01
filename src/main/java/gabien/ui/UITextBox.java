@@ -38,7 +38,7 @@ public class UITextBox extends UIElement {
 
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime,
-            boolean selected, IGrInDriver igd) {
+                                boolean selected, IGrInDriver igd) {
         if (!textLastSeen.equals(text)) {
             textCStr = text;
             textLastSeen = text;

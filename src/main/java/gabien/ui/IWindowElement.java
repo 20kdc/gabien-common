@@ -12,6 +12,7 @@ package gabien.ui;
  */
 public interface IWindowElement {
     boolean wantsSelfClose();
+
     // The window will not be processed after this occurs.
     void windowClosed();
 }
