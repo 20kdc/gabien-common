@@ -55,23 +55,24 @@ public class UILabel extends UIPanel {
         byte[] ascii = text.getBytes();
         for (int p = 0; p < ascii.length; p++) {
             UILabel.drawChar(igd, ascii[p], font, xptr, oy, bck, x2);
-            xptr += x2 ? 16 : 8;
+            xptr += 8;
         }
     }
 
     private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, boolean bck, boolean x2) {
-        int chSize = x2 ? 14 : 7;
+        int hchSize = 7;
+        int vchSize = x2 ? 14 : 7;
         if (cc < 256) {
             if (bck) {
-                igd.blitBCKImage((cc & 0x0F) * chSize, ((cc & 0xF0) >> 4) * chSize, chSize, chSize, xptr, yptr, font);
+                igd.blitBCKImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
             } else {
-                igd.blitImage((cc & 0x0F) * chSize, ((cc & 0xF0) >> 4) * chSize, chSize, chSize, xptr, yptr, font);
+                igd.blitImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
             }
         } else {
             if (bck) {
-                igd.blitBCKImage(0, 0, chSize, chSize, xptr, yptr, font);
+                igd.blitBCKImage(0, 0, hchSize, vchSize, xptr, yptr, font);
             } else {
-                igd.blitImage(0, 0, chSize, chSize, xptr, yptr, font);
+                igd.blitImage(0, 0, hchSize, vchSize, xptr, yptr, font);
             }
         }
     }
@@ -79,7 +80,7 @@ public class UILabel extends UIPanel {
     public static int getTextLength(String text, int height) {
         if (useSystemFont(text, height))
             return GaBIEn.measureText(height, text);
-        return height * text.length();
+        return text.length() * 8;
     }
 
     private static int drawLabelx1(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
