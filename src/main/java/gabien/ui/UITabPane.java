@@ -59,7 +59,7 @@ public class UITabPane extends UIPanel {
             // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
             igd.clearRect(base / 2, base / 2, base / 2, ox + pos + 1, oy + 1, tabW - 2, tabTextHeight);
 
-            UILabel.drawString(igd, ox + pos + 4, oy + 1, getVisibleTabName(i), true, tabTextHeight);
+            UILabel.drawString(igd, ox + pos + 4, oy + (tabTextHeight / 8), getVisibleTabName(i), true, tabTextHeight);
             pos += tabW;
         }
     }
