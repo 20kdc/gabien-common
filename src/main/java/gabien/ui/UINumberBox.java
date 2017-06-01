@@ -47,26 +47,15 @@ public class UINumberBox extends UIElement {
         }
         if (selected && (!readOnly)) {
             int NNum = number;
-            String ss = igd.getTypeBuffer();
-            if (ss.length() > 0) {
-                char c = ss.charAt(0);
-                if ((c >= '0') && (c <= '9')) {
-                    NNum *= 10;
-                    if (NNum < 0) {
-                        NNum -= c - '0';
-                    } else {
-                        NNum += c - '0';
-                    }
-                }
-                if (c == '-')
-                    NNum = -NNum;
+            String ss = igd.maintain(ox, oy + (textHeight / 2), elementBounds.width, String.valueOf(NNum));
+            try {
+                NNum = Integer.parseInt(ss);
+            } catch (Exception e) {
             }
-            igd.setTypeBuffer("");
-            if (igd.isKeyJustPressed(IGrInDriver.VK_BACK_SPACE))
-                NNum = 0;
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
                 editingCNumber = number;
                 onEdit.run();
+                selected = false;
             }
             number = NNum;
             editingNLast = number;

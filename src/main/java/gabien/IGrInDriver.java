@@ -4,6 +4,8 @@
  */
 package gabien;
 
+import gabien.ui.Rect;
+
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
@@ -11,128 +13,134 @@ public interface IGrInDriver {
     // keys! I'm switching the keymap to some custom thing
     // so Oracle can't hold a sword over my head
     // just because I use the same keymap as them.
-    public static int VK_ESCAPE = 0;
-    public static int VK_1 = 1;
-    public static int VK_2 = 2;
-    public static int VK_3 = 3;
-    public static int VK_4 = 4;
-    public static int VK_5 = 5;
-    public static int VK_6 = 6;
-    public static int VK_7 = 7;
-    public static int VK_8 = 8;
-    public static int VK_9 = 9;
-    public static int VK_0 = 10;
-    public static int VK_MINUS = 11;
-    public static int VK_EQUALS = 12;
-    public static int VK_BACK_SPACE = 13;
-    public static int VK_TAB = 14;
-    public static int VK_Q = 15;
-    public static int VK_W = 16;
-    public static int VK_E = 17;
-    public static int VK_R = 18;
-    public static int VK_T = 19;
-    public static int VK_Y = 20;
-    public static int VK_U = 21;
-    public static int VK_I = 22;
-    public static int VK_O = 23;
-    public static int VK_P = 24;
-    public static int VK_OPEN_BRACKET = 25;
-    public static int VK_CLOSE_BRACKET = 26;
-    public static int VK_ENTER = 27;
-    public static int VK_CONTROL = 28;
-    public static int VK_A = 29;
-    public static int VK_S = 30;
-    public static int VK_D = 31;
-    public static int VK_F = 32;
-    public static int VK_G = 33;
-    public static int VK_H = 34;
-    public static int VK_J = 35;
-    public static int VK_K = 36;
-    public static int VK_L = 37;
-    public static int VK_SEMICOLON = 38;
-    public static int VK_AT = 39;
-    public static int VK_QUOTE = 39;
-    public static int VK_HASH = 40;
-    public static int VK_TILDE = 40;
-    public static int VK_SHIFT = 41;
-    public static int VK_BACK_SLASH = 42;
-    public static int VK_Z = 43;
-    public static int VK_X = 44;
-    public static int VK_C = 45;
-    public static int VK_V = 46;
-    public static int VK_B = 47;
-    public static int VK_N = 48;
-    public static int VK_M = 49;
-    public static int VK_COMMA = 50;
-    public static int VK_PERIOD = 51;
-    public static int VK_SLASH = 52;
-    public static int VK_KP_MULTIPLY = 53;
-    public static int VK_ALT = 54;
-    public static int VK_SPACE = 55;
-    public static int VK_CAPS_LOCK = 56;
-    public static int VK_F1 = 57;
-    public static int VK_F2 = 58;
-    public static int VK_F3 = 59;
-    public static int VK_F4 = 60;
-    public static int VK_F5 = 61;
-    public static int VK_F6 = 62;
-    public static int VK_F7 = 63;
-    public static int VK_F8 = 64;
-    public static int VK_F9 = 65;
-    public static int VK_F10 = 66;
-    public static int VK_NUM_LOCK = 67;
-    public static int VK_SCROLL_LOCK = 68;
-    public static int VK_KP_7 = 69;
-    public static int VK_KP_8 = 70;
-    public static int VK_KP_9 = 71;
-    public static int VK_KP_SUBTRACT = 72;
-    public static int VK_KP_4 = 73;
-    public static int VK_KP_5 = 74;
-    public static int VK_KP_6 = 75;
-    public static int VK_KP_ADD = 76;
-    public static int VK_KP_1 = 77;
-    public static int VK_KP_2 = 78;
-    public static int VK_KP_3 = 79;
-    public static int VK_KP_0 = 80;
-    public static int VK_KP_PERIOD = 81;
-    public static int VK_F11 = 82;
-    public static int VK_F12 = 83;
-    public static int VK_KP_ENTER = 84;
-    public static int VK_KP_DIVIDE = 85;
-    public static int VK_ALTGR = 86;
-    public static int VK_BREAK = 87;
-    public static int VK_UP = 88;
-    public static int VK_LEFT = 89;
-    public static int VK_RIGHT = 90;
-    public static int VK_DOWN = 91;
-    public static int VK_INSERT = 92;
 
-    public static int KEYS = 93;
+    // (later: Copyright-paranoid much, old me? Oh well. Good point.)
 
-    // BASIC
+    int VK_ESCAPE = 0;
+    int VK_1 = 1;
+    int VK_2 = 2;
+    int VK_3 = 3;
+    int VK_4 = 4;
+    int VK_5 = 5;
+    int VK_6 = 6;
+    int VK_7 = 7;
+    int VK_8 = 8;
+    int VK_9 = 9;
+    int VK_0 = 10;
+    int VK_MINUS = 11;
+    int VK_EQUALS = 12;
+    int VK_BACK_SPACE = 13;
+    int VK_TAB = 14;
+    int VK_Q = 15;
+    int VK_W = 16;
+    int VK_E = 17;
+    int VK_R = 18;
+    int VK_T = 19;
+    int VK_Y = 20;
+    int VK_U = 21;
+    int VK_I = 22;
+    int VK_O = 23;
+    int VK_P = 24;
+    int VK_OPEN_BRACKET = 25;
+    int VK_CLOSE_BRACKET = 26;
+    int VK_ENTER = 27;
+    int VK_CONTROL = 28;
+    int VK_A = 29;
+    int VK_S = 30;
+    int VK_D = 31;
+    int VK_F = 32;
+    int VK_G = 33;
+    int VK_H = 34;
+    int VK_J = 35;
+    int VK_K = 36;
+    int VK_L = 37;
+    int VK_SEMICOLON = 38;
+    int VK_AT = 39;
+    int VK_QUOTE = 39;
+    int VK_HASH = 40;
+    int VK_TILDE = 40;
+    int VK_SHIFT = 41;
+    int VK_BACK_SLASH = 42;
+    int VK_Z = 43;
+    int VK_X = 44;
+    int VK_C = 45;
+    int VK_V = 46;
+    int VK_B = 47;
+    int VK_N = 48;
+    int VK_M = 49;
+    int VK_COMMA = 50;
+    int VK_PERIOD = 51;
+    int VK_SLASH = 52;
+    int VK_KP_MULTIPLY = 53;
+    int VK_ALT = 54;
+    int VK_SPACE = 55;
+    int VK_CAPS_LOCK = 56;
+    int VK_F1 = 57;
+    int VK_F2 = 58;
+    int VK_F3 = 59;
+    int VK_F4 = 60;
+    int VK_F5 = 61;
+    int VK_F6 = 62;
+    int VK_F7 = 63;
+    int VK_F8 = 64;
+    int VK_F9 = 65;
+    int VK_F10 = 66;
+    int VK_NUM_LOCK = 67;
+    int VK_SCROLL_LOCK = 68;
+    int VK_KP_7 = 69;
+    int VK_KP_8 = 70;
+    int VK_KP_9 = 71;
+    int VK_KP_SUBTRACT = 72;
+    int VK_KP_4 = 73;
+    int VK_KP_5 = 74;
+    int VK_KP_6 = 75;
+    int VK_KP_ADD = 76;
+    int VK_KP_1 = 77;
+    int VK_KP_2 = 78;
+    int VK_KP_3 = 79;
+    int VK_KP_0 = 80;
+    int VK_KP_PERIOD = 81;
+    int VK_F11 = 82;
+    int VK_F12 = 83;
+    int VK_KP_ENTER = 84;
+    int VK_KP_DIVIDE = 85;
+    int VK_ALTGR = 86;
+    int VK_BREAK = 87;
+    int VK_UP = 88;
+    int VK_LEFT = 89;
+    int VK_RIGHT = 90;
+    int VK_DOWN = 91;
+    int VK_INSERT = 92;
+
+    int KEYS = 93;
+
+    // -- Drawing functions --
+
     public static interface IImage {
-        public int getWidth();
+        int getWidth();
 
-        public int getHeight();
+        int getHeight();
 
         // 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
-        public int[] getPixels();
+        int[] getPixels();
     }
 
-    public boolean stillRunning();
+    // Returns true if the display is still visible.
+    boolean stillRunning();
 
-    public int getWidth();
+    // These return the size of the drawing buffer.
+    int getWidth();
+    // These return the size of the drawing buffer.
+    int getHeight();
 
-    public int getHeight();
-
-    public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
+    void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
 
     // Support optional but recommended. Lack of support should result in a RuntimeException.
-    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
+    void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
 
     // Support optional. Should not be used unless absolutely required - cannot be scissored.
     // Lack of support should result in a RuntimeException. When scissoring, this is just directly forwarded - nothing can be done here.
-    public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
+    void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
 
     // Now as official as you can get for a graphics interface nobody uses.
     // This is "The Way" that text is drawn if the "styled" way doesn't work.
@@ -140,56 +148,62 @@ public interface IGrInDriver {
     // Now, this still isn't going to be consistent.
     // It probably never will be.
     // But it will work, and it means I avoid having to include Unifont.
-    public void drawText(int x, int y, int r, int g, int b, int i, String text);
+    void drawText(int x, int y, int r, int g, int b, int i, String text);
 
     // 'but colour key'
-    public void blitBCKImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
+    void blitBCKImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
 
-    public void clearAll(int i, int i0, int i1);
+    void clearAll(int i, int i0, int i1);
 
-    public void clearRect(int r, int g, int b, int x, int y, int width, int height);
+    void clearRect(int r, int g, int b, int x, int y, int width, int height);
 
-    public void flush();// This copies the IsKeyDown buffer to WasKeyDown.
-    // INPUT-BASIC
+    boolean flush(); // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
 
-    public boolean isKeyDown(int KEYID);
+    void shutdown(); // Immediately end this IGrInDriver.
 
-    public boolean isKeyJustPressed(int KEYID);// Note that if this returns
+    // -- Basic Keyboard Input
+
+    boolean isKeyDown(int KEYID);
+
+    boolean isKeyJustPressed(int KEYID);// Note that if this returns
     // true,it won't return true
     // again for any other call for
     // that key until another press
     // happens.
 
-    public void clearKeys();// This will clear all key-related buffers.
+    void clearKeys();// This will clear all key-related buffers.
     // This includes the Typist extension's
     // keybuffer,and the mouse.
-    // INPUT-ADVANCED
+
+
+    // -- Mouse Input
+
+
     // Note that these are only guaranteed to apply when the mouse is down (on touch devices)
 
-    public int getMouseX();
+    int getMouseX();
 
-    public int getMouseY();
+    int getMouseY();
 
-    public boolean getMouseDown();
+    boolean getMouseDown();
 
-    public boolean getMouseJustDown();// Note that if this returns true,it won't
+    boolean getMouseJustDown();// Note that if this returns true,it won't
     // return true again for any other call
     // until another press happens.
 
-    public int getMouseButton();// Get the Mouse button currently pressed.
+    int getMouseButton();// Get the Mouse button currently pressed.
     // 0:None 1:Left,3:Right
     // if it's completely impossible to provide 320x240,or the player requests
     // it,put the true values in and hope it works.
-    // INPUT-TYPIST
-    // Typist allows the use of Typed events.
-    // Thus,it's good to implement it.
 
-    // This can show a keyboard covering the lower half of the screen or less.
-    // If one is already up,don't show it again.
+    // -- Text Editing Support
+    // This got completely rewritten, because the last iteration sucked for just about every language but especially those with IMEs.
+    // The catch is that now it sucks to *use* textboxes. This was the tradeoff I hoped not to make.
+    // Bloody UI frameworks... *sigh*
 
-    public void setTypeBuffer(String s);
-
-    public String getTypeBuffer();
-
-    public void shutdown();
+    // Must be called once every frame to maintain a textbox.
+    // Only one can be maintained at a given time.
+    // The Y position is the *centre* - the textbox will be as tall as it wants to be.
+    // Note that the textbox is still hooked into key events, so make sure not to respond to anything that could ever be used in normal typing.
+    String maintain(int x, int y, int width, String text);
 }

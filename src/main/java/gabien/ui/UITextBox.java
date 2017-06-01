@@ -46,22 +46,13 @@ public class UITextBox extends UIElement {
             text = textCStr;
         }
         if (selected) {
-            String NT = text;
-            String ss = igd.getTypeBuffer();
-            igd.setTypeBuffer("");
-            ss = ss.replace("\r", "");
-            ss = ss.replace("\n", "");
-            ss = ss.replace("\t", "    ");
-            NT += ss;
-            if (igd.isKeyJustPressed(IGrInDriver.VK_BACK_SPACE))
-                if (NT.length() > 0)
-                    NT = NT.substring(0, NT.length() - 1);
+            String ss = igd.maintain(ox, oy + (height / 2), elementBounds.width, text);
+            text = ss;
+            textLastSeen = ss;
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
                 textCStr = text;
                 onEdit.run();
             }
-            text = NT;
-            textLastSeen = text;
         }
         UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected, height);
     }

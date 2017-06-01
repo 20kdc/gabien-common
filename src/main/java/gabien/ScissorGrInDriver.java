@@ -105,8 +105,8 @@ public class ScissorGrInDriver implements IGrInDriver {
     }
 
     @Override
-    public void flush() {
-        inner.flush();
+    public boolean flush() {
+        return inner.flush();
     }
 
     @Override
@@ -150,13 +150,8 @@ public class ScissorGrInDriver implements IGrInDriver {
     }
 
     @Override
-    public void setTypeBuffer(String s) {
-        inner.setTypeBuffer(s);
-    }
-
-    @Override
-    public String getTypeBuffer() {
-        return inner.getTypeBuffer();
+    public String maintain(int x, int y, int width, String text) {
+        return inner.maintain(x, y, width, text);
     }
 
     @Override
