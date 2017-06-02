@@ -51,6 +51,7 @@ public class UINumberBox extends UIElement {
             try {
                 NNum = Integer.parseInt(ss);
             } catch (Exception e) {
+                NNum = 0;
             }
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
                 editingCNumber = number;
