@@ -67,8 +67,11 @@ public class GaBIEn {
         return internal.getOutFile(string);
     }
 
-    public static IGrInDriver.IImage getImage(String a, int r, int g, int b) {
-        return internal.getImage(a, r, g, b);
+    public static IGrInDriver.IImage getImage(String a) {
+        return internal.getImage(a);
+    }
+    public static IGrInDriver.IImage getImageCK(String a, int r, int g, int b) {
+        return internal.getImageCK(a, r, g, b);
     }
 
     public static IGrInDriver.IImage createImage(int[] colours, int width, int height) {

@@ -52,7 +52,9 @@ public interface IGaBIEn {
     // Get an image. See GaBIEn.getFile for how this works.
     // Notably, the image format supports ARGB.
     // The colour-keying is just because it's simpler to make assets that way.
-    public IGrInDriver.IImage getImage(String a, int r, int g, int b);
+    public IGrInDriver.IImage getImage(String a);
+    // Get an image - and then cut out a given colour.
+    public IGrInDriver.IImage getImageCK(String a, int r, int g, int b);
 
     // Make an image from a buffer.
     // Note that the colours are 0xAARRGGBB.

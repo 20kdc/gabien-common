@@ -150,9 +150,6 @@ public interface IGrInDriver {
     // But it will work, and it means I avoid having to include Unifont.
     void drawText(int x, int y, int r, int g, int b, int i, String text);
 
-    // 'but colour key'
-    void blitBCKImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
-
     void clearAll(int i, int i0, int i1);
 
     void clearRect(int r, int g, int b, int x, int y, int width, int height);

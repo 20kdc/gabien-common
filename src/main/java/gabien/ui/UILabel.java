@@ -65,28 +65,25 @@ public class UILabel extends UIPanel {
             hchSize = 7;
             vchSize = 7;
         }
-        IImage font = GaBIEn.getImage(fontType, 0, 0, 0);
+        IImage font;
+        if (bck) {
+            font = GaBIEn.getImageCK(fontType, 0, 0, 0);
+        } else {
+            font = GaBIEn.getImage(fontType);
+        }
         byte[] ascii = text.getBytes();
 
         for (int p = 0; p < ascii.length; p++) {
-            UILabel.drawChar(igd, ascii[p], font, xptr, oy, bck, hchSize, vchSize);
+            UILabel.drawChar(igd, ascii[p], font, xptr, oy, hchSize, vchSize);
             xptr += hchSize + 1;
         }
     }
 
-    private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, boolean bck, int hchSize, int vchSize) {
+    private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, int hchSize, int vchSize) {
         if (cc < 256) {
-            if (bck) {
-                igd.blitBCKImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
-            } else {
-                igd.blitImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
-            }
+            igd.blitImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
         } else {
-            if (bck) {
-                igd.blitBCKImage(0, 0, hchSize, vchSize, xptr, yptr, font);
-            } else {
-                igd.blitImage(0, 0, hchSize, vchSize, xptr, yptr, font);
-            }
+            igd.blitImage(0, 0, hchSize, vchSize, xptr, yptr, font);
         }
     }
 
@@ -101,7 +98,7 @@ public class UILabel extends UIPanel {
     }
 
     private static int drawLabelx1(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
-        IImage i = GaBIEn.getImage("textButton.png", 255, 0, 255);
+        IImage i = GaBIEn.getImage("textButton.png");
         if (wid == 0)
             wid = getRecommendedSize(string, 8).width;
         igd.blitImage(selected ? 3 : 0, 10, 1, 9, ox, oy, i);
@@ -114,7 +111,7 @@ public class UILabel extends UIPanel {
     }
 
     private static int drawLabelx2(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
-        IImage i = GaBIEn.getImage("textButton.png", 255, 0, 255);
+        IImage i = GaBIEn.getImage("textButton.png");
         if (wid == 0)
             wid = getRecommendedSize(string, 16).width;
         int selectedOfs = selected ? 6 : 0;

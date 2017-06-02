@@ -72,11 +72,11 @@ public class UITextButton extends UIElement {
                 return;
             }
         int po = state ? (x2 ? 6 : 3) : 0;
-        IImage i = GaBIEn.getImage("textButton.png", 255, 0, 255);
-        igd.blitBCKImage((x2 ? 6 : 0) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox, oy, i);
+        IImage i = GaBIEn.getImage("textButton.png");
+        igd.blitImage((x2 ? 6 : 0) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox, oy, i);
         for (int pp = (x2 ? 2 : 1); pp < elementBounds.width - 1; pp += (x2 ? 2 : 1))
-            igd.blitBCKImage((x2 ? 8 : 1) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + pp, oy, i);
-        igd.blitBCKImage((x2 ? 10 : 2) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + (elementBounds.width - (x2 ? 2 : 1)), oy, i);
+            igd.blitImage((x2 ? 8 : 1) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + pp, oy, i);
+        igd.blitImage((x2 ? 10 : 2) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + (elementBounds.width - (x2 ? 2 : 1)), oy, i);
         UILabel.drawString(igd, ox + 1 + (x2 ? 2 : 1), oy + (state ? (x2 ? 4 : 2) : (x2 ? 2 : 1)), Text, true, textHeight);
     }
 
