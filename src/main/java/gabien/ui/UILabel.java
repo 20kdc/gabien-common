@@ -24,6 +24,8 @@ public class UILabel extends UIPanel {
 
     public static Rect getRecommendedSize(String text, int height) {
         int margin = height / 8;
+        if (margin == 0)
+            margin = 1;
         // one of the margins is "removed" because actual font glyph size should be 7, 14, etc.
         return new Rect(0, 0, getTextLength(text, height) + margin, height + margin);
     }
@@ -37,7 +39,8 @@ public class UILabel extends UIPanel {
     private static boolean useSystemFont(String text, int height) {
         if (height != 16)
             if (height != 8)
-                return true;
+                if (height != 6)
+                    return true;
         int l = text.length();
         for (int p = 0; p < l; p++)
             if (text.charAt(p) >= 128)
@@ -46,22 +49,32 @@ public class UILabel extends UIPanel {
     }
 
     public static void drawString(IGrInDriver igd, int xptr, int oy, String text, boolean bck, int height) {
-        boolean x2 = height > 8;
-        IImage font = GaBIEn.getImage(x2 ? "font2x.png" : "font.png", 0, 0, 0);
         if (useSystemFont(text, height)) {
             igd.drawText(xptr, oy, 255, 255, 255, height, text);
             return;
         }
+        String fontType = "fonttiny.png";
+        int hchSize = 3;
+        int vchSize = 5;
+        if (height >= 16) {
+            fontType = "font2x.png";
+            hchSize = 7;
+            vchSize = 14;
+        } else if (height >= 8) {
+            fontType = "font.png";
+            hchSize = 7;
+            vchSize = 7;
+        }
+        IImage font = GaBIEn.getImage(fontType, 0, 0, 0);
         byte[] ascii = text.getBytes();
+
         for (int p = 0; p < ascii.length; p++) {
-            UILabel.drawChar(igd, ascii[p], font, xptr, oy, bck, x2);
-            xptr += 8;
+            UILabel.drawChar(igd, ascii[p], font, xptr, oy, bck, hchSize, vchSize);
+            xptr += hchSize + 1;
         }
     }
 
-    private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, boolean bck, boolean x2) {
-        int hchSize = 7;
-        int vchSize = x2 ? 14 : 7;
+    private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, boolean bck, int hchSize, int vchSize) {
         if (cc < 256) {
             if (bck) {
                 igd.blitBCKImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
@@ -80,6 +93,10 @@ public class UILabel extends UIPanel {
     public static int getTextLength(String text, int height) {
         if (useSystemFont(text, height))
             return GaBIEn.measureText(height, text);
+        if (height < 8) {
+            // will use fonttiny in this case
+            return text.length() * 4;
+        }
         return text.length() * 8;
     }
 
@@ -125,6 +142,8 @@ public class UILabel extends UIPanel {
             igd.clearRect(64, 64, 64, ox, oy, wid, res.height);
         }
         int margin = height / 8;
+        if (margin == 0)
+            margin = 1;
         igd.clearRect(32, 32, 32, ox + margin, oy + margin, wid - (margin * 2), res.height - (margin * 2));
         UILabel.drawString(igd, ox + margin, oy + margin, string, true, height);
         return wid;
