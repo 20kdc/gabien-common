@@ -71,7 +71,7 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
             short[] s = new short[amount * 2];
             for (int px = 0; px < amount; px++) {
                 short V = Get();
-                s[(px * 2) + 0] = Scale(V, VL);
+                s[px * 2] = Scale(V, VL);
                 s[(px * 2) + 1] = Scale(V, VR);
             }
             return s;
@@ -91,8 +91,7 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
                 P = -1;
             P = Pitch;
             data = new short[sound.length];
-            for (int p = 0; p < data.length; p++)
-                data[p] = sound[p];
+            System.arraycopy(sound, 0, data, 0, data.length);
             pos = 0;
             looping = isLooping;
         }

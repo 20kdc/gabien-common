@@ -40,7 +40,8 @@ public interface IGaBIEn {
     //Typically,the last will be active,and all others will be ignored.
     public boolean singleWindowApp();
 
-    public IRawAudioDriver getRawAudio(); // This is a singleton.
+    IRawAudioDriver getRawAudio(); // This is a singleton, but may be created when used.
+    void hintShutdownRawAudio();
 
     public void ensureQuit();
 

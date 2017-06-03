@@ -45,6 +45,9 @@ public class GaBIEn {
     public static IRawAudioDriver getRawAudio() {
         return internal.getRawAudio();
     }
+    public static void hintShutdownRawAudio() {
+        internal.hintShutdownRawAudio();
+    }
 
     public static void ensureQuit() {
         internal.ensureQuit();

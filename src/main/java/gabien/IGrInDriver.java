@@ -4,8 +4,6 @@
  */
 package gabien;
 
-import gabien.ui.Rect;
-
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
