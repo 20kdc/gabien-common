@@ -9,6 +9,7 @@ import gabien.IGrInDriver;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * Created on 12/27/16.
@@ -150,7 +151,14 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
 
     public void accept(UIElement win) {
         Rect r = win.getBounds();
-        win.setBounds(new Rect(64, 64, r.width, r.height));
+        Rect g = getBounds();
+        int area = g.width - r.width;
+        if (area < 0)
+            area = 0;
+        int cX = new Random().nextInt(area + 1);
+        if ((g.height - 64) < r.height)
+            win.setBounds(new Rect(cX, 0, r.width, r.height));
+        win.setBounds(new Rect(cX, 64, r.width, r.height));
         upcomingWindowList.add(win);
     }
 
