@@ -7,7 +7,7 @@ package gabien;
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
-public interface IGrInDriver {
+public interface IGrInDriver extends IGrDriver {
     // keys! I'm switching the keymap to some custom thing
     // so Oracle can't hold a sword over my head
     // just because I use the same keymap as them.
@@ -112,9 +112,7 @@ public interface IGrInDriver {
 
     int KEYS = 93;
 
-    // -- Drawing functions --
-
-    public static interface IImage {
+    interface IImage {
         int getWidth();
 
         int getHeight();
@@ -123,34 +121,10 @@ public interface IGrInDriver {
         int[] getPixels();
     }
 
+    // -- Window management functions --
+
     // Returns true if the display is still visible.
     boolean stillRunning();
-
-    // These return the size of the drawing buffer.
-    int getWidth();
-    // These return the size of the drawing buffer.
-    int getHeight();
-
-    void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
-
-    // Support optional but recommended. Lack of support should result in a RuntimeException.
-    void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
-
-    // Support optional. Should not be used unless absolutely required - cannot be scissored.
-    // Lack of support should result in a RuntimeException. When scissoring, this is just directly forwarded - nothing can be done here.
-    void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
-
-    // Now as official as you can get for a graphics interface nobody uses.
-    // This is "The Way" that text is drawn if the "styled" way doesn't work.
-    // The UI package uses this in case international text comes along.
-    // Now, this still isn't going to be consistent.
-    // It probably never will be.
-    // But it will work, and it means I avoid having to include Unifont.
-    void drawText(int x, int y, int r, int g, int b, int i, String text);
-
-    void clearAll(int i, int i0, int i1);
-
-    void clearRect(int r, int g, int b, int x, int y, int width, int height);
 
     boolean flush(); // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
 

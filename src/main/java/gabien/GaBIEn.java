@@ -10,7 +10,7 @@ import java.io.OutputStream;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
-    private static RawAudioToAudioDriver soundImpl;
+    private static SimpleMixer soundImpl;
 
     public static double getTime() {
         return internal.getTime();
@@ -35,13 +35,6 @@ public class GaBIEn {
         return internal.singleWindowApp();
     }
 
-    public static ISoundDriver getSound() {
-        if (soundImpl == null)
-            soundImpl = new RawAudioToAudioDriver();
-        internal.getRawAudio().setRawAudioSource(soundImpl);
-        return soundImpl;
-    }
-
     public static IRawAudioDriver getRawAudio() {
         return internal.getRawAudio();
     }
@@ -64,6 +57,10 @@ public class GaBIEn {
 
     public static IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs specs) {
         return internal.makeGrIn(name, w, h, specs);
+    }
+
+    public static IOsbDriver makeOffscreenBuffer(int w, int h) {
+        return internal.makeOffscreenBuffer(w, h);
     }
 
     public static OutputStream getOutFile(String string) {

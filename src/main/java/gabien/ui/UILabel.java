@@ -6,6 +6,7 @@
 package gabien.ui;
 
 import gabien.GaBIEn;
+import gabien.IGrDriver;
 import gabien.IGrInDriver;
 import gabien.IGrInDriver.IImage;
 
@@ -48,7 +49,7 @@ public class UILabel extends UIPanel {
         return iAmAbsolutelySureIHateTheFont;
     }
 
-    public static void drawString(IGrInDriver igd, int xptr, int oy, String text, boolean bck, int height) {
+    public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean bck, int height) {
         if (useSystemFont(text, height)) {
             igd.drawText(xptr, oy, 255, 255, 255, height, text);
             return;
@@ -79,7 +80,7 @@ public class UILabel extends UIPanel {
         }
     }
 
-    private static void drawChar(IGrInDriver igd, int cc, IImage font, int xptr, int yptr, int hchSize, int vchSize) {
+    private static void drawChar(IGrDriver igd, int cc, IImage font, int xptr, int yptr, int hchSize, int vchSize) {
         if (cc < 256) {
             igd.blitImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
         } else {
@@ -97,7 +98,7 @@ public class UILabel extends UIPanel {
         return text.length() * 8;
     }
 
-    private static int drawLabelx1(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
+    private static int drawLabelx1(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected) {
         IImage i = GaBIEn.getImage("textButton.png");
         if (wid == 0)
             wid = getRecommendedSize(string, 8).width;
@@ -110,7 +111,7 @@ public class UILabel extends UIPanel {
         return wid;
     }
 
-    private static int drawLabelx2(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected) {
+    private static int drawLabelx2(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected) {
         IImage i = GaBIEn.getImage("textButton.png");
         if (wid == 0)
             wid = getRecommendedSize(string, 16).width;
@@ -124,7 +125,7 @@ public class UILabel extends UIPanel {
         return wid;
     }
 
-    public static int drawLabel(IGrInDriver igd, int wid, int ox, int oy, String string, boolean selected, int height) {
+    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected, int height) {
         if (height == 16)
             return drawLabelx2(igd, wid, ox, oy, string, selected);
         if (height == 8)

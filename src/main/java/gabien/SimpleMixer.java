@@ -8,16 +8,16 @@ package gabien;
 /**
  * Created on 09/12/15.
  */
-public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRawAudioSource {
-    private JAVAX_Channel[] channels = new JAVAX_Channel[128];
+public class SimpleMixer implements IRawAudioDriver.IRawAudioSource {
+    private Channel[] channels = new Channel[128];
 
-    public class JAVAX_Channel implements IChannel {
-        short[] data;
-        double pos = 0;
-        double VL = 0, VR = 0, P = 1;
-        boolean looping = true;
+    public class Channel {
+        private short[] data;
+        private double pos = 0;
+        private double VL = 0, VR = 0, P = 1;
+        private boolean looping = true;
 
-        public short WrappingGetIndex(double index) {
+        private short WrappingGetIndex(double index) {
             return (short) lerp(data[wrapind((int) Math.floor(index))],
                     data[wrapind(((int) Math.floor(index)) + 1)],
                     index - Math.floor(index));
@@ -31,7 +31,7 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
             return i;
         }
 
-        public short Get() {
+        private short Get() {
             try {
                 if (data == null)
                     return 0;
@@ -54,11 +54,11 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
             }
         }
 
-        public JAVAX_Channel() {
+        private Channel() {
 
         }
 
-        public short Scale(short a, double V) {
+        private short Scale(short a, double V) {
             double b = a * V;
             if (b > 32767)
                 b = 32767;
@@ -67,7 +67,7 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
             return (short) b;
         }
 
-        public short[] CreateData(int amount) {
+        private short[] CreateData(int amount) {
             short[] s = new short[amount * 2];
             for (int px = 0; px < amount; px++) {
                 short V = Get();
@@ -77,7 +77,12 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
             return s;
         }
 
-        @Override
+        private double lerp(double s, double s0, double d) {
+            double diff = s0 - s;
+            diff *= d;
+            return s + diff;
+        }
+
         public void playSound(double Pitch, double VolL, double VolR,
                               short[] sound, boolean isLooping) {
             VL = VolL;
@@ -96,33 +101,23 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
             looping = isLooping;
         }
 
-        @Override
         public void setVolume(double VolL, double VolR) {
             VL = VolL;
             VR = VolR;
         }
 
-        @Override
         public double volL() {
             return VL;
         }
 
-        @Override
         public double volR() {
             return VR;
         }
 
-        private double lerp(double s, double s0, double d) {
-            double diff = s0 - s;
-            diff *= d;
-            return s + diff;
-        }
-
     }
 
-    @Override
-    public IChannel createChannel() {
-        JAVAX_Channel jc = new JAVAX_Channel();
+    public Channel createChannel() {
+        Channel jc = new Channel();
         for (int p = 0; p < channels.length; p++) {
             if (channels[p] == null) {
                 channels[p] = jc;
@@ -137,7 +132,7 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
         short[] data = new short[amount * 2];
         int[] L = new int[amount];
         int[] R = new int[amount];
-        for (JAVAX_Channel js : channels) {
+        for (Channel js : channels) {
             if (js == null)
                 continue;
             short[] r = js.CreateData(amount);
@@ -161,8 +156,7 @@ public class RawAudioToAudioDriver implements ISoundDriver, IRawAudioDriver.IRaw
         return data;
     }
 
-    @Override
-    public void deleteChannel(IChannel ic) {
+    public void deleteChannel(Channel ic) {
         for (int p = 0; p < channels.length; p++) {
             if (channels[p] == ic)
                 channels[p] = null;
