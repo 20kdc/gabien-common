@@ -52,6 +52,7 @@ public class UITextBox extends UIElement {
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
                 textCStr = text;
                 onEdit.run();
+                igd.clearKeys();
             }
         }
         UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected, height);

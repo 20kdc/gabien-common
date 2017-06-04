@@ -56,7 +56,7 @@ public class UINumberBox extends UIElement {
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
                 editingCNumber = number;
                 onEdit.run();
-                selected = false;
+                igd.clearKeys();
             }
             number = NNum;
             editingNLast = number;
