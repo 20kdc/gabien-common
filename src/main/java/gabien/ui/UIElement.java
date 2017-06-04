@@ -15,8 +15,7 @@ public abstract class UIElement {
     }
 
     public Rect getBounds() {
-        Rect r = new Rect(elementBounds.x, elementBounds.y, elementBounds.width, elementBounds.height);
-        return r;
+        return new Rect(elementBounds.x, elementBounds.y, elementBounds.width, elementBounds.height);
     }
 
     public abstract void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd);
