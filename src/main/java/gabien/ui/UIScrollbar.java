@@ -24,16 +24,25 @@ public class UIScrollbar extends UIElement {
         Rect bounds = getBounds();
         int margin = (vertical ? bounds.width : bounds.height) / 8;
         int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
+        // within the nub & area, margin is repeated to add shading
 
         double scalingFactor = 1.0 / ((vertical ? bounds.height : bounds.width) - ((margin * 2) + nub));
 
         igd.clearRect(64, 64, 64, ox, oy, bounds.width, bounds.height);
         igd.clearRect(32, 32, 32, ox + margin, oy + margin, bounds.width - (margin * 2), bounds.height - (margin * 2));
+        igd.clearRect(16, 16, 16, ox + (margin * 2), oy + (margin * 2), bounds.width - (margin * 4), bounds.height - (margin * 4));
+
+        int nubX, nubY;
         if (vertical) {
-            igd.clearRect(255, 255, 255, ox + margin, oy + margin + ((int) (scrollPoint / scalingFactor)), nub, nub);
+            nubX = ox + margin;
+            nubY = oy + margin + ((int) Math.ceil(scrollPoint / scalingFactor));
         } else {
-            igd.clearRect(255, 255, 255, ox + margin + ((int) (scrollPoint / scalingFactor)), oy + margin, nub, nub);
+            nubX = ox + margin + ((int) Math.ceil(scrollPoint / scalingFactor));
+            nubY = oy + margin;
         }
+
+        igd.clearRect(192, 192, 192, nubX, nubY, nub, nub);
+        igd.clearRect(255, 255, 255, nubX + margin, nubY + margin, nub - (margin * 2), nub - (margin * 2));
     }
 
     @Override
