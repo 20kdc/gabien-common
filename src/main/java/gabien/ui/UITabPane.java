@@ -14,9 +14,10 @@ import gabien.IGrInDriver;
 public class UITabPane extends UIPanel {
     public String[] tabNames;
     public UIElement[] tabElems;
+    // Don't write to this. Might change to getter in future
     public int tab = 0;
-    public int tabTextHeight = 8;
-    public boolean tabUpdated = false;
+    private boolean tabUpdated = false;
+    public final int tabTextHeight;
     private boolean shortTabs = false;
     // This is used as the basis for actual calculations.
     public int tabBarHeight = 0;
@@ -85,16 +86,20 @@ public class UITabPane extends UIPanel {
             for (int i = 0; i < tabElems.length; i++) {
                 pos += UILabel.getTextLength(getVisibleTabName(i), tabTextHeight) + 8;
                 if (x < pos) {
-                    allElements.clear();
-                    allElements.add(tabElems[i]);
-                    if (tab != i)
-                        tabUpdated = true;
-                    tab = i;
+                    selectTab(i);
                     return;
                 }
             }
             return;
         }
         super.handleClick(x, y, button);
+    }
+
+    public void selectTab(int i) {
+        allElements.clear();
+        allElements.add(tabElems[i]);
+        if (tab != i)
+            tabUpdated = true;
+        tab = i;
     }
 }

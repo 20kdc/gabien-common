@@ -61,12 +61,9 @@ public class UIPanel extends UIElement {
 
     @Override
     public void handleDrag(int x, int y) {
-        for (UIElement uie : allElements) {
-            Rect r = uie.getBounds();
-            if (r.contains(x, y)) {
-                uie.handleDrag(x - r.x, y - r.y);
-                return;
-            }
+        if (selectedElement != null) {
+            Rect r = selectedElement.getBounds();
+            selectedElement.handleDrag(x - r.x, y - r.y);
         }
     }
 
