@@ -128,8 +128,6 @@ public interface IGrInDriver extends IGrDriver {
 
     boolean flush(); // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
 
-    void shutdown(); // Immediately end this IGrInDriver.
-
     // -- Basic Keyboard Input
 
     boolean isKeyDown(int KEYID);

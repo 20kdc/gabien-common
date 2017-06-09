@@ -16,11 +16,11 @@ public interface IGrDriver {
 
     void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IGrInDriver.IImage i);
 
-    // Support optional but recommended. Lack of support should result in a RuntimeException.
+    // Support optional but recommended. Lack of support should result in no-op.
     void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IGrInDriver.IImage i);
 
     // Support optional. Should not be used unless absolutely required - cannot be scissored.
-    // Lack of support should result in a RuntimeException. When scissoring, this is just directly forwarded - nothing can be done here.
+    // Lack of support should result in no-op. When scissoring, this is just directly forwarded - nothing can be done here.
     void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i);
 
     // Now as official as you can get for a graphics interface nobody uses.
@@ -34,4 +34,7 @@ public interface IGrDriver {
     void clearAll(int i, int i0, int i1);
 
     void clearRect(int r, int g, int b, int x, int y, int width, int height);
+
+    // Stop all drawing operations. Makes an OsbDriver unusable.
+    void shutdown();
 }
