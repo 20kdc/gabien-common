@@ -67,4 +67,12 @@ public class UIPanel extends UIElement {
         }
     }
 
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        for (UIElement uie : allElements) {
+            Rect r = uie.getBounds();
+            if (r.contains(x, y))
+                uie.handleMousewheel(x - r.x, y - r.y, north);
+        }
+    }
 }

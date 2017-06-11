@@ -27,6 +27,11 @@ public abstract class UIElement {
 
     }
 
+    // Almost never used.
+    public void handleMousewheel(int x, int y, boolean north) {
+
+    }
+
     // Useful for various things. 'y' renamed to 'i' to shut up warnings.
     public static int sensibleCellDiv(int i, int sz) {
         int r = i / sz;

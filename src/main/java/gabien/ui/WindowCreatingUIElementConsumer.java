@@ -69,6 +69,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             } else if (aw.igd.getMouseDown()) {
                 aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
             }
+            if (aw.igd.getMousewheelJustDown())
+                aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
             aw.igd.flush();
             if (aw.ue instanceof IWindowElement) {
                 if (((IWindowElement) (aw.ue)).wantsSelfClose()) {

@@ -96,4 +96,14 @@ public class UIScrollLayout extends UIPanel {
         super.setBounds(r);
         runLayout();
     }
+
+    // Don't even bother thinking about inner scroll views.
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        scrollbar.scrollPoint += north ? -0.1 : 0.1;
+        if (scrollbar.scrollPoint < 0)
+            scrollbar.scrollPoint = 0;
+        if (scrollbar.scrollPoint > 1)
+            scrollbar.scrollPoint = 1;
+    }
 }

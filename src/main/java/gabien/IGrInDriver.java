@@ -158,6 +158,10 @@ public interface IGrInDriver extends IGrDriver {
     // return true again for any other call
     // until another press happens.
 
+    boolean getMousewheelJustDown();
+    // True means north, false means south.
+    boolean getMousewheelDir();
+
     int getMouseButton();// Get the Mouse button currently pressed.
     // 0:None 1:Left,3:Right
     // if it's completely impossible to provide 320x240,or the player requests

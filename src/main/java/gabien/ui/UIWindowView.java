@@ -62,7 +62,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             if (currentlyFullscreen != null)
                 if (remaining != 0)
                     continue;
-            boolean winSelected = selected && (remaining == 0);
+            boolean winSelected = selected && (!backingSelected) && (remaining == 0);
             Rect b = uie.getBounds();
             igd.clearRect(0, 64, 192, ox + b.x + b.width - 16, oy + b.y + b.height - 16, 20, 20);
             UILabel.drawLabel(igd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.toString(), winSelected, windowTextHeight);
@@ -73,6 +73,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
         windowList.removeAll(wantsDeleting);
     }
 
+    // Note: -1 is a special parameter to this which means "do not actually do anything other than selection"
     @Override
     public void handleClick(int x, int y, int button) {
         draggingWindow = false;
@@ -97,7 +98,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                 backingSelected = false;
                 windowList.remove(index);
                 windowList.addLast(uie);
-                uie.handleClick(x - innerWindow.x, y - innerWindow.y, button);
+                if (button != -1)
+                    uie.handleClick(x - innerWindow.x, y - innerWindow.y, button);
                 dragInWindow = true;
                 return;
             }
@@ -145,7 +147,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                 clearKeysLater = true;
             backingSelected = true;
             draggingBackend = true;
-            backing.handleClick(x, y, button);
+            if (button != -1)
+                backing.handleClick(x, y, button);
         }
     }
 
@@ -198,6 +201,22 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
         }
         lastMX = x;
         lastMY = y;
+    }
+
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        // Firstly, simulate a click.
+        handleClick(x, y, -1);
+        // Use the currently selected whatever it is.
+        if (backingSelected) {
+            backing.handleMousewheel(x, y, north);
+        } else {
+            if (windowList.size() > 0) {
+                UIElement window = windowList.getLast();
+                Rect b = window.getBounds();
+                window.handleMousewheel(x - b.x, y - b.y, north);
+            }
+        }
     }
 
     public int getWindowFrameHeight() {

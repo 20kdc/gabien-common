@@ -136,6 +136,16 @@ public class ScissorGrInDriver implements IGrInDriver {
     }
 
     @Override
+    public boolean getMousewheelJustDown() {
+        return inner.getMousewheelJustDown();
+    }
+
+    @Override
+    public boolean getMousewheelDir() {
+        return inner.getMousewheelDir();
+    }
+
+    @Override
     public int getMouseButton() {
         return inner.getMouseButton();
     }

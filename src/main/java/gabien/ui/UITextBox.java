@@ -36,9 +36,12 @@ public class UITextBox extends UIElement {
         }
     };
 
+    private boolean tempDisableSelection = false;
+
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime,
                                 boolean selected, IGrInDriver igd) {
+        selected &= tempDisableSelection;
         if (!textLastSeen.equals(text)) {
             textCStr = text;
             textLastSeen = text;
@@ -60,5 +63,6 @@ public class UITextBox extends UIElement {
 
     @Override
     public void handleClick(int x, int y, int button) {
+        tempDisableSelection = false;
     }
 }

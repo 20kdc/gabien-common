@@ -37,8 +37,11 @@ public class UINumberBox extends UIElement {
         }
     };
 
+    private boolean tempDisableSelection = false;
+
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
+        selected &= tempDisableSelection;
         if (number != editingNLast) {
             editingCNumber = number;
             editingNLast = number;
@@ -57,6 +60,7 @@ public class UINumberBox extends UIElement {
                 editingCNumber = number;
                 onEdit.run();
                 igd.clearKeys();
+                tempDisableSelection = true;
             }
             number = NNum;
             editingNLast = number;
@@ -66,6 +70,7 @@ public class UINumberBox extends UIElement {
 
     @Override
     public void handleClick(int x, int y, int button) {
+        tempDisableSelection = false;
     }
 
 }
