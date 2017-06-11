@@ -41,7 +41,7 @@ public class UITextBox extends UIElement {
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime,
                                 boolean selected, IGrInDriver igd) {
-        selected &= tempDisableSelection;
+        selected &= !tempDisableSelection;
         if (!textLastSeen.equals(text)) {
             textCStr = text;
             textLastSeen = text;
@@ -56,6 +56,7 @@ public class UITextBox extends UIElement {
                 textCStr = text;
                 onEdit.run();
                 igd.clearKeys();
+                tempDisableSelection = true;
             }
         }
         UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected, height);

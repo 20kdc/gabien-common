@@ -41,7 +41,7 @@ public class UINumberBox extends UIElement {
 
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
-        selected &= tempDisableSelection;
+        selected &= !tempDisableSelection;
         if (number != editingNLast) {
             editingCNumber = number;
             editingNLast = number;
