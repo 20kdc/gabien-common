@@ -22,12 +22,14 @@ public class UIScrollLayout extends UIPanel {
     public UIScrollbar scrollbar;
     public LinkedList<UIElement> panels = new LinkedList<UIElement>();
     public int scrollLength = 0;
+    private double lastScrollPoint = -1;
 
     public UIScrollLayout(boolean vertical) {
         scrollbar = new UIScrollbar(vertical);
     }
 
     public void runLayout() {
+        lastScrollPoint = -1;
         Rect r = getBounds();
         allElements.clear();
         allElements.add(scrollbar);
@@ -51,6 +53,9 @@ public class UIScrollLayout extends UIPanel {
 
     // Lays out the elements with the current parameters.
     private void layoutScrollbounds() {
+        if (lastScrollPoint == scrollbar.scrollPoint)
+            return;
+        lastScrollPoint = scrollbar.scrollPoint;
         allElements.clear();
         Rect bounds = getBounds();
         int scrollHeight = scrollLength - (scrollbar.vertical ? bounds.height : bounds.width);
@@ -100,6 +105,13 @@ public class UIScrollLayout extends UIPanel {
     // Don't even bother thinking about inner scroll views.
     @Override
     public void handleMousewheel(int x, int y, boolean north) {
+        Rect bounds = getBounds();
+        int scrollHeight = scrollLength - (scrollbar.vertical ? bounds.height : bounds.width);
+        if (scrollHeight <= 0) {
+            // No visible scrollbar -> don't scroll
+            super.handleMousewheel(x, y, north);
+            return;
+        }
         scrollbar.scrollPoint += north ? -0.1 : 0.1;
         if (scrollbar.scrollPoint < 0)
             scrollbar.scrollPoint = 0;
