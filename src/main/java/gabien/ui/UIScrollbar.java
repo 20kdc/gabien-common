@@ -67,4 +67,13 @@ public class UIScrollbar extends UIElement {
         if (scrollPoint > 1)
             scrollPoint = 1;
     }
+
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        scrollPoint += north ? -0.1 : 0.1;
+        if (scrollPoint < 0)
+            scrollPoint = 0;
+        if (scrollPoint > 1)
+            scrollPoint = 1;
+    }
 }

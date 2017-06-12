@@ -112,10 +112,6 @@ public class UIScrollLayout extends UIPanel {
             super.handleMousewheel(x, y, north);
             return;
         }
-        scrollbar.scrollPoint += north ? -0.1 : 0.1;
-        if (scrollbar.scrollPoint < 0)
-            scrollbar.scrollPoint = 0;
-        if (scrollbar.scrollPoint > 1)
-            scrollbar.scrollPoint = 1;
+        scrollbar.handleMousewheel(x, y, north);
     }
 }
