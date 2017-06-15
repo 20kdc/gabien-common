@@ -87,10 +87,9 @@ public class UITabPane extends UIPanel {
                 pos += UILabel.getTextLength(getVisibleTabName(i), tabTextHeight) + 8;
                 if (x < pos) {
                     selectTab(i);
-                    return;
+                    break;
                 }
             }
-            return;
         }
         super.handleClick(x, y, button);
     }
