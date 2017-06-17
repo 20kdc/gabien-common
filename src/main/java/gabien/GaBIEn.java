@@ -59,6 +59,7 @@ public class GaBIEn {
         return internal.makeGrIn(name, w, h, specs);
     }
 
+    // Note: The buffer does not have an alpha channel.
     public static IOsbDriver makeOffscreenBuffer(int w, int h) {
         return internal.makeOffscreenBuffer(w, h);
     }
@@ -67,6 +68,7 @@ public class GaBIEn {
         return internal.getOutFile(string);
     }
 
+    // This has to at least support PNGs and BMPs.
     public static IGrInDriver.IImage getImage(String a) {
         return internal.getImage(a);
     }

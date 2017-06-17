@@ -119,6 +119,9 @@ public interface IGrInDriver extends IGrDriver {
 
         // 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
         int[] getPixels();
+
+        // Creates a PNG file.
+        byte[] createPNG();
     }
 
     // -- Window management functions --
