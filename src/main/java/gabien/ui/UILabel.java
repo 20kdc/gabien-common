@@ -11,7 +11,7 @@ import gabien.IGrInDriver;
 import gabien.IGrInDriver.IImage;
 
 public class UILabel extends UIPanel {
-    public static boolean iAmAbsolutelySureIHateTheFont = false;
+    public static String fontOverride;
 
     public String Text = "No notice text.";
     public int textHeight;
@@ -46,7 +46,7 @@ public class UILabel extends UIPanel {
         for (int p = 0; p < l; p++)
             if (text.charAt(p) >= 128)
                 return true;
-        return iAmAbsolutelySureIHateTheFont;
+        return fontOverride != null;
     }
 
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean bck, int height) {

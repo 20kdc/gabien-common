@@ -47,7 +47,7 @@ public interface IGaBIEn {
 
     //On SingleWindowApp-style platforms,where windowing doesn't exist,ignore windowspecs.
     IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs);
-    IOsbDriver makeOffscreenBuffer(int w, int h);
+    IOsbDriver makeOffscreenBuffer(int w, int h, boolean alpha);
 
     WindowSpecs defaultWindowSpecs(String name, int w, int h);
 
@@ -65,4 +65,10 @@ public interface IGaBIEn {
     void hintFlushAllTheCaches();
 
     int measureText(int i, String text);
+
+    // Gets font overrides UILabel can use.
+    // Note that IGrDriver is expected to honor UILabel font override if given.
+    // The first font override is the default font (if drawText is called on a driver without an override)
+    // Note that this implies at least one font will be listed.
+    String[] getFontOverrides();
 }

@@ -60,8 +60,8 @@ public class GaBIEn {
     }
 
     // Note: The buffer does not have an alpha channel.
-    public static IOsbDriver makeOffscreenBuffer(int w, int h) {
-        return internal.makeOffscreenBuffer(w, h);
+    public static IOsbDriver makeOffscreenBuffer(int w, int h, boolean alpha) {
+        return internal.makeOffscreenBuffer(w, h, alpha);
     }
 
     public static OutputStream getOutFile(String string) {
@@ -86,5 +86,9 @@ public class GaBIEn {
 
     public static int measureText(int i, String text) {
         return internal.measureText(i, text);
+    }
+
+    public static String[] getFontOverrides() {
+        return internal.getFontOverrides();
     }
 }
