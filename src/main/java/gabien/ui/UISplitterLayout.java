@@ -6,17 +6,25 @@ package gabien.ui;
 
 /**
  * Covers simple cases where you want to split something into two.
- * The split is between A's initial value and B's initial value.
+ * If weight is used, the split is between A laid out by initial value and B laid out by initial value (as would make sense for a weight).
+ * If dividend/divisor is used, the initial values are zeroed, thus giving an exact fractional split.
  * Created on 6/17/17.
  */
 public class UISplitterLayout extends UIPanel {
     public final UIElement a;
     public final UIElement b;
-    public final int aInitial;
-    public final int bInitial;
+    private int aInitial;
+    private int bInitial;
     public final boolean vertical;
+
     // Needs a relayout after being changed.
     public double splitPoint;
+
+    public UISplitterLayout(UIElement aA, UIElement bA, boolean v, int dividend, int divisor) {
+        this(aA, bA, v, ((double) dividend) / divisor);
+        aInitial = 0;
+        bInitial = 0;
+    }
     public UISplitterLayout(UIElement aA, UIElement bA, boolean v, double weight) {
         vertical = v;
         a = aA;
