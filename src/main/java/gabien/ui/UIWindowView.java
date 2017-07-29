@@ -153,6 +153,13 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
     }
 
     public void accept(UIElement win) {
+        if (upcomingWindowList.contains(win)) {
+            System.out.println("Warning: Window already in upcoming window list, this would just break stuff");
+            return;
+        } else if (windowList.contains(win)) {
+            System.out.println("Warning: Window already in window list, this would just break stuff");
+            return;
+        }
         Rect r = win.getBounds();
         Rect g = getBounds();
         int area = g.width - r.width;
