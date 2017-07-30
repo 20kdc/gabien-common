@@ -10,7 +10,7 @@ import java.io.OutputStream;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
-    private static SimpleMixer soundImpl;
+    private static IGrInDriver.IImage errorImage;
 
     public static double getTime() {
         return internal.getTime();
@@ -68,7 +68,9 @@ public class GaBIEn {
         return internal.getOutFile(string);
     }
 
-    // This has to at least support PNGs and BMPs.
+    // This has to at least support JPGs, PNGs and BMPs.
+    // On error, it should return an "error" image. This "error" image is unique, and can be gotten via getErrorImage.
+
     public static IGrInDriver.IImage getImage(String a) {
         return internal.getImage(a);
     }
@@ -76,6 +78,21 @@ public class GaBIEn {
         return internal.getImageCK(a, r, g, b);
     }
 
+    public static IGrInDriver.IImage getErrorImage() {
+        if (errorImage == null) {
+            errorImage = createImage(new int[] {
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF
+            }, 8, 8);
+        }
+        return errorImage;
+    }
     public static IGrInDriver.IImage createImage(int[] colours, int width, int height) {
         return internal.createImage(colours, width, height);
     }
