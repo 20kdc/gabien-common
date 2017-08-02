@@ -46,6 +46,11 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver {
     }
 
     @Override
+    public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i, boolean blendSub) {
+        target.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
+    }
+
+    @Override
     public void drawText(int x, int y, int r, int g, int b, int i, String text) {
         target.drawText(x, y, r, g, b, i, text);
     }

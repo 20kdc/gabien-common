@@ -22,6 +22,7 @@ public interface IGrDriver {
     // Support optional. Should not be used unless absolutely required - cannot be scissored.
     // Lack of support should result in no-op. When scissoring, this is just directly forwarded - nothing can be done here.
     void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i);
+    void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i, boolean blendSub);
 
     // Now as official as you can get for a graphics interface nobody uses.
     // This is "The Way" that text is drawn if the "styled" way doesn't work.

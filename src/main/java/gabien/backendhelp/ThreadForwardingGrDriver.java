@@ -200,6 +200,29 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver 
     }
 
     @Override
+    public void blendRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IGrInDriver.IImage i, final boolean blendSub) {
+        if (i == null)
+            throw new NullPointerException();
+        cmdUnwait();
+        final Runnable[] block;
+        if (i instanceof ThreadForwardingGrDriver) {
+            block = ((ThreadForwardingGrDriver) i).createBlock();
+        } else {
+            block = null;
+        }
+        cmdSubmitCore(new Runnable() {
+            @Override
+            public void run() {
+                if (block != null)
+                    block[0].run();
+                target.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
+                if (block != null)
+                    block[1].run();
+            }
+        });
+    }
+
+    @Override
     public void drawText(final int x, final int y, final int r, final int g, final int b, final int i, final String text) {
         cmdUnwait();
         cmdSubmitCore(new Runnable() {

@@ -4,6 +4,7 @@
  */
 package gabien;
 
+import gabien.backendhelp.Blender;
 import gabien.ui.Rect;
 
 /**
@@ -44,6 +45,11 @@ public class ScissorGrInDriver implements IGrInDriver {
     public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i) {
         // Nothing can be done here.
         inner.blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i);
+    }
+
+    @Override
+    public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
+        inner.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
     }
 
     @Override
