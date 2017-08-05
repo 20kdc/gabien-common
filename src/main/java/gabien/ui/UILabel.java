@@ -100,8 +100,6 @@ public class UILabel extends UIPanel {
 
     private static int drawLabelx1(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected) {
         IImage i = GaBIEn.getImage("textButton.png");
-        if (wid == 0)
-            wid = getRecommendedSize(string, 8).width;
         igd.blitImage(selected ? 3 : 0, 10, 1, 9, ox, oy, i);
         for (int pp = 1; pp < wid - 1; pp++)
             igd.blitImage(selected ? 4 : 1, 10, 1, 9, ox + pp, oy, i);
@@ -113,8 +111,6 @@ public class UILabel extends UIPanel {
 
     private static int drawLabelx2(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected) {
         IImage i = GaBIEn.getImage("textButton.png");
-        if (wid == 0)
-            wid = getRecommendedSize(string, 16).width;
         int selectedOfs = selected ? 6 : 0;
         igd.blitImage(6 + selectedOfs, 20, 2, 18, ox, oy, i);
         for (int pp = 2; pp < wid - 1; pp += 2)
@@ -132,8 +128,6 @@ public class UILabel extends UIPanel {
             return drawLabelx1(igd, wid, ox, oy, string, selected);
         // switch from bitmaps to something else
         Rect res = getRecommendedSize(string, height);
-        if (wid == 0)
-            wid = res.width;
         if (selected) {
             igd.clearRect(255, 255, 255, ox, oy, wid, res.height);
         } else {

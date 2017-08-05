@@ -6,6 +6,7 @@
 package gabien.ui;
 
 import gabien.IGrInDriver;
+import gabien.ScissorGrInDriver;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -48,6 +49,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
         int closeButtonMargin = getCloseButtonMargin();
         int closeButtonSize = getCloseButtonSize();
         int windowFrameHeight = getWindowFrameHeight();
+        ScissorGrInDriver wIgd = new ScissorGrInDriver();
+        wIgd.inner = igd;
         for (UIElement uie : windowList) {
             if (uie instanceof IWindowElement)
                 if (((IWindowElement) uie).wantsSelfClose()) {
@@ -64,11 +67,18 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                     continue;
             boolean winSelected = selected && (!backingSelected) && (remaining == 0);
             Rect b = uie.getBounds();
+
             igd.clearRect(0, 64, 192, ox + b.x + b.width - 16, oy + b.y + b.height - 16, 20, 20);
-            UILabel.drawLabel(igd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.toString(), winSelected, windowTextHeight);
-            igd.clearRect(128, 64, 64, ox + b.x + b.width - (closeButtonSize + closeButtonMargin), (oy + b.y) - (closeButtonSize + closeButtonMargin), closeButtonSize, closeButtonSize);
-            igd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
-            uie.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, igd);
+
+            wIgd.workTop = (oy + b.y) - windowFrameHeight;
+            wIgd.workBottom = (oy + b.y) + b.height;
+            wIgd.workLeft = ox + b.x;
+            wIgd.workRight = (ox + b.x) + b.width;
+
+            UILabel.drawLabel(wIgd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.toString(), winSelected, windowTextHeight);
+            wIgd.clearRect(128, 64, 64, ox + b.x + b.width - (closeButtonSize + closeButtonMargin), (oy + b.y) - (closeButtonSize + closeButtonMargin), closeButtonSize, closeButtonSize);
+            wIgd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
+            uie.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, wIgd);
         }
         windowList.removeAll(wantsDeleting);
     }

@@ -30,6 +30,10 @@ public class Rect {
     // If this is true, line intersection start is Math.max(A, B)
     //  and line intersection width is Math.min(A + AL, B + BL) - start
     private boolean lineIntersects(int A, int AL, int B, int BL) {
+        if (AL <= 0)
+            return false;
+        if (BL <= 0)
+            return false;
         if (A >= B)
             if (A < B + BL)
                 return true;
