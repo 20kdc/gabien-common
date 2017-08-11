@@ -65,9 +65,13 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             aw.igd.clearAll(0, 0, 0);
             aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
             if (aw.igd.getMouseJustDown()) {
-                aw.ue.handleClick(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMouseButton());
+                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMouseButton(), true));
+                aw.expectingMouseLoss = true;
             } else if (aw.igd.getMouseDown()) {
                 aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
+            } else if (aw.expectingMouseLoss) {
+                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), 0, false));
+                aw.expectingMouseLoss = false;
             }
             if (aw.igd.getMousewheelJustDown())
                 aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
@@ -87,5 +91,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         IGrInDriver igd;
         UIElement ue;
         int lastKnownWidth, lastKnownHeight;
+        boolean expectingMouseLoss;
     }
 }

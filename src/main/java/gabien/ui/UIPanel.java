@@ -47,13 +47,13 @@ public class UIPanel extends UIElement {
 
     //The click is within the (0,0,my width-1,my textHeight-1) range.
     @Override
-    public void handleClick(int x, int y, int button) {
+    public void handleClick(MouseAction ma) {
         selectedElement = null;
         for (UIElement uie : allElements) {
             Rect r = uie.getBounds();
-            if (r.contains(x, y)) {
+            if (r.contains(ma.x, ma.y)) {
                 selectedElement = uie;
-                uie.handleClick(x - r.x, y - r.y, button);
+                uie.handleClick(ma.transform(r.x, r.y));
                 return;
             }
         }

@@ -24,8 +24,10 @@ public class UIButton extends UIElement {
     }
 
     @Override
-    public void handleClick(int x, int y, int button) {
-        if (button == 1) {
+    public void handleClick(MouseAction action) {
+        if (!action.down)
+            return;
+        if (action.button == 1) {
             onClick.run();
             pressedTime = 0.5;
         }

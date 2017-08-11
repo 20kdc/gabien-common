@@ -59,9 +59,11 @@ public class UIPopupMenu extends UIElement {
     }
 
     @Override
-    public void handleClick(int x, int y, int button) {
+    public void handleClick(MouseAction ma) {
+        if (!ma.down)
+            return;
         int sz = UILabel.getRecommendedSize("", textHeight).height;
-        int b = UIElement.sensibleCellDiv(y, sz);
+        int b = UIElement.sensibleCellDiv(ma.y, sz);
         if (b < 0)
             return;
         if (b >= menuItems.length)

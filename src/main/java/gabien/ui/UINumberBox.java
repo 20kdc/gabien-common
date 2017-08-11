@@ -69,8 +69,9 @@ public class UINumberBox extends UIElement {
     }
 
     @Override
-    public void handleClick(int x, int y, int button) {
-        tempDisableSelection = false;
+    public void handleClick(MouseAction ma) {
+        if (ma.down)
+            tempDisableSelection = false;
     }
 
 }
