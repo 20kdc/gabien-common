@@ -85,13 +85,13 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
 
     // Note: -1 is a special parameter to this which means "do not actually do anything other than selection"
     @Override
-    public void handleClick(MouseAction ma) {
+    public void handleClick(int x, int y, int button) {
         draggingWindow = false;
         dragInWindow = false;
         resizingWindow = false;
         draggingBackend = false;
-        lastMX = ma.x;
-        lastMY = ma.y;
+        lastMX = x;
+        lastMY = y;
         int index = windowList.size();
         int frameHeight = getWindowFrameHeight();
         int closeSize = getCloseButtonSize();
@@ -103,55 +103,51 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
             Rect windowSz = new Rect(innerWindow.x + innerWindow.width - 16, innerWindow.y + innerWindow.height - 16, 24, 24);
             Rect windowX = new Rect((windowFrame.x + windowFrame.width) - (closeMargin + closeSize), innerWindow.y - (closeMargin + closeSize), closeSize, closeSize);
-            if (innerWindow.contains(ma.x, ma.y)) {
+            if (innerWindow.contains(x, y)) {
                 clearKeysLater = true;
                 backingSelected = false;
                 windowList.remove(index);
                 windowList.addLast(uie);
-                if (ma.button != -1)
-                    uie.handleClick(ma.transform(innerWindow.x, innerWindow.y));
+                if (button != -1)
+                    uie.handleClick(x - innerWindow.x, y - innerWindow.y, button);
                 dragInWindow = true;
                 return;
             }
-            if (windowFrame.contains(ma.x, ma.y)) {
-                if (ma.down) {
-                    clearKeysLater = true;
-                    backingSelected = false;
-                    windowList.remove(index);
-                    if (ma.button == 1) {
-                        if (windowX.contains(ma.x, ma.y)) {
-                            if (currentlyFullscreen != null)
-                                currentlyFullscreen = null;
-                            if (uie instanceof IWindowElement)
-                                ((IWindowElement) uie).windowClosed();
-                            return;
-                        } else {
-                            draggingWindow = true;
-                        }
-                    }
-                    windowList.addLast(uie);
-                    if (ma.button == 3) {
-                        if (currentlyFullscreen != null) {
-                            uie.setBounds(currentlyFullscreen);
+            if (windowFrame.contains(x, y)) {
+                clearKeysLater = true;
+                backingSelected = false;
+                windowList.remove(index);
+                if (button == 1) {
+                    if (windowX.contains(x, y)) {
+                        if (currentlyFullscreen != null)
                             currentlyFullscreen = null;
-                            return;
-                        }
-                        currentlyFullscreen = innerWindow;
-                        uie.setBounds(new Rect(0, frameHeight, getBounds().width, getBounds().height - frameHeight));
+                        if (uie instanceof IWindowElement)
+                            ((IWindowElement) uie).windowClosed();
+                        return;
+                    } else {
+                        draggingWindow = true;
                     }
+                }
+                windowList.addLast(uie);
+                if (button == 3) {
+                    if (currentlyFullscreen != null) {
+                        uie.setBounds(currentlyFullscreen);
+                        currentlyFullscreen = null;
+                        return;
+                    }
+                    currentlyFullscreen = innerWindow;
+                    uie.setBounds(new Rect(0, frameHeight, getBounds().width, getBounds().height - frameHeight));
                 }
                 return;
             }
             // if it hasn't hit the other two, check for the sizer
-            if (windowSz.contains(ma.x, ma.y)) {
-                if (ma.down) {
-                    clearKeysLater = true;
-                    backingSelected = false;
-                    windowList.remove(index);
-                    windowList.addLast(uie);
-                    if (currentlyFullscreen == null)
-                        resizingWindow = true;
-                }
+            if (windowSz.contains(x, y)) {
+                clearKeysLater = true;
+                backingSelected = false;
+                windowList.remove(index);
+                windowList.addLast(uie);
+                if (currentlyFullscreen == null)
+                    resizingWindow = true;
                 return;
             }
         }
@@ -161,8 +157,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                 clearKeysLater = true;
             backingSelected = true;
             draggingBackend = true;
-            if (ma.button != -1)
-                backing.handleClick(ma);
+            if (button != -1)
+                backing.handleClick(x, y, button);
         }
     }
 
@@ -227,7 +223,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
     @Override
     public void handleMousewheel(int x, int y, boolean north) {
         // Firstly, simulate a click.
-        handleClick(new MouseAction(x, y, -1, true));
+        handleClick(x, y, -1);
         // Use the currently selected whatever it is.
         if (backingSelected) {
             backing.handleMousewheel(x, y, north);

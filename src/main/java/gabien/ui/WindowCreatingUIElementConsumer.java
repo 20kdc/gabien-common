@@ -9,6 +9,7 @@ import gabien.GaBIEn;
 import gabien.IGrInDriver;
 import gabien.WindowSpecs;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 
 /**
@@ -64,14 +65,18 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             // actually run!
             aw.igd.clearAll(0, 0, 0);
             aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
-
-            for (Integer i : aw.igd.getMouseJustDown())
-                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), i, true));
-            for (Integer i : aw.igd.getMouseJustUp())
-                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), i, false));
+            HashSet<Integer> justDown = aw.igd.getMouseJustDown();
+            if (justDown.size() > 0) {
+                int button = justDown.iterator().next();
+                aw.ue.handleClick(aw.igd.getMouseX(), aw.igd.getMouseY(), button);
+            }
+            HashSet<Integer> justUp = aw.igd.getMouseJustDown();
+            if (justUp.size() > 0)
+                if (aw.igd.getMouseDown().size() == 0) {
+                    // Fix later
+                }
             if (aw.igd.getMouseDown().size() > 0)
                 aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
-
             if (aw.igd.getMousewheelJustDown())
                 aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
             aw.igd.flush();

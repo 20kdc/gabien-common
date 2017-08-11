@@ -46,7 +46,7 @@ public class UIScrollbar extends UIElement {
     }
 
     @Override
-    public void handleClick(MouseAction ma) {
+    public void handleClick(int x, int y, int button) {
         // Do nothing.
     }
 

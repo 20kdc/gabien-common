@@ -49,13 +49,13 @@ public class UIPanel extends UIElement {
     // (NOTE: The behavior of selectedElement changing on mouse down & up is important,
     //         since it makes drag & drop applications easier to write.)
     @Override
-    public void handleClick(MouseAction ma) {
+    public void handleClick(int x, int y, int button) {
         selectedElement = null;
         for (UIElement uie : allElements) {
             Rect r = uie.getBounds();
-            if (r.contains(ma.x, ma.y)) {
+            if (r.contains(x, y)) {
                 selectedElement = uie;
-                uie.handleClick(ma.transform(r.x, r.y));
+                uie.handleClick(x - r.x, y - r.y, button);
                 return;
             }
         }

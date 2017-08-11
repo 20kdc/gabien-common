@@ -88,10 +88,8 @@ public class UITextButton extends UIElement {
     }
 
     @Override
-    public void handleClick(MouseAction ma) {
-        if (!ma.down)
-            return;
-        if (ma.button == 1) {
+    public void handleClick(int x, int y, int button) {
+        if (button == 1) {
             if (toggle) {
                 state = !state;
             } else {

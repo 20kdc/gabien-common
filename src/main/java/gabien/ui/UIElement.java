@@ -20,7 +20,8 @@ public abstract class UIElement {
 
     public abstract void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd);
 
-    public abstract void handleClick(MouseAction action);
+    //
+    public abstract void handleClick(int x, int y, int button);
 
     public void handleDrag(int x, int y) {
 

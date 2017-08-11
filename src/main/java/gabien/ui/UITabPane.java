@@ -80,20 +80,18 @@ public class UITabPane extends UIPanel {
     }
 
     @Override
-    public void handleClick(MouseAction ma) {
-        if (ma.y < tabBarHeight) {
-            if (ma.down) {
-                int pos = 0;
-                for (int i = 0; i < tabElems.length; i++) {
-                    pos += UILabel.getTextLength(getVisibleTabName(i), tabTextHeight) + 8;
-                    if (ma.x < pos) {
-                        selectTab(i);
-                        break;
-                    }
+    public void handleClick(int x, int y, int button) {
+        if (y < tabBarHeight) {
+            int pos = 0;
+            for (int i = 0; i < tabElems.length; i++) {
+                pos += UILabel.getTextLength(getVisibleTabName(i), tabTextHeight) + 8;
+                if (x < pos) {
+                    selectTab(i);
+                    break;
                 }
             }
         }
-        super.handleClick(ma);
+        super.handleClick(x, y, button);
     }
 
     public void selectTab(int i) {
