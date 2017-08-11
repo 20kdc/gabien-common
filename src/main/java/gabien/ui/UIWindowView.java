@@ -86,12 +86,9 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
     // Note: -1 is a special parameter to this which means "do not actually do anything other than selection"
     @Override
     public void handleClick(int x, int y, int button) {
-        draggingWindow = false;
-        dragInWindow = false;
-        resizingWindow = false;
-        draggingBackend = false;
-        lastMX = x;
-        lastMY = y;
+        // Just in case something goes wrong, this will disable all the lifecycle flags and make sure we have a fresh start.
+        // Will do nothing otherwise.
+        handleRelease(x, y);
         int index = windowList.size();
         int frameHeight = getWindowFrameHeight();
         int closeSize = getCloseButtonSize();
@@ -216,6 +213,26 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                 }
             }
         }
+        lastMX = x;
+        lastMY = y;
+    }
+
+    @Override
+    public void handleRelease(int x, int y) {
+        if (draggingBackend) {
+            backing.handleRelease(x, y);
+        } else if (dragInWindow) {
+            if (windowList.size() > 0) {
+                UIElement lastWindow = windowList.getLast();
+                Rect r = lastWindow.getBounds();
+                lastWindow.handleRelease(x - r.x, y - r.y);
+            }
+        }
+        // Disable all the lifecycle flags
+        draggingWindow = false;
+        dragInWindow = false;
+        resizingWindow = false;
+        draggingBackend = false;
         lastMX = x;
         lastMY = y;
     }

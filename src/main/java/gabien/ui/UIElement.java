@@ -20,10 +20,21 @@ public abstract class UIElement {
 
     public abstract void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd);
 
-    //
-    public abstract void handleClick(int x, int y, int button);
+    // Mouse events *always* follow the following order:
+    // Click, Drag, Release.
+    // Drag may be omitted, but click and release must not.
+    // Only one click/drag/release cycle may be active at a time
+    // (this is an assumption that is made everywhere, and drastically simplifies implementation)
+
+    public void handleClick(int x, int y, int button) {
+
+    }
 
     public void handleDrag(int x, int y) {
+
+    }
+
+    public void handleRelease(int x, int y) {
 
     }
 

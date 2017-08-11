@@ -65,18 +65,26 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             // actually run!
             aw.igd.clearAll(0, 0, 0);
             aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
+
+            // Handles the global click/drag/release cycle
+
             HashSet<Integer> justDown = aw.igd.getMouseJustDown();
             if (justDown.size() > 0) {
-                int button = justDown.iterator().next();
-                aw.ue.handleClick(aw.igd.getMouseX(), aw.igd.getMouseY(), button);
-            }
-            HashSet<Integer> justUp = aw.igd.getMouseJustDown();
-            if (justUp.size() > 0)
-                if (aw.igd.getMouseDown().size() == 0) {
-                    // Fix later
+                if (!aw.pendingRelease) {
+                    int button = justDown.iterator().next();
+                    aw.ue.handleClick(aw.igd.getMouseX(), aw.igd.getMouseY(), button);
+                    aw.pendingRelease = true;
                 }
-            if (aw.igd.getMouseDown().size() > 0)
+            }
+            if (aw.igd.getMouseDown().size() > 0) {
                 aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
+            } else {
+                if (aw.pendingRelease) {
+                    aw.ue.handleRelease(aw.igd.getMouseX(), aw.igd.getMouseY());
+                    aw.pendingRelease = false;
+                }
+            }
+
             if (aw.igd.getMousewheelJustDown())
                 aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
             aw.igd.flush();
@@ -95,5 +103,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         IGrInDriver igd;
         UIElement ue;
         int lastKnownWidth, lastKnownHeight;
+        public boolean pendingRelease;
     }
 }

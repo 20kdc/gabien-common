@@ -70,6 +70,14 @@ public class UIPanel extends UIElement {
     }
 
     @Override
+    public void handleRelease(int x, int y) {
+        if (selectedElement != null) {
+            Rect r = selectedElement.getBounds();
+            selectedElement.handleRelease(x - r.x, y - r.y);
+        }
+    }
+
+    @Override
     public void handleMousewheel(int x, int y, boolean north) {
         for (UIElement uie : allElements) {
             Rect r = uie.getBounds();
