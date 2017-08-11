@@ -6,6 +6,7 @@ package gabien.backendhelp;
 
 import gabien.IGrDriver;
 import gabien.IGrInDriver;
+import gabien.IImage;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,6 +63,18 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver 
     @Override
     public int getHeight() {
         return clientHeight;
+    }
+
+    @Override
+    public int[] getPixels() {
+        flushCmdBuf();
+        return target.getPixels();
+    }
+
+    @Override
+    public byte[] createPNG() {
+        flushCmdBuf();
+        return target.createPNG();
     }
 
     public void flushCmdBuf() {
@@ -131,7 +144,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver 
     // basic operations
 
     @Override
-    public void blitImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final IGrInDriver.IImage i) {
+    public void blitImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final IImage i) {
         if (i == null)
             throw new NullPointerException();
         cmdUnwait();
@@ -154,7 +167,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver 
     }
 
     @Override
-    public void blitScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final IGrInDriver.IImage i) {
+    public void blitScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final IImage i) {
         if (i == null)
             throw new NullPointerException();
         cmdUnwait();
@@ -177,7 +190,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver 
     }
 
     @Override
-    public void blitRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IGrInDriver.IImage i) {
+    public void blitRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IImage i) {
         if (i == null)
             throw new NullPointerException();
         cmdUnwait();
@@ -200,7 +213,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver 
     }
 
     @Override
-    public void blendRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IGrInDriver.IImage i, final boolean blendSub) {
+    public void blendRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IImage i, final boolean blendSub) {
         if (i == null)
             throw new NullPointerException();
         cmdUnwait();

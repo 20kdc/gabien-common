@@ -7,7 +7,7 @@ package gabien.ui;
 
 import gabien.GaBIEn;
 import gabien.IGrInDriver;
-import gabien.IGrInDriver.IImage;
+import gabien.IImage;
 
 public class UITextButton extends UIElement {
     public Runnable OnClick;

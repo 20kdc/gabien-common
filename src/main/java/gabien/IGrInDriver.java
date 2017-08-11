@@ -4,6 +4,8 @@
  */
 package gabien;
 
+import java.util.HashSet;
+
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
@@ -112,18 +114,6 @@ public interface IGrInDriver extends IGrDriver {
 
     int KEYS = 93;
 
-    interface IImage {
-        int getWidth();
-
-        int getHeight();
-
-        // 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
-        int[] getPixels();
-
-        // Creates a PNG file.
-        byte[] createPNG();
-    }
-
     // -- Window management functions --
 
     // Returns true if the display is still visible.
@@ -155,17 +145,19 @@ public interface IGrInDriver extends IGrDriver {
 
     int getMouseY();
 
-    boolean getMouseDown();
+    HashSet<Integer> getMouseDown();
 
-    boolean getMouseJustDown();// Note that if this returns true,it won't
+    // Note that if this returns true for a given button, it won't
     // return true again for any other call
     // until another press happens.
+    HashSet<Integer> getMouseJustDown();
+    HashSet<Integer> getMouseJustUp();
 
+    // This should really be 'JustScrolled', but I have enough refactors to do already
     boolean getMousewheelJustDown();
     // True means north, false means south.
     boolean getMousewheelDir();
 
-    int getMouseButton();// Get the Mouse button currently pressed.
     // 0:None 1:Left,3:Right
     // if it's completely impossible to provide 320x240,or the player requests
     // it,put the true values in and hope it works.

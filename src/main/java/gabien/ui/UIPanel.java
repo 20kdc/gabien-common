@@ -6,7 +6,7 @@
 package gabien.ui;
 
 import gabien.IGrInDriver;
-import gabien.IGrInDriver.IImage;
+import gabien.IImage;
 import gabien.ScissorGrInDriver;
 
 import java.util.LinkedList;

@@ -8,7 +8,7 @@ package gabien.ui;
 import gabien.GaBIEn;
 import gabien.IGrDriver;
 import gabien.IGrInDriver;
-import gabien.IGrInDriver.IImage;
+import gabien.IImage;
 
 public class UILabel extends UIPanel {
     public static String fontOverride;

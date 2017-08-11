@@ -6,6 +6,7 @@ package gabien.backendhelp;
 
 import gabien.IGrDriver;
 import gabien.IGrInDriver;
+import gabien.IImage;
 
 /**
  * Used to allow MT/non-MT implementations of a GrDriver.
@@ -31,22 +32,32 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver {
     }
 
     @Override
-    public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IGrInDriver.IImage i) {
+    public int[] getPixels() {
+        return target.getPixels();
+    }
+
+    @Override
+    public byte[] createPNG() {
+        return target.createPNG();
+    }
+
+    @Override
+    public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
         target.blitImage(srcx, srcy, srcw, srch, x, y, i);
     }
 
     @Override
-    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IGrInDriver.IImage i) {
+    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
         target.blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i);
     }
 
     @Override
-    public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i) {
+    public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i) {
         target.blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i);
     }
 
     @Override
-    public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i, boolean blendSub) {
+    public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
         target.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
     }
 

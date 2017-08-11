@@ -5,21 +5,22 @@
 package gabien.backendhelp;
 
 import gabien.GaBIEn;
+import gabien.IGrDriver;
 import gabien.IGrInDriver;
-import gabien.IOsbDriver;
+import gabien.IImage;
 
 /**
  * Created on 8/2/17.
  */
 public class Blender {
-    public static void blendRotatedScaledImage(IOsbDriver igd, int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i, boolean subtractive) {
+    public static void blendRotatedScaledImage(IGrDriver igd, int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean subtractive) {
         if (acw <= 0)
             return;
         if (ach <= 0)
             return;
         int twid = acw * 2;
         int thei = ach * 2;
-        IOsbDriver buf1 = GaBIEn.makeOffscreenBuffer(twid, thei, true);
+        IGrDriver buf1 = GaBIEn.makeOffscreenBuffer(twid, thei, true);
         buf1.blitImage(x - (acw / 2), y - (ach / 2), twid, thei, 0, 0, igd);
         int[] bufferA = buf1.getPixels();
         buf1.clearAll(0, 0, 0);

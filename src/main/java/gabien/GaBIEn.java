@@ -10,7 +10,7 @@ import java.io.OutputStream;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
-    private static IGrInDriver.IImage errorImage;
+    private static IImage errorImage;
 
     public static double getTime() {
         return internal.getTime();
@@ -60,7 +60,7 @@ public class GaBIEn {
     }
 
     // Note: The buffer does not have an alpha channel.
-    public static IOsbDriver makeOffscreenBuffer(int w, int h, boolean alpha) {
+    public static IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha) {
         return internal.makeOffscreenBuffer(w, h, alpha);
     }
 
@@ -71,14 +71,14 @@ public class GaBIEn {
     // This has to at least support JPGs, PNGs and BMPs.
     // On error, it should return an "error" image. This "error" image is unique, and can be gotten via getErrorImage.
 
-    public static IGrInDriver.IImage getImage(String a) {
+    public static IImage getImage(String a) {
         return internal.getImage(a);
     }
-    public static IGrInDriver.IImage getImageCK(String a, int r, int g, int b) {
+    public static IImage getImageCK(String a, int r, int g, int b) {
         return internal.getImageCK(a, r, g, b);
     }
 
-    public static IGrInDriver.IImage getErrorImage() {
+    public static IImage getErrorImage() {
         if (errorImage == null) {
             errorImage = createImage(new int[] {
                     0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
@@ -93,7 +93,7 @@ public class GaBIEn {
         }
         return errorImage;
     }
-    public static IGrInDriver.IImage createImage(int[] colours, int width, int height) {
+    public static IImage createImage(int[] colours, int width, int height) {
         return internal.createImage(colours, width, height);
     }
 

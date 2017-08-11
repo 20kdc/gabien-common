@@ -7,6 +7,8 @@ package gabien;
 import gabien.backendhelp.Blender;
 import gabien.ui.Rect;
 
+import java.util.HashSet;
+
 /**
  * Used for cropping in another driver.
  * Created on 1/29/17.
@@ -32,6 +34,16 @@ public class ScissorGrInDriver implements IGrInDriver {
     }
 
     @Override
+    public int[] getPixels() {
+        return inner.getPixels();
+    }
+
+    @Override
+    public byte[] createPNG() {
+        return inner.createPNG();
+    }
+
+    @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
         commonBlitImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i);
     }
@@ -49,7 +61,7 @@ public class ScissorGrInDriver implements IGrInDriver {
 
     @Override
     public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
-        inner.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
+        Blender.blendRotatedScaledImage(this, srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
     }
 
     @Override
@@ -132,13 +144,18 @@ public class ScissorGrInDriver implements IGrInDriver {
     }
 
     @Override
-    public boolean getMouseDown() {
+    public HashSet<Integer> getMouseDown() {
         return inner.getMouseDown();
     }
 
     @Override
-    public boolean getMouseJustDown() {
+    public HashSet<Integer> getMouseJustDown() {
         return inner.getMouseJustDown();
+    }
+
+    @Override
+    public HashSet<Integer> getMouseJustUp() {
+        return inner.getMouseJustUp();
     }
 
     @Override
@@ -149,11 +166,6 @@ public class ScissorGrInDriver implements IGrInDriver {
     @Override
     public boolean getMousewheelDir() {
         return inner.getMousewheelDir();
-    }
-
-    @Override
-    public int getMouseButton() {
-        return inner.getMouseButton();
     }
 
     @Override

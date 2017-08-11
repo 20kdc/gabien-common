@@ -47,20 +47,20 @@ public interface IGaBIEn {
 
     //On SingleWindowApp-style platforms,where windowing doesn't exist,ignore windowspecs.
     IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs);
-    IOsbDriver makeOffscreenBuffer(int w, int h, boolean alpha);
+    IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha);
 
     WindowSpecs defaultWindowSpecs(String name, int w, int h);
 
     // Get an image. See GaBIEn.getFile for how this works.
     // Notably, the image format supports ARGB.
     // The colour-keying is just because it's simpler to make assets that way.
-    IGrInDriver.IImage getImage(String a);
+    IImage getImage(String a);
     // Get an image - and then cut out a given colour.
-    IGrInDriver.IImage getImageCK(String a, int r, int g, int b);
+    IImage getImageCK(String a, int r, int g, int b);
 
     // Make an image from a buffer.
     // Note that the colours are 0xAARRGGBB.
-    IGrInDriver.IImage createImage(int[] colours, int width, int height);
+    IImage createImage(int[] colours, int width, int height);
 
     void hintFlushAllTheCaches();
 

@@ -5,24 +5,24 @@
 package gabien;
 
 /**
- * Just the graphics API.
+ * Represents a buffer that can be drawn to.
  * Created on 04/06/17.
  */
-public interface IGrDriver {
+public interface IGrDriver extends IImage {
     // These return the size of the drawing buffer.
     int getWidth();
     // These return the size of the drawing buffer.
     int getHeight();
 
-    void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IGrInDriver.IImage i);
+    void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
 
     // Support optional but recommended. Lack of support should result in no-op.
-    void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IGrInDriver.IImage i);
+    void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
 
     // Support optional. Should not be used unless absolutely required - cannot be scissored.
     // Lack of support should result in no-op. When scissoring, this is just directly forwarded - nothing can be done here.
-    void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i);
-    void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IGrInDriver.IImage i, boolean blendSub);
+    void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
+    void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub);
 
     // Now as official as you can get for a graphics interface nobody uses.
     // This is "The Way" that text is drawn if the "styled" way doesn't work.

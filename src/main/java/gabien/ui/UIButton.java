@@ -7,7 +7,7 @@ package gabien.ui;
 
 
 import gabien.IGrInDriver;
-import gabien.IGrInDriver.IImage;
+import gabien.IImage;
 
 public class UIButton extends UIElement {
     public IImage buttonImage;

@@ -64,15 +64,14 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             // actually run!
             aw.igd.clearAll(0, 0, 0);
             aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
-            if (aw.igd.getMouseJustDown()) {
-                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMouseButton(), true));
-                aw.expectingMouseLoss = true;
-            } else if (aw.igd.getMouseDown()) {
+
+            for (Integer i : aw.igd.getMouseJustDown())
+                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), i, true));
+            for (Integer i : aw.igd.getMouseJustUp())
+                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), i, false));
+            if (aw.igd.getMouseDown().size() > 0)
                 aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
-            } else if (aw.expectingMouseLoss) {
-                aw.ue.handleClick(new MouseAction(aw.igd.getMouseX(), aw.igd.getMouseY(), 0, false));
-                aw.expectingMouseLoss = false;
-            }
+
             if (aw.igd.getMousewheelJustDown())
                 aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
             aw.igd.flush();
@@ -91,6 +90,5 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         IGrInDriver igd;
         UIElement ue;
         int lastKnownWidth, lastKnownHeight;
-        boolean expectingMouseLoss;
     }
 }
