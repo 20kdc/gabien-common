@@ -9,9 +9,8 @@ package gabien.ui;
  * Created on 11/08/17.
  */
 public class MouseAction {
-    // button is indexed based at 0 - events with a button of -1 are synthetic (UIWindowView internal, usually)
+    // button is indexed based at 1 - events with a button of -1 are synthetic (UIWindowView internal, usually)
     //  and should stay within the class that generated them.
-    // Note that button is always 0 for mouse up events (to prevent over-reliance on buttons)
     public final int x, y, button;
     public final boolean down;
     public MouseAction(int tx, int ty, int tb, boolean d) {

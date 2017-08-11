@@ -45,7 +45,9 @@ public class UIPanel extends UIElement {
         }
     }
 
-    //The click is within the (0,0,my width-1,my textHeight-1) range.
+    // The click is within the (0,0,my width-1,my textHeight-1) range.
+    // (NOTE: The behavior of selectedElement changing on mouse down & up is important,
+    //         since it makes drag & drop applications easier to write.)
     @Override
     public void handleClick(MouseAction ma) {
         selectedElement = null;
