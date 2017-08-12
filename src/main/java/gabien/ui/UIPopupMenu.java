@@ -66,6 +66,11 @@ public class UIPopupMenu extends UIElement {
             return;
         if (b >= menuItems.length)
             return;
+        optionExecute(b);
+    }
+
+    // Used for special behavior when an option is run (closing the menu, wasting time, closing the menu, counting kittens, closing the menu...)
+    public void optionExecute(int b) {
         menuExecs[b].run();
     }
 }
