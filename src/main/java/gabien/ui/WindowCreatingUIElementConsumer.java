@@ -76,7 +76,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                     aw.pendingRelease = true;
                 }
             }
-            if (aw.igd.getMouseDown().size() > 0) {
+            if (aw.pendingRelease && (aw.igd.getMouseDown().size() > 0)) {
                 aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
             } else {
                 if (aw.pendingRelease) {
