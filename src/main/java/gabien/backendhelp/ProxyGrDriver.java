@@ -14,7 +14,7 @@ import gabien.IImage;
  * Also note that this is useful as a fallback finalization wrapper.
  * Created on 08/06/17.
  */
-public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver {
+public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeImageHolder {
     public final T target;
 
     public ProxyGrDriver(T targ) {
@@ -85,5 +85,17 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver {
     protected void finalize() throws Throwable {
         super.finalize();
         shutdown();
+    }
+
+    @Override
+    public Runnable[] getLockingSequence() {
+        INativeImageHolder t = (INativeImageHolder) target;
+        return t.getLockingSequence();
+    }
+
+    @Override
+    public Object getNative() {
+        INativeImageHolder t = (INativeImageHolder) target;
+        return t.getNative();
     }
 }
