@@ -35,16 +35,22 @@ public class UIScrollLayout extends UIPanel {
         allElements.add(scrollbar);
         scrollLength = 0;
 
+        // Notably, this still has to do a setBounds for elements that are actively resizing themselves based on W
+        // The "layoutScrollbounds" at the bottom then fixes positions & allElements
         if (scrollbar.vertical) {
             int sbSize = scrollbar.getBounds().width;
             scrollbar.setBounds(new Rect(r.width - sbSize, 0, sbSize, r.height));
-            for (UIElement p : panels)
+            for (UIElement p : panels) {
+                p.setBounds(new Rect(0, 0, r.width, p.getBounds().height));
                 scrollLength += p.getBounds().height;
+            }
         } else {
             int sbSize = scrollbar.getBounds().height;
             scrollbar.setBounds(new Rect(0, r.height - sbSize, r.width, sbSize));
-            for (UIElement p : panels)
+            for (UIElement p : panels) {
+                p.setBounds(new Rect(0, 0, p.getBounds().width, r.height));
                 scrollLength += p.getBounds().width;
+            }
         }
 
         useScissoring = true;
