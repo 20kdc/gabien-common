@@ -5,6 +5,7 @@
 package gabien;
 
 import gabien.backendhelp.Blender;
+import gabien.backendhelp.INativeImageHolder;
 import gabien.ui.Rect;
 
 import java.util.HashSet;
@@ -13,7 +14,7 @@ import java.util.HashSet;
  * Used for cropping in another driver.
  * Created on 1/29/17.
  */
-public class ScissorGrInDriver implements IGrInDriver {
+public class ScissorGrInDriver implements IGrInDriver, INativeImageHolder {
     public int workLeft, workTop;
     public int workRight, workBottom;
     public IGrInDriver inner;
@@ -176,5 +177,15 @@ public class ScissorGrInDriver implements IGrInDriver {
     @Override
     public void shutdown() {
         inner.shutdown();
+    }
+
+    @Override
+    public Runnable[] getLockingSequence() {
+        return ((INativeImageHolder) inner).getLockingSequence();
+    }
+
+    @Override
+    public Object getNative() {
+        return ((INativeImageHolder) inner).getNative();
     }
 }
