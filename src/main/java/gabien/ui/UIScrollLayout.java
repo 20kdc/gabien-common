@@ -24,8 +24,9 @@ public class UIScrollLayout extends UIPanel {
     public int scrollLength = 0;
     private double lastScrollPoint = -1;
 
-    public UIScrollLayout(boolean vertical) {
-        scrollbar = new UIScrollbar(vertical);
+    public UIScrollLayout(boolean vertical, int sc) {
+        scrollbar = new UIScrollbar(vertical, sc);
+
     }
 
     public void runLayout() {

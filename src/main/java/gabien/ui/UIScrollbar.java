@@ -14,9 +14,9 @@ public class UIScrollbar extends UIElement {
     public double scrollPoint = 0.0;
     public final boolean vertical;
 
-    public UIScrollbar(boolean vert) {
+    public UIScrollbar(boolean vert, int sc) {
         vertical = vert;
-        setBounds(new Rect(0, 0, 32, 32));
+        setBounds(new Rect(0, 0, sc, sc));
     }
 
     @Override
