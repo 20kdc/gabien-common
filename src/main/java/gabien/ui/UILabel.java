@@ -12,6 +12,7 @@ import gabien.IImage;
 
 public class UILabel extends UIPanel {
     public static String fontOverride;
+    public static boolean fontOverrideUE8;
 
     public String Text = "No notice text.";
     public int textHeight;
@@ -38,15 +39,24 @@ public class UILabel extends UIPanel {
     }
 
     private static boolean useSystemFont(String text, int height) {
+        if (fontOverride != null) {
+            if (height > 8)
+                return true;
+            // <= 8 - still use system?
+            if (fontOverrideUE8)
+                return true;
+        }
+        // Does the font exist?
         if (height != 16)
             if (height != 8)
                 if (height != 6)
                     return true;
+        // Finally resolved to use internal if possible - is this allowed?
         int l = text.length();
         for (int p = 0; p < l; p++)
             if (text.charAt(p) >= 128)
                 return true;
-        return fontOverride != null;
+        return false;
     }
 
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean bck, int height) {
