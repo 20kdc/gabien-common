@@ -39,15 +39,20 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         incomingWindows.add(aw);
     }
 
-    public int runningWindows() {
-        return activeWindows.size() + incomingWindows.size();
+    public LinkedList<UIElement> runningWindows() {
+        LinkedList<UIElement> w = new LinkedList<UIElement>();
+        for (ActiveWindow aw : activeWindows)
+            w.add(aw.ue);
+        for (ActiveWindow aw : incomingWindows)
+            w.add(aw.ue);
+        return w;
     }
 
     public void runTick(double dT) {
         activeWindows.addAll(incomingWindows);
         incomingWindows.clear();
         LinkedList<ActiveWindow> closeThese = new LinkedList<ActiveWindow>();
-        for (ActiveWindow aw : activeWindows) {
+        for (ActiveWindow aw : new LinkedList<ActiveWindow>(activeWindows)) {
             boolean needResize = false;
             if (aw.lastKnownWidth != aw.igd.getWidth())
                 needResize = true;
@@ -97,6 +102,23 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             }
         }
         activeWindows.removeAll(closeThese);
+    }
+
+    public void forceRemove(UIElement uie) {
+        LinkedList<ActiveWindow> w = new LinkedList<ActiveWindow>();
+        for (ActiveWindow aw : activeWindows)
+            if (aw.ue == uie)
+                w.add(aw);
+        for (ActiveWindow aw : incomingWindows)
+            if (aw.ue == uie)
+                w.add(aw);
+        for (ActiveWindow aw : w) {
+            activeWindows.remove(aw);
+            incomingWindows.remove(aw);
+            aw.igd.shutdown();
+            if (aw.ue instanceof IWindowElement)
+                ((IWindowElement) (aw.ue)).windowClosed();
+        }
     }
 
     private class ActiveWindow {
