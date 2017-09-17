@@ -60,6 +60,8 @@ public class UILabel extends UIPanel {
     }
 
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean bck, int height) {
+        if (!bck)
+            igd.clearRect(0, 0, 0, xptr - 1, oy - 1, getTextLength(text, height) + 1, height + 1);
         if (useSystemFont(text, height)) {
             igd.drawText(xptr, oy, 255, 255, 255, height, text);
             return;
