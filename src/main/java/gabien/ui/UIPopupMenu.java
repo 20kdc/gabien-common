@@ -39,7 +39,7 @@ public class UIPopupMenu extends UIElement {
             if (mx < (ox + b.width))
                 selectedIdx = UIElement.sensibleCellDiv(my - oy, sz);
         for (String s : menuItems) {
-            UILabel.drawLabel(igd, b.width, ox, oy, s, (i++) == selectedIdx, textHeight);
+            UILabel.drawLabel(igd, b.width, ox, oy, s, ((i++) == selectedIdx) ? 2 : 1, textHeight);
             oy += sz;
         }
     }

@@ -65,7 +65,7 @@ public class UINumberBox extends UIElement {
             number = NNum;
             editingNLast = number;
         }
-        UILabel.drawLabel(igd, elementBounds.width, ox, oy, Integer.toString(number), selected, textHeight);
+        UILabel.drawLabel(igd, elementBounds.width, ox, oy, Integer.toString(number), selected ? 2 : 1, textHeight);
     }
 
     @Override

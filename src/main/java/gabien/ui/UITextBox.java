@@ -59,7 +59,7 @@ public class UITextBox extends UIElement {
                 tempDisableSelection = true;
             }
         }
-        UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected, height);
+        UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected ? 2 : 1, height);
     }
 
     @Override

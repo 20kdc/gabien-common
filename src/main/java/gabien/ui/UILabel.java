@@ -35,7 +35,7 @@ public class UILabel extends UIPanel {
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
         super.updateAndRender(ox, oy, DeltaTime, selected, igd);
-        drawLabel(igd, elementBounds.width, ox, oy, Text, false, textHeight);
+        drawLabel(igd, elementBounds.width, ox, oy, Text, 0, textHeight);
     }
 
     private static boolean useSystemFont(String text, int height) {
@@ -108,40 +108,15 @@ public class UILabel extends UIPanel {
         return text.length() * 8;
     }
 
-    private static int drawLabelx1(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected) {
-        IImage i = GaBIEn.getImage("textButton.png");
-        igd.blitImage(selected ? 3 : 0, 10, 1, 9, ox, oy, i);
-        for (int pp = 1; pp < wid - 1; pp++)
-            igd.blitImage(selected ? 4 : 1, 10, 1, 9, ox + pp, oy, i);
-        igd.blitImage(selected ? 5 : 2, 10, 1, 9, ox + (wid - 1), oy, i);
-
-        drawString(igd, ox + 1, oy + 1, string, true, 8);
-        return wid;
-    }
-
-    private static int drawLabelx2(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected) {
-        IImage i = GaBIEn.getImage("textButton.png");
-        int selectedOfs = selected ? 6 : 0;
-        igd.blitImage(6 + selectedOfs, 20, 2, 18, ox, oy, i);
-        for (int pp = 2; pp < wid - 1; pp += 2)
-            igd.blitImage(8 + selectedOfs, 20, 2, 18, ox + pp, oy, i);
-        igd.blitImage(10 + selectedOfs, 20, 2, 18, ox + (wid - 2), oy, i);
-
-        drawString(igd, ox + 2, oy + 2, string, true, 16);
-        return wid;
-    }
-
-    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, boolean selected, int height) {
-        if (height == 16)
-            return drawLabelx2(igd, wid, ox, oy, string, selected);
-        if (height == 8)
-            return drawLabelx1(igd, wid, ox, oy, string, selected);
+    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height) {
         // switch from bitmaps to something else
         Rect res = getRecommendedSize(string, height);
-        if (selected) {
-            igd.clearRect(255, 255, 255, ox, oy, wid, res.height);
-        } else {
-            igd.clearRect(64, 64, 64, ox, oy, wid, res.height);
+        if (mode == 0) {
+            igd.clearRect(48, 48, 48, ox, oy, wid, res.height);
+        } else if (mode == 1) {
+            igd.clearRect(16, 16, 16, ox, oy, wid, res.height);
+        } else if (mode == 2) {
+            igd.clearRect(192, 192, 192, ox, oy, wid, res.height);
         }
         int margin = height / 8;
         if (margin == 0)

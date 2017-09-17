@@ -75,7 +75,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             wIgd.workLeft = ox + b.x;
             wIgd.workRight = (ox + b.x) + b.width;
 
-            UILabel.drawLabel(wIgd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.toString(), winSelected, windowTextHeight);
+            UILabel.drawLabel(wIgd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.toString(), winSelected ? 2 : 1, windowTextHeight);
             wIgd.clearRect(128, 64, 64, ox + b.x + b.width - (closeButtonSize + closeButtonMargin), (oy + b.y) - (closeButtonSize + closeButtonMargin), closeButtonSize, closeButtonSize);
             wIgd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
             uie.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, wIgd);
