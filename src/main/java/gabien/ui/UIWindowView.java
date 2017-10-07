@@ -30,6 +30,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
 
     // This ought to be used for frame calculations
     public int windowTextHeight = 12;
+    public int sizerOfs = 16;
+    public int sizerSize = 24;
 
     @Override
     public void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd) {
@@ -68,7 +70,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             boolean winSelected = selected && (!backingSelected) && (remaining == 0);
             Rect b = uie.getBounds();
 
-            igd.clearRect(0, 64, 192, ox + b.x + b.width - 16, oy + b.y + b.height - 16, 20, 20);
+            igd.clearRect(0, 64, 192, ox + b.x + b.width - sizerOfs, oy + b.y + b.height - sizerOfs, sizerSize, sizerSize);
 
             wIgd.workTop = (oy + b.y) - windowFrameHeight;
             wIgd.workBottom = (oy + b.y) + b.height;
@@ -98,7 +100,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             UIElement uie = i.next();
             Rect innerWindow = uie.getBounds();
             Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
-            Rect windowSz = new Rect(innerWindow.x + innerWindow.width - 16, innerWindow.y + innerWindow.height - 16, 24, 24);
+            Rect windowSz = new Rect(innerWindow.x + innerWindow.width - sizerOfs, innerWindow.y + innerWindow.height - sizerOfs, sizerSize, sizerSize);
             Rect windowX = new Rect((windowFrame.x + windowFrame.width) - (closeMargin + closeSize), innerWindow.y - (closeMargin + closeSize), closeSize, closeSize);
             if (innerWindow.contains(x, y)) {
                 clearKeysLater = true;
@@ -195,8 +197,9 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
                     int oy = r.y + (y - lastMY);
                     if (ox < 0)
                         ox = 0;
-                    if (oy < 18)
-                        oy = 18;
+                    int fh = getWindowFrameHeight();
+                    if (oy < fh)
+                        oy = fh;
                     if (ox > (scr.width - r.width))
                         ox = (scr.width - r.width);
                     if (oy > scr.height)
@@ -258,7 +261,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
     }
 
     public int getCloseButtonMargin() {
-        return 3;
+        return windowTextHeight / 4;
     }
 
     public int getCloseButtonSize() {

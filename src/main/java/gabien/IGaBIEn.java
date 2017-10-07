@@ -71,4 +71,10 @@ public interface IGaBIEn {
     // The first font override is the default font (if drawText is called on a driver without an override)
     // Note that this implies at least one font will be listed.
     String[] getFontOverrides();
+
+    String[] listEntries(String s);
+
+    void makeDirectories(String s);
+
+    boolean fileOrDirExists(String s);
 }

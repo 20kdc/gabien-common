@@ -20,6 +20,8 @@ public class UIPanel extends UIElement {
 
     public IImage baseImage; // I forgot this existed. Whoops.
     public int imageX, imageY;
+    public boolean imageScale;
+    public int imageSW, imageSH;
     public UIElement selectedElement;
     public LinkedList<UIElement> allElements = new LinkedList<UIElement>();
 
@@ -27,8 +29,13 @@ public class UIPanel extends UIElement {
     //the root panel gets a ox,oy of 0,0,for obvious reasons.
     @Override
     public void updateAndRender(int ox, int oy, double deltaTime, boolean select, IGrInDriver igd) {
-        if (baseImage != null)
-            igd.blitImage(imageX, imageY, elementBounds.width, elementBounds.height, ox, oy, baseImage);
+        if (baseImage != null) {
+            if (!imageScale) {
+                igd.blitImage(imageX, imageY, elementBounds.width, elementBounds.height, ox, oy, baseImage);
+            } else {
+                igd.blitScaledImage(imageX, imageY, imageSW, imageSH, ox, oy, elementBounds.width, elementBounds.height, baseImage);
+            }
+        }
         if (useScissoring) {
             ScissorGrInDriver sgi = new ScissorGrInDriver();
             Rect b = getBounds();

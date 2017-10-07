@@ -21,7 +21,11 @@ public class UIPopupMenu extends UIElement {
         menuExecs = tilesets;
         textHeight = h;
         canResize = true;
-        setBounds(new Rect(0, 0, 320, 10));
+        int szw = 1;
+        for (String s : strings)
+            szw = Math.max(szw, UILabel.getRecommendedSize(s, textHeight).width);
+        int sz = UILabel.getRecommendedSize("", textHeight).height;
+        setBounds(new Rect(0, 0, szw, sz * strings.length));
         canResize = rsz;
     }
 

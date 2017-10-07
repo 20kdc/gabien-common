@@ -108,4 +108,25 @@ public class GaBIEn {
     public static String[] getFontOverrides() {
         return internal.getFontOverrides();
     }
+
+    public static boolean fileOrDirExists(String s) {
+        return internal.fileOrDirExists(s);
+    }
+
+    // Resources DO NOT QUALIFY.
+    // It is possible that this will be called with or without a trailing "/".
+    public static String[] listEntries(String s) {
+        return internal.listEntries(s);
+    }
+
+    public static String basename(String s) {
+        int p = s.lastIndexOf('/');
+        if (p == -1)
+            return s;
+        return s.substring(p + 1);
+    }
+
+    public static void makeDirectories(String s) {
+        internal.makeDirectories(s);
+    }
 }
