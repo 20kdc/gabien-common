@@ -53,23 +53,23 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         incomingWindows.clear();
         LinkedList<ActiveWindow> closeThese = new LinkedList<ActiveWindow>();
         for (ActiveWindow aw : new LinkedList<ActiveWindow>(activeWindows)) {
-            boolean needResize = false;
-            if (aw.lastKnownWidth != aw.igd.getWidth())
-                needResize = true;
-            if (aw.lastKnownHeight != aw.igd.getHeight())
-                needResize = true;
-            if (needResize)
-                aw.ue.setBounds(new Rect(0, 0, aw.igd.getWidth(), aw.igd.getHeight()));
-
             if (!aw.igd.stillRunning()) {
                 closeThese.add(aw);
                 if (aw.ue instanceof IWindowElement)
                     ((IWindowElement) (aw.ue)).windowClosed();
                 continue;
+            } else {
+                boolean needResize = false;
+                if (aw.lastKnownWidth != aw.igd.getWidth())
+                    needResize = true;
+                if (aw.lastKnownHeight != aw.igd.getHeight())
+                    needResize = true;
+                if (needResize)
+                    aw.ue.setBounds(new Rect(0, 0, aw.igd.getWidth(), aw.igd.getHeight()));
+                // actually run!
+                aw.igd.clearAll(0, 0, 0);
+                aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
             }
-            // actually run!
-            aw.igd.clearAll(0, 0, 0);
-            aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
 
             // Handles the global click/drag/release cycle
 
@@ -92,7 +92,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
 
             if (aw.igd.getMousewheelJustDown())
                 aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
-            aw.igd.flush();
+            if (aw.igd.stillRunning())
+                aw.igd.flush();
             if (aw.ue instanceof IWindowElement) {
                 if (((IWindowElement) (aw.ue)).wantsSelfClose()) {
                     closeThese.add(aw);

@@ -63,9 +63,10 @@ public class UITabPane extends UIPanel {
             int base = ((i & 1) != 0) ? 64 : 32;
             if (i == tab)
                 base = 128;
+            int margin = tabTextHeight / 6;
             igd.clearRect(base, base, base, ox + pos, oy, tabW, tabBarHeight);
             // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
-            igd.clearRect(base / 2, base / 2, base / 2, ox + pos + 1, oy + 1, tabW - 2, tabTextHeight + padding);
+            igd.clearRect(base / 2, base / 2, base / 2, ox + pos + margin, oy + margin, tabW - (margin * 2), (tabTextHeight + padding + 2) - (margin * 2));
 
             UILabel.drawString(igd, ox + pos + 4, oy + 1 + padding, getVisibleTabName(i), true, tabTextHeight);
             pos += tabW;

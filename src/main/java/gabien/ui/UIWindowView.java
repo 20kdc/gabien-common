@@ -101,7 +101,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIElement> {
             Rect innerWindow = uie.getBounds();
             Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
             Rect windowSz = new Rect(innerWindow.x + innerWindow.width - sizerOfs, innerWindow.y + innerWindow.height - sizerOfs, sizerSize, sizerSize);
-            Rect windowX = new Rect((windowFrame.x + windowFrame.width) - (closeMargin + closeSize), innerWindow.y - (closeMargin + closeSize), closeSize, closeSize);
+            Rect windowX = new Rect((windowFrame.x + windowFrame.width) - (closeMargin + closeSize), innerWindow.y - (closeMargin + closeSize), closeSize + (closeMargin * 2), closeSize + (closeMargin * 2));
             if (innerWindow.contains(x, y)) {
                 clearKeysLater = true;
                 backingSelected = false;
