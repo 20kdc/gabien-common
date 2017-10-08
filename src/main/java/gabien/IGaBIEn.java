@@ -77,4 +77,5 @@ public interface IGaBIEn {
     void makeDirectories(String s);
 
     boolean fileOrDirExists(String s);
+    boolean dirExists(String s);
 }

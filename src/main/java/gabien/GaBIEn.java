@@ -112,6 +112,9 @@ public class GaBIEn {
     public static boolean fileOrDirExists(String s) {
         return internal.fileOrDirExists(s);
     }
+    public static boolean dirExists(String s) {
+        return internal.dirExists(s);
+    }
 
     // Resources DO NOT QUALIFY.
     // It is possible that this will be called with or without a trailing "/".
