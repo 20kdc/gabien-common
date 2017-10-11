@@ -1,6 +1,8 @@
 /*
- * This is released into the public domain.
- * No warranty is provided, implied or otherwise.
+ * gabien-common - Cross-platform game and UI framework
+ * Written starting in 2016 by contributors (see CREDITS.txt)
+ * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+ * You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
  */
 
 package gabien;
@@ -8,7 +10,7 @@ package gabien;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-/*
+/**
  * This instance should be the entry point to the program.
  * It should call the static method gabienapp.Application.gabienmain(),
  * which runs the application.
@@ -18,7 +20,6 @@ import java.io.OutputStream;
  *  can be accessed from any thread,probably because games
  *  like to use their own schedulers)
  */
-
 public interface IGaBIEn {
     double getTime();
 
