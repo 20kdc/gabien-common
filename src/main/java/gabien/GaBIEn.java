@@ -132,4 +132,8 @@ public class GaBIEn {
     public static void makeDirectories(String s) {
         internal.makeDirectories(s);
     }
+
+    public static boolean tryStartTextEditor(String fpath) {
+        return internal.tryStartTextEditor(fpath);
+    }
 }

@@ -78,4 +78,6 @@ public interface IGaBIEn {
 
     boolean fileOrDirExists(String s);
     boolean dirExists(String s);
+
+    boolean tryStartTextEditor(String fpath);
 }
