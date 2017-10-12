@@ -138,4 +138,8 @@ public class GaBIEn {
     public static boolean tryStartTextEditor(String fpath) {
         return internal.tryStartTextEditor(fpath);
     }
+
+    public static void rmFile(String s) {
+        internal.rmFile(s);
+    }
 }

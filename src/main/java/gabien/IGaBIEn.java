@@ -81,4 +81,6 @@ public interface IGaBIEn {
     boolean dirExists(String s);
 
     boolean tryStartTextEditor(String fpath);
+
+    void rmFile(String s);
 }
