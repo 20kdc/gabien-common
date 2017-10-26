@@ -54,6 +54,9 @@ public class UIScrollLayout extends UIPanel {
 
         useScissoring = true;
         layoutScrollbounds();
+
+        if (scrollLength != 0)
+            scrollbar.wheelScale = (r.height / 4.0d) / (double) scrollLength;
     }
 
     // Lays out the elements with the current parameters.

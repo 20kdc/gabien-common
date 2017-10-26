@@ -15,6 +15,7 @@ import gabien.IGrInDriver;
  */
 public class UIScrollbar extends UIElement {
     public double scrollPoint = 0.0;
+    public double wheelScale = 0.1;
     public final boolean vertical;
 
     public UIScrollbar(boolean vert, int sc) {
@@ -73,7 +74,7 @@ public class UIScrollbar extends UIElement {
 
     @Override
     public void handleMousewheel(int x, int y, boolean north) {
-        scrollPoint += north ? -0.1 : 0.1;
+        scrollPoint += north ? -wheelScale : wheelScale;
         if (scrollPoint < 0)
             scrollPoint = 0;
         if (scrollPoint > 1)
