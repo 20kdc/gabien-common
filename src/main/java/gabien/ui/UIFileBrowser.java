@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.GaBIEn;
 
+import java.util.Collections;
 import java.util.LinkedList;
 
 public class UIFileBrowser extends UIPanel implements IWindowElement {
@@ -68,15 +69,32 @@ public class UIFileBrowser extends UIPanel implements IWindowElement {
             }));
         }
         if (paths != null) {
+            LinkedList<String> dirs = new LinkedList<String>();
+            LinkedList<String> fils = new LinkedList<String>();
             for (final String s : paths) {
                 if (s.contains("\\"))
                     throw new RuntimeException("Backend Error (\\)");
                 if (s.contains("/"))
                     throw new RuntimeException("Backend Error (/)");
-                String pfx = "F:";
-                if (GaBIEn.dirExists(s))
-                    pfx = "D:";
-                basicLayout.panels.add(new UITextButton(fontSize, pfx + s, new Runnable() {
+                if (GaBIEn.dirExists(s)) {
+                    dirs.add(s);
+                } else {
+                    fils.add(s);
+                }
+            }
+            Collections.sort(dirs);
+            Collections.sort(fils);
+            for (final String s : dirs) {
+                basicLayout.panels.add(new UITextButton(fontSize, "D: " + s, new Runnable() {
+                    @Override
+                    public void run() {
+                        pathComponents.add(s);
+                        rebuild();
+                    }
+                }));
+            }
+            for (final String s : fils) {
+                basicLayout.panels.add(new UITextButton(fontSize, "F: " + s, new Runnable() {
                     @Override
                     public void run() {
                         pathComponents.add(s);
