@@ -20,17 +20,18 @@ public class Blender {
             return;
         if (ach <= 0)
             return;
-        int twid = acw * 2;
-        int thei = ach * 2;
+        // Need a better calculation for this (keep rotation firmly in mind)
+        int twid = Math.max(acw, ach) * 2;
+        int thei = Math.max(acw, ach) * 2;
         IGrDriver buf1 = GaBIEn.makeOffscreenBuffer(twid, thei, true);
-        buf1.blitImage(x - (acw / 2), y - (ach / 2), twid, thei, 0, 0, igd);
+        buf1.blitImage(x - (twid / 2), y - (thei / 2), twid, thei, 0, 0, igd);
         int[] bufferA = buf1.getPixels();
         buf1.clearAll(0, 0, 0);
-        buf1.blitRotatedScaledImage(srcx, srcy, srcw, srch, acw / 2, ach / 2, acw, ach, angle, i);
+        buf1.blitRotatedScaledImage(srcx, srcy, srcw, srch, twid / 2, thei / 2, acw, ach, angle, i);
         int[] bufferB = buf1.getPixels();
         blendImage(bufferA, bufferB, subtractive);
         buf1.shutdown();
-        igd.blitImage(0, 0, twid, thei, x - (acw / 2), y - (ach / 2), GaBIEn.createImage(bufferA, twid, thei));
+        igd.blitImage(0, 0, twid, thei, x - (twid / 2), y - (thei / 2), GaBIEn.createImage(bufferA, twid, thei));
     }
 
     private static void blendImage(int[] bufferA, int[] bufferB, boolean subtractive) {
