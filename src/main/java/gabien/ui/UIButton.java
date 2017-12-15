@@ -19,10 +19,10 @@ public class UIButton extends UIElement {
 
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
-        if (pressedTime > 0) {
+        if (pressedTime > 0)
             pressedTime -= DeltaTime;
-        }
-        igd.blitImage(imageX, imageY, elementBounds.width, elementBounds.height, ox, oy + (pressedTime > 0 ? 4 : 0), buttonImage);
+        Rect bounds = getBounds();
+        igd.blitImage(imageX, imageY, bounds.width, bounds.height, ox, oy + (pressedTime > 0 ? 4 : 0), buttonImage);
     }
 
     @Override

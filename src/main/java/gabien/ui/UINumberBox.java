@@ -50,9 +50,9 @@ public class UINumberBox extends UIElement {
         } else if (!selected) {
             number = editingCNumber;
         }
+        int boundsWidth = getBounds().width;
         if (selected && (!readOnly)) {
-            int NNum = number;
-            String ss = igd.maintain(ox, oy + (textHeight / 2), elementBounds.width, String.valueOf(NNum));
+            String ss = igd.maintain(ox, oy + (textHeight / 2), boundsWidth, String.valueOf(number));
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
             if (lastMinusIdx > 0) {
@@ -61,12 +61,12 @@ public class UINumberBox extends UIElement {
                 ss = pre + post;
                 doInvertLater = true;
             }
+            int newNum = 0;
             try {
-                NNum = Integer.parseInt(ss);
+                newNum = Integer.parseInt(ss);
                 if (doInvertLater)
-                    NNum = -NNum;
+                    newNum = -newNum;
             } catch (Exception e) {
-                NNum = 0;
             }
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
                 editingCNumber = number;
@@ -74,10 +74,10 @@ public class UINumberBox extends UIElement {
                 igd.clearKeys();
                 tempDisableSelection = true;
             }
-            number = NNum;
+            number = newNum;
             editingNLast = number;
         }
-        UILabel.drawLabel(igd, elementBounds.width, ox, oy, Integer.toString(number), selected ? 2 : 1, textHeight);
+        UILabel.drawLabel(igd, boundsWidth, ox, oy, Integer.toString(number), selected ? 2 : 1, textHeight);
     }
 
     @Override

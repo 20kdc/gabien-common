@@ -17,13 +17,8 @@ public class UITextButton extends UIElement {
     public double PressedTime = 0;
     public boolean state = false;
     public boolean toggle = false;
-    public int textHeight;
+    public final int textHeight;
 
-    public UITextButton() {
-
-    }
-
-    // makes array initializers easier
     public UITextButton(int h, String text, Runnable onClick) {
         OnClick = onClick;
         textHeight = h;
@@ -51,6 +46,7 @@ public class UITextButton extends UIElement {
             if (PressedTime <= 0)
                 state = false;
         }
+        Rect elementBounds = getBounds();
         boolean x2 = textHeight == 16;
         if (!x2)
             if (textHeight != 8) {

@@ -10,8 +10,9 @@ package gabien.ui;
 import gabien.IGrInDriver;
 
 public abstract class UIElement {
-    protected Rect elementBounds = new Rect(0, 0, 1, 1);
+    private Rect elementBounds = new Rect(0, 0, 1, 1);
 
+    // Notably, it's perfectly safe to mess with the inputs and outputs of these functions
     public void setBounds(Rect r) {
         elementBounds = new Rect(r.x, r.y, r.width, r.height);
     }
@@ -51,5 +52,10 @@ public abstract class UIElement {
         if (i < 0)
             r--;
         return r;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
     }
 }

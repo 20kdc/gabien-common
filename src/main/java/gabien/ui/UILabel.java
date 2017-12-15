@@ -37,7 +37,7 @@ public class UILabel extends UIPanel {
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
         super.updateAndRender(ox, oy, DeltaTime, selected, igd);
-        drawLabel(igd, elementBounds.width, ox, oy, Text, 0, textHeight);
+        drawLabel(igd, getBounds().width, ox, oy, Text, 0, textHeight);
     }
 
     private static boolean useSystemFont(String text, int height) {

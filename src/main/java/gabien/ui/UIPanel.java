@@ -8,7 +8,6 @@
 package gabien.ui;
 
 import gabien.IGrInDriver;
-import gabien.IImage;
 import gabien.ScissorGrInDriver;
 
 import java.util.LinkedList;
@@ -20,24 +19,13 @@ import java.util.LinkedList;
 public class UIPanel extends UIElement {
     protected boolean useScissoring = false;
 
-    public IImage baseImage; // I forgot this existed. Whoops.
-    public int imageX, imageY;
-    public boolean imageScale;
-    public int imageSW, imageSH;
-    public UIElement selectedElement;
-    public LinkedList<UIElement> allElements = new LinkedList<UIElement>();
+    protected UIElement selectedElement;
+    protected LinkedList<UIElement> allElements = new LinkedList<UIElement>();
 
-    //ox,oy specify where this element is being drawn.the bounds are used in calculating this.
-    //the root panel gets a ox,oy of 0,0,for obvious reasons.
+    // ox,oy specify where this element is being drawn.the bounds are used in calculating this.
+    // the root panel gets a ox,oy of 0,0,for obvious reasons.
     @Override
     public void updateAndRender(int ox, int oy, double deltaTime, boolean select, IGrInDriver igd) {
-        if (baseImage != null) {
-            if (!imageScale) {
-                igd.blitImage(imageX, imageY, elementBounds.width, elementBounds.height, ox, oy, baseImage);
-            } else {
-                igd.blitScaledImage(imageX, imageY, imageSW, imageSH, ox, oy, elementBounds.width, elementBounds.height, baseImage);
-            }
-        }
         if (useScissoring) {
             ScissorGrInDriver sgi = new ScissorGrInDriver();
             Rect b = getBounds();
@@ -55,8 +43,7 @@ public class UIPanel extends UIElement {
     }
 
     // The click is within the (0,0,my width-1,my textHeight-1) range.
-    // (NOTE: The behavior of selectedElement changing on mouse down & up is important,
-    //         since it makes drag & drop applications easier to write.)
+    // NOTE: handleClick is now expected to be the only thing that changes selectedElement
     @Override
     public void handleClick(int x, int y, int button) {
         selectedElement = null;

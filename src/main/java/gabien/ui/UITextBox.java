@@ -50,8 +50,9 @@ public class UITextBox extends UIElement {
         } else if (!selected) {
             text = textCStr;
         }
+        Rect bounds = getBounds();
         if (selected) {
-            String ss = igd.maintain(ox, oy + (height / 2), elementBounds.width, text);
+            String ss = igd.maintain(ox, oy + (height / 2), bounds.width, text);
             text = ss;
             textLastSeen = ss;
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
@@ -61,7 +62,7 @@ public class UITextBox extends UIElement {
                 tempDisableSelection = true;
             }
         }
-        UILabel.drawLabel(igd, elementBounds.width, ox, oy, text, selected ? 2 : 1, height);
+        UILabel.drawLabel(igd, bounds.width, ox, oy, text, selected ? 2 : 1, height);
     }
 
     @Override
