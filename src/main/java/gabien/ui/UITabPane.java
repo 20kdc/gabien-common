@@ -11,6 +11,7 @@ import gabien.IGrInDriver;
 
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * NOTE: The layout of this keeps in mind that 1/8th of the text height is spacing (rounding up)
@@ -34,6 +35,12 @@ public class UITabPane extends UIPanel {
     // width margin handling
     private final int tabExMargin;
     private final int tabIcoMargin;
+
+    // for if no tab is selected
+    private double[] currentNTState = new double[8 * 8];
+    private double[] incomingNTState = new double[8 * 8];
+    private Random ntRandom = new Random();
+    public double visualizationOrange = 0.0d;
 
     public UITabPane(int h, boolean csn) {
         canSelectNone = csn;
@@ -112,6 +119,39 @@ public class UITabPane extends UIPanel {
         tabs.removeAll(outgoing2);
         if (willUpdateLater)
             updateShortTabs();
+
+        if (selectedElement == null) {
+            for (int i = 0; i < currentNTState.length; i++) {
+                double delta = DeltaTime / 4.0d;
+                if (currentNTState[i] < incomingNTState[i]) {
+                    currentNTState[i] = Math.min(currentNTState[i] + delta, incomingNTState[i]);
+                } else {
+                    currentNTState[i] = Math.max(currentNTState[i] - delta, incomingNTState[i]);
+                }
+                if (Math.abs(currentNTState[i] - incomingNTState[i]) < 0.05d) {
+                    incomingNTState[i] = (ntRandom.nextDouble() / 2.0d) + 0.5d;
+                    if (ntRandom.nextDouble() < visualizationOrange)
+                        incomingNTState[i] = -incomingNTState[i];
+                }
+            }
+
+            int w = bounds.width / 8;
+            int h = (bounds.height - tabBarHeight) / 8;
+            int lw = bounds.width - (w * 7);
+            int lh = (bounds.height - tabBarHeight) - (h * 7);
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    int v = (int) (currentNTState[i + (j * 8)] * 255);
+                    if (v != 0) {
+                        if (v > 0) {
+                            igd.clearRect(0, v / 2, v, ox + (i * w), oy + (j * h) + tabBarHeight, i == 7 ? lw : w, j == 7 ? lh : h);
+                        } else {
+                            igd.clearRect(-v, -v / 2, 0, ox + (i * w), oy + (j * h) + tabBarHeight, i == 7 ? lw : w, j == 7 ? lh : h);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private boolean handleIncoming() {
@@ -167,8 +207,21 @@ public class UITabPane extends UIPanel {
                 selectTab(null);
         } else {
             disableMouse = false;
-            if (selectedElement != null)
+            if (selectedElement != null) {
                 selectedElement.handleClick(x, y - tabBarHeight, button);
+            } else {
+                Rect bounds = getBounds();
+                // slight interactivity w/ NT
+                int w = bounds.width / 8;
+                int h = (bounds.height - tabBarHeight) / 8;
+                int tX = x / w;
+                int tY = y / h;
+                if (tX == 8)
+                    tX--;
+                if (tY == 8)
+                    tY--;
+                incomingNTState[tX + (tY * 8)] = 1;
+            }
         }
     }
 
