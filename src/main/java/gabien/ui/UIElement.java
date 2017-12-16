@@ -56,6 +56,6 @@ public abstract class UIElement {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getClass().getName();
     }
 }
