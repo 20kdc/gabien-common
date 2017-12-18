@@ -13,14 +13,16 @@ import gabien.IGrInDriver;
  * Created on 12/27/16.
  */
 public class UIPopupMenu extends UIElement {
-    public String[] menuItems;
-    public Runnable[] menuExecs;
+    public final String[] menuItems;
+    public final Runnable[] menuExecs;
+    private final double[] pressedState;
     public boolean canResize = false;
     public int textHeight;
 
     public UIPopupMenu(String[] strings, Runnable[] tilesets, int h, boolean rsz) {
         menuItems = strings;
         menuExecs = tilesets;
+        pressedState = new double[menuItems.length];
         textHeight = h;
         canResize = true;
         int szw = 1;
@@ -36,16 +38,14 @@ public class UIPopupMenu extends UIElement {
         Rect b = getBounds();
         if (!canResize)
             igd.clearRect(0, 0, 0, ox, oy, b.width, b.height);
-        int sz = UILabel.getRecommendedSize("", textHeight).height;
+        int sz = UITextButton.getRecommendedSize("", textHeight).height;
         int i = 0;
-        int mx = igd.getMouseX();
-        int my = igd.getMouseY();
-        int selectedIdx = -1;
-        if (mx >= ox)
-            if (mx < (ox + b.width))
-                selectedIdx = UIElement.sensibleCellDiv(my - oy, sz);
         for (String s : menuItems) {
-            UILabel.drawLabel(igd, b.width, ox, oy, s, ((i++) == selectedIdx) ? 2 : 1, textHeight);
+            if (pressedState[i] > 0)
+                pressedState[i] -= deltaTime;
+            UITextButton.drawButton(ox, oy, b.width, sz, pressedState[i] > 0, igd);
+            UITextButton.drawButtonText(ox, oy, b.width, sz, pressedState[i] > 0, igd, s, textHeight);
+            i++;
             oy += sz;
         }
     }
@@ -72,6 +72,7 @@ public class UIPopupMenu extends UIElement {
             return;
         if (b >= menuItems.length)
             return;
+        pressedState[b] = 0.5;
         optionExecute(b);
     }
 

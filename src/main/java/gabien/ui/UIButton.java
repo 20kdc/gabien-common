@@ -9,9 +9,15 @@ package gabien.ui;
 
 
 import gabien.GaBIEn;
+import gabien.IGrDriver;
 import gabien.IGrInDriver;
 import gabien.IImage;
 
+/**
+ * This was actually a totally different class at one point.
+ * Now it's a superclass of UITextButton.
+ * Unknown creation date.
+ */
 public class UIButton extends UIElement {
     public Runnable onClick;
     public double pressedTime = 0;
@@ -25,12 +31,15 @@ public class UIButton extends UIElement {
             if (pressedTime <= 0)
                 state = false;
         }
-        Rect elementBounds = getBounds();
-        boolean x2 = elementBounds.height == 18;
-        if ((elementBounds.height != 10) && (elementBounds.height != 18)) {
+        Rect b = getBounds();
+        drawButton(ox, oy, b.width, b.height, state, igd);
+    }
+
+    public static void drawButton(int ox, int oy, int w, int h, boolean state, IGrDriver igd) {
+        boolean x2 = h == 18;
+        if ((w != 10) && (h != 18)) {
             // no bitmaps here
-            int margin = getPressOffset(elementBounds.height);
-            Rect bounds = getBounds();
+            int margin = getPressOffset(h);
             int c1 = 32; // shadow
             int c2 = 64; // lit
             int c3 = 48; // middle
@@ -41,24 +50,24 @@ public class UIButton extends UIElement {
                 c3 = 16;
                 ooy = margin;
             }
-            drawButton(c1 * 3, c2 * 3, c3, ox, oy + ooy, margin, bounds.width, bounds.height, igd, false);
+            drawButtonCore(c1 * 3, c2 * 3, c3, ox, oy + ooy, margin, w, h, igd, false);
             int m2 = 1 + (margin / 3);
-            drawButton(c1, c2, c3, ox + m2, oy + m2 + ooy, margin - m2, bounds.width - (m2 * 2), bounds.height - (m2 * 2), igd, true);
+            drawButtonCore(c1, c2, c3, ox + m2, oy + m2 + ooy, margin - m2, w - (m2 * 2), h - (m2 * 2), igd, true);
         } else {
             int po = state ? (x2 ? 6 : 3) : 0;
             IImage i = GaBIEn.getImageCK("textButton.png", 255, 0, 255);
             igd.blitImage((x2 ? 6 : 0) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox, oy, i);
-            for (int pp = (x2 ? 2 : 1); pp < elementBounds.width - 1; pp += (x2 ? 2 : 1))
+            for (int pp = (x2 ? 2 : 1); pp < w - 1; pp += (x2 ? 2 : 1))
                 igd.blitImage((x2 ? 8 : 1) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + pp, oy, i);
-            igd.blitImage((x2 ? 10 : 2) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + (elementBounds.width - (x2 ? 2 : 1)), oy, i);
+            igd.blitImage((x2 ? 10 : 2) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + (w - (x2 ? 2 : 1)), oy, i);
         }
     }
 
-    protected int getPressOffset(int h) {
+    protected static int getPressOffset(int h) {
         return (h - (h / 5)) / 8;
     }
 
-    private void drawButton(int c1, int c2, int c3, int ox, int oy, int margin, int width, int height, IGrInDriver igd, boolean drawBack) {
+    private static void drawButtonCore(int c1, int c2, int c3, int ox, int oy, int margin, int width, int height, IGrDriver igd, boolean drawBack) {
         igd.clearRect(c1, c1, c1, ox, oy, width, height);
         igd.clearRect(c2, c2, c2, ox, oy, width - margin, height - margin);
         if (drawBack)

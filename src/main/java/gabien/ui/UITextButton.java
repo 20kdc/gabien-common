@@ -35,8 +35,12 @@ public class UITextButton extends UIButton {
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
         super.updateAndRender(ox, oy, DeltaTime, selected, igd);
-        Rect elementBounds = getBounds();
-        int margin = getPressOffset(elementBounds.height);
+        Rect r = getBounds();
+        drawButtonText(ox, oy, r.width, r.height, state, igd, text, textHeight);
+    }
+
+    public static void drawButtonText(int ox, int oy, int width, int height, boolean state, IGrInDriver igd, String text, int textHeight) {
+        int margin = getPressOffset(height);
         int m2 = 1 + (margin / 3);
         int po = 0;
         if (state)
