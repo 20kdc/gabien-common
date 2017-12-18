@@ -36,11 +36,12 @@ public class UITextButton extends UIButton {
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
         super.updateAndRender(ox, oy, DeltaTime, selected, igd);
         Rect elementBounds = getBounds();
-        int m2 = elementBounds.height / 8;
+        int margin = getPressOffset(elementBounds.height);
+        int m2 = 1 + (margin / 3);
         int po = 0;
         if (state)
-            po = getPressOffset(elementBounds.height);
+            po = m2;
         // height could be elementBounds.height - m2, but some cases exist where buttons are resized
-        UILabel.drawString(igd, ox + 1 + m2, oy + (state ? (m2 + po) : m2), text, true, textHeight);
+        UILabel.drawString(igd, ox + 2 + margin - m2, oy + 1 + (state ? (margin + po) : margin), text, true, textHeight);
     }
 }
