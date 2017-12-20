@@ -40,7 +40,7 @@ public class UIScrollLayout extends UIPanel {
             int sbSize = scrollbar.getBounds().width;
             scrollbar.setBounds(new Rect(r.width - sbSize, 0, sbSize, r.height));
             for (UIElement p : panels) {
-                p.setBounds(new Rect(0, 0, r.width, p.getBounds().height));
+                p.setBounds(new Rect(0, 0, r.width - sbSize, p.getBounds().height));
                 scrollLength += p.getBounds().height;
             }
         } else {
