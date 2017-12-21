@@ -26,9 +26,12 @@ public class UITabPane extends UIPanel {
     // This is used as the basis for calculations.
     public final int tabBarHeight;
     private final int padding;
-    private boolean disableMouse = true;
+
+    public boolean currentClickOnBar = false;
+    public int currentClickTabOfsX = 0;
     // If this is false, the tab pane should try and actively avoid situations in which no tab is selected by choosing the first tab.
     public final boolean canSelectNone;
+    public final boolean canDragTabs;
     // -1 means not shortened, otherwise it's max length.
     private int shortTabs = -1;
 
@@ -42,8 +45,9 @@ public class UITabPane extends UIPanel {
     private Random ntRandom = new Random();
     public double visualizationOrange = 0.0d;
 
-    public UITabPane(int h, boolean csn) {
+    public UITabPane(int h, boolean csn, boolean cdt) {
         canSelectNone = csn;
+        canDragTabs = cdt;
         tabTextHeight = h;
         useScissoring = true;
         padding = ((h + 7) / 8);
@@ -72,40 +76,61 @@ public class UITabPane extends UIPanel {
         // There would be "oy + 1" instead of just "oy", but ofc it has to be centred, so it would just be -1'd again...
         igd.clearRect(32, 32, 32, ox, oy + ((tabTextHeight + padding) / 2), bounds.width, 2);
 
-        int pos = 0;
-        boolean toggle = false;
         LinkedList<UIWindowView.WVWindow> outgoing2 = new LinkedList<UIWindowView.WVWindow>();
         HashSet<UIElement> outgoingTabs2 = outgoingTabs;
         outgoingTabs = new HashSet<UIElement>();
-        for (UIWindowView.WVWindow w : tabs) {
-            if (outgoingTabs2.contains(w.contents)) {
-                willUpdateLater = true;
-                outgoing2.add(w);
+        for (int pass = 0; pass < ((currentClickOnBar && canDragTabs) ? 2 : 1); pass++) {
+            int pos = 0;
+            boolean toggle = false;
+            for (UIWindowView.WVWindow w : tabs) {
+                if (outgoingTabs2.contains(w.contents)) {
+                    willUpdateLater = true;
+                    outgoing2.add(w);
+                }
+                // This is used for all rendering.
+                int theDisplayOX = ox + pos;
+                int tabW = getTabWidth(w, shortTabs);
+                int base = toggle ? 64 : 32;
+                if (selectedElement == w.contents)
+                    base = 128;
+                toggle = !toggle;
+
+                // Decide against rendering
+                boolean shouldRender = true;
+                if (pass == 0) {
+                    if (currentClickOnBar && canDragTabs)
+                        if (selectedElement == w.contents)
+                            shouldRender = false;
+                } else {
+                    if (selectedElement != w.contents)
+                        shouldRender = false;
+                    theDisplayOX = igd.getMouseX() - currentClickTabOfsX;
+                }
+                if (!shouldRender) {
+                    pos += tabW;
+                    continue;
+                }
+
+                int margin = tabTextHeight / 6;
+                igd.clearRect(base, base, base, theDisplayOX, oy, tabW, tabBarHeight);
+                // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
+                igd.clearRect(base / 2, base / 2, base / 2, theDisplayOX + margin, oy + margin, tabW - (margin * 2), (tabTextHeight + padding + 2) - (margin * 2));
+
+                UILabel.drawString(igd, theDisplayOX + tabExMargin, oy + 1 + padding, getVisibleTabName(w, shortTabs), true, tabTextHeight);
+
+                int icoBack = tabBarHeight;
+                for (UIWindowView.IWVWindowIcon i : w.icons) {
+                    // sometimes too bright, deal with that
+                    int size = tabBarHeight - (tabIcoMargin * 2);
+                    int subMargin = tabIcoMargin / 2;
+                    igd.clearRect(0, 0, 0, theDisplayOX + tabW - ((icoBack - tabIcoMargin) + subMargin), oy + tabIcoMargin - subMargin, size + (subMargin * 2), size + (subMargin * 2));
+
+                    i.draw(igd, theDisplayOX + tabW - (icoBack - tabIcoMargin), oy + tabIcoMargin, size);
+                    icoBack += tabBarHeight;
+                }
+
+                pos += tabW;
             }
-            int tabW = getTabWidth(w, shortTabs);
-            int base = toggle ? 64 : 32;
-            toggle = !toggle;
-            if (selectedElement == w.contents)
-                base = 128;
-            int margin = tabTextHeight / 6;
-            igd.clearRect(base, base, base, ox + pos, oy, tabW, tabBarHeight);
-            // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
-            igd.clearRect(base / 2, base / 2, base / 2, ox + pos + margin, oy + margin, tabW - (margin * 2), (tabTextHeight + padding + 2) - (margin * 2));
-
-            UILabel.drawString(igd, ox + pos + tabExMargin, oy + 1 + padding, getVisibleTabName(w, shortTabs), true, tabTextHeight);
-
-            int icoBack = tabBarHeight;
-            for (UIWindowView.IWVWindowIcon i : w.icons) {
-                // sometimes too bright, deal with that
-                int size = tabBarHeight - (tabIcoMargin * 2);
-                int subMargin = tabIcoMargin / 2;
-                igd.clearRect(0, 0, 0, ox + pos + tabW - ((icoBack - tabIcoMargin) + subMargin), oy + tabIcoMargin - subMargin, size + (subMargin * 2), size + (subMargin * 2));
-
-                i.draw(igd, ox + pos + tabW - (icoBack - tabIcoMargin), oy + tabIcoMargin, size);
-                icoBack += tabBarHeight;
-            }
-
-            pos += tabW;
         }
         if (outgoingTabs2.contains(selectedElement)) {
             if (canSelectNone) {
@@ -183,9 +208,13 @@ public class UITabPane extends UIPanel {
     @Override
     public void handleClick(int x, int y, int button) {
         if (y < tabBarHeight) {
-            disableMouse = true;
+            currentClickOnBar = true;
+            currentClickTabOfsX = 0;
             int pos = 0;
             for (UIWindowView.WVWindow w : tabs) {
+                if (w.contents == selectedElement)
+                    currentClickTabOfsX = x - pos;
+                int oldPos = pos;
                 pos += getTabWidth(w, shortTabs);
                 if (x < pos) {
                     int icoBack = tabBarHeight;
@@ -199,6 +228,7 @@ public class UITabPane extends UIPanel {
                         }
                         icoBack += tabBarHeight;
                     }
+                    currentClickTabOfsX = x - oldPos;
                     selectTab(w.contents);
                     return;
                 }
@@ -206,7 +236,7 @@ public class UITabPane extends UIPanel {
             if (canSelectNone)
                 selectTab(null);
         } else {
-            disableMouse = false;
+            currentClickOnBar = false;
             if (selectedElement != null) {
                 selectedElement.handleClick(x, y - tabBarHeight, button);
             } else {
@@ -227,16 +257,52 @@ public class UITabPane extends UIPanel {
 
     @Override
     public void handleDrag(int x, int y) {
-        if (disableMouse)
+        if (currentClickOnBar) {
+            if (canDragTabs)
+                tabReorderer(x);
             return;
+        }
         super.handleDrag(x, y);
     }
 
     @Override
     public void handleRelease(int x, int y) {
-        if (disableMouse)
+        if (currentClickOnBar) {
+            if (canDragTabs)
+                tabReorderer(x);
+            // currentClickOnBar + canDragTabs = tab stuck to mouse
+            currentClickOnBar = false;
             return;
+        }
         super.handleRelease(x, y);
+    }
+
+    private void tabReorderer(int x) {
+        // Oscillates if a tab that's being nudged left to make way moves out of range.
+        // Since these are always two-frame oscillations, just deal with it the simple way...
+        for (int pass = 0; pass < 2; pass++) {
+            // Used to reorder tabs
+            int expectedIndex = -1;
+            int selectedIndex = -1;
+            int pos = 0;
+            int i = 0;
+            for (UIWindowView.WVWindow w : tabs) {
+                int tabW = getTabWidth(w, shortTabs);
+                pos += tabW;
+                if (x < pos)
+                    if (expectedIndex == -1)
+                        expectedIndex = i;
+                if (w.contents == selectedElement)
+                    selectedIndex = i;
+                i++;
+            }
+            if (expectedIndex == -1)
+                expectedIndex = tabs.size() - 1;
+            if (selectedIndex == -1)
+                return;
+            UIWindowView.WVWindow w = tabs.remove(selectedIndex);
+            tabs.add(expectedIndex, w);
+        }
     }
 
     public void selectTab(UIElement target) {
