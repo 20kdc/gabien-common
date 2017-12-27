@@ -18,7 +18,6 @@ public class UIPopupMenu extends UIPanel {
 
     public UIPopupMenu(String[] strings, final Runnable[] tilesets, int h, int sh, boolean rsz) {
         usl = new UIScrollLayout(true, sh);
-        canResize = true;
         int szw = 1;
         for (int i = 0; i < strings.length; i++) {
             final int fi = i;
@@ -34,6 +33,7 @@ public class UIPopupMenu extends UIPanel {
         }
         int sz = UITextButton.getRecommendedSize("", h).height;
         allElements.add(usl);
+        canResize = false;
         setBounds(new Rect(0, 0, szw, sz * strings.length));
         canResize = rsz;
     }
