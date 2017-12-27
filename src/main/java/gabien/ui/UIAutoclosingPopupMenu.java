@@ -14,8 +14,8 @@ public class UIAutoclosingPopupMenu extends UIPopupMenu implements IWindowElemen
 
     private boolean wantsSelfClose = false;
 
-    public UIAutoclosingPopupMenu(String[] strings, Runnable[] tilesets, int h, boolean rsz) {
-        super(strings, tilesets, h, rsz);
+    public UIAutoclosingPopupMenu(String[] strings, Runnable[] tilesets, int h, int sh, boolean rsz) {
+        super(strings, tilesets, h, sh, rsz);
     }
 
     @Override

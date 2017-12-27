@@ -10,25 +10,30 @@ package gabien.ui;
 import gabien.IGrInDriver;
 
 /**
- * Created on 12/27/16.
+ * Created on 12/27/16, has been modified quite a bit since then (now it just gives up and uses panels)
  */
-public class UIPopupMenu extends UIElement {
-    public final String[] menuItems;
-    public final Runnable[] menuExecs;
-    private final double[] pressedState;
+public class UIPopupMenu extends UIPanel {
+    private UIScrollLayout usl;
     public boolean canResize = false;
-    public int textHeight;
 
-    public UIPopupMenu(String[] strings, Runnable[] tilesets, int h, boolean rsz) {
-        menuItems = strings;
-        menuExecs = tilesets;
-        pressedState = new double[menuItems.length];
-        textHeight = h;
+    public UIPopupMenu(String[] strings, final Runnable[] tilesets, int h, int sh, boolean rsz) {
+        usl = new UIScrollLayout(true, sh);
         canResize = true;
         int szw = 1;
-        for (String s : strings)
-            szw = Math.max(szw, UILabel.getRecommendedSize(s, textHeight).width);
-        int sz = UILabel.getRecommendedSize("", textHeight).height;
+        for (int i = 0; i < strings.length; i++) {
+            final int fi = i;
+            UITextButton utb = new UITextButton(h, strings[i], new Runnable() {
+                @Override
+                public void run() {
+                    optionExecute(fi);
+                    tilesets[fi].run();
+                }
+            });
+            szw = Math.max(szw, utb.getBounds().width);
+            usl.panels.add(utb);
+        }
+        int sz = UITextButton.getRecommendedSize("", h).height;
+        allElements.add(usl);
         setBounds(new Rect(0, 0, szw, sz * strings.length));
         canResize = rsz;
     }
@@ -38,46 +43,23 @@ public class UIPopupMenu extends UIElement {
         Rect b = getBounds();
         if (!canResize)
             igd.clearRect(0, 0, 0, ox, oy, b.width, b.height);
-        int sz = UITextButton.getRecommendedSize("", textHeight).height;
-        int i = 0;
-        for (String s : menuItems) {
-            if (pressedState[i] > 0)
-                pressedState[i] -= deltaTime;
-            UITextButton.drawButton(ox, oy, b.width, sz, pressedState[i] > 0, igd);
-            UITextButton.drawButtonText(ox, oy, b.width, sz, pressedState[i] > 0, igd, s, textHeight);
-            i++;
-            oy += sz;
-        }
+        super.updateAndRender(ox, oy, deltaTime, selected, igd);
     }
 
     @Override
     public void setBounds(Rect b) {
         if (canResize) {
-            int sz = UILabel.getRecommendedSize("", textHeight).height;
-            if (b.height != (menuItems.length * sz)) {
-                super.setBounds(new Rect(b.x, b.y, b.width, menuItems.length * sz));
-            } else {
-                super.setBounds(b);
+            if (b.height != getBounds().height) {
+                super.setBounds(new Rect(b.x, b.y, b.width, getBounds().height));
+                usl.setBounds(new Rect(0, 0, b.width, getBounds().height));
+                return;
             }
-        } else {
-            super.setBounds(b);
         }
+        super.setBounds(b);
+        usl.setBounds(new Rect(0, 0, b.width, b.height));
     }
 
-    @Override
-    public void handleClick(int x, int y, int button) {
-        int sz = UILabel.getRecommendedSize("", textHeight).height;
-        int b = UIElement.sensibleCellDiv(y, sz);
-        if (b < 0)
-            return;
-        if (b >= menuItems.length)
-            return;
-        pressedState[b] = 0.5;
-        optionExecute(b);
-    }
-
-    // Used for special behavior when an option is run (closing the menu, wasting time, closing the menu, counting kittens, closing the menu...)
+    // Used for special behavior before an option is run (closing the menu, wasting time, closing the menu, counting kittens, closing the menu...)
     public void optionExecute(int b) {
-        menuExecs[b].run();
     }
 }

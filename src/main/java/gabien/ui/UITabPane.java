@@ -245,12 +245,16 @@ public class UITabPane extends UIPanel {
                 int w = bounds.width / 8;
                 int h = (bounds.height - tabBarHeight) / 8;
                 int tX = x / w;
-                int tY = y / h;
-                if (tX == 8)
-                    tX--;
-                if (tY == 8)
-                    tY--;
-                incomingNTState[tX + (tY * 8)] = 1;
+                int tY = (y - tabBarHeight) / h;
+                if (tY >= 0) {
+                    if (tX < 0)
+                        tX = 0;
+                    if (tX >= 8)
+                        tX = 7;
+                    if (tY >= 8)
+                        tY = 7;
+                    incomingNTState[tX + (tY * 8)] = 1;
+                }
             }
         }
     }
