@@ -183,8 +183,8 @@ public class ScissorGrInDriver implements IGrInDriver, INativeImageHolder {
     }
 
     @Override
-    public Runnable[] getLockingSequence() {
-        return ((INativeImageHolder) inner).getLockingSequence();
+    public Runnable[] getLockingSequenceN() {
+        return ((INativeImageHolder) inner).getLockingSequenceN();
     }
 
     @Override

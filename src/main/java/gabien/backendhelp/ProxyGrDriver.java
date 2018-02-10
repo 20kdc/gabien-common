@@ -90,9 +90,9 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public Runnable[] getLockingSequence() {
+    public Runnable[] getLockingSequenceN() {
         INativeImageHolder t = (INativeImageHolder) target;
-        return t.getLockingSequence();
+        return t.getLockingSequenceN();
     }
 
     @Override

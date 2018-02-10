@@ -11,6 +11,7 @@ import gabien.IGrDriver;
 import gabien.IImage;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -30,7 +31,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
 
     public AtomicBoolean shutdownThread = new AtomicBoolean(false);
 
-    public Thread forwardingThread = new Thread() {
+    public Thread forwardingThread = new Thread(this.toString()) {
         @Override
         public void run() {
             LinkedRunnable current = firstCommand;
@@ -50,7 +51,6 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     public int clientWidth = 0;
     public int clientHeight = 0;
     public final T target;
-    public Runnable waitingLock;
 
     public ThreadForwardingGrDriver(T targ) {
         forwardingThread.start();
@@ -69,38 +69,37 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
 
     @Override
     public int[] getPixels() {
-        flushCmdBuf();
-        return target.getPixels();
+        Runnable r = flushCmdBufAndLock();
+        int[] bp = target.getPixels();
+        r.run();
+        return bp;
     }
 
     @Override
     public byte[] createPNG() {
-        flushCmdBuf();
-        return target.createPNG();
+        Runnable r = flushCmdBufAndLock();
+        byte[] bp = target.createPNG();
+        r.run();
+        return bp;
     }
 
-    public void flushCmdBuf() {
-        Runnable[] block = getLockingSequence();
+    protected Runnable flushCmdBufAndLock() {
+        Runnable[] block = getLockingSequenceN();
         block[0].run();
-        waitingLock = block[1];
         // refresh visible width and height
         clientWidth = target.getWidth();
         clientHeight = target.getHeight();
+        return block[1];
     }
 
     public void shutdown() {
         if (shutdownThread.get())
             return;
-        flushCmdBuf();
+        Runnable r = flushCmdBufAndLock();
         shutdownThread.set(true);
+        r.run();
     }
 
-    public void cmdUnwait() {
-        if (waitingLock != null) {
-            waitingLock.run();
-            waitingLock = null;
-        }
-    }
     public void cmdSubmitCore(Runnable r) {
         LinkedRunnable lr = new LinkedRunnable(r);
         lastCommand.next = lr;
@@ -114,7 +113,6 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     // The first function ensures the target worker has stopped.
     // The second function lets it go on after the work is done.
     private Runnable[] createBlockIntern() {
-        cmdUnwait();
         final Semaphore lA = new Semaphore(1);
         final Semaphore lB = new Semaphore(1);
         // 1. Acquire LA & LB on this thread...
@@ -125,7 +123,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
             public void run() {
                 lB.release();
                 // 2. ...to block this thread...
-                lA.acquireUninterruptibly();
+                acquireImpl(lA);
                 // 5. It continues
             }
         });
@@ -133,7 +131,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
             @Override
             public void run() {
                 // 2. ...to block this thread...
-                lB.acquireUninterruptibly();
+                acquireImpl(lB);
                 // 3. Released by the target worker's lB release, lA still held, do work
             }
         }, new Runnable() {
@@ -145,10 +143,25 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
         }};
     }
 
+    private void acquireImpl(Semaphore lA) {
+        if (true) {
+            // Always use this!!!
+            lA.acquireUninterruptibly();
+        } else {
+            // For deadlock debugging only, not totally reliable
+            try {
+                if (!lA.tryAcquire(2, TimeUnit.SECONDS))
+                    throw new RuntimeException("The thread " + Thread.currentThread() + " failed to acquire " + this);
+            } catch (InterruptedException ie) {
+                throw new RuntimeException(ie);
+            }
+        }
+    }
+
     @Override
-    public Runnable[] getLockingSequence() {
+    public Runnable[] getLockingSequenceN() {
         final Runnable[] base = createBlockIntern();
-        final Runnable[] b2 = ((INativeImageHolder) target).getLockingSequence();
+        final Runnable[] b2 = ensureTargetImageStable(target);
         if (b2 == null)
             return base;
         return new Runnable[] {
@@ -171,15 +184,23 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
 
     // basic operations
 
+    private Runnable[] ensureTargetImageStable(IImage i) {
+        return ((INativeImageHolder) i).getLockingSequenceN();
+    }
+
     @Override
     public void blitImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final IImage i) {
         if (i == null)
             throw new NullPointerException();
-        cmdUnwait();
+        final Runnable[] r = ensureTargetImageStable(i);
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
+                if (r != null)
+                    r[0].run();
                 target.blitImage(srcx, srcy, srcw, srch, x, y, i);
+                if (r != null)
+                    r[1].run();
             }
         });
     }
@@ -188,11 +209,15 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     public void blitScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final IImage i) {
         if (i == null)
             throw new NullPointerException();
-        cmdUnwait();
+        final Runnable[] r = ensureTargetImageStable(i);
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
+                if (r != null)
+                    r[0].run();
                 target.blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i);
+                if (r != null)
+                    r[1].run();
             }
         });
     }
@@ -201,11 +226,15 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     public void blitRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IImage i) {
         if (i == null)
             throw new NullPointerException();
-        cmdUnwait();
+        final Runnable[] r = ensureTargetImageStable(i);
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
+                if (r != null)
+                    r[0].run();
                 target.blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i);
+                if (r != null)
+                    r[1].run();
             }
         });
     }
@@ -214,18 +243,21 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     public void blendRotatedScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final int angle, final IImage i, final boolean blendSub) {
         if (i == null)
             throw new NullPointerException();
-        cmdUnwait();
+        final Runnable[] r = ensureTargetImageStable(i);
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
+                if (r != null)
+                    r[0].run();
                 target.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
+                if (r != null)
+                    r[1].run();
             }
         });
     }
 
     @Override
     public void drawText(final int x, final int y, final int r, final int g, final int b, final int i, final String text) {
-        cmdUnwait();
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
@@ -236,7 +268,6 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
 
     @Override
     public void clearAll(final int i, final int i0, final int i1) {
-        cmdUnwait();
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
@@ -247,7 +278,6 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
 
     @Override
     public void clearRect(final int r, final int g, final int b, final int x, final int y, final int width, final int height) {
-        cmdUnwait();
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
