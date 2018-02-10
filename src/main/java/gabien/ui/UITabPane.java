@@ -179,7 +179,7 @@ public class UITabPane extends UIPanel {
         }
     }
 
-    private boolean handleIncoming() {
+    public boolean handleIncoming() {
         if (incomingTabs.size() > 0) {
             tabs.addAll(incomingTabs);
             if (selectedElement == null) {
@@ -366,6 +366,10 @@ public class UITabPane extends UIPanel {
             idx++;
         }
         return idx;
+    }
+
+    public boolean getShortened() {
+        return shortTabs != -1;
     }
 
     public void addTab(UIWindowView.WVWindow wvWindow) {

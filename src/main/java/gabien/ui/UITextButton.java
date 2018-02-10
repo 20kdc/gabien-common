@@ -21,7 +21,7 @@ public class UITextButton extends UIButton {
     }
 
     public static Rect getRecommendedSize(String text, int txh) {
-        // See UILabel for the logic behind only adding margin once to the rectangle
+        // See UILabel for the logic behind only adding margin once to the rectangle height.
         int margin = txh / 8;
         // Notably, there's an additional horizontal bit of margin for contrast against the (light) sides of the button.
         return new Rect(0, 0, UILabel.getTextLength(text, txh) + (margin * 2) + 2, txh + margin);
@@ -40,12 +40,16 @@ public class UITextButton extends UIButton {
     }
 
     public static void drawButtonText(int ox, int oy, int width, int height, boolean state, IGrInDriver igd, String text, int textHeight) {
+        /*
         int margin = getPressOffset(height);
         int m2 = 1 + (margin / 3);
         int po = 0;
         if (state)
             po = m2;
         // height could be elementBounds.height - m2, but some cases exist where buttons are resized
-        UILabel.drawString(igd, ox + 2 + margin - m2, oy + 1 + (state ? (margin + po) : margin), text, true, textHeight);
+        UILabel.drawString(igd, ox + 2 + margin - m2, oy + (state ? (margin + po) : margin), text, true, textHeight);*/
+        Rect cr = UIButton.getContentsRect(width, height, state);
+        // Offset of 1 is accounted for above.
+        UILabel.drawString(igd, ox + 1 + cr.x, oy + cr.y, text, true, textHeight);
     }
 }

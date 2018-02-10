@@ -36,8 +36,7 @@ public class UIButton extends UIElement {
     }
 
     public static void drawButton(int ox, int oy, int w, int h, boolean state, IGrDriver igd) {
-        boolean x2 = h == 18;
-        if ((w != 10) && (h != 18)) {
+        if ((h != 9) && (h != 18)) {
             // no bitmaps here
             int margin = getPressOffset(h);
             int c1 = 32; // shadow
@@ -54,6 +53,7 @@ public class UIButton extends UIElement {
             int m2 = 1 + (margin / 3);
             drawButtonCore(c1, c2, c3, ox + m2, oy + m2 + ooy, margin - m2, w - (m2 * 2), h - (m2 * 2), igd, true);
         } else {
+            boolean x2 = h == 18;
             int po = state ? (x2 ? 6 : 3) : 0;
             IImage i = GaBIEn.getImageCK("textButton.png", 255, 0, 255);
             igd.blitImage((x2 ? 6 : 0) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox, oy, i);
@@ -61,6 +61,21 @@ public class UIButton extends UIElement {
                 igd.blitImage((x2 ? 8 : 1) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + pp, oy, i);
             igd.blitImage((x2 ? 10 : 2) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + (w - (x2 ? 2 : 1)), oy, i);
         }
+    }
+
+    protected static Rect getContentsRect(int width, int height, boolean state) {
+        int margin, po;
+        if ((height != 9) && (height != 18)) {
+            margin = getPressOffset(height);
+            po = margin;
+        } else if (height == 18) {
+            po = 2;
+            margin = 2;
+        } else {
+            po = 1;
+            margin = 1;
+        }
+        return new Rect(margin, margin + (state ? po : 0), width - (margin * 2), height - (margin * 2));
     }
 
     protected static int getPressOffset(int h) {
