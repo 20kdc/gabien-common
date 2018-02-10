@@ -10,15 +10,15 @@ package gabien.ui;
 import gabien.IGrInDriver;
 
 public abstract class UIElement {
+    // The reason for this weirdness is because changes to bounds should go through setBounds.
     private Rect elementBounds = new Rect(0, 0, 1, 1);
 
-    // Notably, it's perfectly safe to mess with the inputs and outputs of these functions
     public void setBounds(Rect r) {
-        elementBounds = new Rect(r.x, r.y, r.width, r.height);
+        elementBounds = r;
     }
 
-    public Rect getBounds() {
-        return new Rect(elementBounds.x, elementBounds.y, elementBounds.width, elementBounds.height);
+    public final Rect getBounds() {
+        return  elementBounds;
     }
 
     public abstract void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd);

@@ -48,7 +48,18 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             clearKeysLater = false;
         }
         Rect bounds = getBounds();
-        backing.setBounds(new Rect(0, 0, bounds.width, bounds.height));
+        Rect backOldBounds = backing.getBounds();
+        boolean backingNeedsRefresh = false;
+        if (backOldBounds.x != 0)
+            backingNeedsRefresh = true;
+        if (backOldBounds.y != 0)
+            backingNeedsRefresh = true;
+        if (backOldBounds.width != bounds.width)
+            backingNeedsRefresh = true;
+        if (backOldBounds.height != bounds.height)
+            backingNeedsRefresh = true;
+        if (backingNeedsRefresh)
+            backing.setBounds(new Rect(0, 0, bounds.width, bounds.height));
         backing.updateAndRender(ox, oy, deltaTime, selected && backingSelected, igd);
         LinkedList<WVWindow> wantsDeleting = new LinkedList<WVWindow>();
         int windowFrameHeight = getWindowFrameHeight();

@@ -9,6 +9,8 @@ package gabien;
 
 import gabien.backendhelp.Blender;
 import gabien.backendhelp.INativeImageHolder;
+import gabien.ui.Intersector;
+import gabien.ui.MTIntersector;
 import gabien.ui.Rect;
 
 import java.util.HashSet;
@@ -49,7 +51,15 @@ public class ScissorGrInDriver implements IGrInDriver, INativeImageHolder {
 
     @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
-        commonBlitImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i);
+        // As this is the most common operation, and commonBlitImage causes a ton of GC horror,
+        //  let's NOT use commonBlitImage.
+        // Instead, intersect in screen space then apply changes to src here.
+        Intersector it = MTIntersector.singleton.get();
+        it.set(workLeft, workTop, workRight - workLeft, workBottom - workTop);
+        if (it.intersect(x, y, srcw, srch)) {
+            // disclaimer: invalidates intersector state
+            inner.blitImage(srcx + (it.x - x), srcy + (it.y - y), it.width, it.height, it.x, it.y, i);
+        }
     }
 
     @Override
@@ -65,7 +75,8 @@ public class ScissorGrInDriver implements IGrInDriver, INativeImageHolder {
 
     @Override
     public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
-        Blender.blendRotatedScaledImage(this, srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
+        // could use the Blender class, but this has potential downsides for perf.
+        inner.blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
     }
 
     @Override
@@ -111,10 +122,11 @@ public class ScissorGrInDriver implements IGrInDriver, INativeImageHolder {
 
     @Override
     public void clearRect(int r, int g, int b, int x, int y, int width, int height) {
-        Rect rct = new Rect(x, y, width, height);
-        rct = new Rect(workLeft, workTop, workRight - workLeft, workBottom - workTop).getIntersection(rct);
-        if (rct != null)
-            inner.clearRect(r, g, b, rct.x, rct.y, rct.width, rct.height);
+        Intersector i = MTIntersector.singleton.get();
+        i.set(workLeft, workTop, workRight - workLeft, workBottom - workTop);
+        // as per usual: "the call that will alter intersector is last"
+        if (i.intersect(x, y, width, height))
+            inner.clearRect(r, g, b, i.x, i.y, i.width, i.height);
     }
 
     @Override

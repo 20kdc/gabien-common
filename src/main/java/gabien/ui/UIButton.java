@@ -23,6 +23,19 @@ public class UIButton extends UIElement {
     public double pressedTime = 0;
     public boolean state = false;
     public boolean toggle = false;
+    private Rect contentsBoundsST = new Rect(0, 0, 0, 0);
+    private Rect contentsBoundsSF = new Rect(0, 0, 0, 0);
+
+    @Override
+    public void setBounds(Rect r) {
+        super.setBounds(r);
+        contentsBoundsST = getContentsRect(r.width, r.height, true);
+        contentsBoundsSF = getContentsRect(r.width, r.height, false);
+    }
+
+    public Rect getContentsRect() {
+        return state ? contentsBoundsST : contentsBoundsSF;
+    }
 
     @Override
     public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {

@@ -9,9 +9,10 @@ package gabien.ui;
 
 /**
  * A basic rectangle class to make life easier.
+ * Creation date unknown.
  */
-public class Rect {
-    public int x, y, width, height;
+public final class Rect {
+    public final int x, y, width, height;
 
     public Rect(int i, int i0, int i1, int i2) {
         x = i;
@@ -29,40 +30,20 @@ public class Rect {
         return false;
     }
 
-    // If this is true, line intersection start is Math.max(A, B)
-    //  and line intersection width is Math.min(A + AL, B + BL) - start
-    private boolean lineIntersects(int A, int AL, int B, int BL) {
-        if (AL <= 0)
-            return false;
-        if (BL <= 0)
-            return false;
-        if (A >= B)
-            if (A < B + BL)
-                return true;
-        if (B >= A)
-            if (B < A + AL)
-                return true;
-        return false;
-    }
-
-    private int lineintersectWidth(int A, int AL, int B, int BL, int start) {
-        return Math.min(A + AL, B + BL) - start;
-    }
-
     public boolean intersects(Rect rect) {
-        if (lineIntersects(rect.x, rect.width, x, width))
-            if (lineIntersects(rect.y, rect.height, y, height))
+        if (Intersector.intersects1i(rect.x, rect.width, x, width))
+            if (Intersector.intersects1i(rect.y, rect.height, y, height))
                 return true;
         return false;
     }
 
     public Rect getIntersection(Rect rect) {
-        if (lineIntersects(rect.x, rect.width, x, width)) {
+        if (Intersector.intersects1i(rect.x, rect.width, x, width)) {
             int xStart = Math.max(rect.x, x);
-            int xW = lineintersectWidth(rect.x, rect.width, x, width, xStart);
-            if (lineIntersects(rect.y, rect.height, y, height)) {
+            int xW = Intersector.intersect1iWidth(rect.x, rect.width, x, width, xStart);
+            if (Intersector.intersects1i(rect.y, rect.height, y, height)) {
                 int yStart = Math.max(rect.y, y);
-                int yH = lineintersectWidth(rect.y, rect.height, y, height, yStart);
+                int yH = Intersector.intersect1iWidth(rect.y, rect.height, y, height, yStart);
                 return new Rect(xStart, yStart, xW, yH);
             }
         }
