@@ -50,24 +50,24 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             clearKeysLater = false;
         }
         Rect bounds = getBounds();
-        Rect backOldBounds = backing.getBounds();
-        boolean backingNeedsRefresh = false;
-        if (backOldBounds.x != 0)
-            backingNeedsRefresh = true;
-        if (backOldBounds.y != 0)
-            backingNeedsRefresh = true;
-        if (backOldBounds.width != bounds.width)
-            backingNeedsRefresh = true;
-        if (backOldBounds.height != bounds.height)
-            backingNeedsRefresh = true;
-        if (backingNeedsRefresh) {
-            backing.setBounds(new Rect(0, 0, bounds.width, bounds.height));
-            // Re-boundcheck all windows
-            for (WVWindow wv : windowList)
-                windowBoundsCheck(wv);
+        if (backing != null) {
+            Rect backOldBounds = backing.getBounds();
+            boolean backingNeedsRefresh = false;
+            if (backOldBounds.x != 0)
+                backingNeedsRefresh = true;
+            if (backOldBounds.y != 0)
+                backingNeedsRefresh = true;
+            if (backOldBounds.width != bounds.width)
+                backingNeedsRefresh = true;
+            if (backOldBounds.height != bounds.height)
+                backingNeedsRefresh = true;
+            if (backingNeedsRefresh)
+                backing.setBounds(new Rect(0, 0, bounds.width, bounds.height));
+            backing.updateAndRender(ox, oy, deltaTime, selected && backingSelected, igd);
+        } else {
+            igd.clearRect(0, 0, 64, ox, oy, bounds.width, bounds.height);
         }
 
-        backing.updateAndRender(ox, oy, deltaTime, selected && backingSelected, igd);
         LinkedList<WVWindow> wantsDeleting = new LinkedList<WVWindow>();
         int windowFrameHeight = getWindowFrameHeight();
         ScissorGrInDriver wIgd = new ScissorGrInDriver();
@@ -99,6 +99,13 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             uie.contents.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, wIgd);
         }
         windowList.removeAll(wantsDeleting);
+    }
+
+    @Override
+    public void setBounds(Rect r) {
+        super.setBounds(r);
+        for (WVWindow wv : windowList)
+            windowBoundsCheck(wv);
     }
 
     // Note: -1 is a special parameter to this which means "do not actually do anything other than selection"
@@ -154,7 +161,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         backingSelected = true;
         draggingBackend = true;
         if (button != -1)
-            backing.handleClick(x, y, button);
+            if (backing != null)
+                backing.handleClick(x, y, button);
     }
 
     @Override
@@ -181,7 +189,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     @Override
     public void handleDrag(int x, int y) {
         if (draggingBackend) {
-            backing.handleDrag(x, y);
+            if (backing != null)
+                backing.handleDrag(x, y);
             return;
         }
         if (windowList.size() > 0) {
@@ -191,11 +200,20 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 int ox = r.x + (x - lastMX);
                 int oy = r.y + (y - lastMY);
                 lastWindow.contents.setBounds(new Rect(ox, oy, r.width, r.height));
+                windowBoundsCheck(lastWindow);
             } else if (dragInWindow) {
                 lastWindow.contents.handleDrag(x - r.x, y - r.y);
             } else if (resizingWindow) {
                 int ox = r.width + (x - lastMX);
                 int oy = r.height + (y - lastMY);
+                Rect me = getBounds();
+                if ((r.x + ox) > me.width)
+                    ox = me.width - r.x;
+                int minW = TabUtils.getTabWidth(lastWindow, 0, getWindowFrameHeight());
+                if (ox < minW)
+                    ox = minW;
+                if (oy < 0)
+                    oy = 0;
                 lastWindow.contents.setBounds(new Rect(r.x, r.y, ox, oy));
             }
         }
@@ -224,7 +242,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     @Override
     public void handleRelease(int x, int y) {
         if (draggingBackend) {
-            backing.handleRelease(x, y);
+            if (backing != null)
+                backing.handleRelease(x, y);
         } else if (dragInWindow) {
             if (windowList.size() > 0) {
                 WVWindow lastWindow = windowList.getLast();
@@ -247,7 +266,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         handleClick(x, y, -1);
         // Use the currently selected whatever it is.
         if (backingSelected) {
-            backing.handleMousewheel(x, y, north);
+            if (backing != null)
+                backing.handleMousewheel(x, y, north);
         } else {
             if (windowList.size() > 0) {
                 WVWindow window = windowList.getLast();

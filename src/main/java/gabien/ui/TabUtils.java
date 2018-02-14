@@ -19,6 +19,8 @@ public class TabUtils {
         int margin = h / 8;
         int tabExMargin = margin + (margin / 2);
         int textHeight = h - (margin * 2);
+        if (shortTab == 0)
+            tabExMargin = 0;
         return UILabel.getTextLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
     }
 
