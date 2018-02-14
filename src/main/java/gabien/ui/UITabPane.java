@@ -22,22 +22,25 @@ public class UITabPane extends UIPanel {
     private LinkedList<UIWindowView.WVWindow> incomingTabs = new LinkedList<UIWindowView.WVWindow>();
     private HashSet<UIElement> outgoingTabs = new HashSet<UIElement>();
 
-    private final int tabTextHeight;
     // This is used as the basis for calculations.
     public final int tabBarHeight;
-    private final int padding;
+
+    public UIWindowView.WVWindow selectedTab;
+
+    // tabOverheadHeight is the Y position of the selected window.
+    // tabBarY is where the bar is in the overhead.
+    private int tabBarY, tabOverheadHeight, scrollAreaX;
+
+    private final UIScrollbar tabScroller;
 
     public boolean currentClickOnBar = false;
     public int currentClickTabOfsX = 0;
     // If this is false, the tab pane should try and actively avoid situations in which no tab is selected by choosing the first tab.
+    // That said, it's not impossible the calling application could force the pane into a situation where no tab is selected...
     public final boolean canSelectNone;
     public final boolean canDragTabs;
     // -1 means not shortened, otherwise it's max length.
     private int shortTabs = -1;
-
-    // width margin handling
-    private final int tabExMargin;
-    private final int tabIcoMargin;
 
     // for if no tab is selected
     private double[] currentNTState = new double[8 * 8];
@@ -46,25 +49,19 @@ public class UITabPane extends UIPanel {
     public double visualizationOrange = 0.0d;
 
     public UITabPane(int h, boolean csn, boolean cdt) {
-        canSelectNone = csn;
-        canDragTabs = cdt;
-        tabTextHeight = h;
-        useScissoring = true;
-        padding = ((h + 7) / 8);
-        tabBarHeight = tabTextHeight + padding + 2; // +2 for additional border
-        tabExMargin = h / 8;
-        tabIcoMargin = h / 4;
+        this(h, csn, cdt, 0);
     }
 
-    @Override
-    public void setBounds(Rect r) {
-        // The reason that it checks if the selected element is about to be closed is because this implies double-presence.
-        // Double-presence is fine, but must be carefully controlled.
-        if (selectedElement != null)
-            if (!outgoingTabs.contains(selectedElement))
-                selectedElement.setBounds(new Rect(0, tabBarHeight, r.width, r.height - tabBarHeight));
-        super.setBounds(r);
-        updateShortTabs();
+    public UITabPane(int h, boolean csn, boolean cdt, int scrollerSize) {
+        canSelectNone = csn;
+        canDragTabs = cdt;
+        useScissoring = true;
+        tabBarHeight = TabUtils.getHeight(h);
+        if (scrollerSize == 0) {
+            tabScroller = null;
+        } else {
+            tabScroller = new UIScrollbar(false, scrollerSize);
+        }
     }
 
     @Override
@@ -73,14 +70,13 @@ public class UITabPane extends UIPanel {
         super.updateAndRender(ox, oy, DeltaTime, select, igd);
         Rect bounds = getBounds();
         igd.clearRect(16, 16, 16, ox, oy, bounds.width, tabBarHeight);
-        // There would be "oy + 1" instead of just "oy", but ofc it has to be centred, so it would just be -1'd again...
-        igd.clearRect(32, 32, 32, ox, oy + ((tabTextHeight + padding) / 2), bounds.width, 2);
+        igd.clearRect(32, 32, 32, ox, oy + ((tabBarHeight / 2) - 1), bounds.width, 2);
 
         LinkedList<UIWindowView.WVWindow> outgoing2 = new LinkedList<UIWindowView.WVWindow>();
         HashSet<UIElement> outgoingTabs2 = outgoingTabs;
         outgoingTabs = new HashSet<UIElement>();
         for (int pass = 0; pass < ((currentClickOnBar && canDragTabs) ? 2 : 1); pass++) {
-            int pos = 0;
+            int pos = getScrollOffsetX();
             boolean toggle = false;
             for (UIWindowView.WVWindow w : tabs) {
                 if (outgoingTabs2.contains(w.contents)) {
@@ -89,9 +85,9 @@ public class UITabPane extends UIPanel {
                 }
                 // This is used for all rendering.
                 int theDisplayOX = ox + pos;
-                int tabW = getTabWidth(w, shortTabs);
+                int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
                 int base = toggle ? 64 : 32;
-                if (selectedElement == w.contents)
+                if (selectedTab == w)
                     base = 128;
                 toggle = !toggle;
 
@@ -99,10 +95,10 @@ public class UITabPane extends UIPanel {
                 boolean shouldRender = true;
                 if (pass == 0) {
                     if (currentClickOnBar && canDragTabs)
-                        if (selectedElement == w.contents)
+                        if (selectedTab == w)
                             shouldRender = false;
                 } else {
-                    if (selectedElement != w.contents)
+                    if (selectedTab != w)
                         shouldRender = false;
                     theDisplayOX = igd.getMouseX() - currentClickTabOfsX;
                 }
@@ -111,41 +107,27 @@ public class UITabPane extends UIPanel {
                     continue;
                 }
 
-                int margin = tabTextHeight / 6;
-                igd.clearRect(base, base, base, theDisplayOX, oy, tabW, tabBarHeight);
-                // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
-                igd.clearRect(base / 2, base / 2, base / 2, theDisplayOX + margin, oy + margin, tabW - (margin * 2), (tabTextHeight + padding + 2) - (margin * 2));
-
-                UILabel.drawString(igd, theDisplayOX + tabExMargin, oy + 1 + padding, getVisibleTabName(w, shortTabs), true, tabTextHeight);
-
-                int icoBack = tabBarHeight;
-                for (UIWindowView.IWVWindowIcon i : w.icons) {
-                    // sometimes too bright, deal with that
-                    int size = tabBarHeight - (tabIcoMargin * 2);
-                    int subMargin = tabIcoMargin / 2;
-                    igd.clearRect(0, 0, 0, theDisplayOX + tabW - ((icoBack - tabIcoMargin) + subMargin), oy + tabIcoMargin - subMargin, size + (subMargin * 2), size + (subMargin * 2));
-
-                    i.draw(igd, theDisplayOX + tabW - (icoBack - tabIcoMargin), oy + tabIcoMargin, size);
-                    icoBack += tabBarHeight;
-                }
+                TabUtils.drawTab(base, base / 2, theDisplayOX, oy + tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
 
                 pos += tabW;
             }
         }
-        if (outgoingTabs2.contains(selectedElement)) {
-            if (canSelectNone) {
-                selectTab(null);
-            } else if (tabs.size() > 0) {
-                selectTab(tabs.getFirst().contents);
-            } else {
-                selectTab(null);
+        if (selectedTab != null) {
+            if (outgoingTabs2.contains(selectedTab.contents)) {
+                if (canSelectNone) {
+                    selectTab(null);
+                } else if (tabs.size() > 0) {
+                    selectTab(tabs.getFirst().contents);
+                } else {
+                    selectTab(null);
+                }
             }
         }
         tabs.removeAll(outgoing2);
         if (willUpdateLater)
-            updateShortTabs();
+            setBounds(getBounds());
 
-        if (selectedElement == null) {
+        if (selectedTab == null) {
             for (int i = 0; i < currentNTState.length; i++) {
                 double delta = DeltaTime / 4.0d;
                 if (currentNTState[i] < incomingNTState[i]) {
@@ -179,13 +161,21 @@ public class UITabPane extends UIPanel {
         }
     }
 
+    // Used as a base for drawing.
+    private int getScrollOffsetX() {
+        if (tabScroller != null)
+            return -(int) (tabScroller.scrollPoint * scrollAreaX);
+        return 0;
+    }
+
     public boolean handleIncoming() {
         if (incomingTabs.size() > 0) {
             tabs.addAll(incomingTabs);
-            if (selectedElement == null) {
+            if (selectedTab == null) {
                 allElements.clear();
-                selectedElement = incomingTabs.getFirst().contents;
-                allElements.add(selectedElement);
+                selectedTab = incomingTabs.getFirst();
+                selectedElement = selectedTab.contents;
+                allElements.add(selectedTab.contents);
                 setBounds(getBounds());
             }
             incomingTabs.clear();
@@ -194,69 +184,33 @@ public class UITabPane extends UIPanel {
         return false;
     }
 
-    private String getVisibleTabName(UIWindowView.WVWindow w, int shortTab) {
-        String name = w.contents.toString();
-        if (shortTab != -1)
-            return name.substring(0, Math.min(name.length(), shortTab));
-        return name;
-    }
-
-    private int getTabWidth(UIWindowView.WVWindow window, int shortTab) {
-        return UILabel.getTextLength(getVisibleTabName(window, shortTab), tabTextHeight) + (tabExMargin * 2) + (tabBarHeight * window.icons.length);
-    }
-
     @Override
     public void handleClick(int x, int y, int button) {
-        if (y < tabBarHeight) {
-            currentClickOnBar = true;
-            currentClickTabOfsX = 0;
-            int pos = 0;
-            for (UIWindowView.WVWindow w : tabs) {
-                if (w.contents == selectedElement)
-                    currentClickTabOfsX = x - pos;
-                int oldPos = pos;
-                pos += getTabWidth(w, shortTabs);
-                if (x < pos) {
-                    int icoBack = tabBarHeight;
-                    for (UIWindowView.IWVWindowIcon i : w.icons) {
-                        // sometimes too bright, deal with that
-                        int size = tabBarHeight - (tabIcoMargin * 2);
-                        Rect rc = new Rect(pos - (icoBack - tabIcoMargin), tabIcoMargin, size, size);
-                        if (rc.contains(x, y)) {
-                            i.click();
+        currentClickOnBar = false;
+        if (y < (tabBarY + tabBarHeight)) {
+            if (y >= tabBarY) {
+                currentClickOnBar = true;
+                currentClickTabOfsX = 0;
+                int pos = getScrollOffsetX();
+                for (UIWindowView.WVWindow w : tabs) {
+                    if (selectedTab == w)
+                        currentClickTabOfsX = x - pos;
+                    int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
+                    if (x < (pos + tabW)) {
+                        if (TabUtils.clickInTab(w, x - pos, y - tabBarY, tabW, tabBarHeight))
                             return;
-                        }
-                        icoBack += tabBarHeight;
+                        currentClickTabOfsX = x - pos;
+                        selectTab(w.contents);
+                        return;
                     }
-                    currentClickTabOfsX = x - oldPos;
-                    selectTab(w.contents);
-                    return;
+                    pos += tabW;
                 }
-            }
-            if (canSelectNone)
-                selectTab(null);
-        } else {
-            currentClickOnBar = false;
-            if (selectedElement != null) {
-                selectedElement.handleClick(x, y - tabBarHeight, button);
-            } else {
-                Rect bounds = getBounds();
-                // slight interactivity w/ NT
-                int w = bounds.width / 8;
-                int h = (bounds.height - tabBarHeight) / 8;
-                int tX = x / w;
-                int tY = (y - tabBarHeight) / h;
-                if (tY >= 0) {
-                    if (tX < 0)
-                        tX = 0;
-                    if (tX >= 8)
-                        tX = 7;
-                    if (tY >= 8)
-                        tY = 7;
-                    incomingNTState[tX + (tY * 8)] = 1;
-                }
+                if (canSelectNone)
+                    selectTab(null);
+                return;
             }
         }
+        super.handleClick(x, y, button);
     }
 
     @Override
@@ -281,6 +235,18 @@ public class UITabPane extends UIPanel {
         super.handleRelease(x, y);
     }
 
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        // Please don't throw computer monitors at me for this.
+        if (tabScroller != null) {
+            if (y < tabOverheadHeight) {
+                tabScroller.handleMousewheel(x, y, north);
+                return;
+            }
+        }
+        super.handleMousewheel(x, y, north);
+    }
+
     private void tabReorderer(int x) {
         // Oscillates if a tab that's being nudged left to make way moves out of range.
         // Since these are always two-frame oscillations, just deal with it the simple way...
@@ -288,15 +254,15 @@ public class UITabPane extends UIPanel {
             // Used to reorder tabs
             int expectedIndex = -1;
             int selectedIndex = -1;
-            int pos = 0;
+            int pos = getScrollOffsetX();
             int i = 0;
             for (UIWindowView.WVWindow w : tabs) {
-                int tabW = getTabWidth(w, shortTabs);
+                int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
                 pos += tabW;
                 if (x < pos)
                     if (expectedIndex == -1)
                         expectedIndex = i;
-                if (w.contents == selectedElement)
+                if (selectedTab == w)
                     selectedIndex = i;
                 i++;
             }
@@ -311,8 +277,11 @@ public class UITabPane extends UIPanel {
 
     public void selectTab(UIElement target) {
         if (target == null) {
-            selectedElement = null;
-            allElements.clear();
+            if (selectedTab != null) {
+                allElements.remove(selectedTab.contents);
+                selectedTab = null;
+                selectedElement = null;
+            }
             return;
         }
         for (int i = 0; i < 2; i++) {
@@ -321,30 +290,52 @@ public class UITabPane extends UIPanel {
                     // verified, actually do it
                     allElements.clear();
                     allElements.add(wv.contents);
+                    selectedTab = wv;
                     selectedElement = wv.contents;
                     setBounds(getBounds());
                     return;
                 }
             }
-            // It'll throw an exception if something is not done immediately,
-            //  and this is usually called after setting up the tabs.
+            // If the application just set up the tabs, we might need to handle incoming early
+            // Basically, prefer the chance of concurrent modification to the certainty of complete failure.
+            // (Concurrent modification shouldn't really ever happen, but...)
             if (handleIncoming())
-                updateShortTabs();
+                setBounds(getBounds());
         }
         throw new RuntimeException("The tab being selected was not available in this pane.");
     }
 
-    private void updateShortTabs() {
+
+    @Override
+    public void setBounds(Rect r) {
+        super.setBounds(r);
         shortTabs = -1;
+        if (tabScroller != null)
+            allElements.remove(tabScroller);
+        tabBarY = 0;
+        tabOverheadHeight = tabBarHeight;
         while (true) {
             int tl = 0;
             int longestTabName = 0;
             for (UIWindowView.WVWindow tab : tabs) {
                 longestTabName = Math.max(tab.contents.toString().length(), longestTabName);
-                tl += getTabWidth(tab, shortTabs);
+                tl += TabUtils.getTabWidth(tab, shortTabs, tabBarHeight);
             }
-            if (tl <= getBounds().width)
-                return;
+            int extra = 0;
+            // If the user can select nothing, then add extra margin for it (!)
+            if (canSelectNone)
+                extra = tabBarHeight;
+            if ((tl + extra) <= r.width)
+                break;
+            if (tabScroller != null) {
+                tabBarY = 0;
+                int tsh = tabScroller.getBounds().height;
+                tabOverheadHeight = tabBarHeight + tsh;
+                tabScroller.setBounds(new Rect(0, tabBarHeight, r.width, tsh));
+                scrollAreaX = (tl + extra) - r.width;
+                allElements.add(tabScroller);
+                break;
+            }
             // advance
             if (shortTabs == -1) {
                 shortTabs = longestTabName - 1;
@@ -353,19 +344,26 @@ public class UITabPane extends UIPanel {
             }
             if (shortTabs <= 0) {
                 shortTabs = 0;
-                return;
+                break;
             }
         }
+        // The reason that it checks if the selected element is about to be closed is because this implies double-presence.
+        // Double-presence is fine, but must be carefully controlled.
+        // Another note is that this is the only place where the selectedTab bounds are setup.
+        // Other stuff goes through this via a setBounds(getBounds()) call, to simplify the logic.
+        if (selectedTab != null)
+            if (!outgoingTabs.contains(selectedTab.contents))
+                selectedTab.contents.setBounds(new Rect(0, tabOverheadHeight, r.width, r.height - tabOverheadHeight));
     }
 
     public int getTabIndex() {
         int idx = 0;
         for (UIWindowView.WVWindow tab : tabs) {
-            if (selectedElement == tab.contents)
+            if (selectedTab == tab)
                 return idx;
             idx++;
         }
-        return idx;
+        return -1;
     }
 
     public boolean getShortened() {

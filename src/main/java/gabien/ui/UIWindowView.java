@@ -41,6 +41,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     @Override
     public void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd) {
         windowList.addAll(upcomingWindowList);
+        for (WVWindow wv : upcomingWindowList)
+            windowBoundsCheck(wv);
         upcomingWindowList.clear();
         int remaining = windowList.size();
         if (clearKeysLater) {
@@ -58,8 +60,13 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             backingNeedsRefresh = true;
         if (backOldBounds.height != bounds.height)
             backingNeedsRefresh = true;
-        if (backingNeedsRefresh)
+        if (backingNeedsRefresh) {
             backing.setBounds(new Rect(0, 0, bounds.width, bounds.height));
+            // Re-boundcheck all windows
+            for (WVWindow wv : windowList)
+                windowBoundsCheck(wv);
+        }
+
         backing.updateAndRender(ox, oy, deltaTime, selected && backingSelected, igd);
         LinkedList<WVWindow> wantsDeleting = new LinkedList<WVWindow>();
         int windowFrameHeight = getWindowFrameHeight();
@@ -77,19 +84,16 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             boolean winSelected = selected && (!backingSelected) && (remaining == 0);
             Rect b = uie.contents.getBounds();
 
-            igd.clearRect(0, 64, 192, ox + b.x + b.width - sizerOfs, oy + b.y + b.height - sizerOfs, sizerSize, sizerSize);
+            int sizerSSize = sizerSize - ((sizerSize - sizerOfs) / 2);
+            igd.clearRect(0, 32, 96, ox + b.x + b.width - sizerOfs, oy + b.y + b.height - sizerOfs, sizerSize, sizerSize);
+            igd.clearRect(0, 64, 192, ox + b.x + b.width - sizerOfs, oy + b.y + b.height - sizerOfs, sizerSSize, sizerSSize);
 
             wIgd.workTop = (oy + b.y) - windowFrameHeight;
             wIgd.workBottom = (oy + b.y) + b.height;
             wIgd.workLeft = ox + b.x;
             wIgd.workRight = (ox + b.x) + b.width;
 
-            UILabel.drawLabel(wIgd, b.width, ox + b.x, (oy + b.y) - windowFrameHeight, uie.contents.toString(), winSelected ? 2 : 1, windowTextHeight);
-            // icons
-            for (int i = 0; i < uie.icons.length; i++) {
-                Rect ico = getWindowIcon(new Rect(ox + b.x, (oy + b.y) - windowFrameHeight, b.width, windowFrameHeight), i);
-                uie.icons[i].draw(wIgd, ico.x, ico.y, ico.height);
-            }
+            TabUtils.drawTab(winSelected ? 192 : 48, 32, ox + b.x, (oy + b.y) - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
 
             wIgd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
             uie.contents.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, wIgd);
@@ -128,12 +132,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 windowList.remove(index);
                 windowList.addLast(uie);
                 if (button == 1) {
-                    for (int j = 0; j < uie.icons.length; j++) {
-                        if (getWindowIcon(windowFrame, j).contains(x, y)) {
-                            uie.icons[j].click();
-                            return;
-                        }
-                    }
+                    if (TabUtils.clickInTab(uie, x - windowFrame.x, y - windowFrame.y, innerWindow.width, windowFrame.height))
+                        return;
                     draggingWindow = true;
                 }
                 return;
@@ -155,15 +155,6 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         draggingBackend = true;
         if (button != -1)
             backing.handleClick(x, y, button);
-    }
-
-    private Rect getWindowIcon(Rect windowFrame, int j) {
-        int iconTotalSize = windowFrame.height;
-        int iconMargin = iconTotalSize / 6;
-        int iconSubsize = iconTotalSize - (iconMargin * 2);
-        int iconX = windowFrame.x + windowFrame.width;
-        iconX -= iconTotalSize * (j + 1);
-        return new Rect(iconX + iconMargin, windowFrame.y + iconMargin, iconSubsize, iconSubsize);
     }
 
     @Override
@@ -196,19 +187,9 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         if (windowList.size() > 0) {
             WVWindow lastWindow = windowList.getLast();
             Rect r = lastWindow.contents.getBounds();
-            Rect scr = getBounds();
             if (draggingWindow) {
                 int ox = r.x + (x - lastMX);
                 int oy = r.y + (y - lastMY);
-                if (ox < 0)
-                    ox = 0;
-                int fh = getWindowFrameHeight();
-                if (oy < fh)
-                    oy = fh;
-                if (ox > (scr.width - r.width))
-                    ox = (scr.width - r.width);
-                if (oy > scr.height)
-                    oy = scr.height;
                 lastWindow.contents.setBounds(new Rect(ox, oy, r.width, r.height));
             } else if (dragInWindow) {
                 lastWindow.contents.handleDrag(x - r.x, y - r.y);
@@ -220,6 +201,24 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         }
         lastMX = x;
         lastMY = y;
+    }
+
+    private void windowBoundsCheck(WVWindow wv) {
+        int fh = getWindowFrameHeight();
+        Rect scr = getBounds();
+        Rect s = wv.contents.getBounds();
+        int ox = s.x;
+        int oy = s.y;
+        if (ox < 0)
+            ox = 0;
+        if (ox > (scr.width - s.width))
+            ox = scr.width - s.width;
+        if (oy < fh)
+            oy = fh;
+        if (oy > scr.height)
+            oy = scr.height;
+        if ((ox != s.x) || (oy != s.y))
+            wv.contents.setBounds(new Rect(ox, oy, s.width, s.height));
     }
 
     @Override
@@ -259,7 +258,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     }
 
     public int getWindowFrameHeight() {
-        return UILabel.getRecommendedSize("", windowTextHeight).height;
+        return TabUtils.getHeight(windowTextHeight);
     }
 
     public void removeByUIE(UIElement uiElement) {
