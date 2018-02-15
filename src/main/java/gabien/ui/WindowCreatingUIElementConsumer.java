@@ -25,15 +25,19 @@ import java.util.LinkedList;
 public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     private LinkedList<ActiveWindow> activeWindows = new LinkedList<ActiveWindow>();
     private LinkedList<ActiveWindow> incomingWindows = new LinkedList<ActiveWindow>();
-    public int createScale = 1;
 
     @Override
     public void accept(UIElement o) {
+        accept(o, 1, false);
+    }
+
+    public void accept(UIElement o, int scale, boolean fullscreen) {
         ActiveWindow aw = new ActiveWindow();
         Rect bounds = o.getBounds();
         WindowSpecs ws = GaBIEn.defaultWindowSpecs(o.toString(), bounds.width, bounds.height);
-        ws.scale = createScale;
+        ws.scale = scale;
         ws.resizable = true;
+        ws.fullscreen = fullscreen;
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
         aw.ue = o;
         aw.lastKnownWidth = bounds.width;

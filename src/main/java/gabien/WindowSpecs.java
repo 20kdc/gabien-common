@@ -7,12 +7,16 @@
 
 package gabien;
 
-public class WindowSpecs {
-    //Stop non-GaBIen classes from creating this object.
-    //This way, I can extend it.
+public final class WindowSpecs {
+    // Stop non-GaBIen classes from creating this object.
+    // This ensures that it has to be created via the relevant GaBIEn get-defaults function.
     protected WindowSpecs() {
     }
 
     public int scale = 1;
+    // NOTE: If fullscreen is set or you are on an SWA platform, this is essentially true.
     public boolean resizable = false;
+    // NOTE: On SWA platforms, this is totally ignored.
+    // Should attempt to "follow the screen the last window was already on".
+    public boolean fullscreen = false;
 }
