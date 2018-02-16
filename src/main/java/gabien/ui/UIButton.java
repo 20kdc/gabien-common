@@ -68,7 +68,7 @@ public class UIButton extends UIElement {
         } else {
             boolean x2 = h == 18;
             int po = state ? (x2 ? 6 : 3) : 0;
-            IImage i = GaBIEn.getImageCK("textButton.png", 255, 0, 255);
+            IImage i = GaBIEn.getImageCKEx("textButton.png", false, true, 255, 0, 255);
             igd.blitImage((x2 ? 6 : 0) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox, oy, i);
             for (int pp = (x2 ? 2 : 1); pp < w - 1; pp += (x2 ? 2 : 1))
                 igd.blitImage((x2 ? 8 : 1) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + pp, oy, i);

@@ -82,9 +82,9 @@ public class UILabel extends UIPanel {
         }
         IImage font;
         if (bck) {
-            font = GaBIEn.getImageCK(fontType, 0, 0, 0);
+            font = GaBIEn.getImageCKEx(fontType, false, true, 0, 0, 0);
         } else {
-            font = GaBIEn.getImage(fontType);
+            font = GaBIEn.getImageEx(fontType, false, true);
         }
         byte[] ascii = text.getBytes();
 

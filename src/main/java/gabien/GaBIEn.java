@@ -14,6 +14,9 @@ public class GaBIEn {
     protected static IGaBIEn internal;
     private static IImage errorImage;
 
+    // Additional resource load locations.
+    public static String[] appPrefixes = new String[0];
+
     public static double getTime() {
         return internal.getTime();
     }
@@ -22,15 +25,28 @@ public class GaBIEn {
         return internal.timeDelta(reset);
     }
 
+    // Regarding this change:
+    // getRFile and getWFile are the "arbitrary file access" providers,
+    //  and should only ever access the "external storage".
+    // This prevents the namespace pollution I was worried about before.
+    // However, sometimes we do want to access resources, but also want the user to be able to override these.
+    // Hence getResource and appPrefix.
+    // Essentially, a gabien application that wishes to allow openRFile and openWFile.
     public static InputStream getResource(String resource) {
+        for (String s : appPrefixes) {
+            InputStream inp = getInFile(s + resource);
+            if (inp != null)
+                return inp;
+        }
         return internal.getResource(resource);
     }
 
-    public static InputStream getFile(String resource) {
-        InputStream ifs = internal.getFile(resource);
-        if (ifs == null)
-            return internal.getResource(resource);
-        return ifs;
+    public static InputStream getInFile(String resource) {
+        return internal.getFile(resource);
+    }
+
+    public static OutputStream getOutFile(String string) {
+        return internal.getOutFile(string);
     }
 
     public static boolean singleWindowApp() {
@@ -66,18 +82,49 @@ public class GaBIEn {
         return internal.makeOffscreenBuffer(w, h, alpha);
     }
 
-    public static OutputStream getOutFile(String string) {
-        return internal.getOutFile(string);
-    }
-
     // This has to at least support JPGs, PNGs and BMPs.
     // On error, it should return an "error" image. This "error" image is unique, and can be gotten via getErrorImage.
 
     public static IImage getImage(String a) {
-        return internal.getImage(a);
+        return getImageEx(a, true, true);
     }
+
     public static IImage getImageCK(String a, int r, int g, int b) {
-        return internal.getImageCK(a, r, g, b);
+        return getImageCKEx(a, true, true, r, g, b);
+    }
+
+    public static IImage getImageEx(String a, boolean fs, boolean res) {
+        if (fs) {
+            IImage r = internal.getImage(a, false);
+            if (r != getErrorImage())
+                return r;
+        }
+        if (res) {
+            for (String s : appPrefixes) {
+                IImage r = internal.getImage(s + a, false);
+                if (r != getErrorImage())
+                    return r;
+            }
+            return internal.getImage(a, true);
+        }
+        return getErrorImage();
+    }
+
+    public static IImage getImageCKEx(String a, boolean fs, boolean res, int r, int g, int b) {
+        if (fs) {
+            IImage ri = internal.getImageCK(a, false, r, g, b);
+            if (ri != getErrorImage())
+                return ri;
+        }
+        if (res) {
+            for (String s : appPrefixes) {
+                IImage ri = internal.getImageCK(s + a, false, r, g, b);
+                if (ri != getErrorImage())
+                    return ri;
+            }
+            return internal.getImageCK(a, true, r, g, b);
+        }
+        return getErrorImage();
     }
 
     public static IImage getErrorImage() {

@@ -25,11 +25,14 @@ public interface IGaBIEn {
 
     double timeDelta(boolean reset);
 
+    // NOTE regarding the following two functions.
+    // The raw API doesn't bother to do resource overlays - that's managed entirely in gabien-common.
+
     // Gets a resource from the application binary.
     // Failing that, returns null.
     InputStream getResource(String resource);
 
-    // Runs getResource, then looks for a file in the data directory.
+    // Looks for a file in the data directory.
     // Failing that, returns null.
     InputStream getFile(String resource);
 
@@ -52,12 +55,13 @@ public interface IGaBIEn {
 
     WindowSpecs defaultWindowSpecs(String name, int w, int h);
 
-    // Get an image. See GaBIEn.getFile for how this works.
+    // Get an image.
     // Notably, the image format supports ARGB.
     // The colour-keying is just because it's simpler to make assets that way.
-    IImage getImage(String a);
+    // 'res' should use GaBIEnImpl.getResource, otherwise GaBIEnImpl.getFile
+    IImage getImage(String a, boolean res);
     // Get an image - and then cut out a given colour.
-    IImage getImageCK(String a, int r, int g, int b);
+    IImage getImageCK(String a, boolean res, int r, int g, int b);
 
     // Make an image from a buffer.
     // Note that the colours are 0xAARRGGBB.
