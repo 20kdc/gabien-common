@@ -8,58 +8,62 @@
 package gabien.ui;
 
 /**
- * Created on 13/04/16.
+ * Created on 13/04/16, Change @ feb 17, 2018
  */
-public class UIAdjuster extends UIPanel implements IConsumer<String> {
-    public UITextButton incButton, decButton;
-    public UILabel numberDisplay;
+public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
+    public final UITextButton incButton, decButton;
+    public final UILabel numberDisplay;
 
     public UIAdjuster(int h, final ISupplier<String> inc, final ISupplier<String> dec) {
-        incButton = new UITextButton(h, "+", new Runnable() {
+        incButton = new UITextButton("+", h, new Runnable() {
             @Override
             public void run() {
                 accept(inc.get());
             }
         });
-        allElements.add(incButton);
-        decButton = new UITextButton(h, "-", new Runnable() {
+        layoutAddElement(incButton);
+        decButton = new UITextButton("-", h, new Runnable() {
             @Override
             public void run() {
                 accept(dec.get());
             }
         });
-        allElements.add(decButton);
-        numberDisplay = new UILabel("ERR", h);
-        allElements.add(numberDisplay);
-        int ibh = incButton.getBounds().height;
-        int nbh = numberDisplay.getBounds().height;
-        int dbh = decButton.getBounds().height;
+        layoutAddElement(decButton);
+        numberDisplay = new UILabel("ERROR", h);
+        layoutAddElement(numberDisplay);
 
-        int rbh = ibh;
-        if (nbh > rbh)
-            rbh = nbh;
-        if (dbh > rbh)
-            rbh = dbh;
-        setBounds(new Rect(0, 0, 128, rbh));
+        Rect nBounds = calcWantedSize();
+        setForcedBounds(null, nBounds);
+        setWantedSize(nBounds);
     }
 
-    public void setBounds(Rect r) {
-        super.setBounds(r);
-        int ibh = incButton.getBounds().height;
-        int nbh = numberDisplay.getBounds().height;
-        int dbh = decButton.getBounds().height;
+    private Rect calcWantedSize() {
+        Size incButtonSize = incButton.getWantedSize();
+        Size numberDisplaySize = numberDisplay.getWantedSize();
+        Size decButtonSize = decButton.getWantedSize();
+        return new Rect(0, 0, incButtonSize.width + numberDisplaySize.width + decButtonSize.width, Math.max(incButtonSize.height, Math.max(numberDisplaySize.height, decButtonSize.height)));
+    }
 
-        int ibw = incButton.getBounds().width;
-        int dbw = decButton.getBounds().width;
+    @Override
+    public void runLayout() {
+        int ibw = incButton.getParentRelativeBounds().width;
+        int dbw = decButton.getParentRelativeBounds().width;
 
-        incButton.setBounds(new Rect(0, 0, ibw, ibh));
-        numberDisplay.setBounds(new Rect(ibw, 0, r.width - (ibw + dbw), nbh));
-        decButton.setBounds(new Rect(r.width - dbw, 0, dbw, dbh));
+        Size incButtonSize = incButton.getWantedSize();
+        Size numberDisplaySize = numberDisplay.getWantedSize();
+        Size decButtonSize = decButton.getWantedSize();
 
+        Size m = getSize();
+
+        incButton.setForcedBounds(this, new Rect(0, 0, ibw, incButtonSize.height));
+        numberDisplay.setForcedBounds(this, new Rect(ibw, 0, m.width - (ibw + dbw), numberDisplaySize.height));
+        decButton.setForcedBounds(this, new Rect(m.width - dbw, 0, dbw, decButtonSize.height));
+
+        setWantedSize(calcWantedSize());
     }
 
     @Override
     public void accept(String a) {
-        numberDisplay.Text = a;
+        numberDisplay.text = a;
     }
 }

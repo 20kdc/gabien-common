@@ -8,13 +8,19 @@
 package gabien.ui;
 
 /**
- * Should be used for UIElement subclasses that might be windows.
- * The methods are only called by things that act as windowing interfaces.
- * Created on 12/30/16.
+ * Part of multi-touch stuff.
  */
-public interface IWindowElement {
-    boolean wantsSelfClose();
-
-    // The window will not be processed after this occurs.
-    void windowClosed();
+public interface IPointer {
+    int getX();
+    int getY();
+    PointerType getType();
+    void performOffset(int x, int y);
+    enum PointerType {
+        Generic, // LMB, finger-touch
+        Middle, // MMB
+        Right, // RMB
+        X1, // (WARNING: ABSOLUTELY DO NOT RELY ON!)
+        X2, // (WARNING: ABSOLUTELY DO NOT RELY ON!)
+        Mouse // Hovering
+    }
 }

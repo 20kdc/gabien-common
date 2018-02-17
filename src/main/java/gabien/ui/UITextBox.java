@@ -15,19 +15,16 @@ import gabien.IGrInDriver;
 //    (This makes it useful for dialogue boxes where the selection behavior is non-obvious.)
 // 2. onEdit is called when enter is pressed, and otherwise the text will revert.
 //    (This makes it useful for property-editor interfaces which need that kind of confirmation.)
-public class UITextBox extends UIElement {
-    public int height;
-
+public class UITextBox extends UILabel {
     public UITextBox(int h) {
-        height = h;
-        setBounds(getRecommendedSize(height));
+        super("Highly Responsive To Eggnog", h);
+        text = "";
     }
 
-    public static Rect getRecommendedSize(int height) {
-        return UILabel.getRecommendedSize("the quick brown fox jumped over the lazy dog", height);
+    public static Size getRecommendedSize(int h) {
+        return getRecommendedTextSize("Highly Responsive To Eggnog", h);
     }
 
-    public String text = "";
     private String textLastSeen = "";
     private String textCStr = "";
     public Runnable onEdit = new Runnable() {
@@ -41,8 +38,7 @@ public class UITextBox extends UIElement {
     private boolean tempDisableSelection = false;
 
     @Override
-    public void updateAndRender(int ox, int oy, double DeltaTime,
-                                boolean selected, IGrInDriver igd) {
+    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
         selected &= !tempDisableSelection;
         if (!textLastSeen.equals(text)) {
             textCStr = text;
@@ -50,9 +46,9 @@ public class UITextBox extends UIElement {
         } else if (!selected) {
             text = textCStr;
         }
-        Rect bounds = getBounds();
+        Size bounds = getSize();
         if (selected) {
-            String ss = igd.maintain(ox, oy + (height / 2), bounds.width, text);
+            String ss = igd.maintain(0, (bounds.height / 2), bounds.width, text);
             text = ss;
             textLastSeen = ss;
             if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
@@ -62,11 +58,12 @@ public class UITextBox extends UIElement {
                 tempDisableSelection = true;
             }
         }
-        UILabel.drawLabel(igd, bounds.width, ox, oy, text, selected ? 2 : 1, height);
+        borderType = selected ? 4 : 3;
+        super.render(selected, mouse, igd);
     }
 
     @Override
-    public void handleClick(int x, int y, int button) {
+    public void handlePointerBegin(IPointer ip) {
         tempDisableSelection = false;
     }
 }

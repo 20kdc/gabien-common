@@ -10,25 +10,21 @@ package gabien.ui;
 import gabien.IGrInDriver;
 
 /**
- *
+ * Forgot creation date, but it was back at the time of IkachanMapEdit.
+ * The Change done on February 17th, 2018.
  */
-public class UINumberBox extends UIElement {
-    public int textHeight;
+public class UINumberBox extends UILabel {
 
     public UINumberBox(int h) {
-        textHeight = h;
-        setBounds(getRecommendedSize(textHeight));
-    }
-
-    public static Rect getRecommendedSize(int height) {
-        return UILabel.getRecommendedSize("12344957", height);
+        super("12344957", h);
+        text = "";
     }
 
     // The caching exists so that edits have to be confirmed for onEdit usage.
-    private int editingCNumber = 0;
+    private long editingCNumber = 0;
 
-    private int editingNLast = 0;
-    public int number = 0;
+    private long editingNLast = 0;
+    public long number = 0;
 
     public boolean readOnly = false;
     public Runnable onEdit = new Runnable() {
@@ -42,7 +38,7 @@ public class UINumberBox extends UIElement {
     private boolean tempDisableSelection = false;
 
     @Override
-    public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
+    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
         selected &= !tempDisableSelection;
         if (number != editingNLast) {
             editingCNumber = number;
@@ -50,9 +46,9 @@ public class UINumberBox extends UIElement {
         } else if (!selected) {
             number = editingCNumber;
         }
-        int boundsWidth = getBounds().width;
+        Size bounds = getSize();
         if (selected && (!readOnly)) {
-            String ss = igd.maintain(ox, oy + (textHeight / 2), boundsWidth, String.valueOf(number));
+            String ss = igd.maintain(0, (bounds.height / 2), bounds.width, String.valueOf(number));
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
             if (lastMinusIdx > 0) {
@@ -61,9 +57,9 @@ public class UINumberBox extends UIElement {
                 ss = pre + post;
                 doInvertLater = true;
             }
-            int newNum = 0;
+            long newNum = 0;
             try {
-                newNum = Integer.parseInt(ss);
+                newNum = Long.parseLong(ss);
                 if (doInvertLater)
                     newNum = -newNum;
             } catch (Exception e) {
@@ -77,12 +73,12 @@ public class UINumberBox extends UIElement {
             number = newNum;
             editingNLast = number;
         }
-        UILabel.drawLabel(igd, boundsWidth, ox, oy, Integer.toString(number), selected ? 2 : 1, textHeight);
+        text = Long.toString(number);
+        super.render(selected, mouse, igd);
     }
 
     @Override
-    public void handleClick(int x, int y, int button) {
+    public void handlePointerBegin(IPointer ip) {
         tempDisableSelection = false;
     }
-
 }

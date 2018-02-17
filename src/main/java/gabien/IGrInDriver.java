@@ -122,22 +122,27 @@ public interface IGrInDriver extends IGrDriver {
     // Returns true if the display is still visible.
     boolean stillRunning();
 
-    boolean flush(); // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
+    // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
+    boolean flush();
 
     // -- Basic Keyboard Input
 
     boolean isKeyDown(int KEYID);
 
-    boolean isKeyJustPressed(int KEYID);// Note that if this returns
+    // Note that if this returns
     // true,it won't return true
     // again for any other call for
     // that key until another press
     // happens.
+    boolean isKeyJustPressed(int KEYID);
 
-    void clearKeys();// This will clear all key-related buffers.
+    // This will clear all key-related buffers.
     // This includes the Typist extension's
     // keybuffer,and the mouse.
+    void clearKeys();
 
+    // Creates a list of all the active keycodes (think for automatic-keybinders)
+    HashSet<Integer> activeKeys();
 
     // -- Mouse Input
 

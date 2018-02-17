@@ -11,14 +11,25 @@ package gabien.ui;
  * A basic rectangle class to make life easier.
  * Creation date unknown.
  */
-public final class Rect {
-    public final int x, y, width, height;
+public final class Rect extends Size {
+    public final int x, y;
 
     public Rect(int i, int i0, int i1, int i2) {
+        super(i1, i2);
         x = i;
         y = i0;
-        width = i1;
-        height = i2;
+    }
+
+    @Override
+    public String toString() {
+        return x + "," + y + "," + super.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o.getClass() == Rect.class)
+            return super.equals(o) && (((Rect) o).x == x) && (((Rect) o).y == y);
+        return false;
     }
 
     public boolean contains(int x, int y) {

@@ -14,32 +14,37 @@ import gabien.IImage;
  * Subclass of UIPanel for use in inner classes and such
  * Created on 15th December 2017
  */
-public class UIPublicPanel extends UIPanel {
+public class UIPublicPanel extends UIElement.UIPanel {
     public IImage baseImage; // I forgot this existed. Whoops.
     public int imageX, imageY;
     public boolean imageScale;
     public int imageSW, imageSH;
 
+    public UIPublicPanel(int w, int h) {
+        super(w, h);
+        initialize();
+    }
+
+    // Exists to be overridden.
+    public void initialize() {
+
+    }
+
     @Override
-    public void updateAndRender(int ox, int oy, double deltaTime, boolean select, IGrInDriver igd) {
+    public void runLayout() {
+
+    }
+
+    @Override
+    public void render(boolean select, IPointer mouse, IGrInDriver igd) {
         if (baseImage != null) {
-            Rect bounds = getBounds();
+            Size bounds = getSize();
             if (!imageScale) {
-                igd.blitImage(imageX, imageY, bounds.width, bounds.height, ox, oy, baseImage);
+                igd.blitImage(imageX, imageY, bounds.width, bounds.height, 0, 0, baseImage);
             } else {
-                igd.blitScaledImage(imageX, imageY, imageSW, imageSH, ox, oy, bounds.width, bounds.height, baseImage);
+                igd.blitScaledImage(imageX, imageY, imageSW, imageSH, 0, 0, bounds.width, bounds.height, baseImage);
             }
         }
-        super.updateAndRender(ox, oy, deltaTime, select, igd);
-    }
-
-    public void clearElements() {
-        allElements.clear();
-        selectedElement = null;
-    }
-
-    public void addElement(UIElement uie) {
-        if (!allElements.contains(uie))
-            allElements.add(uie);
+        super.render(select, mouse, igd);
     }
 }

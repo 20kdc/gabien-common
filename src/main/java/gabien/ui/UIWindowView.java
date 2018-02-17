@@ -9,27 +9,26 @@ package gabien.ui;
 
 import gabien.IGrDriver;
 import gabien.IGrInDriver;
-import gabien.ScissorGrInDriver;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 /**
- * NOTE: This does not support IWindowElement anymore (you have to implement your environment, and stuff like closing a window, on top of this)
- * Created on 12/27/16. Revamped on December 15th, 2017
+ * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.
+ * This *does* implement the root-disconnected callback for all windows attached when it is called.
+ * It *does not* implement it for windows being removed,
+ *  because this callback also serves to alert windows that they are being closed,
+ *  and it might simply be a migration.
+ * It *does not* implement request-close.
+ * Created on 12/27/16. Revamped on December 15th, 2017.
+ * Ported on February 17th, 2018, as part of what I'm now calling "Project IPCRESS" for no discernible reason.
+ * (Oh, shush, if you were doing this you'd go mad too.)
  */
 public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WVWindow> {
     public UIElement backing;
-    public LinkedList<WVWindow> windowList = new LinkedList<WVWindow>();
+    public final LinkedList<WVWindow> windowList = new LinkedList<WVWindow>();
     private HashSet<UIElement> upcomingManualRemovals = new HashSet<UIElement>();
-    private LinkedList<WVWindow> upcomingWindowList = new LinkedList<WVWindow>();
-    private boolean draggingBackend = false;
-    private boolean resizingWindow = false;
-    private boolean draggingWindow = false;
-    private boolean dragInWindow = false;
-    private int lastMX, lastMY;
+    private final LinkedList<WVWindow> upcomingWindowList = new LinkedList<WVWindow>();
+    private final IPointerReceiver.PointerConnector connector;
     private boolean clearKeysLater = false;
     private boolean backingSelected = false;
 
@@ -38,20 +37,98 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     public int sizerOfs = 16;
     public int sizerSize = 24;
 
+    public UIWindowView() {
+        connector = new PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
+            @Override
+            public IPointerReceiver apply(IPointer iPointer) {
+                int x = iPointer.getX();
+                int y = iPointer.getY();
+                boolean buttonOne = iPointer.getType() == IPointer.PointerType.Generic;
+                // We don't have any lifecycle flags, but there is this, and it's rarely true.
+                backingSelected = false;
+                int index = windowList.size();
+                int frameHeight = getWindowFrameHeight();
+                for (Iterator<WVWindow> i = windowList.descendingIterator(); i.hasNext(); ) {
+                    index--;
+                    final WVWindow uie = i.next();
+                    Rect innerWindow = uie.contents.getParentRelativeBounds();
+                    final Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
+                    Rect windowSz = new Rect(innerWindow.x + innerWindow.width - sizerOfs, innerWindow.y + innerWindow.height - sizerOfs, sizerSize, sizerSize);
+
+                    if (innerWindow.contains(x, y)) {
+                        clearKeysLater = true;
+                        windowList.remove(index);
+                        windowList.addLast(uie);
+                        return new IPointerReceiver.TransformingElementPointerReceiver(uie.contents);
+                    }
+                    if (windowFrame.contains(x, y)) {
+                        clearKeysLater = true;
+                        windowList.remove(index);
+                        windowList.addLast(uie);
+                        if (buttonOne)
+                            if (TabUtils.clickInTab(uie, x - windowFrame.x, y - windowFrame.y, innerWindow.width, windowFrame.height))
+                                return null;
+                        // Dragging...
+                        return new IPointerReceiver.RelativeResizePointerReceiver(innerWindow.x, innerWindow.y, new IConsumer<Size>() {
+                            @Override
+                            public void accept(Size size) {
+                                if (windowList.contains(uie)) {
+                                    Rect r = uie.contents.getParentRelativeBounds();
+                                    uie.contents.setForcedBounds(null, new Rect(size.width, size.height, r.width, r.height));
+                                    windowBoundsCheck(uie);
+                                }
+                            }
+                        });
+                    }
+                    // if it hasn't hit the other two, check for the sizer
+                    if (windowSz.contains(x, y)) {
+                        clearKeysLater = true;
+                        windowList.remove(index);
+                        windowList.addLast(uie);
+                        // Dragging...
+                        return new IPointerReceiver.RelativeResizePointerReceiver(innerWindow.width, innerWindow.height, new IConsumer<Size>() {
+                            @Override
+                            public void accept(Size size) {
+                                if (windowList.contains(uie)) {
+                                    Rect r = uie.contents.getParentRelativeBounds();
+                                    uie.contents.setForcedBounds(null, new Rect(r.x, r.y, size.width, size.height));
+                                    windowBoundsCheck(uie);
+                                }
+                            }
+                        });
+                    }
+                }
+                // didn't hit anything?
+                if (!backingSelected)
+                    clearKeysLater = true;
+                backingSelected = true;
+                if (backing != null)
+                    return new IPointerReceiver.TransformingElementPointerReceiver(backing);
+                return null;
+            }
+        });
+    }
+
     @Override
-    public void updateAndRender(int ox, int oy, double deltaTime, boolean selected, IGrInDriver igd) {
+    public void update(double deltaTime) {
+        if (backing != null)
+            backing.update(deltaTime);
+        for (WVWindow window : windowList)
+            window.contents.update(deltaTime);
+    }
+
+    @Override
+    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
         windowList.addAll(upcomingWindowList);
-        for (WVWindow wv : upcomingWindowList)
-            windowBoundsCheck(wv);
         upcomingWindowList.clear();
         int remaining = windowList.size();
         if (clearKeysLater) {
             igd.clearKeys();
             clearKeysLater = false;
         }
-        Rect bounds = getBounds();
+        Size bounds = getSize();
         if (backing != null) {
-            Rect backOldBounds = backing.getBounds();
+            Rect backOldBounds = backing.getParentRelativeBounds();
             boolean backingNeedsRefresh = false;
             if (backOldBounds.x != 0)
                 backingNeedsRefresh = true;
@@ -62,16 +139,14 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             if (backOldBounds.height != bounds.height)
                 backingNeedsRefresh = true;
             if (backingNeedsRefresh)
-                backing.setBounds(new Rect(0, 0, bounds.width, bounds.height));
-            backing.updateAndRender(ox, oy, deltaTime, selected && backingSelected, igd);
+                backing.setForcedBounds(null, new Rect(0, 0, bounds.width, bounds.height));
+            backing.render(selected && backingSelected, mouse, igd);
         } else {
-            igd.clearRect(0, 0, 64, ox, oy, bounds.width, bounds.height);
+            igd.clearRect(0, 0, 64, 0, 0, bounds.width, bounds.height);
         }
 
         LinkedList<WVWindow> wantsDeleting = new LinkedList<WVWindow>();
         int windowFrameHeight = getWindowFrameHeight();
-        ScissorGrInDriver wIgd = new ScissorGrInDriver();
-        wIgd.inner = igd;
         HashSet<UIElement> upcomingManualRemovals2 = upcomingManualRemovals;
         upcomingManualRemovals = new HashSet<UIElement>();
         for (WVWindow uie : windowList) {
@@ -80,89 +155,21 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 remaining--;
                 continue;
             }
+            // Just do this, just in case.
             remaining--;
+            windowBoundsCheck(uie);
             boolean winSelected = selected && (!backingSelected) && (remaining == 0);
-            Rect b = uie.contents.getBounds();
+            Rect b = uie.contents.getParentRelativeBounds();
 
             int sizerSSize = sizerSize - ((sizerSize - sizerOfs) / 2);
-            igd.clearRect(0, 32, 96, ox + b.x + b.width - sizerOfs, oy + b.y + b.height - sizerOfs, sizerSize, sizerSize);
-            igd.clearRect(0, 64, 192, ox + b.x + b.width - sizerOfs, oy + b.y + b.height - sizerOfs, sizerSSize, sizerSSize);
+            igd.clearRect(0, 32, 96, b.x + b.width - sizerOfs, b.y + b.height - sizerOfs, sizerSize, sizerSize);
+            igd.clearRect(0, 64, 192, b.x + b.width - sizerOfs, b.y + b.height - sizerOfs, sizerSSize, sizerSSize);
 
-            wIgd.workTop = (oy + b.y) - windowFrameHeight;
-            wIgd.workBottom = (oy + b.y) + b.height;
-            wIgd.workLeft = ox + b.x;
-            wIgd.workRight = (ox + b.x) + b.width;
+            TabUtils.drawTab(winSelected ? 192 : 48, 32, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
 
-            TabUtils.drawTab(winSelected ? 192 : 48, 32, ox + b.x, (oy + b.y) - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
-
-            wIgd.clearRect(0, 0, 0, ox + b.x, oy + b.y, b.width, b.height);
-            uie.contents.updateAndRender(ox + b.x, oy + b.y, deltaTime, winSelected, wIgd);
+            UIPanel.scissoredRender(true, uie.contents, winSelected, mouse, igd, bounds.width, bounds.height);
         }
         windowList.removeAll(wantsDeleting);
-    }
-
-    @Override
-    public void setBounds(Rect r) {
-        super.setBounds(r);
-        for (WVWindow wv : windowList)
-            windowBoundsCheck(wv);
-    }
-
-    // Note: -1 is a special parameter to this which means "do not actually do anything other than selection"
-    @Override
-    public void handleClick(int x, int y, int button) {
-        // Just in case something goes wrong, this will disable all the lifecycle flags and make sure we have a fresh start.
-        // Will do nothing otherwise.
-        handleRelease(x, y);
-        int index = windowList.size();
-        int frameHeight = getWindowFrameHeight();
-        for (Iterator<WVWindow> i = windowList.descendingIterator(); i.hasNext(); ) {
-            index--;
-            WVWindow uie = i.next();
-            Rect innerWindow = uie.contents.getBounds();
-            Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
-            Rect windowSz = new Rect(innerWindow.x + innerWindow.width - sizerOfs, innerWindow.y + innerWindow.height - sizerOfs, sizerSize, sizerSize);
-
-            if (innerWindow.contains(x, y)) {
-                clearKeysLater = true;
-                backingSelected = false;
-                windowList.remove(index);
-                windowList.addLast(uie);
-                if (button != -1)
-                    uie.contents.handleClick(x - innerWindow.x, y - innerWindow.y, button);
-                dragInWindow = true;
-                return;
-            }
-            if (windowFrame.contains(x, y)) {
-                clearKeysLater = true;
-                backingSelected = false;
-                windowList.remove(index);
-                windowList.addLast(uie);
-                if (button == 1) {
-                    if (TabUtils.clickInTab(uie, x - windowFrame.x, y - windowFrame.y, innerWindow.width, windowFrame.height))
-                        return;
-                    draggingWindow = true;
-                }
-                return;
-            }
-            // if it hasn't hit the other two, check for the sizer
-            if (windowSz.contains(x, y)) {
-                clearKeysLater = true;
-                backingSelected = false;
-                windowList.remove(index);
-                windowList.addLast(uie);
-                resizingWindow = true;
-                return;
-            }
-        }
-        // didn't hit anything?
-        if (!backingSelected)
-            clearKeysLater = true;
-        backingSelected = true;
-        draggingBackend = true;
-        if (button != -1)
-            if (backing != null)
-                backing.handleClick(x, y, button);
     }
 
     @Override
@@ -174,57 +181,22 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             System.out.println("Warning: Window already in window list, this would just break stuff");
             return;
         }
-        Rect r = win.contents.getBounds();
-        Rect g = getBounds();
+        Rect r = win.contents.getParentRelativeBounds();
+        Size g = getSize();
         int area = g.width - r.width;
         if (area < 0)
             area = 0;
         int cX = new Random().nextInt(area + 1);
         if ((g.height - 64) < r.height)
-            win.contents.setBounds(new Rect(cX, 0, r.width, r.height));
-        win.contents.setBounds(new Rect(cX, 64, r.width, r.height));
+            win.contents.setForcedBounds(null, new Rect(cX, 0, r.width, r.height));
+        win.contents.setForcedBounds(null, new Rect(cX, 64, r.width, r.height));
         upcomingWindowList.add(win);
-    }
-
-    @Override
-    public void handleDrag(int x, int y) {
-        if (draggingBackend) {
-            if (backing != null)
-                backing.handleDrag(x, y);
-            return;
-        }
-        if (windowList.size() > 0) {
-            WVWindow lastWindow = windowList.getLast();
-            Rect r = lastWindow.contents.getBounds();
-            if (draggingWindow) {
-                int ox = r.x + (x - lastMX);
-                int oy = r.y + (y - lastMY);
-                lastWindow.contents.setBounds(new Rect(ox, oy, r.width, r.height));
-                windowBoundsCheck(lastWindow);
-            } else if (dragInWindow) {
-                lastWindow.contents.handleDrag(x - r.x, y - r.y);
-            } else if (resizingWindow) {
-                int ox = r.width + (x - lastMX);
-                int oy = r.height + (y - lastMY);
-                Rect me = getBounds();
-                if ((r.x + ox) > me.width)
-                    ox = me.width - r.x;
-                int minW = TabUtils.getTabWidth(lastWindow, 0, getWindowFrameHeight());
-                if (ox < minW)
-                    ox = minW;
-                if (oy < 0)
-                    oy = 0;
-                lastWindow.contents.setBounds(new Rect(r.x, r.y, ox, oy));
-            }
-        }
-        lastMX = x;
-        lastMY = y;
     }
 
     private void windowBoundsCheck(WVWindow wv) {
         int fh = getWindowFrameHeight();
-        Rect scr = getBounds();
-        Rect s = wv.contents.getBounds();
+        Rect scr = getParentRelativeBounds();
+        Rect s = wv.contents.getParentRelativeBounds();
         int ox = s.x;
         int oy = s.y;
         if (ox < 0)
@@ -236,34 +208,34 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         if (oy > scr.height)
             oy = scr.height;
         if ((ox != s.x) || (oy != s.y))
-            wv.contents.setBounds(new Rect(ox, oy, s.width, s.height));
+            wv.contents.setForcedBounds(null, new Rect(ox, oy, s.width, s.height));
     }
 
     @Override
-    public void handleRelease(int x, int y) {
-        if (draggingBackend) {
-            if (backing != null)
-                backing.handleRelease(x, y);
-        } else if (dragInWindow) {
-            if (windowList.size() > 0) {
-                WVWindow lastWindow = windowList.getLast();
-                Rect r = lastWindow.contents.getBounds();
-                lastWindow.contents.handleRelease(x - r.x, y - r.y);
+    public void handleMousewheel(final int x, final int y, boolean north) {
+        // This should select the window it's used over, so give an Obviously Fake Mouse to the generateReceivers callback,
+        //  which won't have any *undesired* side-effects if given an Obviously Fake Mouse.
+        connector.generateReceivers.apply(new IPointer() {
+            @Override
+            public int getX() {
+                return x;
             }
-        }
-        // Disable all the lifecycle flags
-        draggingWindow = false;
-        dragInWindow = false;
-        resizingWindow = false;
-        draggingBackend = false;
-        lastMX = x;
-        lastMY = y;
-    }
 
-    @Override
-    public void handleMousewheel(int x, int y, boolean north) {
-        // Firstly, simulate a click.
-        handleClick(x, y, -1);
+            @Override
+            public int getY() {
+                return y;
+            }
+
+            @Override
+            public PointerType getType() {
+                return null;
+            }
+
+            @Override
+            public void performOffset(int x, int y) {
+                System.err.println("gabien.ui: If you're encountering this message, the Obviously Fake Mouse got run through a strip-search in airport inspection.");
+            }
+        });
         // Use the currently selected whatever it is.
         if (backingSelected) {
             if (backing != null)
@@ -271,10 +243,23 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         } else {
             if (windowList.size() > 0) {
                 WVWindow window = windowList.getLast();
-                Rect b = window.contents.getBounds();
+                Rect b = window.contents.getParentRelativeBounds();
                 window.contents.handleMousewheel(x - b.x, y - b.y, north);
             }
         }
+    }
+
+    @Override
+    public void handleRootDisconnect() {
+        super.handleRootDisconnect();
+        for (WVWindow w : windowList)
+            if (!upcomingManualRemovals.contains(w.contents))
+                w.contents.handleRootDisconnect();
+        for (WVWindow w : upcomingWindowList)
+            if (!upcomingManualRemovals.contains(w.contents))
+                w.contents.handleRootDisconnect();
+        if (backing != null)
+            backing.handleRootDisconnect();
     }
 
     public int getWindowFrameHeight() {

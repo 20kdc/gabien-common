@@ -79,6 +79,16 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
+    public void clearScissoring() {
+        target.clearScissoring();
+    }
+
+    @Override
+    public void adjustScissoring(int x, int y, int w, int h) {
+        target.adjustScissoring(x, y, w, h);
+    }
+
+    @Override
     public void shutdown() {
         target.shutdown();
     }

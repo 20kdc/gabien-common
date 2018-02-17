@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.FontManager;
 import gabien.IGrDriver;
 
 /**
@@ -21,7 +22,7 @@ public class TabUtils {
         int textHeight = h - (margin * 2);
         if (shortTab == 0)
             tabExMargin = 0;
-        return UILabel.getTextLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
+        return FontManager.getLineLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
     }
 
     public static String getVisibleTabName(UIWindowView.WVWindow w, int shortTab) {
@@ -51,7 +52,7 @@ public class TabUtils {
         // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
         igd.clearRect(inner, inner, inner, x + margin, y + margin, w - (margin * 2), h - (margin * 2));
 
-        UILabel.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, textHeight);
+        FontManager.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, textHeight);
 
         int icoBack = h;
         for (UIWindowView.IWVWindowIcon i : icons) {

@@ -33,15 +33,15 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
 
     public void accept(UIElement o, int scale, boolean fullscreen) {
         ActiveWindow aw = new ActiveWindow();
-        Rect bounds = o.getBounds();
+        Rect bounds = o.getParentRelativeBounds();
         WindowSpecs ws = GaBIEn.defaultWindowSpecs(o.toString(), bounds.width, bounds.height);
         ws.scale = scale;
         ws.resizable = true;
         ws.fullscreen = fullscreen;
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
+        aw.hoverer = new IGDPointer(aw.igd, IPointer.PointerType.Mouse);
+        aw.clicker = new IGDPointer(aw.igd, IPointer.PointerType.Mouse);
         aw.ue = o;
-        aw.lastKnownWidth = bounds.width;
-        aw.lastKnownHeight = bounds.height;
         incomingWindows.add(aw);
     }
 
@@ -61,21 +61,29 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         for (ActiveWindow aw : new LinkedList<ActiveWindow>(activeWindows)) {
             if (!aw.igd.stillRunning()) {
                 closeThese.add(aw);
-                if (aw.ue instanceof IWindowElement)
-                    ((IWindowElement) (aw.ue)).windowClosed();
+                aw.ue.handleRootDisconnect();
                 continue;
-            } else {
-                boolean needResize = false;
-                if (aw.lastKnownWidth != aw.igd.getWidth())
-                    needResize = true;
-                if (aw.lastKnownHeight != aw.igd.getHeight())
-                    needResize = true;
-                if (needResize)
-                    aw.ue.setBounds(new Rect(0, 0, aw.igd.getWidth(), aw.igd.getHeight()));
-                // actually run!
-                aw.igd.clearAll(0, 0, 0);
-                aw.ue.updateAndRender(0, 0, dT, true, aw.igd);
             }
+
+            aw.hoverer.xo = 0;
+            aw.hoverer.yo = 0;
+
+            boolean needResize = false;
+            int cw = aw.igd.getWidth();
+            int ch = aw.igd.getHeight();
+            Size s = aw.ue.getSize();
+            if (s.width != cw)
+                needResize = true;
+            if (s.height != ch)
+                needResize = true;
+            if (needResize)
+                aw.ue.setForcedBounds(null, new Rect(0, 0, cw, ch));
+            // actually run!
+            aw.igd.clearScissoring();
+            UIBorderedElement.drawBorder(aw.igd, 5, 4, cw, ch);
+            aw.ue.update(dT);
+            aw.ue.render(true, aw.hoverer, aw.igd);
+            aw.hoverer.check();
 
             // Handles the global click/drag/release cycle
 
@@ -83,15 +91,29 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (justDown.size() > 0) {
                 if (!aw.pendingRelease) {
                     int button = justDown.iterator().next();
-                    aw.ue.handleClick(aw.igd.getMouseX(), aw.igd.getMouseY(), button);
+                    aw.clicker.type = IPointer.PointerType.Generic;
+                    if (button == 2)
+                        aw.clicker.type = IPointer.PointerType.Middle;
+                    if (button == 3)
+                        aw.clicker.type = IPointer.PointerType.Right;
+                    if (button == 4)
+                        aw.clicker.type = IPointer.PointerType.X1;
+                    if (button == 5)
+                        aw.clicker.type = IPointer.PointerType.X2;
+                    aw.clicker.xo = 0;
+                    aw.clicker.yo = 0;
+                    aw.ue.handlePointerBegin(aw.clicker);
+                    aw.clicker.check();
                     aw.pendingRelease = true;
                 }
             }
             if (aw.pendingRelease && (aw.igd.getMouseDown().size() > 0)) {
-                aw.ue.handleDrag(aw.igd.getMouseX(), aw.igd.getMouseY());
+                aw.ue.handlePointerUpdate(aw.clicker);
+                aw.clicker.check();
             } else {
                 if (aw.pendingRelease) {
-                    aw.ue.handleRelease(aw.igd.getMouseX(), aw.igd.getMouseY());
+                    aw.ue.handlePointerEnd(aw.clicker);
+                    aw.clicker.check();
                     aw.pendingRelease = false;
                 }
             }
@@ -100,12 +122,10 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                 aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
             if (aw.igd.stillRunning())
                 aw.igd.flush();
-            if (aw.ue instanceof IWindowElement) {
-                if (((IWindowElement) (aw.ue)).wantsSelfClose()) {
-                    closeThese.add(aw);
-                    ((IWindowElement) (aw.ue)).windowClosed();
-                    aw.igd.shutdown();
-                }
+            if (aw.ue.requestsUnparenting()) {
+                closeThese.add(aw);
+                aw.ue.handleRootDisconnect();
+                aw.igd.shutdown();
             }
         }
         activeWindows.removeAll(closeThese);
@@ -123,15 +143,52 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             activeWindows.remove(aw);
             incomingWindows.remove(aw);
             aw.igd.shutdown();
-            if (aw.ue instanceof IWindowElement)
-                ((IWindowElement) (aw.ue)).windowClosed();
+            aw.ue.handleRootDisconnect();
         }
     }
 
     private class ActiveWindow {
         IGrInDriver igd;
         UIElement ue;
-        int lastKnownWidth, lastKnownHeight;
         public boolean pendingRelease;
+        public IGDPointer hoverer;
+        public IGDPointer clicker;
+    }
+
+    private class IGDPointer implements IPointer {
+        public int xo, yo;
+        public IGrInDriver base;
+        public PointerType type;
+        public IGDPointer(IGrInDriver src, PointerType t) {
+            base = src;
+            type = t;
+        }
+
+        @Override
+        public int getX() {
+            return base.getMouseX() + xo;
+        }
+
+        @Override
+        public int getY() {
+            return base.getMouseY() + yo;
+        }
+
+        @Override
+        public PointerType getType() {
+            return type;
+        }
+
+        @Override
+        public void performOffset(int x, int y) {
+            xo += x;
+            yo += y;
+        }
+
+        public void check() {
+            if ((xo != 0) || (yo != 0))
+                throw new RuntimeException("Offset " + xo + " " + yo);
+
+        }
     }
 }

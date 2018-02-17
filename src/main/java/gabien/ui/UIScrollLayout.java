@@ -16,43 +16,55 @@ import java.util.LinkedList;
  * Got moved to gabien.ui on June 9 2017 and redesigned.
  * Created on 12/29/16.
  */
-public class UIScrollLayout extends UIPanel {
-    public UIScrollbar scrollbar;
-    public LinkedList<UIElement> panels = new LinkedList<UIElement>();
+public class UIScrollLayout extends UIElement.UIPanel {
+    public final UIScrollbar scrollbar;
+    private final int sbSize;
     public int scrollLength = 0;
     private double lastScrollPoint = -1;
 
     public UIScrollLayout(boolean vertical, int sc) {
         scrollbar = new UIScrollbar(vertical, sc);
-
+        sbSize = sc;
     }
 
+    public void panelsClear() {
+        for (UIElement uie : layoutGetElements())
+            layoutRemoveElement(uie);
+        runLayout();
+    }
+
+    public void panelsAppend(UIElement uie) {
+        layoutAddElement(uie);
+        layoutSetElementVis(uie, false);
+        runLayout();
+    }
+
+    // NOTE: What we do here is that we *say* we want everything, and then we take what we can get.
+    @Override
     public void runLayout() {
         lastScrollPoint = -1;
-        Rect r = getBounds();
-        allElements.clear();
-        allElements.add(scrollbar);
+        Size r = getSize();
         scrollLength = 0;
 
-        // Notably, this still has to do a setBounds for elements that are actively resizing themselves based on W
-        // The "layoutScrollbounds" at the bottom then fixes positions & allElements
+        // The UIScrollLayout here gives a scenario assuming the scrollbar is not in use.
+        // What's possible is that an element or group of elements might flip between the two states,
+        //  dependent on width, which is altered indirectly by height via the scrollbar's usage.
+        // Now, this shouldn't be an issue so long as a greater width does not lead to a greater height.
+        // If a greater width leads to a lesser height, then it stays off.
+        // If a greater width leads to a greater height, then it'll loop.
+        // (Interchange width/height as makes sense.)
+
+        // The "layoutScrollbounds" at the bottom then fixes positions & allElements.
         if (scrollbar.vertical) {
-            int sbSize = scrollbar.getBounds().width;
-            scrollbar.setBounds(new Rect(r.width - sbSize, 0, sbSize, r.height));
-            for (UIElement p : panels) {
-                p.setBounds(new Rect(0, 0, r.width - sbSize, p.getBounds().height));
-                scrollLength += p.getBounds().height;
-            }
+            scrollbar.setForcedBounds(this, new Rect(r.width - sbSize, 0, sbSize, r.height));
+            for (UIElement p : layoutGetElements())
+                scrollLength += p.getWantedSize().height;
         } else {
-            int sbSize = scrollbar.getBounds().height;
-            scrollbar.setBounds(new Rect(0, r.height - sbSize, r.width, sbSize));
-            for (UIElement p : panels) {
-                p.setBounds(new Rect(0, 0, p.getBounds().width, r.height));
-                scrollLength += p.getBounds().width;
-            }
+            scrollbar.setForcedBounds(this, new Rect(0, r.height - sbSize, r.width, sbSize));
+            for (UIElement p : layoutGetElements())
+                scrollLength += p.getWantedSize().width;
         }
 
-        useScissoring = true;
         layoutScrollbounds();
 
         if (scrollLength != 0)
@@ -64,56 +76,55 @@ public class UIScrollLayout extends UIPanel {
         if (lastScrollPoint == scrollbar.scrollPoint)
             return;
         lastScrollPoint = scrollbar.scrollPoint;
-        allElements.clear();
-        Rect bounds = getBounds();
+        Size bounds = getSize();
         int scrollHeight = scrollLength - (scrollbar.vertical ? bounds.height : bounds.width);
-        int appliedScrollbarSz = scrollbar.vertical ? scrollbar.getBounds().width : scrollbar.getBounds().height;
+        int appliedScrollbarSz = sbSize;
         if (scrollHeight <= 0) {
             scrollHeight = 0;
             // no need for the scrollbar
             appliedScrollbarSz = 0;
+            if (layoutContainsElement(scrollbar))
+                layoutRemoveElement(scrollbar);
         } else {
-            allElements.add(scrollbar);
+            if (!layoutContainsElement(scrollbar))
+                layoutAddElement(scrollbar);
         }
         int rY = (int) (-scrollbar.scrollPoint * scrollHeight);
-        for (UIElement p : panels) {
-            Rect b = p.getBounds();
+        for (UIElement p : layoutGetElements()) {
+            if (p == scrollbar)
+                continue;
+            layoutSetElementVis(p, false);
+            Size b = p.getWantedSize();
             int oRY = rY;
             if (scrollbar.vertical) {
-                p.setBounds(new Rect(0, rY, bounds.width - appliedScrollbarSz, b.height));
+                p.setForcedBounds(null, new Rect(0, rY, bounds.width - appliedScrollbarSz, b.height));
                 rY += b.height;
                 if (oRY <= -b.height)
                     continue;
                 if (oRY >= bounds.height)
                     continue;
             } else {
-                p.setBounds(new Rect(rY, 0, b.width, bounds.height - appliedScrollbarSz));
+                p.setForcedBounds(null, new Rect(rY, 0, b.width, bounds.height - appliedScrollbarSz));
                 rY += b.width;
                 if (oRY <= -b.width)
                     continue;
                 if (oRY >= bounds.width)
                     continue;
             }
-            allElements.add(p);
+            layoutSetElementVis(p, true);
         }
     }
 
     @Override
-    public void updateAndRender(int ox, int oy, double DeltaTime, boolean select, IGrInDriver igd) {
+    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
         layoutScrollbounds();
-        super.updateAndRender(ox, oy, DeltaTime, select, igd);
-    }
-
-    @Override
-    public void setBounds(Rect r) {
-        super.setBounds(r);
-        runLayout();
+        super.render(selected, mouse, igd);
     }
 
     // Don't even bother thinking about inner scroll views.
     @Override
     public void handleMousewheel(int x, int y, boolean north) {
-        Rect bounds = getBounds();
+        Size bounds = getSize();
         int scrollHeight = scrollLength - (scrollbar.vertical ? bounds.height : bounds.width);
         if (scrollHeight <= 0) {
             // No visible scrollbar -> don't scroll

@@ -287,6 +287,26 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
+    public void clearScissoring() {
+        cmdSubmitCore(new Runnable() {
+            @Override
+            public void run() {
+                target.clearScissoring();
+            }
+        });
+    }
+
+    @Override
+    public void adjustScissoring(final int x, final int y, final int w, final int h) {
+        cmdSubmitCore(new Runnable() {
+            @Override
+            public void run() {
+                target.adjustScissoring(x, y, w, h);
+            }
+        });
+    }
+
+    @Override
     public Object getNative() {
         return ((INativeImageHolder) target).getNative();
     }

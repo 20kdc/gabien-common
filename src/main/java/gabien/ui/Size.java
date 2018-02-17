@@ -8,29 +8,30 @@
 package gabien.ui;
 
 /**
- * Created on 13/08/17.
+ * Created on February 16th 2018 to be a superclass to Rect, to avoid breaking relativity.
  */
-public class UIAutoclosingPopupMenu extends UIPopupMenu implements IWindowElement {
+public class Size {
+    public final int width, height;
+    public Size(int i1, int i2) {
+        width = i1;
+        height = i2;
+    }
 
-    private boolean wantsSelfClose = false;
-
-    public UIAutoclosingPopupMenu(String[] strings, Runnable[] tilesets, int h, int sh, boolean rsz) {
-        super(strings, tilesets, h, sh, rsz);
+    public int hashCode() {
+        return toString().hashCode();
     }
 
     @Override
-    public boolean wantsSelfClose() {
-        return wantsSelfClose;
+    public String toString() {
+        return width + "," + height;
     }
 
     @Override
-    public void windowClosed() {
-
-    }
-
-    @Override
-    public void optionExecute(int b) {
-        super.optionExecute(b);
-        wantsSelfClose = true;
+    public boolean equals(Object o) {
+        if (o.getClass() == Size.class) {
+            Size s = (Size) o;
+            return (s.width == width) && (s.height == height);
+        }
+        return false;
     }
 }

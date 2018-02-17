@@ -9,34 +9,32 @@ package gabien.ui;
 
 import gabien.IGrInDriver;
 
+/**
+ * Changed on 16th February 2018 for the usual fun w/ the redesign.
+ */
 public class UITextButton extends UIButton {
-    public String text = "";
-    public final int textHeight;
+    public String text;
+    private final UILabel.Contents contents;
 
-    public UITextButton(int h, String tex, Runnable click) {
-        onClick = click;
+    public UITextButton(String tex, int h, Runnable click) {
+        super(UIBorderedElement.getRecommendedBorderWidth(h));
+        contents = new UILabel.Contents(h);
         text = tex;
-        textHeight = h;
-        setBounds(getRecommendedSize(text, h));
+        onClick = click;
+        Size sz = getRecommendedTextSize(text, h);
+        setWantedSize(sz);
+        setForcedBounds(null, new Rect(0, 0, sz.width, sz.height));
     }
 
-    public static Rect getRecommendedSize(String text, int txh) {
-        // See UILabel for the logic behind only adding margin once to the rectangle height.
-        int margin = txh / 8;
-        // Notably, there's an additional horizontal bit of margin for contrast against the (light) sides of the button.
-        return new Rect(0, 0, UILabel.getTextLength(text, txh) + (margin * 2) + 2, txh + margin);
-    }
-
-    public UITextButton togglable() {
-        toggle = true;
+    @Override
+    public UITextButton togglable(boolean st) {
+        super.togglable(st);
         return this;
     }
 
     @Override
-    public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
-        super.updateAndRender(ox, oy, DeltaTime, selected, igd);
-        // This is a copy of the drawButtonText code, because non-static is better for GC
-        Rect cr = getContentsRect();
-        UILabel.drawString(igd, ox + cr.x, oy + cr.y, text, true, textHeight);
+    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+        super.render(selected, mouse, igd);
+        contents.render(getSize(), getBorderWidth(), text, igd);
     }
 }

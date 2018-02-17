@@ -18,93 +18,41 @@ import gabien.IImage;
  * Now it's a superclass of UITextButton.
  * Unknown creation date.
  */
-public class UIButton extends UIElement {
+public class UIButton extends UIBorderedElement {
     public Runnable onClick;
     public double pressedTime = 0;
     public boolean state = false;
     public boolean toggle = false;
-    private Rect contentsBoundsST = new Rect(0, 0, 0, 0);
-    private Rect contentsBoundsSF = new Rect(0, 0, 0, 0);
 
-    @Override
-    public void setBounds(Rect r) {
-        super.setBounds(r);
-        contentsBoundsST = getContentsRect(r.width, r.height, true);
-        contentsBoundsSF = getContentsRect(r.width, r.height, false);
+    public UIButton(int bw) {
+        super(0, bw);
     }
 
-    public Rect getContentsRect() {
-        return state ? contentsBoundsST : contentsBoundsSF;
+    public UIButton togglable(boolean st) {
+        state = st;
+        toggle = true;
+        return this;
     }
 
     @Override
-    public void updateAndRender(int ox, int oy, double DeltaTime, boolean selected, IGrInDriver igd) {
+    public void update(double deltaTime) {
         if (pressedTime > 0) {
-            pressedTime -= DeltaTime;
+            pressedTime -= deltaTime;
             if (pressedTime <= 0)
                 state = false;
         }
-        Rect b = getBounds();
-        drawButton(ox, oy, b.width, b.height, state, igd);
-    }
-
-    public static void drawButton(int ox, int oy, int w, int h, boolean state, IGrDriver igd) {
-        if ((h != 9) && (h != 18)) {
-            // no bitmaps here
-            int margin = getPressOffset(h);
-            int c1 = 32; // shadow
-            int c2 = 64; // lit
-            int c3 = 48; // middle
-            int ooy = 0;
-            if (state) {
-                c2 = 32;
-                c1 = 64;
-                c3 = 16;
-                ooy = margin;
-            }
-            drawButtonCore(c1 * 3, c2 * 3, c3, ox, oy + ooy, margin, w, h, igd, false);
-            int m2 = 1 + (margin / 3);
-            drawButtonCore(c1, c2, c3, ox + m2, oy + m2 + ooy, margin - m2, w - (m2 * 2), h - (m2 * 2), igd, true);
-        } else {
-            boolean x2 = h == 18;
-            int po = state ? (x2 ? 6 : 3) : 0;
-            IImage i = GaBIEn.getImageCKEx("textButton.png", false, true, 255, 0, 255);
-            igd.blitImage((x2 ? 6 : 0) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox, oy, i);
-            for (int pp = (x2 ? 2 : 1); pp < w - 1; pp += (x2 ? 2 : 1))
-                igd.blitImage((x2 ? 8 : 1) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + pp, oy, i);
-            igd.blitImage((x2 ? 10 : 2) + po, 0, (x2 ? 2 : 1), (x2 ? 20 : 10), ox + (w - (x2 ? 2 : 1)), oy, i);
-        }
-    }
-
-    protected static Rect getContentsRect(int width, int height, boolean state) {
-        int margin, po;
-        if ((height != 9) && (height != 18)) {
-            margin = getPressOffset(height);
-            po = margin;
-        } else if (height == 18) {
-            po = 2;
-            margin = 2;
-        } else {
-            po = 1;
-            margin = 1;
-        }
-        return new Rect(margin, margin + (state ? po : 0), width - (margin * 2), height - (margin * 2));
-    }
-
-    protected static int getPressOffset(int h) {
-        return (h - (h / 5)) / 8;
-    }
-
-    private static void drawButtonCore(int c1, int c2, int c3, int ox, int oy, int margin, int width, int height, IGrDriver igd, boolean drawBack) {
-        igd.clearRect(c1, c1, c1, ox, oy, width, height);
-        igd.clearRect(c2, c2, c2, ox, oy, width - margin, height - margin);
-        if (drawBack)
-            igd.clearRect(c3, c3, c3, ox + margin, oy + margin, width - (margin * 2), height - (margin * 2));
     }
 
     @Override
-    public void handleClick(int x, int y, int button) {
-        if (button == 1) {
+    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+        borderType = state ? 1 : 0;
+        super.render(selected, mouse, igd);
+    }
+
+    @Override
+    public void handlePointerBegin(IPointer stat) {
+        super.handlePointerBegin(stat);
+        if (stat.getType() == IPointer.PointerType.Generic) {
             if (toggle) {
                 state = !state;
             } else {
