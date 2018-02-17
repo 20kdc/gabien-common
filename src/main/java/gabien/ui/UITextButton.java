@@ -35,6 +35,8 @@ public class UITextButton extends UIButton {
     @Override
     public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
         super.render(selected, mouse, igd);
-        contents.render(getSize(), getBorderWidth(), text, igd);
+        Size p = contents.render(getSize(), getBorderWidth(), text, igd);
+        if (p != null)
+            setWantedSize(p);
     }
 }

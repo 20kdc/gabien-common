@@ -297,11 +297,11 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
-    public void adjustScissoring(final int x, final int y, final int w, final int h) {
+    public void adjustScissoring(final int x, final int y, final int tx, final int ty, final int w, final int h) {
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
-                target.adjustScissoring(x, y, w, h);
+                target.adjustScissoring(x, y, tx, ty, w, h);
             }
         });
     }

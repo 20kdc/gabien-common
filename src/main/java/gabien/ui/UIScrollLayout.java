@@ -21,6 +21,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
     private final int sbSize;
     public int scrollLength = 0;
     private double lastScrollPoint = -1;
+    private boolean earlyForceRunLayout = false;
 
     public UIScrollLayout(boolean vertical, int sc) {
         scrollbar = new UIScrollbar(vertical, sc);
@@ -31,17 +32,19 @@ public class UIScrollLayout extends UIElement.UIPanel {
         for (UIElement uie : layoutGetElements())
             layoutRemoveElement(uie);
         runLayout();
+        earlyForceRunLayout = true;
     }
 
-    public void panelsAppend(UIElement uie) {
+    public void panelsAdd(UIElement uie) {
         layoutAddElement(uie);
         layoutSetElementVis(uie, false);
-        runLayout();
+        earlyForceRunLayout = true;
     }
 
     // NOTE: What we do here is that we *say* we want everything, and then we take what we can get.
     @Override
     public void runLayout() {
+        earlyForceRunLayout = false;
         lastScrollPoint = -1;
         Size r = getSize();
         scrollLength = 0;
@@ -55,14 +58,20 @@ public class UIScrollLayout extends UIElement.UIPanel {
         // (Interchange width/height as makes sense.)
 
         // The "layoutScrollbounds" at the bottom then fixes positions & allElements.
+
+        // Since the scrollbar is about to be resized, make sure we're allowed to use it
+        if (!layoutContainsElement(scrollbar))
+            layoutAddElement(scrollbar);
         if (scrollbar.vertical) {
             scrollbar.setForcedBounds(this, new Rect(r.width - sbSize, 0, sbSize, r.height));
             for (UIElement p : layoutGetElements())
-                scrollLength += p.getWantedSize().height;
+                if (p != scrollbar)
+                    scrollLength += p.getWantedSize().height;
         } else {
             scrollbar.setForcedBounds(this, new Rect(0, r.height - sbSize, r.width, sbSize));
             for (UIElement p : layoutGetElements())
-                scrollLength += p.getWantedSize().width;
+                if (p != scrollbar)
+                    scrollLength += p.getWantedSize().width;
         }
 
         layoutScrollbounds();
@@ -97,14 +106,14 @@ public class UIScrollLayout extends UIElement.UIPanel {
             Size b = p.getWantedSize();
             int oRY = rY;
             if (scrollbar.vertical) {
-                p.setForcedBounds(null, new Rect(0, rY, bounds.width - appliedScrollbarSz, b.height));
+                p.setForcedBounds(this, new Rect(0, rY, bounds.width - appliedScrollbarSz, b.height));
                 rY += b.height;
                 if (oRY <= -b.height)
                     continue;
                 if (oRY >= bounds.height)
                     continue;
             } else {
-                p.setForcedBounds(null, new Rect(rY, 0, b.width, bounds.height - appliedScrollbarSz));
+                p.setForcedBounds(this, new Rect(rY, 0, b.width, bounds.height - appliedScrollbarSz));
                 rY += b.width;
                 if (oRY <= -b.width)
                     continue;
@@ -116,9 +125,14 @@ public class UIScrollLayout extends UIElement.UIPanel {
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
-        layoutScrollbounds();
-        super.render(selected, mouse, igd);
+    public void update(double deltaTime) {
+        if (earlyForceRunLayout) {
+            runLayout();
+            earlyForceRunLayout = false;
+        } else {
+            layoutScrollbounds();
+        }
+        super.update(deltaTime);
     }
 
     // Don't even bother thinking about inner scroll views.

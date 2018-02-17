@@ -39,9 +39,9 @@ public interface IGrDriver extends IImage {
 
     void clearRect(int r, int g, int b, int x, int y, int width, int height);
 
-    // Adjusts *scissoring & transform* (not just scissoring as the name says)
+    // Adjusts Scissoring & Transform (not just scissoring, but oh well)
     void clearScissoring();
-    void adjustScissoring(int x, int y, int w, int h);
+    void adjustScissoring(int x, int y, int tx, int ty, int w, int h);
 
     // Stop all drawing operations. Makes an OsbDriver unusable.
     void shutdown();

@@ -7,6 +7,8 @@
 
 package gabien;
 
+import gabien.ui.Size;
+
 /**
  * Just get this out of UILabel so I can continue doing meaningful stuff.
  * Created on 16th February 2018.
@@ -87,6 +89,27 @@ public class FontManager {
         } else {
             igd.blitImage(0, 0, hchSize, vchSize, xptr, yptr, font);
         }
+    }
+
+    // NOTE: This assumes the results are for the final content block.
+    //       So it doesn't include the padding at the bottom.
+    public static Size getTextSize(String text, int textHeight) {
+        int w = 0;
+        int h = textHeight;
+        while (text.length() > 0) {
+            int nlI = text.indexOf('\n');
+            String tLine = text;
+            if (nlI != -1) {
+                tLine = tLine.substring(0, nlI);
+                text = text.substring(nlI + 1);
+                // Another line incoming, add pre-emptively.
+                h += textHeight;
+            } else {
+                text = "";
+            }
+            w = Math.max(w, getLineLength(tLine, textHeight));
+        }
+        return new Size(w, h - (textHeight / 8));
     }
 
     public static int getLineLength(String text, int height) {

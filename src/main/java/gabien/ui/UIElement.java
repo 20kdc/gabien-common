@@ -29,6 +29,11 @@ public abstract class UIElement implements IPointerReceiver {
 
     private UIPanel parent;
     private Size wantedSize = new Size(0, 0);
+    // Used during construction & setForcedBounds.
+    // In the first case, this prevents accidentally calling runLayout before the object is ready.
+    // In the second case, this prevents a sub-element from calling a parent element's runLayout...
+    //  during that same runLayout.
+    private boolean duringSetForcedBounds = false;
 
     public UIElement() {
         // This is sufficient.
@@ -37,8 +42,10 @@ public abstract class UIElement implements IPointerReceiver {
     public UIElement(int width, int height) {
         // Simplifies things.
         Rect sz = new Rect(0, 0, width, height);
+        duringSetForcedBounds = true;
         setWantedSize(sz);
         setForcedBounds(null, sz);
+        duringSetForcedBounds = false;
     }
 
     /*
@@ -48,9 +55,16 @@ public abstract class UIElement implements IPointerReceiver {
         if (mustBeThis != parent)
             throw new RuntimeException("You aren't allowed to do that!");
         elementBounds = r;
-        // Oh, *this* is a mindbender
-        if (this instanceof UIPanel)
-            ((UIPanel) this).needsLayout = true;
+        // Oh, *this* is a mindbender.
+        if (!duringSetForcedBounds) {
+            duringSetForcedBounds = true;
+            runLayout();
+            duringSetForcedBounds = false;
+        }
+    }
+
+    public void runLayout() {
+
     }
 
     public final Rect getParentRelativeBounds() {
@@ -64,9 +78,10 @@ public abstract class UIElement implements IPointerReceiver {
     public final void setWantedSize(Size size) {
         boolean relayout = !wantedSize.equals(size);
         wantedSize = size;
-        if (relayout)
-            if (parent != null)
-                parent.needsLayout = true;
+        if (!duringSetForcedBounds)
+            if (relayout)
+                if (parent != null)
+                    parent.runLayout();
     }
 
     public final Size getWantedSize() {
@@ -126,7 +141,6 @@ public abstract class UIElement implements IPointerReceiver {
         private UIElement selectedElement;
         private LinkedList<UIElement> allElements = new LinkedList<UIElement>();
         private HashSet<UIElement> visElements = new HashSet<UIElement>();
-        private boolean needsLayout = false;
         private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
 
         public UIPanel() {
@@ -178,15 +192,13 @@ public abstract class UIElement implements IPointerReceiver {
             return new LinkedList<UIElement>(allElements);
         }
 
+        // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
+        @Override
         public abstract void runLayout();
 
         @Override
         public void update(double deltaTime) {
-            if (needsLayout) {
-                needsLayout = false;
-                runLayout();
-            }
-            for (UIElement uie : visElements)
+            for (UIElement uie : new LinkedList<UIElement>(allElements))
                 uie.update(deltaTime);
         }
 
@@ -197,7 +209,7 @@ public abstract class UIElement implements IPointerReceiver {
             // this.elementBounds: invalid (access error)
             // myself.elementBounds: ok
             UIElement myself = this;
-            for (UIElement uie : visElements)
+            for (UIElement uie : new LinkedList<UIElement>(visElements))
                 scissoredRender(false, uie, selected && (uie == selectedElement), mouse, igd, myself.elementBounds.width, myself.elementBounds.height);
         }
 
@@ -208,7 +220,6 @@ public abstract class UIElement implements IPointerReceiver {
             int wp = Math.max((x + uie.elementBounds.width) - w, 0);
             int hp = Math.max((y + uie.elementBounds.height) - h, 0);
 
-            mouse.performOffset(-x, -y);
             // make sure x/y aren't escaping negative
             int ex = x;
             int ey = y;
@@ -222,11 +233,13 @@ public abstract class UIElement implements IPointerReceiver {
             }
             wp = Math.min(w, wp);
             hp = Math.min(h, hp);
-            igd.adjustScissoring(ex, ey, -wp, -hp);
+
+            mouse.performOffset(-x, -y);
+            igd.adjustScissoring(ex, ey, x, y, -wp, -hp);
             if (asWindow)
                 UIBorderedElement.drawBorder(igd, 5, 4, uie.elementBounds.width, uie.elementBounds.height);
             uie.render(selected, mouse, igd);
-            igd.adjustScissoring(ex, ey, wp, hp);
+            igd.adjustScissoring(-ex, -ey, -x, -y, wp, hp);
             mouse.performOffset(x, y);
         }
 
