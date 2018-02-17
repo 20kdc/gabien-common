@@ -17,6 +17,7 @@ public class FontManager {
     // Font override name.
     public static String fontOverride;
     public static boolean fontOverrideUE8;
+    public static boolean fontsReady;
 
     private static boolean useSystemFont(String text, int height) {
         if (fontOverride != null) {

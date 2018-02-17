@@ -36,6 +36,9 @@ public class UITabPane extends UIElement.UIPanel {
     private Random ntRandom = new Random();
     public double visualizationOrange = 0.0d;
 
+    // Not to actually be used.
+    public final int tabBarHeight;
+
     public UITabPane(int h, boolean csn, boolean cdt) {
         this(h, csn, cdt, 0);
     }
@@ -47,6 +50,7 @@ public class UITabPane extends UIElement.UIPanel {
         } else {
             tabScroller = new UIScrollbar(false, scrollerSize);
         }
+        tabBarHeight = tabManager.tabBarHeight;
     }
 
     @Override

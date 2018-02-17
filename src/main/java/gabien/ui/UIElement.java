@@ -72,7 +72,7 @@ public abstract class UIElement implements IPointerReceiver {
         return elementBounds;
     }
 
-    public final void setWantedSize(Size size) {
+    public void setWantedSize(Size size) {
         boolean relayout = !wantedSize.equals(size);
         wantedSize = size;
         if (!duringSetForcedBounds)

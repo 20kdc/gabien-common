@@ -30,7 +30,7 @@ public class UITextButton extends UIButton {
         onClick = click;
         Size sz = getRecommendedTextSize(text, h);
         setWantedSize(sz);
-        setForcedBounds(null, new Rect(0, 0, sz.width, sz.height));
+        setForcedBounds(null, new Rect(sz));
     }
 
     @Override

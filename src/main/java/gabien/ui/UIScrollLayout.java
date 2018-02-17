@@ -40,6 +40,9 @@ public class UIScrollLayout extends UIElement.UIPanel {
     public void panelsAdd(UIElement uie) {
         layoutAddElement(uie);
         layoutSetElementVis(uie, false);
+        Size s = uie.getSize();
+        // Store these offscreen to prevent accidental clicking.
+        uie.setForcedBounds(this, new Rect(-s.width, -s.height, s.width, s.height));
         earlyForceRunLayout = true;
     }
 
