@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created on 08/06/17.
  */
 public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver, INativeImageHolder {
+    public int[] localSTBuffer = new int[6];
     // Wiped by forwardingThread
     public LinkedRunnable firstCommand = new LinkedRunnable(new Runnable() {
         @Override
@@ -89,6 +90,10 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
         // refresh visible width and height
         clientWidth = target.getWidth();
         clientHeight = target.getHeight();
+        // sync ST values
+        int[] remoteST = target.getLocalST();
+        for (int i = 0; i < localSTBuffer.length; i++)
+            localSTBuffer[i] = remoteST[i];
         return block[1];
     }
 
@@ -287,21 +292,29 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
-    public void clearScissoring() {
-        cmdSubmitCore(new Runnable() {
-            @Override
-            public void run() {
-                target.clearScissoring();
-            }
-        });
+    public int[] getLocalST() {
+        return localSTBuffer;
     }
 
     @Override
-    public void adjustScissoring(final int x, final int y, final int tx, final int ty, final int w, final int h) {
+    public void updateST() {
+        final int a, b, c, d, e, f;
+        a = localSTBuffer[0];
+        b = localSTBuffer[1];
+        c = localSTBuffer[2];
+        d = localSTBuffer[3];
+        e = localSTBuffer[4];
+        f = localSTBuffer[5];
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
-                target.adjustScissoring(x, y, tx, ty, w, h);
+                int[] lst = target.getLocalST();
+                lst[0] = a;
+                lst[1] = b;
+                lst[2] = c;
+                lst[3] = d;
+                lst[4] = e;
+                lst[5] = f;
             }
         });
     }

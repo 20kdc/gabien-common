@@ -7,7 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrInDriver;
+import gabien.IGrDriver;
+import gabien.IPeripherals;
 
 /**
  * Forgot creation date, but it was back at the time of IkachanMapEdit.
@@ -38,7 +39,7 @@ public class UINumberBox extends UILabel {
     private boolean tempDisableSelection = false;
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         selected &= !tempDisableSelection;
         if (number != editingNLast) {
             editingCNumber = number;
@@ -48,7 +49,7 @@ public class UINumberBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected && (!readOnly)) {
-            String ss = igd.maintain(0, (bounds.height / 2), bounds.width, String.valueOf(number));
+            String ss = peripherals.maintain(0, (bounds.height / 2), bounds.width, String.valueOf(number));
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
             if (lastMinusIdx > 0) {
@@ -64,17 +65,17 @@ public class UINumberBox extends UILabel {
                     newNum = -newNum;
             } catch (Exception e) {
             }
-            if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
+            if (peripherals.isEnterJustPressed()) {
                 editingCNumber = number;
                 onEdit.run();
-                igd.clearKeys();
+                peripherals.clearKeys();
                 tempDisableSelection = true;
             }
             number = newNum;
             editingNLast = number;
         }
         text = Long.toString(number);
-        super.render(selected, mouse, igd);
+        super.render(selected, peripherals, igd);
     }
 
     @Override

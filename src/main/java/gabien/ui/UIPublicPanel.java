@@ -7,8 +7,9 @@
 
 package gabien.ui;
 
-import gabien.IGrInDriver;
+import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.IPeripherals;
 
 /**
  * Subclass of UIPanel for use in inner classes and such
@@ -36,7 +37,7 @@ public class UIPublicPanel extends UIElement.UIPanel {
     }
 
     @Override
-    public void render(boolean select, IPointer mouse, IGrInDriver igd) {
+    public void render(boolean select, IPeripherals peripherals, IGrDriver igd) {
         if (baseImage != null) {
             Size bounds = getSize();
             if (!imageScale) {
@@ -45,6 +46,6 @@ public class UIPublicPanel extends UIElement.UIPanel {
                 igd.blitScaledImage(imageX, imageY, imageSW, imageSH, 0, 0, bounds.width, bounds.height, baseImage);
             }
         }
-        super.render(select, mouse, igd);
+        super.render(select, peripherals, igd);
     }
 }

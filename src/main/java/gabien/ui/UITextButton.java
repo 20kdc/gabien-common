@@ -7,7 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrInDriver;
+import gabien.IGrDriver;
+import gabien.IPeripherals;
 
 /**
  * Changed on 16th February 2018 for the usual fun w/ the redesign.
@@ -15,6 +16,12 @@ import gabien.IGrInDriver;
 public class UITextButton extends UIButton {
     public String text;
     private final UILabel.Contents contents;
+
+    // exists so I can run a refactor using it later
+    @Deprecated
+    public UITextButton(int h, String tex, Runnable click) {
+        this(tex, h, click);
+    }
 
     public UITextButton(String tex, int h, Runnable click) {
         super(UIBorderedElement.getRecommendedBorderWidth(h));
@@ -33,8 +40,8 @@ public class UITextButton extends UIButton {
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
-        super.render(selected, mouse, igd);
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+        super.render(selected, peripherals, igd);
         Size p = contents.render(getSize(), getBorderWidth(), text, igd);
         if (p != null)
             setWantedSize(p);

@@ -21,6 +21,6 @@ public interface IPointer {
         Right, // RMB
         X1, // (WARNING: ABSOLUTELY DO NOT RELY ON!)
         X2, // (WARNING: ABSOLUTELY DO NOT RELY ON!)
-        Mouse // Hovering
+        Mouse // Unknown
     }
 }

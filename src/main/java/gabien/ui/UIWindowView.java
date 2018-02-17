@@ -8,7 +8,7 @@
 package gabien.ui;
 
 import gabien.IGrDriver;
-import gabien.IGrInDriver;
+import gabien.IPeripherals;
 
 import java.util.*;
 
@@ -118,12 +118,12 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         windowList.addAll(upcomingWindowList);
         upcomingWindowList.clear();
         int remaining = windowList.size();
         if (clearKeysLater) {
-            igd.clearKeys();
+            peripherals.clearKeys();
             clearKeysLater = false;
         }
         Size bounds = getSize();
@@ -140,7 +140,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 backingNeedsRefresh = true;
             if (backingNeedsRefresh)
                 backing.setForcedBounds(null, new Rect(0, 0, bounds.width, bounds.height));
-            backing.render(selected && backingSelected, mouse, igd);
+            backing.render(selected && backingSelected, peripherals, igd);
         } else {
             igd.clearRect(0, 0, 64, 0, 0, bounds.width, bounds.height);
         }
@@ -167,7 +167,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
 
             TabUtils.drawTab(winSelected ? 192 : 48, 32, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
 
-            UIPanel.scissoredRender(true, uie.contents, winSelected, mouse, igd, bounds.width, bounds.height);
+            UIPanel.scissoredRender(true, uie.contents, winSelected, peripherals, igd, bounds.width, bounds.height);
         }
         windowList.removeAll(wantsDeleting);
     }
@@ -207,8 +207,32 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             oy = fh;
         if (oy > scr.height)
             oy = scr.height;
-        if ((ox != s.x) || (oy != s.y))
-            wv.contents.setForcedBounds(null, new Rect(ox, oy, s.width, s.height));
+        int ow = s.width;
+        int oh = s.height;
+        // Can only happen at this point if forced left by above code?
+        if (ox < 0) {
+            ow += ox;
+            ox = 0;
+        }
+        ow = Math.max(ow, TabUtils.getTabWidth(wv, 0, fh));
+        oh = Math.max(oh, 0);
+        if ((ox != s.x) || (oy != s.y) || (ow != s.width) || (oh != s.height))
+            wv.contents.setForcedBounds(null, new Rect(ox, oy, ow, oh));
+    }
+
+    @Override
+    public void handlePointerBegin(IPointer state) {
+        connector.handlePointerBegin(state);
+    }
+
+    @Override
+    public void handlePointerUpdate(IPointer state) {
+        connector.handlePointerUpdate(state);
+    }
+
+    @Override
+    public void handlePointerEnd(IPointer state) {
+        connector.handlePointerEnd(state);
     }
 
     @Override

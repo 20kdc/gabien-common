@@ -7,7 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrInDriver;
+import gabien.IGrDriver;
+import gabien.IPeripherals;
 
 /**
  * Replacement for UIVScrollbar in gabien-app-r48.
@@ -32,8 +33,8 @@ public class UIScrollbar extends UIBorderedElement {
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
-        super.render(selected, mouse, igd);
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+        super.render(selected, peripherals, igd);
         Size bounds = getSize();
         int margin = (vertical ? bounds.width : bounds.height) / 8;
         int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
@@ -50,8 +51,7 @@ public class UIScrollbar extends UIBorderedElement {
             nubY = margin;
         }
 
-        igd.clearRect(192, 192, 192, nubX, nubY, nub, nub);
-        igd.clearRect(255, 255, 255, nubX + margin, nubY + margin, nub - (margin * 2), nub - (margin * 2));
+        UIBorderedElement.drawBorder(igd, 7, nub / 3, nubX, nubY, nub, nub);
     }
 
     @Override

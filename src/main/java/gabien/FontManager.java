@@ -47,6 +47,7 @@ public class FontManager {
             while ((lIdx = text.indexOf('\n')) != -1) {
                 igd.drawText(xptr, oy, 255, 255, 255, height, text.substring(0, lIdx));
                 text = text.substring(lIdx + 1);
+                oy += height;
             }
             igd.drawText(xptr, oy, 255, 255, 255, height, text);
             return;

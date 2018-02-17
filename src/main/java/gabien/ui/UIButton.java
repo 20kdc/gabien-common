@@ -8,10 +8,7 @@
 package gabien.ui;
 
 
-import gabien.GaBIEn;
-import gabien.IGrDriver;
-import gabien.IGrInDriver;
-import gabien.IImage;
+import gabien.*;
 
 /**
  * This was actually a totally different class at one point.
@@ -44,9 +41,9 @@ public class UIButton extends UIBorderedElement {
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         borderType = state ? 1 : 0;
-        super.render(selected, mouse, igd);
+        super.render(selected, peripherals, igd);
     }
 
     @Override

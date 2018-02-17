@@ -33,8 +33,8 @@ public class UILabel extends UIBorderedElement {
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
-        super.render(selected, mouse, igd);
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+        super.render(selected, peripherals, igd);
         Size p = contents.render(getSize(), getBorderWidth(), text, igd);
         if (p != null)
             setWantedSize(p);
@@ -77,7 +77,7 @@ public class UILabel extends UIBorderedElement {
     public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height) {
         int h = UIBorderedElement.getRecommendedBorderWidth(height);
         int h2 = height + (h * 2) - (height / 8);
-        UIBorderedElement.drawBorder(igd, mode + 2, h, wid, h2);
+        UIBorderedElement.drawBorder(igd, mode + 2, h, 0, 0, wid, h2);
         FontManager.drawString(igd, ox + h, oy + h, string, true, height);
         return wid;
     }

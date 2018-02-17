@@ -14,6 +14,8 @@ import gabien.*;
  * Created on February 16th, 2018.
  */
 public abstract class UIBorderedElement extends UIElement {
+    public static int borderTheme;
+    public static final int BORDER_THEMES = 4;
 
     protected int borderType;
     private int borderWidth;
@@ -51,15 +53,15 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         Size s = getSize();
-        drawBorder(igd, borderType, borderWidth, s.width, s.height);
+        drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
     }
 
-    public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int w, int h) {
-        IImage im = GaBIEn.getImageCKEx("theme.png", false, true, 255, 0, 255);
+    public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
+        IImage im = GaBIEn.getImageCKEx("themes.png", false, true, 255, 0, 255);
         int baseX = borderType * 12;
-        int baseY = 0;
+        int baseY = borderTheme * 18;
         int chunkSize = 1;
         if (borderWidth >= 2) {
             baseX += 6;
@@ -71,22 +73,22 @@ public abstract class UIBorderedElement extends UIElement {
             chunkSize = 4;
         }
 
-        igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSize, chunkSize, borderWidth, borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), im);
+        igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSize, chunkSize, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), im);
 
         // edges
 
-        igd.blitScaledImage(baseX + chunkSize, baseY, chunkSize, chunkSize, borderWidth, 0, w - (borderWidth * 2), borderWidth, im);
-        igd.blitScaledImage(baseX + chunkSize, baseY + (chunkSize * 2), chunkSize, chunkSize, borderWidth, h - borderWidth, w - (borderWidth * 2), borderWidth, im);
+        igd.blitScaledImage(baseX + chunkSize, baseY, chunkSize, chunkSize, x + borderWidth, y, w - (borderWidth * 2), borderWidth, im);
+        igd.blitScaledImage(baseX + chunkSize, baseY + (chunkSize * 2), chunkSize, chunkSize, x + borderWidth, y + (h - borderWidth), w - (borderWidth * 2), borderWidth, im);
 
-        igd.blitScaledImage(baseX, baseY + chunkSize, chunkSize, chunkSize, 0, borderWidth, borderWidth, h - (borderWidth * 2), im);
-        igd.blitScaledImage(baseX + (chunkSize * 2), baseY + chunkSize, chunkSize, chunkSize, w - borderWidth, borderWidth, borderWidth, h - (borderWidth * 2), im);
+        igd.blitScaledImage(baseX, baseY + chunkSize, chunkSize, chunkSize, x, y + borderWidth, borderWidth, h - (borderWidth * 2), im);
+        igd.blitScaledImage(baseX + (chunkSize * 2), baseY + chunkSize, chunkSize, chunkSize, x + (w - borderWidth), y + borderWidth, borderWidth, h - (borderWidth * 2), im);
 
         // corners
 
-        igd.blitScaledImage(baseX, baseY, chunkSize, chunkSize, 0, 0, borderWidth, borderWidth, im);
-        igd.blitScaledImage(baseX + (chunkSize * 2), baseY, chunkSize, chunkSize, w - borderWidth, 0, borderWidth, borderWidth, im);
+        igd.blitScaledImage(baseX, baseY, chunkSize, chunkSize, x, y, borderWidth, borderWidth, im);
+        igd.blitScaledImage(baseX + (chunkSize * 2), baseY, chunkSize, chunkSize, x + (w - borderWidth), y, borderWidth, borderWidth, im);
 
-        igd.blitScaledImage(baseX, baseY + (chunkSize * 2), chunkSize, chunkSize, 0, h - borderWidth, borderWidth, borderWidth, im);
-        igd.blitScaledImage(baseX + (chunkSize * 2), baseY + (chunkSize * 2), chunkSize, chunkSize, w - borderWidth, h - borderWidth, borderWidth, borderWidth, im);
+        igd.blitScaledImage(baseX, baseY + (chunkSize * 2), chunkSize, chunkSize, x, y + (h - borderWidth), borderWidth, borderWidth, im);
+        igd.blitScaledImage(baseX + (chunkSize * 2), baseY + (chunkSize * 2), chunkSize, chunkSize, x + (w - borderWidth), y + (h - borderWidth), borderWidth, borderWidth, im);
     }
 }

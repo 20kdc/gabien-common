@@ -7,9 +7,10 @@
 
 package gabien.ui;
 
+import gabien.IGrDriver;
 import gabien.IGrInDriver;
+import gabien.IPeripherals;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
@@ -85,7 +86,7 @@ public abstract class UIElement implements IPointerReceiver {
     }
 
     public abstract void update(double deltaTime);
-    public abstract void render(boolean selected, IPointer mouse, IGrInDriver igd);
+    public abstract void render(boolean selected, IPeripherals peripherals, IGrDriver igd);
 
     public void runLayout() {
 
@@ -188,6 +189,13 @@ public abstract class UIElement implements IPointerReceiver {
             return visElements.contains(uie);
         }
 
+        protected final void layoutSelect(UIElement uie) {
+            if (uie != null)
+                if (!allElements.contains(uie))
+                    throw new RuntimeException("Can't select something we don't have.");
+            selectedElement = uie;
+        }
+
         protected final LinkedList<UIElement> layoutGetElements() {
             return new LinkedList<UIElement>(allElements);
         }
@@ -199,43 +207,60 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+        public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
             // javac appears to be having conflicting memories.
             // elementBounds: invalid (something about not being static)
             // this.elementBounds: invalid (access error)
             // myself.elementBounds: ok
             UIElement myself = this;
             for (UIElement uie : new LinkedList<UIElement>(visElements))
-                scissoredRender(false, uie, selected && (uie == selectedElement), mouse, igd, myself.elementBounds.width, myself.elementBounds.height);
+                scissoredRender(false, uie, selected && (uie == selectedElement), peripherals, igd, myself.elementBounds.width, myself.elementBounds.height);
         }
 
-        public static void scissoredRender(boolean asWindow, UIElement uie, boolean selected, IPointer mouse, IGrInDriver igd, int w, int h) {
+        public static void scissoredRender(boolean asWindow, UIElement uie, boolean selected, IPeripherals mouse, IGrDriver igd, int w, int h) {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
-            // How many pixels to cut off?
-            int wp = Math.max((x + uie.elementBounds.width) - w, 0);
-            int hp = Math.max((y + uie.elementBounds.height) - h, 0);
+            // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
+            // YOU HAVE BEEN WARNED.
+            int left = x;
+            int top = y;
+            int right = left + uie.elementBounds.width;
+            int bottom = top + uie.elementBounds.height;
 
-            // make sure x/y aren't escaping negative
-            int ex = x;
-            int ey = y;
-            if (ex < 0) {
-                wp -= ex;
-                ex = 0;
-            }
-            if (ey < 0) {
-                hp -= ex;
-                ey = 0;
-            }
-            wp = Math.min(w, wp);
-            hp = Math.min(h, hp);
+            int[] localBuffer = igd.getLocalST();
+            int osTX = localBuffer[0];
+            int osTY = localBuffer[1];
+            int osLeft = localBuffer[2];
+            int osTop = localBuffer[3];
+            int osRight = localBuffer[4];
+            int osBottom = localBuffer[5];
+
+            left = Math.max(osTX + left, Math.max(osLeft, 0));
+            top = Math.max(osTY + top, Math.max(osTop, 0));
+            right = Math.min(osTX + right, Math.min(osTX + w, osRight));
+            bottom = Math.min(osTY + bottom, Math.min(osTY + h, osBottom));
 
             mouse.performOffset(-x, -y);
-            igd.adjustScissoring(ex, ey, x, y, -wp, -hp);
+
+            localBuffer[0] += x;
+            localBuffer[1] += y;
+            localBuffer[2] = left;
+            localBuffer[3] = top;
+            localBuffer[4] = right;
+            localBuffer[5] = bottom;
+            igd.updateST();
             if (asWindow)
-                UIBorderedElement.drawBorder(igd, 5, 4, uie.elementBounds.width, uie.elementBounds.height);
+                UIBorderedElement.drawBorder(igd, 5, 4, 0, 0, uie.elementBounds.width, uie.elementBounds.height);
             uie.render(selected, mouse, igd);
-            igd.adjustScissoring(-ex, -ey, -x, -y, wp, hp);
+
+            localBuffer[0] = osTX;
+            localBuffer[1] = osTY;
+            localBuffer[2] = osLeft;
+            localBuffer[3] = osTop;
+            localBuffer[4] = osRight;
+            localBuffer[5] = osBottom;
+            igd.updateST();
+
             mouse.performOffset(x, y);
         }
 
@@ -339,8 +364,8 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
-            currentElement.render(selected, mouse, igd);
+        public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+            currentElement.render(selected, peripherals, igd);
         }
 
         @Override

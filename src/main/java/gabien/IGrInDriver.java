@@ -125,59 +125,7 @@ public interface IGrInDriver extends IGrDriver {
     // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
     boolean flush();
 
-    // -- Basic Keyboard Input
+    // Gets an IPeripherals object with a zero offset (if relevant) suitable for passing to UI.
 
-    boolean isKeyDown(int KEYID);
-
-    // Note that if this returns
-    // true,it won't return true
-    // again for any other call for
-    // that key until another press
-    // happens.
-    boolean isKeyJustPressed(int KEYID);
-
-    // This will clear all key-related buffers.
-    // This includes the Typist extension's
-    // keybuffer,and the mouse.
-    void clearKeys();
-
-    // Creates a list of all the active keycodes (think for automatic-keybinders)
-    HashSet<Integer> activeKeys();
-
-    // -- Mouse Input
-
-
-    // Note that these are only guaranteed to apply when the mouse is down (on touch devices)
-
-    int getMouseX();
-
-    int getMouseY();
-
-    HashSet<Integer> getMouseDown();
-
-    // Note that if this returns true for a given button, it won't
-    // return true again for any other call
-    // until another press happens.
-    HashSet<Integer> getMouseJustDown();
-    HashSet<Integer> getMouseJustUp();
-
-    // This should really be 'JustScrolled', but I have enough refactors to do already
-    boolean getMousewheelJustDown();
-    // True means north, false means south.
-    boolean getMousewheelDir();
-
-    // 0:None 1:Left,3:Right
-    // if it's completely impossible to provide 320x240,or the player requests
-    // it,put the true values in and hope it works.
-
-    // -- Text Editing Support
-    // This got completely rewritten, because the last iteration sucked for just about every language but especially those with IMEs.
-    // The catch is that now it sucks to *use* textboxes. This was the tradeoff I hoped not to make.
-    // Bloody UI frameworks... *sigh*
-
-    // Must be called once every frame to maintain a textbox.
-    // Only one can be maintained at a given time.
-    // The Y position is the *centre* - the textbox will be as tall as it wants to be.
-    // Note that the textbox is still hooked into key events, so make sure not to respond to anything that could ever be used in normal typing.
-    String maintain(int x, int y, int width, String text);
+    IPeripherals getPeripherals();
 }

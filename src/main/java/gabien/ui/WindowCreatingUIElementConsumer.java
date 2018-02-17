@@ -7,9 +7,7 @@
 
 package gabien.ui;
 
-import gabien.GaBIEn;
-import gabien.IGrInDriver;
-import gabien.WindowSpecs;
+import gabien.*;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -39,8 +37,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         ws.resizable = true;
         ws.fullscreen = fullscreen;
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
-        aw.hoverer = new IGDPointer(aw.igd, IPointer.PointerType.Mouse);
-        aw.clicker = new IGDPointer(aw.igd, IPointer.PointerType.Mouse);
+        aw.peripherals = aw.igd.getPeripherals();
         aw.ue = o;
         incomingWindows.add(aw);
     }
@@ -65,9 +62,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                 continue;
             }
 
-            aw.hoverer.xo = 0;
-            aw.hoverer.yo = 0;
-
             boolean needResize = false;
             int cw = aw.igd.getWidth();
             int ch = aw.igd.getHeight();
@@ -78,48 +72,48 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                 needResize = true;
             if (needResize)
                 aw.ue.setForcedBounds(null, new Rect(0, 0, cw, ch));
-            // actually run!
-            aw.igd.clearScissoring();
-            UIBorderedElement.drawBorder(aw.igd, 5, 4, cw, ch);
+            // Init ST & draw
+            int[] sti = aw.igd.getLocalST();
+            sti[0] = 0;
+            sti[1] = 0;
+            sti[2] = 0;
+            sti[3] = 0;
+            sti[4] = cw;
+            sti[5] = ch;
+            aw.igd.updateST();
+            aw.peripherals.clearOffset();
+            UIBorderedElement.drawBorder(aw.igd, 5, 4, 0, 0, cw, ch);
             aw.ue.update(dT);
-            aw.ue.render(true, aw.hoverer, aw.igd);
-            aw.hoverer.check();
+            aw.ue.render(true, aw.peripherals, aw.igd);
 
             // Handles the global click/drag/release cycle
 
-            HashSet<Integer> justDown = aw.igd.getMouseJustDown();
-            if (justDown.size() > 0) {
-                if (!aw.pendingRelease) {
-                    int button = justDown.iterator().next();
-                    aw.clicker.type = IPointer.PointerType.Generic;
-                    if (button == 2)
-                        aw.clicker.type = IPointer.PointerType.Middle;
-                    if (button == 3)
-                        aw.clicker.type = IPointer.PointerType.Right;
-                    if (button == 4)
-                        aw.clicker.type = IPointer.PointerType.X1;
-                    if (button == 5)
-                        aw.clicker.type = IPointer.PointerType.X2;
-                    aw.clicker.xo = 0;
-                    aw.clicker.yo = 0;
-                    aw.ue.handlePointerBegin(aw.clicker);
-                    aw.clicker.check();
-                    aw.pendingRelease = true;
+            aw.peripherals.clearOffset();
+            HashSet<IPointer> pointersNext = aw.peripherals.getActivePointers();
+            for (IPointer ip : pointersNext) {
+                if (!aw.lastActivePointers.contains(ip)) {
+                    // New pointer.
+                    aw.ue.handlePointerBegin(ip);
+                } else {
+                    // Continuing pointer.
+                    aw.ue.handlePointerUpdate(ip);
                 }
             }
-            if (aw.pendingRelease && (aw.igd.getMouseDown().size() > 0)) {
-                aw.ue.handlePointerUpdate(aw.clicker);
-                aw.clicker.check();
-            } else {
-                if (aw.pendingRelease) {
-                    aw.ue.handlePointerEnd(aw.clicker);
-                    aw.clicker.check();
-                    aw.pendingRelease = false;
+            for (IPointer ip : aw.lastActivePointers) {
+                if (!pointersNext.contains(ip)) {
+                    // Ending pointer.
+                    aw.ue.handlePointerEnd(ip);
                 }
             }
+            aw.lastActivePointers = pointersNext;
 
-            if (aw.igd.getMousewheelJustDown())
-                aw.ue.handleMousewheel(aw.igd.getMouseX(), aw.igd.getMouseY(), aw.igd.getMousewheelDir());
+            // Mousewheel
+            if (aw.peripherals instanceof IDesktopPeripherals) {
+                IDesktopPeripherals idp = (IDesktopPeripherals) aw.peripherals;
+                int ip = idp.getMousewheelBuffer();
+                if (ip != 0)
+                    aw.ue.handleMousewheel(idp.getMouseX(), idp.getMouseY(), ip == -1);
+            }
             if (aw.igd.stillRunning())
                 aw.igd.flush();
             if (aw.ue.requestsUnparenting()) {
@@ -150,45 +144,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     private class ActiveWindow {
         IGrInDriver igd;
         UIElement ue;
-        public boolean pendingRelease;
-        public IGDPointer hoverer;
-        public IGDPointer clicker;
-    }
-
-    private class IGDPointer implements IPointer {
-        public int xo, yo;
-        public IGrInDriver base;
-        public PointerType type;
-        public IGDPointer(IGrInDriver src, PointerType t) {
-            base = src;
-            type = t;
-        }
-
-        @Override
-        public int getX() {
-            return base.getMouseX() + xo;
-        }
-
-        @Override
-        public int getY() {
-            return base.getMouseY() + yo;
-        }
-
-        @Override
-        public PointerType getType() {
-            return type;
-        }
-
-        @Override
-        public void performOffset(int x, int y) {
-            xo += x;
-            yo += y;
-        }
-
-        public void check() {
-            if ((xo != 0) || (yo != 0))
-                throw new RuntimeException("Offset " + xo + " " + yo);
-
-        }
+        IPeripherals peripherals;
+        HashSet<IPointer> lastActivePointers = new HashSet<IPointer>();
     }
 }

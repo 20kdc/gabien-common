@@ -7,7 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrInDriver;
+import gabien.IGrDriver;
+import gabien.IPeripherals;
 
 // This serves a dual purpose:
 // 1. text is *always* the current text in the box.
@@ -38,7 +39,7 @@ public class UITextBox extends UILabel {
     private boolean tempDisableSelection = false;
 
     @Override
-    public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         selected &= !tempDisableSelection;
         if (!textLastSeen.equals(text)) {
             textCStr = text;
@@ -48,18 +49,18 @@ public class UITextBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected) {
-            String ss = igd.maintain(0, (bounds.height / 2), bounds.width, text);
+            String ss = peripherals.maintain(0, (bounds.height / 2), bounds.width, text);
             text = ss;
             textLastSeen = ss;
-            if (igd.isKeyJustPressed(IGrInDriver.VK_ENTER)) {
+            if (peripherals.isEnterJustPressed()) {
                 textCStr = text;
                 onEdit.run();
-                igd.clearKeys();
+                peripherals.clearKeys();
                 tempDisableSelection = true;
             }
         }
         borderType = selected ? 4 : 3;
-        super.render(selected, mouse, igd);
+        super.render(selected, peripherals, igd);
     }
 
     @Override

@@ -39,10 +39,11 @@ public interface IGrDriver extends IImage {
 
     void clearRect(int r, int g, int b, int x, int y, int width, int height);
 
-    // Adjusts Scissoring & Transform (not just scissoring, but oh well)
-    void clearScissoring();
-    void adjustScissoring(int x, int y, int tx, int ty, int w, int h);
-
     // Stop all drawing operations. Makes an OsbDriver unusable.
     void shutdown();
+
+    // Gets the local ST buffer.
+    int[] getLocalST();
+    // Propagates changes to the local ST buffer (changes only take effect from this point on)
+    void updateST();
 }

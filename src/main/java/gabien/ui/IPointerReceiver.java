@@ -46,13 +46,15 @@ public interface IPointerReceiver {
         @Override
         public void handlePointerUpdate(IPointer state) {
             IPointerReceiver ipr = receiverMap.get(state);
-            ipr.handlePointerUpdate(state);
+            if (ipr != null)
+                ipr.handlePointerUpdate(state);
         }
 
         @Override
         public void handlePointerEnd(IPointer state) {
             IPointerReceiver ipr = receiverMap.get(state);
-            ipr.handlePointerEnd(state);
+            if (ipr != null)
+                ipr.handlePointerEnd(state);
         }
     }
 
@@ -88,12 +90,12 @@ public interface IPointerReceiver {
     }
 
     public class RelativeResizePointerReceiver implements IPointerReceiver {
-        public final int wSt, hSt;
+        public final Size firstSize;
         public int xSt, ySt;
         public final IConsumer<Size> consumer;
+        public Size lastSize;
         public RelativeResizePointerReceiver(int w, int h, IConsumer<Size> iConsumer) {
-            wSt = w;
-            hSt = h;
+            lastSize = firstSize = new Size(w, h);
             consumer = iConsumer;
         }
 
@@ -105,7 +107,7 @@ public interface IPointerReceiver {
 
         @Override
         public void handlePointerUpdate(IPointer state) {
-            consumer.accept(new Size((state.getX() - xSt) + wSt, (state.getY() - ySt) + hSt));
+            consumer.accept(lastSize = new Size((state.getX() - xSt) + firstSize.width, (state.getY() - ySt) + firstSize.height));
         }
 
         @Override
