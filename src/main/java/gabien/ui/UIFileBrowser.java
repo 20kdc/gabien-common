@@ -17,34 +17,25 @@ import java.util.LinkedList;
  * With this working, with text being wrapped in complex layouts, I saw everything working exactly as I had planned.
  * I'm going ahead with changing things to this.
  */
-public class UIFileBrowser extends UIElement.UIPanel {
+public class UIFileBrowser extends UIElement.UIProxy {
     private boolean done;
     private IConsumer<String> run;
     private UIScrollLayout basicLayout;
     private int fontSize;
     private LinkedList<String> pathComponents = new LinkedList<String>();
     private String strBack, strAccept, strTP;
+
     public UIFileBrowser(IConsumer<String> r, String titlePrefix, String back, String accept, int fSize, int scrollerSize) {
         // Vague guess.
-        super(scrollerSize + fSize * 16, fSize * 16);
         run = r;
         strTP = titlePrefix;
         strBack = back;
         strAccept = accept;
         basicLayout = new UIScrollLayout(true, scrollerSize);
         fontSize = fSize;
-        layoutAddElement(basicLayout);
         rebuild();
         basicLayout.runLayout();
-        runLayout();
-
-    }
-
-    @Override
-    public void runLayout() {
-        Size s = getSize();
-        basicLayout.setForcedBounds(this, new Rect(0, 0, s.width, s.height));
-        setWantedSize(getWantedSize());
+        proxySetElement(basicLayout, true);
     }
 
     public String getPath(String possiblePostfix) {

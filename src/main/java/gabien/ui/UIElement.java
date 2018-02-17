@@ -27,7 +27,7 @@ import java.util.WeakHashMap;
 public abstract class UIElement implements IPointerReceiver {
     private Rect elementBounds = new Rect(0, 0, 0, 0);
 
-    private UIPanel parent;
+    private UIElement parent;
     private Size wantedSize = new Size(0, 0);
     // Used during construction & setForcedBounds.
     // In the first case, this prevents accidentally calling runLayout before the object is ready.
@@ -63,10 +63,6 @@ public abstract class UIElement implements IPointerReceiver {
         }
     }
 
-    public void runLayout() {
-
-    }
-
     public final Rect getParentRelativeBounds() {
         return elementBounds;
     }
@@ -91,6 +87,25 @@ public abstract class UIElement implements IPointerReceiver {
     public abstract void update(double deltaTime);
     public abstract void render(boolean selected, IPointer mouse, IGrInDriver igd);
 
+    public void runLayout() {
+
+    }
+
+    // Only processed for window-level elements.
+    public boolean requestsUnparenting() {
+        return false;
+    }
+
+    // If this occurs, the containing window has been closed.
+    public void handleRootDisconnect() {
+
+    }
+
+    // Almost never used. Doesn't follow the normal system, shouldn't have to.
+    public void handleMousewheel(int x, int y, boolean north) {
+
+    }
+
     @Override
     public void handlePointerBegin(IPointer state) {
 
@@ -103,21 +118,6 @@ public abstract class UIElement implements IPointerReceiver {
 
     @Override
     public void handlePointerEnd(IPointer state) {
-
-    }
-
-    // Almost never used. Doesn't follow the normal system, shouldn't have to.
-    public void handleMousewheel(int x, int y, boolean north) {
-
-    }
-
-    // Only processed for window-level elements.
-    public boolean requestsUnparenting() {
-        return false;
-    }
-
-    // If this occurs, the containing window has been closed.
-    public void handleRootDisconnect() {
 
     }
 
@@ -151,7 +151,7 @@ public abstract class UIElement implements IPointerReceiver {
             super(w, h);
         }
 
-        protected void layoutAddElement(UIElement uie) {
+        protected final void layoutAddElement(UIElement uie) {
             if (uie.parent != null)
                 throw new RuntimeException("UIE " + uie + " already has parent " + uie.parent + " in " + this);
             uie.parent = this;
@@ -159,7 +159,7 @@ public abstract class UIElement implements IPointerReceiver {
             visElements.add(uie);
         }
 
-        protected void layoutRemoveElement(UIElement uie) {
+        protected final void layoutRemoveElement(UIElement uie) {
             if (uie.parent == null)
                 throw new RuntimeException("UIE " + uie + " already lost parent somehow in " + this);
             uie.parent = null;
@@ -170,7 +170,7 @@ public abstract class UIElement implements IPointerReceiver {
             uie.handleRootDisconnect();
         }
 
-        protected void layoutSetElementVis(UIElement uie, boolean visible) {
+        protected final void layoutSetElementVis(UIElement uie, boolean visible) {
             if (!allElements.contains(uie))
                 throw new RuntimeException("Can't set visibility of an element we don't have in " + this);
             if (visible) {
@@ -180,21 +180,17 @@ public abstract class UIElement implements IPointerReceiver {
             }
         }
 
-        protected boolean layoutContainsElement(UIElement uie) {
+        protected final boolean layoutContainsElement(UIElement uie) {
             return allElements.contains(uie);
         }
 
-        protected boolean layoutElementVisible(UIElement uie) {
+        protected final boolean layoutElementVisible(UIElement uie) {
             return visElements.contains(uie);
         }
 
-        protected LinkedList<UIElement> layoutGetElements() {
+        protected final LinkedList<UIElement> layoutGetElements() {
             return new LinkedList<UIElement>(allElements);
         }
-
-        // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
-        @Override
-        public abstract void runLayout();
 
         @Override
         public void update(double deltaTime) {
@@ -243,6 +239,26 @@ public abstract class UIElement implements IPointerReceiver {
             mouse.performOffset(x, y);
         }
 
+        // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
+        @Override
+        public abstract void runLayout();
+
+        @Override
+        public void handleRootDisconnect() {
+            super.handleRootDisconnect();
+            for (UIElement uie : allElements)
+                uie.handleRootDisconnect();
+        }
+
+        @Override
+        public void handleMousewheel(int x, int y, boolean north) {
+            for (UIElement uie : allElements) {
+                Rect r = uie.getParentRelativeBounds();
+                if (r.contains(x, y))
+                    uie.handleMousewheel(x - r.x, y - r.y, north);
+            }
+        }
+
         @Override
         public void handlePointerBegin(IPointer state) {
             selectedElement = null;
@@ -288,21 +304,79 @@ public abstract class UIElement implements IPointerReceiver {
             }
             pointerClickMapping.remove(state);
         }
+    }
+
+    /**
+     * UIProxy is the basis of "controller" layouts, where the actual layout is provided by something else.
+     * A UIProxy thus has one and only one element in it, ever.
+     * However, this is not set up as *final*, as final variable constructor + inheritance...
+     * ...is incredibly inconvenient to use.
+     */
+    public static class UIProxy extends UIElement {
+        private UIElement currentElement;
+
+        protected final void proxySetElement(UIElement element, boolean wanted) {
+            if (currentElement != null)
+                throw new RuntimeException("Cannot ever add an element more than once to a proxy.");
+            if (element == null)
+                throw new RuntimeException("Cannot add null as the element of a proxy.");
+            currentElement = element;
+            currentElement.parent = this;
+            // As this is meant to be called during the constructor, we take on the proxy's size,
+            //  not the other way around. Also, if this fails with a "you can't do that",
+            //  I'm not sure what you're trying to do, but it sounds fun!
+            setForcedBounds(null, new Rect(wanted ? currentElement.getWantedSize() : element.getSize()));
+            setWantedSize(currentElement.getWantedSize());
+        }
+
+        protected final UIElement proxyGetElement() {
+            return currentElement;
+        }
+
+        @Override
+        public void update(double deltaTime) {
+            currentElement.update(deltaTime);
+        }
+
+        @Override
+        public void render(boolean selected, IPointer mouse, IGrInDriver igd) {
+            currentElement.render(selected, mouse, igd);
+        }
+
+        @Override
+        public void runLayout() {
+            currentElement.setForcedBounds(this, new Rect(getSize()));
+            setWantedSize(currentElement.getWantedSize());
+        }
+
+        @Override
+        public boolean requestsUnparenting() {
+            return currentElement.requestsUnparenting();
+        }
 
         @Override
         public void handleRootDisconnect() {
-            super.handleRootDisconnect();
-            for (UIElement uie : allElements)
-                uie.handleRootDisconnect();
+            currentElement.handleRootDisconnect();
         }
 
         @Override
         public void handleMousewheel(int x, int y, boolean north) {
-            for (UIElement uie : allElements) {
-                Rect r = uie.getParentRelativeBounds();
-                if (r.contains(x, y))
-                    uie.handleMousewheel(x - r.x, y - r.y, north);
-            }
+            currentElement.handleMousewheel(x, y, north);
+        }
+
+        @Override
+        public void handlePointerBegin(IPointer state) {
+            currentElement.handlePointerBegin(state);
+        }
+
+        @Override
+        public void handlePointerUpdate(IPointer state) {
+            currentElement.handlePointerUpdate(state);
+        }
+
+        @Override
+        public void handlePointerEnd(IPointer state) {
+            currentElement.handlePointerEnd(state);
         }
     }
 }

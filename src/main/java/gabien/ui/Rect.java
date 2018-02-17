@@ -20,6 +20,10 @@ public final class Rect extends Size {
         y = i0;
     }
 
+    public Rect(Size size) {
+        this(0, 0, size.width, size.height);
+    }
+
     @Override
     public String toString() {
         return x + "," + y + "," + super.toString();

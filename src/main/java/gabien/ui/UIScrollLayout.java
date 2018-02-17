@@ -19,6 +19,8 @@ import java.util.LinkedList;
 public class UIScrollLayout extends UIElement.UIPanel {
     public final UIScrollbar scrollbar;
     private final int sbSize;
+    // In most cases you want this on, but sometimes you don't.
+    public boolean fullWanted = true;
     public int scrollLength = 0;
     private double lastScrollPoint = -1;
     private boolean earlyForceRunLayout = false;
@@ -62,22 +64,34 @@ public class UIScrollLayout extends UIElement.UIPanel {
         // Since the scrollbar is about to be resized, make sure we're allowed to use it
         if (!layoutContainsElement(scrollbar))
             layoutAddElement(scrollbar);
+        int maxA = 0;
         if (scrollbar.vertical) {
             scrollbar.setForcedBounds(this, new Rect(r.width - sbSize, 0, sbSize, r.height));
             for (UIElement p : layoutGetElements())
-                if (p != scrollbar)
-                    scrollLength += p.getWantedSize().height;
+                if (p != scrollbar) {
+                    Size pw = p.getWantedSize();
+                    maxA = Math.max(maxA, pw.width);
+                    scrollLength += pw.height;
+                }
         } else {
             scrollbar.setForcedBounds(this, new Rect(0, r.height - sbSize, r.width, sbSize));
             for (UIElement p : layoutGetElements())
-                if (p != scrollbar)
-                    scrollLength += p.getWantedSize().width;
+                if (p != scrollbar) {
+                    Size pw = p.getWantedSize();
+                    maxA = Math.max(maxA, pw.height);
+                    scrollLength += pw.width;
+                }
         }
 
         layoutScrollbounds();
 
         if (scrollLength != 0)
             scrollbar.wheelScale = (r.height / 4.0d) / (double) scrollLength;
+        if (scrollbar.vertical) {
+            setWantedSize(new Size(fullWanted ? maxA : r.width, scrollLength));
+        } else {
+            setWantedSize(new Size(scrollLength, fullWanted ? maxA : r.height));
+        }
     }
 
     // Lays out the elements with the current parameters.
