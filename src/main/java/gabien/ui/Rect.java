@@ -32,7 +32,7 @@ public final class Rect extends Size {
     @Override
     public boolean equals(Object o) {
         if (o.getClass() == Rect.class)
-            return super.equals(o) && (((Rect) o).x == x) && (((Rect) o).y == y);
+            return (((Rect) o).width == width) && (((Rect) o).height == height) && (((Rect) o).x == x) && (((Rect) o).y == y);
         return false;
     }
 

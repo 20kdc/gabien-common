@@ -40,10 +40,15 @@ public class UITextButton extends UIButton {
     }
 
     @Override
-    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
-        super.render(selected, peripherals, igd);
-        Size p = contents.render(getSize(), getBorderWidth(), text, igd);
+    public void update(double deltaTime) {
+        super.update(deltaTime);
+        Size p = contents.update(getSize(), getBorderWidth(), text);
         if (p != null)
             setWantedSize(p);
+    }
+
+    @Override
+    public void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+        contents.render(getBorderWidth(), igd);
     }
 }

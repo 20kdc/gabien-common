@@ -9,9 +9,13 @@ package gabien.ui;
 
 /**
  * Covers simple cases where you want to split something into two.
- * If weight is used, the split is between A laid out by initial value and B laid out by initial value (as would make sense for a weight).
- * If dividend/divisor is used, the initial values are zeroed, thus giving an exact fractional split.
- * Created on 6/17/17.
+ * With the introduction of IPCRESS,
+ *  the algorithm needs to change in order to prevent tons of layout bugs.
+ * So, it is now as follows:
+ * The dividing line starts off exactly at the position the weight suggests.
+ * If this fails (insufficient room), the old ... "weighted-concession algorithm"? is used.
+ *
+ * Created on 6/17/17. Updated for IPCRESS probably February 16th 2017, it's now February 18th 2017.
  */
 public class UISplitterLayout extends UIElement.UIPanel {
     public final UIElement a;
@@ -38,31 +42,35 @@ public class UISplitterLayout extends UIElement.UIPanel {
 
     @Override
     public void runLayout() {
-        int room;
+        int room, allSpace;
         Size r = getSize();
         Size aWanted = a.getWantedSize(), bWanted = b.getWantedSize();
         int aInitial;
         int bInitial;
         if (vertical) {
-            room = r.height;
+            allSpace = room = r.height;
             aInitial = aWanted.height;
             bInitial = bWanted.height;
         } else {
-            room = r.width;
+            allSpace = room = r.width;
             aInitial = aWanted.width;
             bInitial = bWanted.width;
         }
         room -= aInitial + bInitial;
-        int aRoom = ((int) (splitPoint * room)) + aInitial;
-        int bRoom = (room + aInitial + bInitial) - aRoom;
+        // Room is now the amount of spare space available. Surprisingly, this works well when room < 0...
+        // Check new alg.
+        int exactPos = (int) (splitPoint * allSpace);
+        boolean newAlg = ((exactPos >= aInitial) && (exactPos <= (allSpace - bInitial)));
+        if (!newAlg)
+            exactPos = ((int) (splitPoint * room)) + aInitial;
         Size newWanted;
         if (vertical) {
-            a.setForcedBounds(this, new Rect(0, 0, r.width, aRoom));
-            b.setForcedBounds(this, new Rect(0, aRoom, r.width, bRoom));
+            a.setForcedBounds(this, new Rect(0, 0, r.width, exactPos));
+            b.setForcedBounds(this, new Rect(0, exactPos, r.width, allSpace - exactPos));
             newWanted = new Size(Math.max(aWanted.width, bWanted.width), aInitial + bInitial);
         } else {
-            a.setForcedBounds(this, new Rect(0, 0, aRoom, r.height));
-            b.setForcedBounds(this, new Rect(aRoom, 0, bRoom, r.height));
+            a.setForcedBounds(this, new Rect(0, 0, exactPos, r.height));
+            b.setForcedBounds(this, new Rect(exactPos, 0, allSpace - exactPos, r.height));
             newWanted = new Size(aInitial + bInitial, Math.max(aWanted.height, bWanted.height));
         }
         setWantedSize(newWanted);

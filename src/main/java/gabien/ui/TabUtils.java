@@ -98,8 +98,7 @@ public class TabUtils {
     public void render(Size bounds, int tabBarY, IGrDriver igd) {
         boolean willUpdateLater = parentView.handleIncoming();
 
-        igd.clearRect(16, 16, 16, 0, tabBarY, bounds.width, tabBarHeight);
-        igd.clearRect(32, 32, 32, 0, tabBarY + ((tabBarHeight / 2) - 1), bounds.width, 2);
+        UIBorderedElement.drawBorder(igd, 8, 0, 0, tabBarY, bounds.width, tabBarHeight);
 
         LinkedList<UIWindowView.WVWindow> outgoing2 = new LinkedList<UIWindowView.WVWindow>();
         HashSet<UIElement> outgoingTabs2 = outgoingTabs;
@@ -115,9 +114,9 @@ public class TabUtils {
                 // This is used for all rendering.
                 int theDisplayOX = pos;
                 int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
-                int base = toggle ? 64 : 32;
+                int base = toggle ? 9 : 8;
                 if (parentView.selectedTab == w)
-                    base = 128;
+                    base = 10;
                 toggle = !toggle;
 
                 // Decide against rendering
@@ -138,7 +137,7 @@ public class TabUtils {
                     continue;
                 }
 
-                TabUtils.drawTab(base, base / 2, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
+                TabUtils.drawTab(base, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
 
                 pos += tabW;
             }
@@ -227,15 +226,13 @@ public class TabUtils {
         return h + ((h / 8) * 2);
     }
 
-    public static void drawTab(int base, int inner, int x, int y, int w, int h, IGrDriver igd, String text, UIWindowView.IWVWindowIcon[] icons) {
+    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, UIWindowView.IWVWindowIcon[] icons) {
         int margin = h / 8;
         int textHeight = h - (margin * 2);
         int tabExMargin = margin + (margin / 2);
         int tabIcoMargin = h / 4;
 
-        igd.clearRect(base, base, base, x, y, w, h);
-        // use a margin to try and still provide a high-contrast display despite the usability 'improvements' making the tabs brighter supposedly provides
-        igd.clearRect(inner, inner, inner, x + margin, y + margin, w - (margin * 2), h - (margin * 2));
+        UIBorderedElement.drawBorder(igd, border, margin, x, y, w, h);
 
         FontManager.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, textHeight);
 

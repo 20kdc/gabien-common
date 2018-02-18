@@ -29,15 +29,14 @@ public class UILabel extends UIBorderedElement {
 
     @Override
     public void update(double deltaTime) {
-
+        Size p = contents.update(getSize(), getBorderWidth(), text);
+        if (p != null)
+            setWantedSize(p);
     }
 
     @Override
-    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
-        super.render(selected, peripherals, igd);
-        Size p = contents.render(getSize(), getBorderWidth(), text, igd);
-        if (p != null)
-            setWantedSize(p);
+    public void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+        contents.render(getBorderWidth(), igd);
     }
 
     /**
@@ -47,16 +46,32 @@ public class UILabel extends UIBorderedElement {
     public static class Contents {
         private String lastText = "", textFormatted = "";
         private Size lastSize = new Size(0, 0);
+        private String lastOverride = null;
+        private boolean lastOverrideUE8 = false;
         public final int textHeight;
         public Contents(int th) {
             textHeight = th;
         }
-        public Size render(Size sz, int bw, String text, IGrDriver igd) {
+        public Size update(Size sz, int bw, String text) {
             // run formatting...
             Size sz2 = null;
-            if ((!lastText.equals(text)) || (!lastSize.equals(sz))) {
+            boolean overrideChanged = false;
+            if (lastOverride != null) {
+                if (FontManager.fontOverride == null) {
+                    overrideChanged = true;
+                } else if (!FontManager.fontOverride.equals(lastOverride)) {
+                    overrideChanged = true;
+                }
+            } else if (FontManager.fontOverride != null) {
+                overrideChanged = true;
+            } else if (lastOverrideUE8 != FontManager.fontOverrideUE8) {
+                overrideChanged = true;
+            }
+            if ((!lastText.equals(text)) || (!lastSize.equals(sz)) || overrideChanged) {
                 lastText = text;
                 lastSize = sz;
+                lastOverride = FontManager.fontOverride;
+                lastOverrideUE8 = FontManager.fontOverrideUE8;
                 textFormatted = FontManager.formatTextFor(text, textHeight, sz.width - (bw * 2));
                 // You may be wondering why this is set up the way it is.
                 // The answer is simply that B's height is what we need to be given the width,
@@ -65,8 +80,11 @@ public class UILabel extends UIBorderedElement {
                 Size b = getRecommendedTextSize(textFormatted, textHeight);
                 sz2 = new Size(a.width, b.height);
             }
-            FontManager.drawString(igd, bw, bw, textFormatted, true, textHeight);
             return sz2;
+        }
+
+        public void render(int bw, IGrDriver igd) {
+            FontManager.drawString(igd, bw, bw, textFormatted, true, textHeight);
         }
     }
 
@@ -77,7 +95,7 @@ public class UILabel extends UIBorderedElement {
     public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height) {
         int h = UIBorderedElement.getRecommendedBorderWidth(height);
         int h2 = height + (h * 2) - (height / 8);
-        UIBorderedElement.drawBorder(igd, mode + 2, h, 0, 0, wid, h2);
+        UIBorderedElement.drawBorder(igd, mode + 2, h, ox, oy, wid, h2);
         FontManager.drawString(igd, ox + h, oy + h, string, true, height);
         return wid;
     }

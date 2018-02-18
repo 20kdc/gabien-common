@@ -46,12 +46,12 @@ public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
 
     @Override
     public void runLayout() {
-        int ibw = incButton.getParentRelativeBounds().width;
-        int dbw = decButton.getParentRelativeBounds().width;
-
         Size incButtonSize = incButton.getWantedSize();
         Size numberDisplaySize = numberDisplay.getWantedSize();
         Size decButtonSize = decButton.getWantedSize();
+
+        int ibw = incButtonSize.width;
+        int dbw = decButtonSize.width;
 
         Size m = getSize();
 

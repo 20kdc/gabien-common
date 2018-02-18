@@ -33,8 +33,7 @@ public class UIScrollbar extends UIBorderedElement {
     }
 
     @Override
-    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
-        super.render(selected, peripherals, igd);
+    public void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         Size bounds = getSize();
         int margin = (vertical ? bounds.width : bounds.height) / 8;
         int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);

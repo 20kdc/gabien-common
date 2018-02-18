@@ -165,7 +165,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             igd.clearRect(0, 32, 96, b.x + b.width - sizerOfs, b.y + b.height - sizerOfs, sizerSize, sizerSize);
             igd.clearRect(0, 64, 192, b.x + b.width - sizerOfs, b.y + b.height - sizerOfs, sizerSSize, sizerSSize);
 
-            TabUtils.drawTab(winSelected ? 192 : 48, 32, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
+            TabUtils.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
 
             UIPanel.scissoredRender(true, uie.contents, winSelected, peripherals, igd, bounds.width, bounds.height);
         }

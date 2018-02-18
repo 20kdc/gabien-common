@@ -15,7 +15,7 @@ import gabien.*;
  * Now it's a superclass of UITextButton.
  * Unknown creation date.
  */
-public class UIButton extends UIBorderedElement {
+public abstract class UIButton extends UIBorderedElement {
     public Runnable onClick;
     public double pressedTime = 0;
     public boolean state = false;
@@ -38,12 +38,7 @@ public class UIButton extends UIBorderedElement {
             if (pressedTime <= 0)
                 state = false;
         }
-    }
-
-    @Override
-    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         borderType = state ? 1 : 0;
-        super.render(selected, peripherals, igd);
     }
 
     @Override
