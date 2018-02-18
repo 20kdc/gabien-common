@@ -49,6 +49,11 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
+    public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
+        target.blitTiledImage(x, y, w, h, cachedTile);
+    }
+
+    @Override
     public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
         target.blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i);
     }

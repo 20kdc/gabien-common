@@ -211,6 +211,23 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
+    public void blitTiledImage(final int x, final int y, final int w, final int h, final IImage i) {
+        if (i == null)
+            throw new NullPointerException();
+        final Runnable[] r = ensureTargetImageStable(i);
+        cmdSubmitCore(new Runnable() {
+            @Override
+            public void run() {
+                if (r != null)
+                    r[0].run();
+                target.blitTiledImage(x, y, w, h, i);
+                if (r != null)
+                    r[1].run();
+            }
+        });
+    }
+
+    @Override
     public void blitScaledImage(final int srcx, final int srcy, final int srcw, final int srch, final int x, final int y, final int acw, final int ach, final IImage i) {
         if (i == null)
             throw new NullPointerException();

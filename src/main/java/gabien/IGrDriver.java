@@ -19,6 +19,8 @@ public interface IGrDriver extends IImage {
 
     void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
 
+    void blitTiledImage(int x, int y, int w, int h, IImage cachedTile);
+
     // Support optional but recommended. Lack of support should result in no-op.
     void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
 

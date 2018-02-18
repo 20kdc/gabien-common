@@ -54,7 +54,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                     // ABC
                     // D E
                     // FGH
-                    Rect windowSz = new Rect(innerWindow.x - sizerActual, innerWindow.y - (frameHeight + sizerActual), innerWindow.x + innerWindow.width + (sizerActual * 2), innerWindow.y + frameHeight + innerWindow.height + (sizerActual * 2));
+                    Rect windowSz = new Rect(innerWindow.x - sizerActual, innerWindow.y - (frameHeight + sizerActual), innerWindow.width + (sizerActual * 2), frameHeight + innerWindow.height + (sizerActual * 2));
 
                     if (innerWindow.contains(x, y)) {
                         clearKeysLater = true;

@@ -16,8 +16,12 @@ import gabien.*;
 public abstract class UIBorderedElement extends UIElement {
     public static int borderTheme = 0;
     public static final int BORDER_THEMES = 4;
+    public static final int BORDER_TYPES = 13;
     private static IImage cachedTheme = null;
     private static int[] cachedThemeInts;
+
+    private static int lastCachedThemeTiles = -1;
+    private static IImage[] cachedThemeTiles;
 
     protected int borderType;
     private int borderWidth;
@@ -102,32 +106,45 @@ public abstract class UIBorderedElement extends UIElement {
 
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
         if (cachedTheme == null) {
-            cachedTheme = GaBIEn.getImageCKEx("themes.png", false, true, 255, 0, 255);
+            cachedTheme = GaBIEn.getImageEx("themes.png", false, true);
             cachedThemeInts = cachedTheme.getPixels();
+            lastCachedThemeTiles = -1;
         }
         int baseX;
         int baseY;
         int chunkSize, chunkSizeO;
         if (getBorderFlag(borderType, 4)) {
             // Bite the bullet - user *wants* tiling
-            for (int i = 0; i < w; i += 12)
-                for (int j = 0; j < h; j += 12)
-                    igd.blitImage(borderType * 12, (borderTheme * 18) + 6, Math.min(12, w - i), Math.min(12, h - j), x + i, y + j, cachedTheme);
+            if (lastCachedThemeTiles != borderTheme)
+                cachedThemeTiles = null;
+            if (cachedThemeTiles == null)
+                cachedThemeTiles = new IImage[BORDER_TYPES];
+            if (cachedThemeTiles[borderType] == null) {
+                // Extract tile
+                IGrDriver osb = GaBIEn.makeOffscreenBuffer(12, 12, true);
+                osb.blitImage(borderType * 12, (borderTheme * 18) + 6, 12, 12, 0, 0, cachedTheme);
+                cachedThemeTiles[borderType] = osb;
+            }
+            igd.blitTiledImage(x, y, w, h, cachedThemeTiles[borderType]);
             // Entire highres border space is reserved for tiling pattern.
             // Try to make the most of lowres? :(
             chunkSize = 3;
             chunkSizeO = 0;
             baseX = (borderType * 12) + 6;
             baseY = borderTheme * 18;
+            borderWidth = Math.max(borderWidth, 3);
         } else {
+            int eBorderWidth = borderWidth;
+            if (borderWidth == 0)
+                eBorderWidth = Math.min(w, h);
             baseX = borderType * 12;
             baseY = borderTheme * 18;
             chunkSize = 1;
-            if (borderWidth >= 2) {
+            if (eBorderWidth >= 2) {
                 baseX += 6;
                 chunkSize = 2;
             }
-            if (borderWidth >= 4) {
+            if (eBorderWidth >= 4) {
                 baseX -= 6;
                 baseY += 6;
                 chunkSize = 4;

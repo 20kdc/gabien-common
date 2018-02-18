@@ -94,6 +94,7 @@ public class FontManager {
 
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
         int cc = textBlack ? 255 : 0;
+        int cf = textBlack ? 0 : 255;
         if (!noBackground) {
             int lIdx;
             String workingText = text + '\n';
@@ -107,11 +108,11 @@ public class FontManager {
         if (useSystemFont(text, height)) {
             int lIdx;
             while ((lIdx = text.indexOf('\n')) != -1) {
-                igd.drawText(xptr, oy, 255, 255, 255, height, text.substring(0, lIdx));
+                igd.drawText(xptr, oy, cf, cf, cf, height, text.substring(0, lIdx));
                 text = text.substring(lIdx + 1);
                 oy += height;
             }
-            igd.drawText(xptr, oy, 255, 255, 255, height, text);
+            igd.drawText(xptr, oy, cf, cf, cf, height, text);
             return;
         }
         byte[] ascii = text.getBytes();
