@@ -39,7 +39,7 @@ public class UITextBox extends UILabel {
     private boolean tempDisableSelection = false;
 
     @Override
-    public void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+    public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
         selected &= !tempDisableSelection;
         if (!textLastSeen.equals(text)) {
             textCStr = text;
@@ -60,7 +60,7 @@ public class UITextBox extends UILabel {
             }
         }
         borderType = selected ? 4 : 3;
-        super.renderContents(selected, peripherals, igd);
+        super.renderContents(selected, textBlack, peripherals, igd);
     }
 
     @Override

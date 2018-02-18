@@ -13,7 +13,9 @@ import gabien.IPeripherals;
 import java.util.Random;
 
 /**
- * NOTE: The layout of this keeps in mind that 1/8th of the text height is spacing (rounding up)
+ * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.
+ * However, this does implement the root-disconnected callback, and request-close.
+ * The request-close triggers a blank method for extra post-close behavior for... reasons.
  * Created on 12/28/16. Basically rewritten on December 15th 2017.
  */
 public class UITabPane extends UIElement.UIPanel {
@@ -98,6 +100,10 @@ public class UITabPane extends UIElement.UIPanel {
         }
     }
 
+    public void handleClosedUserTab(UIWindowView.WVWindow wvWindow, boolean selfDestruct) {
+        // exists to be overridden, do not assume super is called or uncalled
+    }
+
     // Used as a base for drawing.
     protected int getScrollOffsetX() {
         if (tabScroller != null)
@@ -118,6 +124,8 @@ public class UITabPane extends UIElement.UIPanel {
         tabBarY = 0;
         tabManager.shortTabs = -1;
         tabOverheadHeight = tabManager.tabBarHeight;
+        // IDE warning being silly again.
+        int longestWidth = tabOverheadHeight;
         while (true) {
             int tl = 0;
             int longestTabName = 0;
@@ -129,6 +137,7 @@ public class UITabPane extends UIElement.UIPanel {
             // If the user can select nothing, then add extra margin for it (!)
             if (tabManager.canSelectNone)
                 extra = tabManager.tabBarHeight;
+            longestWidth = Math.max(longestWidth, tl + extra);
             if ((tl + extra) <= r.width)
                 break;
             if (tabScroller != null) {
@@ -151,8 +160,13 @@ public class UITabPane extends UIElement.UIPanel {
                 break;
             }
         }
-        if (selectedTab != null)
+        if (selectedTab != null) {
             selectedTab.contents.setForcedBounds(this, new Rect(0, tabOverheadHeight, r.width, r.height - tabOverheadHeight));
+            Size gws = selectedTab.contents.getWantedSize();
+            setWantedSize(new Size(Math.max(longestWidth, gws.width), tabOverheadHeight + gws.height));
+        } else {
+            setWantedSize(new Size(longestWidth, longestWidth));
+        }
     }
 
     @Override
@@ -219,10 +233,12 @@ public class UITabPane extends UIElement.UIPanel {
         // Possible double-presence if we don't get rid of it NOW.
         // On next render of tabManager, the outgoing-tab is processed.
         // Other stuff should be prepared for this case.
-        if (selectedTab.contents == uiElement) {
-            layoutRemoveElement(selectedTab.contents);
-            selectedTab = null;
-            tabManager.findReplacementTab();
+        if (selectedTab != null) {
+            if (selectedTab.contents == uiElement) {
+                layoutRemoveElement(selectedTab.contents);
+                selectedTab = null;
+                tabManager.findReplacementTab();
+            }
         }
         tabManager.outgoingTabs.add(uiElement);
     }

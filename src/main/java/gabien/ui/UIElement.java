@@ -340,6 +340,14 @@ public abstract class UIElement implements IPointerReceiver {
     public static class UIProxy extends UIElement {
         private UIElement currentElement;
 
+        public UIProxy() {
+
+        }
+
+        public UIProxy(UIElement element, boolean wanted) {
+            proxySetElement(element, wanted);
+        }
+
         protected final void proxySetElement(UIElement element, boolean wanted) {
             if (currentElement != null)
                 throw new RuntimeException("Cannot ever add an element more than once to a proxy.");

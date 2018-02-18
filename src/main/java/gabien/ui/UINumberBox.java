@@ -39,7 +39,7 @@ public class UINumberBox extends UILabel {
     private boolean tempDisableSelection = false;
 
     @Override
-    public void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+    public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
         selected &= !tempDisableSelection;
         if (number != editingNLast) {
             editingCNumber = number;
@@ -75,7 +75,7 @@ public class UINumberBox extends UILabel {
             editingNLast = number;
         }
         text = Long.toString(number);
-        super.renderContents(selected, peripherals, igd);
+        super.renderContents(selected, textBlack, peripherals, igd);
     }
 
     @Override

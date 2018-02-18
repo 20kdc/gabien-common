@@ -90,6 +90,10 @@ public class UIScrollLayout extends UIElement.UIPanel {
 
         if (scrollLength != 0)
             scrollbar.wheelScale = (r.height / 4.0d) / (double) scrollLength;
+
+        if (layoutContainsElement(scrollbar))
+            maxA += sbSize;
+
         if (scrollbar.vertical) {
             setWantedSize(new Size(fullWanted ? maxA : r.width, scrollLength));
         } else {

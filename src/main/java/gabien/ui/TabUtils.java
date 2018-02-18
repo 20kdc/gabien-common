@@ -103,14 +103,26 @@ public class TabUtils {
         LinkedList<UIWindowView.WVWindow> outgoing2 = new LinkedList<UIWindowView.WVWindow>();
         HashSet<UIElement> outgoingTabs2 = outgoingTabs;
         outgoingTabs = new HashSet<UIElement>();
+        for (UIWindowView.WVWindow w : tabs) {
+            boolean reqU = w.contents.requestsUnparenting();
+            if (outgoingTabs2.contains(w.contents) || reqU) {
+                willUpdateLater = true;
+                outgoing2.add(w);
+                parentView.handleClosedUserTab(w, reqU);
+            }
+        }
+        if (parentView.selectedTab != null)
+            if (outgoingTabs2.contains(parentView.selectedTab.contents))
+                findReplacementTab();
+        tabs.removeAll(outgoing2);
+
+        if (willUpdateLater)
+            parentView.runLayout();
+
         for (int pass = 0; pass < (((draggingTabs.size() > 0) && canDragTabs) ? 2 : 1); pass++) {
             int pos = parentView.getScrollOffsetX();
             boolean toggle = false;
             for (UIWindowView.WVWindow w : tabs) {
-                if (outgoingTabs2.contains(w.contents)) {
-                    willUpdateLater = true;
-                    outgoing2.add(w);
-                }
                 // This is used for all rendering.
                 int theDisplayOX = pos;
                 int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
@@ -142,13 +154,6 @@ public class TabUtils {
                 pos += tabW;
             }
         }
-        if (parentView.selectedTab != null)
-            if (outgoingTabs2.contains(parentView.selectedTab.contents))
-                findReplacementTab();
-        tabs.removeAll(outgoing2);
-
-        if (willUpdateLater)
-            parentView.runLayout();
     }
 
     public void findReplacementTab() {
@@ -234,7 +239,7 @@ public class TabUtils {
 
         UIBorderedElement.drawBorder(igd, border, margin, x, y, w, h);
 
-        FontManager.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, textHeight);
+        FontManager.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, UIBorderedElement.getBlackTextFlag(border), textHeight);
 
         int icoBack = h;
         for (UIWindowView.IWVWindowIcon i : icons) {

@@ -16,13 +16,7 @@ import gabien.IPeripherals;
 public class UITextButton extends UIButton {
     public String text;
     private final UILabel.Contents contents;
-
-    // exists so I can run a refactor using it later
-    @Deprecated
-    public UITextButton(int h, String tex, Runnable click) {
-        this(tex, h, click);
-    }
-
+    
     public UITextButton(String tex, int h, Runnable click) {
         super(UIBorderedElement.getRecommendedBorderWidth(h));
         contents = new UILabel.Contents(h);
@@ -48,7 +42,7 @@ public class UITextButton extends UIButton {
     }
 
     @Override
-    public void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd) {
-        contents.render(getBorderWidth(), igd);
+    public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
+        contents.render(textBlack, 0, 0, igd);
     }
 }

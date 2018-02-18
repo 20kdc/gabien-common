@@ -57,26 +57,32 @@ public abstract class UIBorderedElement extends UIElement {
     @Override
     public final void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
         Size s = getSize();
+        boolean black = getBorderFlag(borderType, 5);
         if (getBorderFlag(borderType, 0)) {
             int[] localST = igd.getLocalST();
             int oldTY = localST[1];
             localST[1] += getBorderWidth();
             igd.updateST();
             drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
-            renderContents(selected, peripherals, igd);
+            renderContents(selected, black, peripherals, igd);
             localST[1] = oldTY;
             igd.updateST();
         } else {
             drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
-            renderContents(selected, peripherals, igd);
+            renderContents(selected, black, peripherals, igd);
         }
     }
 
     // This is the one you override.
-    public abstract void renderContents(boolean selected, IPeripherals peripherals, IGrDriver igd);
+    public abstract void renderContents(boolean selected, boolean drawBlack, IPeripherals peripherals, IGrDriver igd);
+
+    public static boolean getBlackTextFlag(int i) {
+        return getBorderFlag(i, 5);
+    }
 
     // flag 0: use 'pressed' offset effect
     // flag 4: hi-res section is tiled, mid-res becomes 3-pixel border w/ added weirdness
+    // flag 5: text, etc. should be black
     private static boolean getBorderFlag(int borderType, int flag) {
         if (cachedTheme == null)
             return false;

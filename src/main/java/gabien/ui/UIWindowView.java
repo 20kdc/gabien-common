@@ -14,11 +14,8 @@ import java.util.*;
 
 /**
  * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.
- * This *does* implement the root-disconnected callback for all windows attached when it is called.
- * It *does not* implement it for windows being removed,
- *  because this callback also serves to alert windows that they are being closed,
- *  and it might simply be a migration.
- * It *does not* implement request-close.
+ * However, this does implement the root-disconnected callback, and request-close.
+ * The request-close triggers a blank method for extra post-close behavior for... reasons.
  * Created on 12/27/16. Revamped on December 15th, 2017.
  * Ported on February 17th, 2018, as part of what I'm now calling "Project IPCRESS" for no discernible reason.
  * (Oh, shush, if you were doing this you'd go mad too.)
@@ -150,9 +147,12 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         HashSet<UIElement> upcomingManualRemovals2 = upcomingManualRemovals;
         upcomingManualRemovals = new HashSet<UIElement>();
         for (WVWindow uie : windowList) {
-            if (upcomingManualRemovals2.contains(uie.contents)) {
+            boolean requestedUnparenting = uie.contents.requestsUnparenting();
+            if (upcomingManualRemovals2.contains(uie.contents) || requestedUnparenting) {
+                uie.contents.handleRootDisconnect();
                 wantsDeleting.add(uie);
                 remaining--;
+                handleClosedUserWindow(uie, requestedUnparenting);
                 continue;
             }
             // Just do this, just in case.
@@ -170,6 +170,10 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             UIPanel.scissoredRender(true, uie.contents, winSelected, peripherals, igd, bounds.width, bounds.height);
         }
         windowList.removeAll(wantsDeleting);
+    }
+
+    public void handleClosedUserWindow(WVWindow wvWindow, boolean selfDestruct) {
+        // exists to be overridden, do not assume super is called or uncalled
     }
 
     @Override

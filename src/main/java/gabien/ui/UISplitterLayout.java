@@ -35,9 +35,9 @@ public class UISplitterLayout extends UIElement.UIPanel {
         layoutAddElement(a);
         layoutAddElement(b);
         splitPoint = weight;
+
         runLayout();
-        Size gws = getWantedSize();
-        setForcedBounds(null, new Rect(0, 0, gws.width, gws.height));
+        setForcedBounds(null, new Rect(getWantedSize()));
     }
 
     @Override
