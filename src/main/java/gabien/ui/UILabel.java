@@ -67,7 +67,7 @@ public class UILabel extends UIBorderedElement {
             } else if (lastOverrideUE8 != FontManager.fontOverrideUE8) {
                 overrideChanged = true;
             }
-            if ((!lastText.equals(text)) || (!lastSize.equals(sz)) || overrideChanged) {
+            if ((!lastText.equals(text)) || (!lastSize.sizeEquals(sz)) || overrideChanged) {
                 lastText = text;
                 lastSize = sz;
                 lastOverride = FontManager.fontOverride;

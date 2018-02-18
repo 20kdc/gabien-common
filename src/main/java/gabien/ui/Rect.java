@@ -29,11 +29,8 @@ public final class Rect extends Size {
         return x + "," + y + "," + super.toString();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (o.getClass() == Rect.class)
-            return (((Rect) o).width == width) && (((Rect) o).height == height) && (((Rect) o).x == x) && (((Rect) o).y == y);
-        return false;
+    public boolean rectEquals(Rect o) {
+        return sizeEquals(o) && (o.x == x) && (o.y == y);
     }
 
     public boolean contains(int x, int y) {

@@ -26,12 +26,7 @@ public class Size {
         return width + "," + height;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (o.getClass() == Size.class) {
-            Size s = (Size) o;
-            return (s.width == width) && (s.height == height);
-        }
-        return false;
+    public boolean sizeEquals(Size s) {
+        return (s.width == width) && (s.height == height);
     }
 }
