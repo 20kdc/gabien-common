@@ -82,7 +82,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             sti[5] = ch;
             aw.igd.updateST();
             aw.peripherals.clearOffset();
-            UIBorderedElement.drawBorder(aw.igd, 5, 4, 0, 0, cw, ch);
+            UIBorderedElement.drawBorder(aw.igd, 5, 0, 0, 0, cw, ch);
             aw.ue.update(dT);
             aw.ue.render(true, aw.peripherals, aw.igd);
 

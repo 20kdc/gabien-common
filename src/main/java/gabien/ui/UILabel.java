@@ -22,13 +22,22 @@ public class UILabel extends UIBorderedElement {
         super(2, getRecommendedBorderWidth(h));
         contents = new Contents(h);
         text = txt;
-        Size sz = getRecommendedTextSize(text, h);
-        setWantedSize(sz);
-        setForcedBounds(null, new Rect(0, 0, sz.width, sz.height));
+
+        setWantedSize(getRecommendedTextSize("", h));
+        runLayout();
+        setForcedBounds(null, new Rect(getWantedSize()));
     }
 
     @Override
     public void update(double deltaTime) {
+        runLayout();
+    }
+
+    // This just gets spammed every frame, in order to update text at every possible time.
+    // It's not perfect, but contents.update checks enough so everything's :ok_hand:
+    @Override
+    public void runLayout() {
+        super.runLayout();
         Size p = contents.update(getSize(), getBorderWidth(), text);
         if (p != null)
             setWantedSize(p);

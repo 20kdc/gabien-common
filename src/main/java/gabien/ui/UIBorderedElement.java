@@ -76,6 +76,10 @@ public abstract class UIBorderedElement extends UIElement {
     // This is the one you override.
     public abstract void renderContents(boolean selected, boolean drawBlack, IPeripherals peripherals, IGrDriver igd);
 
+    public static boolean getBlackTextFlagWindowRoot() {
+        return getBorderFlag(5, 5);
+    }
+
     public static boolean getBlackTextFlag(int i) {
         return getBorderFlag(i, 5);
     }
@@ -111,7 +115,6 @@ public abstract class UIBorderedElement extends UIElement {
                     igd.blitImage(borderType * 12, (borderTheme * 18) + 6, Math.min(12, w - i), Math.min(12, h - j), x + i, y + j, cachedTheme);
             // Entire highres border space is reserved for tiling pattern.
             // Try to make the most of lowres? :(
-            borderWidth = Math.min(3, borderWidth);
             chunkSize = 3;
             chunkSizeO = 0;
             baseX = (borderType * 12) + 6;

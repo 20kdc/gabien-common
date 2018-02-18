@@ -16,9 +16,9 @@ import gabien.IPeripherals;
  */
 public class UINumberBox extends UILabel {
 
-    public UINumberBox(int h) {
-        super("12344957", h);
-        text = "";
+    public UINumberBox(long number, int h) {
+        super(Long.toString(number), h);
+        this.number = number;
     }
 
     // The caching exists so that edits have to be confirmed for onEdit usage.
@@ -37,6 +37,12 @@ public class UINumberBox extends UILabel {
     };
 
     private boolean tempDisableSelection = false;
+
+    @Override
+    public void runLayout() {
+        text = Long.toString(number);
+        super.runLayout();
+    }
 
     @Override
     public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
@@ -74,7 +80,6 @@ public class UINumberBox extends UILabel {
             number = newNum;
             editingNLast = number;
         }
-        text = Long.toString(number);
         super.renderContents(selected, textBlack, peripherals, igd);
     }
 

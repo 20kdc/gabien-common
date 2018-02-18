@@ -31,8 +31,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
 
     // This ought to be used for frame calculations
     public int windowTextHeight = 12;
-    public int sizerOfs = 16;
-    public int sizerSize = 24;
+    public int sizerVisual = 3;
+    public int sizerActual = 8;
 
     public UIWindowView() {
         connector = new PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
@@ -50,7 +50,11 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                     final WVWindow uie = i.next();
                     Rect innerWindow = uie.contents.getParentRelativeBounds();
                     final Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
-                    Rect windowSz = new Rect(innerWindow.x + innerWindow.width - sizerOfs, innerWindow.y + innerWindow.height - sizerOfs, sizerSize, sizerSize);
+
+                    // ABC
+                    // D E
+                    // FGH
+                    Rect windowSz = new Rect(innerWindow.x - sizerActual, innerWindow.y - (frameHeight + sizerActual), innerWindow.x + innerWindow.width + (sizerActual * 2), innerWindow.y + frameHeight + innerWindow.height + (sizerActual * 2));
 
                     if (innerWindow.contains(x, y)) {
                         clearKeysLater = true;
@@ -82,15 +86,55 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                         clearKeysLater = true;
                         windowList.remove(index);
                         windowList.addLast(uie);
+                        int px = 0;
+                        int py = 0;
+                        int tX = innerWindow.width / 3;
+                        int tY = (innerWindow.height + frameHeight) / 3;
+                        if (x < (innerWindow.x + tX))
+                            px--;
+                        if (x >= (innerWindow.x + innerWindow.width - tX))
+                            px++;
+                        if (y < ((innerWindow.y - frameHeight) + tY))
+                            py--;
+                        if (y >= ((innerWindow.y - frameHeight) + innerWindow.height - tY))
+                            py++;
+                        final int fpx = px;
+                        final int fpy = py;
                         // Dragging...
-                        return new IPointerReceiver.RelativeResizePointerReceiver(innerWindow.width, innerWindow.height, new IConsumer<Size>() {
+                        return new IPointerReceiver.RelativeResizePointerReceiver(fpx == -1 ? innerWindow.x : innerWindow.width, fpy == -1 ? innerWindow.y : innerWindow.height, new IConsumer<Size>() {
                             @Override
                             public void accept(Size size) {
                                 if (windowList.contains(uie)) {
                                     Rect r = uie.contents.getParentRelativeBounds();
-                                    uie.contents.setForcedBounds(null, new Rect(r.x, r.y, size.width, size.height));
+                                    int a = r.x;
+                                    int b = r.y;
+                                    int c = r.width;
+                                    int d = r.height;
+                                    a = processFPA(fpx, size.width, r.x, r.width);
+                                    c = processFPB(fpx, size.width, r.x, r.width);
+                                    b = processFPA(fpy, size.height, r.y, r.height);
+                                    d = processFPB(fpy, size.height, r.y, r.height);
+                                    uie.contents.setForcedBounds(null, new Rect(a, b, c, d));
                                     windowBoundsCheck(uie);
                                 }
+                            }
+
+                            private int processFPA(int fp, int sz, int l, int s) {
+                                if (fp == -1) {
+                                    return sz;
+                                } else if (fp == 1) {
+                                    return l;
+                                }
+                                return l;
+                            }
+
+                            private int processFPB(int fp, int sz, int l, int s) {
+                                if (fp == -1) {
+                                    return s - (sz - l);
+                                } else if (fp == 1) {
+                                    return sz;
+                                }
+                                return s;
                             }
                         });
                     }
@@ -161,13 +205,11 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             boolean winSelected = selected && (!backingSelected) && (remaining == 0);
             Rect b = uie.contents.getParentRelativeBounds();
 
-            int sizerSSize = sizerSize - ((sizerSize - sizerOfs) / 2);
-            igd.clearRect(0, 32, 96, b.x + b.width - sizerOfs, b.y + b.height - sizerOfs, sizerSize, sizerSize);
-            igd.clearRect(0, 64, 192, b.x + b.width - sizerOfs, b.y + b.height - sizerOfs, sizerSSize, sizerSSize);
+            UIBorderedElement.drawBorder(igd, 5, sizerVisual, b.x - sizerVisual,b.y - (windowFrameHeight + sizerVisual), b.width + (sizerVisual * 2), b.height + (windowFrameHeight + (sizerVisual * 2)));
 
             TabUtils.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
 
-            UIPanel.scissoredRender(true, uie.contents, winSelected, peripherals, igd, bounds.width, bounds.height);
+            UIPanel.scissoredRender(uie.contents, winSelected, peripherals, igd, bounds.width, bounds.height);
         }
         windowList.removeAll(wantsDeleting);
     }

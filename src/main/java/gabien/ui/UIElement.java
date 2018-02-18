@@ -214,10 +214,10 @@ public abstract class UIElement implements IPointerReceiver {
             // myself.elementBounds: ok
             UIElement myself = this;
             for (UIElement uie : new LinkedList<UIElement>(visElements))
-                scissoredRender(false, uie, selected && (uie == selectedElement), peripherals, igd, myself.elementBounds.width, myself.elementBounds.height);
+                scissoredRender(uie, selected && (uie == selectedElement), peripherals, igd, myself.elementBounds.width, myself.elementBounds.height);
         }
 
-        public static void scissoredRender(boolean asWindow, UIElement uie, boolean selected, IPeripherals mouse, IGrDriver igd, int w, int h) {
+        public static void scissoredRender(UIElement uie, boolean selected, IPeripherals mouse, IGrDriver igd, int w, int h) {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
             // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
@@ -249,8 +249,6 @@ public abstract class UIElement implements IPointerReceiver {
             localBuffer[4] = right;
             localBuffer[5] = bottom;
             igd.updateST();
-            if (asWindow)
-                UIBorderedElement.drawBorder(igd, 5, 4, 0, 0, uie.elementBounds.width, uie.elementBounds.height);
             uie.render(selected, mouse, igd);
 
             localBuffer[0] = osTX;

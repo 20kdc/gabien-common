@@ -22,9 +22,10 @@ public class UITextButton extends UIButton {
         contents = new UILabel.Contents(h);
         text = tex;
         onClick = click;
-        Size sz = getRecommendedTextSize(text, h);
-        setWantedSize(sz);
-        setForcedBounds(null, new Rect(sz));
+
+        setWantedSize(getRecommendedTextSize("", h));
+        runLayout();
+        setForcedBounds(null, new Rect(getWantedSize()));
     }
 
     @Override
@@ -36,6 +37,13 @@ public class UITextButton extends UIButton {
     @Override
     public void update(double deltaTime) {
         super.update(deltaTime);
+        // See UILabel for the reasoning here.
+        runLayout();
+    }
+
+    @Override
+    public void runLayout() {
+        super.runLayout();
         Size p = contents.update(getSize(), getBorderWidth(), text);
         if (p != null)
             setWantedSize(p);

@@ -17,9 +17,8 @@ import gabien.IPeripherals;
 // 2. onEdit is called when enter is pressed, and otherwise the text will revert.
 //    (This makes it useful for property-editor interfaces which need that kind of confirmation.)
 public class UITextBox extends UILabel {
-    public UITextBox(int h) {
-        super("Highly Responsive To Eggnog", h);
-        text = "";
+    public UITextBox(String text, int h) {
+        super(text, h);
     }
 
     public static Size getRecommendedSize(int h) {
