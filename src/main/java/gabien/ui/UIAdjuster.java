@@ -12,24 +12,30 @@ package gabien.ui;
  */
 public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
     public final UITextButton incButton, decButton;
-    public final UILabel numberDisplay;
+    public final UINumberBox numberDisplay;
 
-    public UIAdjuster(int h, final ISupplier<String> inc, final ISupplier<String> dec) {
+    public UIAdjuster(int h, long initial, final IFunction<Long, Long> write) {
         incButton = new UITextButton("+", h, new Runnable() {
             @Override
             public void run() {
-                accept(inc.get());
+                numberDisplay.number = write.apply(numberDisplay.number + 1);
             }
         });
         layoutAddElement(incButton);
         decButton = new UITextButton("-", h, new Runnable() {
             @Override
             public void run() {
-                accept(dec.get());
+                numberDisplay.number = write.apply(numberDisplay.number - 1);
             }
         });
         layoutAddElement(decButton);
-        numberDisplay = new UILabel("ERROR", h);
+        numberDisplay = new UINumberBox(initial, h);
+        numberDisplay.onEdit = new Runnable() {
+            @Override
+            public void run() {
+                numberDisplay.number = write.apply(numberDisplay.number);
+            }
+        };
         layoutAddElement(numberDisplay);
 
         Rect nBounds = calcWantedSize();
@@ -65,5 +71,14 @@ public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
     @Override
     public void accept(String a) {
         numberDisplay.text = a;
+    }
+
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        if (north) {
+            incButton.onClick.run();
+        } else {
+            decButton.onClick.run();
+        }
     }
 }

@@ -19,6 +19,7 @@ public class UINumberBox extends UILabel {
     public UINumberBox(long number, int h) {
         super(Long.toString(number), h);
         this.number = number;
+        borderType = 3;
     }
 
     // The caching exists so that edits have to be confirmed for onEdit usage.
@@ -80,6 +81,7 @@ public class UINumberBox extends UILabel {
             number = newNum;
             editingNLast = number;
         }
+        borderType = selected ? 4 : 3;
         super.renderContents(selected, textBlack, peripherals, igd);
     }
 

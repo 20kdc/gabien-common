@@ -194,13 +194,11 @@ public class FontManager {
                     space = firstLine.lastIndexOf(' ');
                 }
             }
-            while (testLen && (firstLine.length() > 0)) {
+            while (testLen && (firstLine.length() > 1)) {
                 text = firstLine.substring(firstLine.length() - 1) + text;
                 firstLine = firstLine.substring(0, firstLine.length() - 1);
                 testLen = getLineLength(firstLine, textHeight) > width;
             }
-            if (firstLine.length() == 0)
-                return "";
             work.append(firstLine);
             if ((text.length() > 0) || (firstLinePtrIdx != -1))
                 work.append('\n');

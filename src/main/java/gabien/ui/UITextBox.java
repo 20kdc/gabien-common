@@ -19,6 +19,7 @@ import gabien.IPeripherals;
 public class UITextBox extends UILabel {
     public UITextBox(String text, int h) {
         super(text, h);
+        borderType = 3;
     }
 
     public static Size getRecommendedSize(int h) {

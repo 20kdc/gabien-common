@@ -75,10 +75,16 @@ public abstract class UIElement implements IPointerReceiver {
     public void setWantedSize(Size size) {
         boolean relayout = !wantedSize.sizeEquals(size);
         wantedSize = size;
-        if (!duringSetForcedBounds)
-            if (relayout)
-                if (parent != null)
+        if (relayout) {
+            if (parent != null) {
+                if (!duringSetForcedBounds) {
                     parent.runLayout();
+                } else {
+                    if (parent instanceof UIPanel)
+                        ((UIPanel) parent).pleaseContinueLayingOut = true;
+                }
+            }
+        }
     }
 
     public final Size getWantedSize() {
@@ -143,6 +149,7 @@ public abstract class UIElement implements IPointerReceiver {
         private LinkedList<UIElement> allElements = new LinkedList<UIElement>();
         private HashSet<UIElement> visElements = new HashSet<UIElement>();
         private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
+        private boolean pleaseContinueLayingOut = false;
 
         public UIPanel() {
 
@@ -204,6 +211,10 @@ public abstract class UIElement implements IPointerReceiver {
         public void update(double deltaTime) {
             for (UIElement uie : new LinkedList<UIElement>(allElements))
                 uie.update(deltaTime);
+            while (pleaseContinueLayingOut) {
+                pleaseContinueLayingOut = false;
+                runLayout();
+            }
         }
 
         @Override
@@ -246,8 +257,8 @@ public abstract class UIElement implements IPointerReceiver {
             localBuffer[1] += y;
             localBuffer[2] = left;
             localBuffer[3] = top;
-            localBuffer[4] = right;
-            localBuffer[5] = bottom;
+            localBuffer[4] = Math.max(left, right);
+            localBuffer[5] = Math.max(top, bottom);
             igd.updateST();
             uie.render(selected, mouse, igd);
 
