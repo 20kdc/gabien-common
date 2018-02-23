@@ -332,6 +332,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
                 lst[3] = d;
                 lst[4] = e;
                 lst[5] = f;
+                target.updateST();
             }
         });
     }
