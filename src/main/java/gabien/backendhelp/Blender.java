@@ -20,18 +20,33 @@ public class Blender {
             return;
         if (ach <= 0)
             return;
+
         // Need a better calculation for this (keep rotation firmly in mind)
-        int twid = Math.max(acw, ach) * 2;
-        int thei = Math.max(acw, ach) * 2;
+        int borderLeft = ((Math.max(acw, ach) * 2) - acw) / 2;
+        int borderUp = ((Math.max(acw, ach) * 2) - ach) / 2;
+        int twid = acw + (borderLeft * 2);
+        int thei = ach + (borderUp * 2);
+
+        if (angle == 0) {
+            // No rotation
+            twid = acw;
+            thei = ach;
+            borderLeft = 0;
+            borderUp = 0;
+        }
         IGrDriver buf1 = GaBIEn.makeOffscreenBuffer(twid, thei, true);
-        buf1.blitImage(x - (twid / 2), y - (thei / 2), twid, thei, 0, 0, igd);
+        int[] localST = igd.getLocalST();
+        buf1.blitImage((x - borderLeft) + localST[0], (y - borderUp) + localST[1], twid, thei, 0, 0, igd);
         int[] bufferA = buf1.getPixels();
         buf1.clearAll(0, 0, 0);
-        buf1.blitRotatedScaledImage(srcx, srcy, srcw, srch, twid / 2, thei / 2, acw, ach, angle, i);
+        // Note regarding these calculations: blitRotatedScaledImage assumes you treat it like an ordinary blit,
+        //  i.e. it's definition of X/Y is based on a non-rotated blit.
+        // So this has been using horribly wrong behavior and correcting over itself. Oops.
+        buf1.blitRotatedScaledImage(srcx, srcy, srcw, srch, borderLeft, borderUp, acw, ach, angle, i);
         int[] bufferB = buf1.getPixels();
         blendImage(bufferA, bufferB, subtractive);
         buf1.shutdown();
-        igd.blitImage(0, 0, twid, thei, x - (twid / 2), y - (thei / 2), GaBIEn.createImage(bufferA, twid, thei));
+        igd.blitImage(0, 0, twid, thei, x - borderLeft, y - borderUp, GaBIEn.createImage(bufferA, twid, thei));
     }
 
     private static void blendImage(int[] bufferA, int[] bufferB, boolean subtractive) {

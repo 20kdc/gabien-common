@@ -123,7 +123,8 @@ public abstract class UIBorderedElement extends UIElement {
                 // Extract tile
                 IGrDriver osb = GaBIEn.makeOffscreenBuffer(12, 12, true);
                 osb.blitImage(borderType * 12, (borderTheme * 18) + 6, 12, 12, 0, 0, cachedTheme);
-                cachedThemeTiles[borderType] = osb;
+                cachedThemeTiles[borderType] = GaBIEn.createImage(osb.getPixels(), 12, 12);
+                osb.shutdown();
             }
             igd.blitTiledImage(x, y, w, h, cachedThemeTiles[borderType]);
             // Entire highres border space is reserved for tiling pattern.

@@ -17,15 +17,15 @@ public interface IGrDriver extends IImage {
     // These return the size of the drawing buffer.
     int getHeight();
 
+    // Basic blit operations.
     void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
-
     void blitTiledImage(int x, int y, int w, int h, IImage cachedTile);
-
-    // Support optional but recommended. Lack of support should result in no-op.
     void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
 
-    // Support optional. Should not be used unless absolutely required - cannot be scissored.
-    // Lack of support should result in no-op. When scissoring, this is just directly forwarded - nothing can be done here.
+    // Support optional.
+    // Lack of support should result in no-op.
+    // Note that the top-left here is that of an ordinary blit - the rotation is more or less an afterthought,
+    //  such that these two operations can be considered the basis of others.
     void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
     void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub);
 
