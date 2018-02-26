@@ -8,7 +8,6 @@
 package gabien.ui;
 
 import gabien.IGrDriver;
-import gabien.IGrInDriver;
 import gabien.IPeripherals;
 
 import java.util.HashSet;
@@ -150,6 +149,7 @@ public abstract class UIElement implements IPointerReceiver {
         private HashSet<UIElement> visElements = new HashSet<UIElement>();
         private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
         private boolean pleaseContinueLayingOut = false;
+        private boolean released = false;
 
         public UIPanel() {
 
@@ -209,6 +209,8 @@ public abstract class UIElement implements IPointerReceiver {
 
         @Override
         public void update(double deltaTime) {
+            if (released)
+                throw new RuntimeException("Trying to use released panel");
             for (UIElement uie : new LinkedList<UIElement>(allElements))
                 uie.update(deltaTime);
             while (pleaseContinueLayingOut) {
@@ -219,6 +221,8 @@ public abstract class UIElement implements IPointerReceiver {
 
         @Override
         public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+            if (released)
+                throw new RuntimeException("Trying to use released panel");
             // javac appears to be having conflicting memories.
             // elementBounds: invalid (something about not being static)
             // this.elementBounds: invalid (access error)
@@ -337,6 +341,15 @@ public abstract class UIElement implements IPointerReceiver {
                 }
             }
             pointerClickMapping.remove(state);
+        }
+
+        // Used by some UI stuff that needs to reuse elements.
+        public void release() {
+            for (UIElement uie : allElements)
+                uie.parent = null;
+            allElements.clear();
+            visElements.clear();
+            released = true;
         }
     }
 
