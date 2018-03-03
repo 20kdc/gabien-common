@@ -168,7 +168,7 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         protected final void layoutRemoveElement(UIElement uie) {
-            if (uie.parent == null)
+            if (uie.parent != this)
                 throw new RuntimeException("UIE " + uie + " already lost parent somehow in " + this);
             uie.parent = null;
             if (selectedElement == uie)
