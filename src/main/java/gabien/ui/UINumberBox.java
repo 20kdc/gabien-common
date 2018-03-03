@@ -46,7 +46,7 @@ public class UINumberBox extends UILabel {
     }
 
     @Override
-    public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
+    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         selected &= !tempDisableSelection;
         if (number != editingNLast) {
             editingCNumber = number;
@@ -56,7 +56,7 @@ public class UINumberBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected && (!readOnly)) {
-            String ss = peripherals.maintain(0, (bounds.height / 2), bounds.width, String.valueOf(number));
+            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, String.valueOf(number));
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
             if (lastMinusIdx > 0) {
@@ -82,7 +82,7 @@ public class UINumberBox extends UILabel {
             editingNLast = number;
         }
         borderType = selected ? 4 : 3;
-        super.renderContents(selected, textBlack, peripherals, igd);
+        super.updateContents(deltaTime, selected, peripherals);
     }
 
     @Override

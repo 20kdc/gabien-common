@@ -42,9 +42,10 @@ public abstract class UIBorderedElement extends UIElement {
     }
     // Used for various texty things.
     public static Size getRecommendedTextSize(String text, int textHeight) {
-        int bs = textHeight / 8;
-        Size s = FontManager.getTextSize(text, textHeight);
-        return new Size(s.width + (bs * 2), s.height + (bs * 2));
+        // Example figures: input 16
+        int bs = textHeight / 8; // 2
+        Size s = FontManager.getTextSize(text, textHeight); // ?, 14
+        return new Size(s.width + (bs * 2), s.height + (bs * 2)); // ?, 18;
     }
 
 
@@ -59,7 +60,7 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     @Override
-    public final void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+    public final void render(IGrDriver igd) {
         Size s = getSize();
         boolean black = getBorderFlag(borderType, 5);
         if (getBorderFlag(borderType, 0)) {
@@ -68,17 +69,29 @@ public abstract class UIBorderedElement extends UIElement {
             localST[1] += getBorderWidth();
             igd.updateST();
             drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
-            renderContents(selected, black, peripherals, igd);
+            renderContents(black, igd);
             localST[1] = oldTY;
             igd.updateST();
         } else {
             drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
-            renderContents(selected, black, peripherals, igd);
+            renderContents(black, igd);
         }
     }
 
+    @Override
+    public final void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        int bw = borderWidth;
+        int bwy = bw;
+        if (getBorderFlag(borderType, 0))
+            bwy *= 2;
+        peripherals.performOffset(-bw, -bwy);
+        updateContents(deltaTime, selected, peripherals);
+        peripherals.performOffset(bw, bwy);
+    }
+
     // This is the one you override.
-    public abstract void renderContents(boolean selected, boolean drawBlack, IPeripherals peripherals, IGrDriver igd);
+    public abstract void renderContents(boolean drawBlack, IGrDriver igd);
+    public abstract void updateContents(double deltaTime, boolean selected, IPeripherals peripherals);
 
     public static boolean getBlackTextFlagWindowRoot() {
         return getBorderFlag(5, 5);
@@ -133,7 +146,8 @@ public abstract class UIBorderedElement extends UIElement {
             chunkSizeO = 0;
             baseX = (borderType * 12) + 6;
             baseY = borderTheme * 18;
-            borderWidth = Math.max(borderWidth, 3);
+            if (borderWidth != 0)
+                borderWidth = Math.max(borderWidth, 3);
         } else {
             int eBorderWidth = borderWidth;
             if (borderWidth == 0)

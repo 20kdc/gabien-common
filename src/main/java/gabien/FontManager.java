@@ -167,7 +167,9 @@ public class FontManager {
             // will use fonttiny in this case
             return text.length() * 4;
         }
-        return text.length() * 8;
+        if (text.length() > 0)
+            return (text.length() * 8) - 1;
+        return 0;
     }
 
     public static String formatTextFor(String text, int textHeight, int width) {

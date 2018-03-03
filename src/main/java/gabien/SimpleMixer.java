@@ -12,6 +12,15 @@ package gabien;
  */
 public class SimpleMixer implements IRawAudioDriver.IRawAudioSource {
     private Channel[] channels = new Channel[128];
+    private boolean lerp;
+    // Basic volume adjustment algorithm which should produce passable results.
+    private boolean preventClipping;
+    private long maxVolLast;
+
+    public SimpleMixer(boolean preventClip, boolean doLerp) {
+        preventClipping = preventClip;
+        lerp = doLerp;
+    }
 
     public class Channel {
         private short[] data;
@@ -19,26 +28,26 @@ public class SimpleMixer implements IRawAudioDriver.IRawAudioSource {
         private double VL = 0, VR = 0, P = 1;
         private boolean looping = true;
 
-        private short WrappingGetIndex(double index) {
-            return (short) lerp(data[wrapind((int) Math.floor(index))],
-                    data[wrapind(((int) Math.floor(index)) + 1)],
-                    index - Math.floor(index));
+        private short wrappingGetIndex(double index) {
+            int indexI = (int) Math.floor(index);
+            short a = data[indexI % data.length];
+            if (lerp) {
+                short b = data[(indexI + 1) % data.length];
+                int diff = b - a;
+                // how this doesn't give type issues...
+                diff *= (index - indexI) * 256;
+                diff /= 256;
+                return (short) (a + diff);
+            }
+            return a;
         }
 
-        private int wrapind(int i) {
-            while (i < 0)
-                i += data.length;
-            while (i >= data.length)
-                i -= data.length;
-            return i;
-        }
-
-        private short Get() {
+        private short get() {
             try {
                 if (data == null)
                     return 0;
 
-                short a = WrappingGetIndex(pos);
+                short a = wrappingGetIndex(pos);
                 pos += P;
                 while (pos < 0)
                     pos += data.length;
@@ -60,29 +69,14 @@ public class SimpleMixer implements IRawAudioDriver.IRawAudioSource {
 
         }
 
-        private short Scale(short a, double V) {
-            double b = a * V;
-            if (b > 32767)
-                b = 32767;
-            if (b < -32768)
-                b = -32768;
-            return (short) b;
-        }
-
-        private short[] CreateData(int amount) {
-            short[] s = new short[amount * 2];
+        private int[] createData(int amount) {
+            int[] s = new int[amount * 2];
             for (int px = 0; px < amount; px++) {
-                short V = Get();
-                s[px * 2] = Scale(V, VL);
-                s[(px * 2) + 1] = Scale(V, VR);
+                short V = get();
+                s[px * 2] = (int) (V * VL);
+                s[(px * 2) + 1] = (int) (V * VR);
             }
             return s;
-        }
-
-        private double lerp(double s, double s0, double d) {
-            double diff = s0 - s;
-            diff *= d;
-            return s + diff;
         }
 
         public void playSound(double Pitch, double VolL, double VolR,
@@ -132,28 +126,47 @@ public class SimpleMixer implements IRawAudioDriver.IRawAudioSource {
     @Override
     public short[] pullData(int amount) {
         short[] data = new short[amount * 2];
-        int[] L = new int[amount];
-        int[] R = new int[amount];
+        int[] totalLeft = new int[amount];
+        int[] totalRight = new int[amount];
         for (Channel js : channels) {
             if (js == null)
                 continue;
-            short[] r = js.CreateData(amount);
+            int[] r = js.createData(amount);
             for (int px = 0; px < amount; px++) {
-                L[px] += r[(px * 2)];
-                R[px] += r[(px * 2) + 1];
+                totalLeft[px] += r[(px * 2)];
+                totalRight[px] += r[(px * 2) + 1];
             }
         }
+
+        // Volume adjustment.
+        long maxVol = 32768;
+        if (preventClipping) {
+            for (int px = 0; px < amount; px++) {
+                maxVol = Math.max(maxVol, Math.abs(totalLeft[px]));
+                maxVol = Math.max(maxVol, Math.abs(totalRight[px]));
+            }
+            if (maxVolLast < maxVol)
+                maxVolLast = maxVol;
+            maxVol = maxVolLast;
+            // Sample-rate-dependent, but it's assumed to be @ 22050hz where this algorithm will return to normal in 1.5s or so.
+            maxVolLast -= amount;
+        }
+
         for (int px = 0; px < amount; px++) {
-            if (L[px] > 32767)
-                L[px] = 32767;
-            if (L[px] < -32768)
-                L[px] = -32768;
-            if (R[px] > 32767)
-                R[px] = 32767;
-            if (R[px] < -32768)
-                R[px] = -32768;
-            data[px * 2] = (short) L[px];
-            data[(px * 2) + 1] = (short) R[px];
+
+            long l = ((totalLeft[px] * 32768L) / maxVol);
+            long r = ((totalRight[px] * 32768L) / maxVol);
+
+            if (l > 32767)
+                l = 32767;
+            if (l < -32768)
+                l = -32768;
+            if (r > 32767)
+                r = 32767;
+            if (r < -32768)
+                r = -32768;
+            data[px * 2] = (short) l;
+            data[(px * 2) + 1] = (short) r;
         }
         return data;
     }

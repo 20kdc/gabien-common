@@ -59,15 +59,20 @@ public class UIFileBrowser extends UIElement.UIProxy {
         boolean showManualControl = true;
         final String exact = getPath(null);
         String[] paths = GaBIEn.listEntries(exact);
-        if (pathComponents.size() > 0) {
-            basicLayout.panelsAdd(new UITextButton(strBack, fontSize, new Runnable() {
+        basicLayout.panelsAdd(new UITextButton(strBack, fontSize, new Runnable() {
                 @Override
                 public void run() {
-                    pathComponents.removeLast();
-                    rebuild();
+                    if (!done) {
+                        if (pathComponents.size() == 0) {
+                            done = true;
+                            run.accept(null);
+                            return;
+                        }
+                        pathComponents.removeLast();
+                        rebuild();
+                    }
                 }
-            }));
-        }
+        }));
         if (paths != null) {
             LinkedList<String> dirs = new LinkedList<String>();
             LinkedList<String> fils = new LinkedList<String>();
@@ -111,8 +116,8 @@ public class UIFileBrowser extends UIElement.UIProxy {
                         @Override
                         public void run() {
                             if (!done) {
-                                run.accept(exact);
                                 done = true;
+                                run.accept(exact);
                             }
                         }
                     }));
@@ -124,8 +129,8 @@ public class UIFileBrowser extends UIElement.UIProxy {
                 @Override
                 public void run() {
                     if (!done) {
-                        run.accept(exact + "/" + pathText.text);
                         done = true;
+                        run.accept(exact + "/" + pathText.text);
                     }
                 }
             }), false, 1.0d));
@@ -141,8 +146,8 @@ public class UIFileBrowser extends UIElement.UIProxy {
     public void handleRootDisconnect() {
         super.handleRootDisconnect();
         if (!done) {
-            run.accept(null);
             done = true;
+            run.accept(null);
         }
     }
 

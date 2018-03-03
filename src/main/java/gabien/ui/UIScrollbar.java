@@ -28,12 +28,7 @@ public class UIScrollbar extends UIBorderedElement {
     }
 
     @Override
-    public void update(double deltaTime) {
-
-    }
-
-    @Override
-    public void renderContents(boolean selected, boolean blackText, IPeripherals peripherals, IGrDriver igd) {
+    public void renderContents(boolean blackText, IGrDriver igd) {
         Size bounds = getSize();
         int margin = (vertical ? bounds.width : bounds.height) / 8;
         int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
@@ -51,6 +46,11 @@ public class UIScrollbar extends UIBorderedElement {
         }
 
         UIBorderedElement.drawBorder(igd, 7, nub / 3, nubX, nubY, nub, nub);
+    }
+
+    @Override
+    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
+
     }
 
     @Override

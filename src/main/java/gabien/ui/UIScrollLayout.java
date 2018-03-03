@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.IGrInDriver;
+import gabien.IPeripherals;
 
 import java.util.LinkedList;
 
@@ -146,14 +147,14 @@ public class UIScrollLayout extends UIElement.UIPanel {
     }
 
     @Override
-    public void update(double deltaTime) {
+    public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
         if (earlyForceRunLayout) {
             runLayout();
             earlyForceRunLayout = false;
         } else {
             layoutScrollbounds();
         }
-        super.update(deltaTime);
+        super.update(deltaTime, selected, peripherals);
     }
 
     // Don't even bother thinking about inner scroll views.

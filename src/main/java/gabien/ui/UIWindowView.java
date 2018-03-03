@@ -151,22 +151,28 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     }
 
     @Override
-    public void update(double deltaTime) {
-        if (backing != null)
-            backing.update(deltaTime);
-        for (WVWindow window : windowList)
-            window.contents.update(deltaTime);
-    }
-
-    @Override
-    public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
-        windowList.addAll(upcomingWindowList);
-        upcomingWindowList.clear();
-        int remaining = windowList.size();
+    public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
         if (clearKeysLater) {
             peripherals.clearKeys();
             clearKeysLater = false;
         }
+        if (backing != null)
+            backing.update(deltaTime, selected && backingSelected, peripherals);
+        int remaining = windowList.size();
+        for (WVWindow window : windowList) {
+            remaining--;
+            Rect p = window.contents.getParentRelativeBounds();
+            peripherals.performOffset(-p.x, -p.y);
+            window.contents.update(deltaTime, selected && (!backingSelected) && (remaining == 0), peripherals);
+            peripherals.performOffset(p.x, p.y);
+        }
+    }
+
+    @Override
+    public void render(IGrDriver igd) {
+        windowList.addAll(upcomingWindowList);
+        upcomingWindowList.clear();
+        int remaining = windowList.size();
         Size bounds = getSize();
         if (backing != null) {
             Rect backOldBounds = backing.getParentRelativeBounds();
@@ -181,7 +187,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 backingNeedsRefresh = true;
             if (backingNeedsRefresh)
                 backing.setForcedBounds(null, new Rect(0, 0, bounds.width, bounds.height));
-            backing.render(selected && backingSelected, peripherals, igd);
+            backing.render(igd);
         } else {
             igd.clearRect(0, 0, 64, 0, 0, bounds.width, bounds.height);
         }
@@ -202,14 +208,14 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             // Just do this, just in case.
             remaining--;
             windowBoundsCheck(uie);
-            boolean winSelected = selected && (!backingSelected) && (remaining == 0);
+            boolean winSelected = (!backingSelected) && (remaining == 0);
             Rect b = uie.contents.getParentRelativeBounds();
 
             UIBorderedElement.drawBorder(igd, 5, sizerVisual, b.x - sizerVisual,b.y - (windowFrameHeight + sizerVisual), b.width + (sizerVisual * 2), b.height + (windowFrameHeight + (sizerVisual * 2)));
 
             TabUtils.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
 
-            UIPanel.scissoredRender(uie.contents, winSelected, peripherals, igd, bounds.width, bounds.height);
+            UIPanel.scissoredRender(uie.contents, igd, bounds.width, bounds.height);
         }
         windowList.removeAll(wantsDeleting);
     }

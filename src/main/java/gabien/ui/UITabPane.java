@@ -56,8 +56,8 @@ public class UITabPane extends UIElement.UIPanel {
     }
 
     @Override
-    public void update(double deltaTime) {
-        super.update(deltaTime);
+    public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        super.update(deltaTime, selected, peripherals);
         if (selectedTab == null) {
             for (int i = 0; i < currentNTState.length; i++) {
                 double delta = deltaTime / 4.0d;
@@ -76,8 +76,8 @@ public class UITabPane extends UIElement.UIPanel {
     }
 
     @Override
-    public void render(boolean select, IPeripherals peripherals, IGrDriver igd) {
-        super.render(select, peripherals, igd);
+    public void render(IGrDriver igd) {
+        super.render(igd);
         Size bounds = getSize();
         tabManager.render(bounds, tabBarY, igd);
         if (selectedTab == null) {

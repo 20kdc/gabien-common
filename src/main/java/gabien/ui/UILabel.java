@@ -29,7 +29,7 @@ public class UILabel extends UIBorderedElement {
     }
 
     @Override
-    public void update(double deltaTime) {
+    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         runLayout();
     }
 
@@ -44,7 +44,7 @@ public class UILabel extends UIBorderedElement {
     }
 
     @Override
-    public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
+    public void renderContents(boolean textBlack, IGrDriver igd) {
         contents.render(textBlack, 0, 0, igd);
     }
 

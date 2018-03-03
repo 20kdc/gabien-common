@@ -32,7 +32,7 @@ public abstract class UIButton extends UIBorderedElement {
     }
 
     @Override
-    public void update(double deltaTime) {
+    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         if (pressedTime > 0) {
             pressedTime -= deltaTime;
             if (pressedTime <= 0)

@@ -35,8 +35,8 @@ public class UITextButton extends UIButton {
     }
 
     @Override
-    public void update(double deltaTime) {
-        super.update(deltaTime);
+    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
+        super.updateContents(deltaTime, selected, peripherals);
         // See UILabel for the reasoning here.
         runLayout();
     }
@@ -50,7 +50,7 @@ public class UITextButton extends UIButton {
     }
 
     @Override
-    public void renderContents(boolean selected, boolean textBlack, IPeripherals peripherals, IGrDriver igd) {
+    public void renderContents(boolean textBlack, IGrDriver igd) {
         contents.render(textBlack, 0, 0, igd);
     }
 }

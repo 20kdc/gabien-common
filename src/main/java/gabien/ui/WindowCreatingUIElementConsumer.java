@@ -30,11 +30,15 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     }
 
     public void accept(UIElement o, int scale, boolean fullscreen) {
+        accept(o, scale, fullscreen, true);
+    }
+
+    public void accept(UIElement o, int scale, boolean fullscreen, boolean resizable) {
         ActiveWindow aw = new ActiveWindow();
         Rect bounds = o.getParentRelativeBounds();
         WindowSpecs ws = GaBIEn.defaultWindowSpecs(o.toString(), bounds.width, bounds.height);
         ws.scale = scale;
-        ws.resizable = true;
+        ws.resizable = resizable;
         ws.fullscreen = fullscreen;
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
         aw.peripherals = aw.igd.getPeripherals();
@@ -83,8 +87,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             aw.igd.updateST();
             aw.peripherals.clearOffset();
             UIBorderedElement.drawBorder(aw.igd, 5, 0, 0, 0, cw, ch);
-            aw.ue.update(dT);
-            aw.ue.render(true, aw.peripherals, aw.igd);
+            aw.ue.update(dT, true, aw.peripherals);
+            aw.ue.render(aw.igd);
 
             // Handles the global click/drag/release cycle
 

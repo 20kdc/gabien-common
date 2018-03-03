@@ -90,8 +90,8 @@ public abstract class UIElement implements IPointerReceiver {
         return wantedSize;
     }
 
-    public abstract void update(double deltaTime);
-    public abstract void render(boolean selected, IPeripherals peripherals, IGrDriver igd);
+    public abstract void update(double deltaTime, boolean selected, IPeripherals peripherals);
+    public abstract void render(IGrDriver igd);
 
     public void runLayout() {
 
@@ -208,11 +208,16 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void update(double deltaTime) {
+        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
             if (released)
                 throw new RuntimeException("Trying to use released panel");
-            for (UIElement uie : new LinkedList<UIElement>(allElements))
-                uie.update(deltaTime);
+            for (UIElement uie : new LinkedList<UIElement>(allElements)) {
+                int x = uie.elementBounds.x;
+                int y = uie.elementBounds.y;
+                peripherals.performOffset(-x, -y);
+                uie.update(deltaTime, selected && (selectedElement == uie), peripherals);
+                peripherals.performOffset(x, y);
+            }
             while (pleaseContinueLayingOut) {
                 pleaseContinueLayingOut = false;
                 runLayout();
@@ -220,7 +225,7 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
+        public void render(IGrDriver igd) {
             if (released)
                 throw new RuntimeException("Trying to use released panel");
             // javac appears to be having conflicting memories.
@@ -229,10 +234,10 @@ public abstract class UIElement implements IPointerReceiver {
             // myself.elementBounds: ok
             UIElement myself = this;
             for (UIElement uie : new LinkedList<UIElement>(visElements))
-                scissoredRender(uie, selected && (uie == selectedElement), peripherals, igd, myself.elementBounds.width, myself.elementBounds.height);
+                scissoredRender(uie, igd, myself.elementBounds.width, myself.elementBounds.height);
         }
 
-        public static void scissoredRender(UIElement uie, boolean selected, IPeripherals mouse, IGrDriver igd, int w, int h) {
+        public static void scissoredRender(UIElement uie, IGrDriver igd, int w, int h) {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
             // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
@@ -255,8 +260,6 @@ public abstract class UIElement implements IPointerReceiver {
             right = Math.min(osTX + right, Math.min(osTX + w, osRight));
             bottom = Math.min(osTY + bottom, Math.min(osTY + h, osBottom));
 
-            mouse.performOffset(-x, -y);
-
             localBuffer[0] += x;
             localBuffer[1] += y;
             localBuffer[2] = left;
@@ -264,7 +267,7 @@ public abstract class UIElement implements IPointerReceiver {
             localBuffer[4] = Math.max(left, right);
             localBuffer[5] = Math.max(top, bottom);
             igd.updateST();
-            uie.render(selected, mouse, igd);
+            uie.render(igd);
 
             localBuffer[0] = osTX;
             localBuffer[1] = osTY;
@@ -273,8 +276,6 @@ public abstract class UIElement implements IPointerReceiver {
             localBuffer[4] = osRight;
             localBuffer[5] = osBottom;
             igd.updateST();
-
-            mouse.performOffset(x, y);
         }
 
         // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
@@ -394,13 +395,13 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void update(double deltaTime) {
-            currentElement.update(deltaTime);
+        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+            currentElement.update(deltaTime, selected, peripherals);
         }
 
         @Override
-        public void render(boolean selected, IPeripherals peripherals, IGrDriver igd) {
-            currentElement.render(selected, peripherals, igd);
+        public void render(IGrDriver igd) {
+            currentElement.render(igd);
         }
 
         @Override
