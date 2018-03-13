@@ -54,9 +54,10 @@ public abstract class UIElement implements IPointerReceiver {
     public final void setForcedBounds(UIElement mustBeThis, Rect r) {
         if (mustBeThis != parent)
             throw new RuntimeException("You aren't allowed to do that!");
+        boolean relayout = !r.sizeEquals(elementBounds);
         elementBounds = r;
         // Oh, *this* is a mindbender.
-        if (!duringSetForcedBounds) {
+        if ((!duringSetForcedBounds) && relayout) {
             duringSetForcedBounds = true;
             runLayout();
             duringSetForcedBounds = false;

@@ -7,10 +7,7 @@
 
 package gabien.ui;
 
-import gabien.IGrInDriver;
 import gabien.IPeripherals;
-
-import java.util.LinkedList;
 
 /**
  * Basic scrollable layout.
@@ -22,9 +19,20 @@ public class UIScrollLayout extends UIElement.UIPanel {
     private final int sbSize;
     // In most cases you want this on, but sometimes you don't.
     public boolean fullWanted = true;
+    // How many pixels difference is there between a scroll value of 0 and a scroll value of 1?
     public int scrollLength = 0;
     private double lastScrollPoint = -1;
     private boolean earlyForceRunLayout = false;
+
+    // If nested scroll layouts or such are causing the algorithm to completely break, which I note is rare,
+    //  and seems to occur cases of just-not-quite-enough-room on the 'horizontal' (for vertical SVLs),
+    //  this forcefully enables scrollbars for consistency.
+    private int inconsistentLayoutKillswitch = 0;
+
+    // How much forgiveness given per-element (including for the scrollbar itself, and also a fake addition to give some initial threshold)
+    // If the total forgiveness is exceeded, that's it until the next update.
+    // This doesn't ensure UI display stability but at least ensures the program won't crash.
+    private int inconsistentLayoutKillswitchThresholdPE = 16;
 
     public UIScrollLayout(boolean vertical, int sc) {
         scrollbar = new UIScrollbar(vertical, sc);
@@ -66,7 +74,8 @@ public class UIScrollLayout extends UIElement.UIPanel {
         // The "layoutScrollbounds" at the bottom then fixes positions & allElements.
 
         // Since the scrollbar is about to be resized, make sure we're allowed to use it
-        if (!layoutContainsElement(scrollbar))
+        boolean hadScrollbar = layoutContainsElement(scrollbar);
+        if (!hadScrollbar)
             layoutAddElement(scrollbar);
         int maxA = 0;
         if (scrollbar.vertical) {
@@ -92,8 +101,15 @@ public class UIScrollLayout extends UIElement.UIPanel {
         if (scrollLength != 0)
             scrollbar.wheelScale = (r.height / 4.0d) / (double) scrollLength;
 
-        if (layoutContainsElement(scrollbar))
+        boolean hasScrollbar = layoutContainsElement(scrollbar);
+        if (hasScrollbar)
             maxA += sbSize;
+
+        // This targets elements that switch scrollbar on/off, which is the critical way in which this class can enter an infinite loop.
+        // The idea is to limit this haxy half-solution to where it's needed.
+        // This ensures a bare minimum of scrollbar-adds required to ensure stability.
+        if (hadScrollbar != hasScrollbar)
+            inconsistentLayoutKillswitch++;
 
         if (scrollbar.vertical) {
             setWantedSize(new Size(fullWanted ? maxA : r.width, scrollLength));
@@ -104,13 +120,15 @@ public class UIScrollLayout extends UIElement.UIPanel {
 
     // Lays out the elements with the current parameters.
     private void layoutScrollbounds() {
+        boolean inconsistentLayoutKillswitchLocked = inconsistentLayoutKillswitch > (inconsistentLayoutKillswitchThresholdPE * (layoutGetElements().size() + 1));
+
         if (lastScrollPoint == scrollbar.scrollPoint)
             return;
         lastScrollPoint = scrollbar.scrollPoint;
         Size bounds = getSize();
         int scrollHeight = scrollLength - (scrollbar.vertical ? bounds.height : bounds.width);
         int appliedScrollbarSz = sbSize;
-        if (scrollHeight <= 0) {
+        if ((scrollHeight <= 0) && !inconsistentLayoutKillswitchLocked) {
             scrollHeight = 0;
             // no need for the scrollbar
             appliedScrollbarSz = 0;
@@ -148,6 +166,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
 
     @Override
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        inconsistentLayoutKillswitch = 0;
         if (earlyForceRunLayout) {
             runLayout();
             earlyForceRunLayout = false;
@@ -160,9 +179,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
     // Don't even bother thinking about inner scroll views.
     @Override
     public void handleMousewheel(int x, int y, boolean north) {
-        Size bounds = getSize();
-        int scrollHeight = scrollLength - (scrollbar.vertical ? bounds.height : bounds.width);
-        if (scrollHeight <= 0) {
+        if (!layoutContainsElement(scrollbar)) {
             // No visible scrollbar -> don't scroll
             super.handleMousewheel(x, y, north);
             return;
