@@ -64,6 +64,20 @@ public abstract class UIElement implements IPointerReceiver {
         }
     }
 
+    /*
+     * Forces the element to be at 0, 0 and with the optimal size.
+     */
+    public final void forceToRecommended(UIElement mustBeThis) {
+        if (mustBeThis != parent)
+            throw new RuntimeException("You aren't allowed to do that!");
+        // Establishes an initial estimate of wanted size (a pessimistic maximum typically, especially w/ UILabels around)
+        runLayout();
+        // This will cause another relayout, which allows labels to settle into having correct vertical sizes
+        setForcedBounds(null, new Rect(getWantedSize()));
+        // And this actually should be the final size.
+        setForcedBounds(null, new Rect(getWantedSize()));
+    }
+
     public final Rect getParentRelativeBounds() {
         return elementBounds;
     }
