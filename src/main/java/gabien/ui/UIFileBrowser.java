@@ -125,7 +125,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
         }
         if (showManualControl) {
             final UITextBox pathText = new UITextBox("", fontSize);
-            basicLayout.panelsAdd(new UISplitterLayout(pathText, new UITextButton("Accept", fontSize, new Runnable() {
+            basicLayout.panelsAdd(new UISplitterLayout(pathText, new UITextButton(strAccept, fontSize, new Runnable() {
                 @Override
                 public void run() {
                     if (!done) {
