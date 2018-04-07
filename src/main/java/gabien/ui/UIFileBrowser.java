@@ -21,6 +21,9 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private boolean done;
     private IConsumer<String> run;
     private UIScrollLayout basicLayout;
+    private UISplitterLayout outerLayout;
+    private UIPublicPanel lowerSection;
+    private UIElement lowerSectionContents;
     private int fontSize;
     private LinkedList<String> pathComponents = new LinkedList<String>();
     private String strBack, strAccept, strTP;
@@ -32,12 +35,30 @@ public class UIFileBrowser extends UIElement.UIProxy {
         strBack = back;
         strAccept = accept;
         basicLayout = new UIScrollLayout(true, scrollerSize);
+        lowerSection = new UIPublicPanel(1, 1) {
+            @Override
+            public void runLayout() {
+                if (lowerSectionContents != null) {
+                    lowerSectionContents.forceToRecommended(this);
+                    setWantedSize(lowerSectionContents.getWantedSize());
+                    lowerSectionContents.setForcedBounds(this, new Rect(getSize()));
+                }
+            }
+        };
         fontSize = fSize;
+        outerLayout = new UISplitterLayout(basicLayout, lowerSection, true, 1);
         rebuild();
-        basicLayout.runLayout();
-        proxySetElement(basicLayout, true);
+        outerLayout.setForcedBounds(null, new Rect(outerLayout.getWantedSize()));
+        outerLayout.runLayout();
+        proxySetElement(outerLayout, true);
     }
 
+    // Should we show a given item, by postfix? (Point for future expansion)
+    public boolean shouldShow(String possiblePostfix) {
+        return true;
+    }
+
+    // Translates the current path components (and possibly the 'last' component, which might be null) into a system path.
     public String getPath(String possiblePostfix) {
         String text = "";
         boolean first = true;
@@ -56,6 +77,12 @@ public class UIFileBrowser extends UIElement.UIProxy {
 
     private void rebuild() {
         basicLayout.panelsClear();
+
+        if (lowerSectionContents != null) {
+            lowerSection.layoutRemoveElement(lowerSectionContents);
+            lowerSectionContents = null;
+        }
+
         boolean showManualControl = true;
         final String exact = getPath(null);
         String[] paths = GaBIEn.listEntries(exact);
@@ -90,22 +117,26 @@ public class UIFileBrowser extends UIElement.UIProxy {
             Collections.sort(dirs);
             Collections.sort(fils);
             for (final String s : dirs) {
-                basicLayout.panelsAdd(new UITextButton("D: " + s, fontSize, new Runnable() {
-                    @Override
-                    public void run() {
-                        pathComponents.add(s);
-                        rebuild();
-                    }
-                }));
+                if (shouldShow(s)) {
+                    basicLayout.panelsAdd(new UITextButton("D: " + s, fontSize, new Runnable() {
+                        @Override
+                        public void run() {
+                            pathComponents.add(s);
+                            rebuild();
+                        }
+                    }));
+                }
             }
             for (final String s : fils) {
-                basicLayout.panelsAdd(new UITextButton("F: " + s, fontSize, new Runnable() {
-                    @Override
-                    public void run() {
-                        pathComponents.add(s);
-                        rebuild();
-                    }
-                }));
+                if (shouldShow(s)) {
+                    basicLayout.panelsAdd(new UITextButton("F: " + s, fontSize, new Runnable() {
+                        @Override
+                        public void run() {
+                            pathComponents.add(s);
+                            rebuild();
+                        }
+                    }));
+                }
             }
         } else {
             if (GaBIEn.fileOrDirExists(exact))
@@ -123,9 +154,10 @@ public class UIFileBrowser extends UIElement.UIProxy {
                     }));
                 }
         }
+
         if (showManualControl) {
             final UITextBox pathText = new UITextBox("", fontSize);
-            basicLayout.panelsAdd(new UISplitterLayout(pathText, new UITextButton(strAccept, fontSize, new Runnable() {
+            lowerSectionContents = new UISplitterLayout(pathText, new UITextButton(strAccept, fontSize, new Runnable() {
                 @Override
                 public void run() {
                     if (!done) {
@@ -133,8 +165,12 @@ public class UIFileBrowser extends UIElement.UIProxy {
                         run.accept(exact + "/" + pathText.text);
                     }
                 }
-            }), false, 1.0d));
+            }), false, 1.0d);
+            lowerSection.layoutAddElement(lowerSectionContents);
         }
+        basicLayout.runLayout();
+        lowerSection.runLayout();
+        outerLayout.runLayout();
     }
 
     @Override
