@@ -70,12 +70,18 @@ public abstract class UIElement implements IPointerReceiver {
     public final void forceToRecommended(UIElement mustBeThis) {
         if (mustBeThis != parent)
             throw new RuntimeException("You aren't allowed to do that!");
-        // Establishes an initial estimate of wanted size (a pessimistic maximum typically, especially w/ UILabels around)
-        runLayout();
-        // This will cause another relayout, which allows labels to settle into having correct vertical sizes
-        setForcedBounds(mustBeThis, new Rect(getWantedSize()));
-        // And this actually should be the final size.
-        setForcedBounds(mustBeThis, new Rect(getWantedSize()));
+        // Need to jiggle sizes a bit because of optimizations. Oops.
+        setForcedBounds(mustBeThis, new Rect(0, 0, 0, 0));
+        setForcedBounds(mustBeThis, new Rect(0, 0, 128, 128));
+        // Now that the wanted size is non-zero, let it stabilize
+        Size lastWantedSize = getWantedSize();
+        for (int i = 0; i < 16; i++) {
+            setForcedBounds(mustBeThis, new Rect(lastWantedSize));
+            Size nextWantedSize = getWantedSize();
+            if (lastWantedSize.sizeEquals(nextWantedSize))
+                break;
+            lastWantedSize = nextWantedSize;
+        }
     }
 
     public final Rect getParentRelativeBounds() {
@@ -94,8 +100,16 @@ public abstract class UIElement implements IPointerReceiver {
                 if (!duringSetForcedBounds) {
                     parent.runLayout();
                 } else {
-                    if (parent instanceof UIPanel)
+                    if (parent instanceof UIPanel) {
+                        if (((UIPanel) parent).enableLayoutLogging) {
+                            try {
+                                throw new RuntimeException("call site");
+                            } catch (RuntimeException re) {
+                                re.printStackTrace();
+                            }
+                        }
                         ((UIPanel) parent).pleaseContinueLayingOut = true;
+                    }
                 }
             }
         }
@@ -164,6 +178,7 @@ public abstract class UIElement implements IPointerReceiver {
         private HashSet<UIElement> visElements = new HashSet<UIElement>();
         private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
         private boolean pleaseContinueLayingOut = false;
+        private boolean enableLayoutLogging = false;
         private boolean released = false;
 
         public UIPanel() {
@@ -233,9 +248,18 @@ public abstract class UIElement implements IPointerReceiver {
                 uie.update(deltaTime, selected && (selectedElement == uie), peripherals);
                 peripherals.performOffset(x, y);
             }
-            while (pleaseContinueLayingOut) {
+            for (int i = 0; i < 16; i++) {
+                if (!pleaseContinueLayingOut)
+                    break;
                 pleaseContinueLayingOut = false;
                 runLayout();
+            }
+            if (pleaseContinueLayingOut) {
+                System.err.println("UI: pleaseContinueLayingOut overload! Details...");
+                enableLayoutLogging = true;
+                runLayout();
+                enableLayoutLogging = false;
+                pleaseContinueLayingOut = false; // Force termination
             }
         }
 

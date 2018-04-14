@@ -39,9 +39,10 @@ public class UIFileBrowser extends UIElement.UIProxy {
             @Override
             public void runLayout() {
                 if (lowerSectionContents != null) {
-                    lowerSectionContents.forceToRecommended(this);
                     setWantedSize(lowerSectionContents.getWantedSize());
                     lowerSectionContents.setForcedBounds(this, new Rect(getSize()));
+                } else {
+                    setWantedSize(new Size(0, 0));
                 }
             }
         };
@@ -166,6 +167,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
                     }
                 }
             }), false, 1.0d);
+            lowerSectionContents.forceToRecommended(null);
             lowerSection.layoutAddElement(lowerSectionContents);
         }
         basicLayout.runLayout();
