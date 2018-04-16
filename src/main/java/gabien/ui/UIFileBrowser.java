@@ -27,10 +27,15 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private int fontSize;
     private LinkedList<String> pathComponents = new LinkedList<String>();
     private String strBack, strAccept, strTP;
+    private final String extFilter;
 
     public UIFileBrowser(IConsumer<String> r, String titlePrefix, String back, String accept, int fSize, int scrollerSize) {
-        // Vague guess.
+        this(r, titlePrefix, back, accept, fSize, scrollerSize, "");
+    }
+
+    public UIFileBrowser(IConsumer<String> r, String titlePrefix, String back, String accept, int fSize, int scrollerSize, String ext) {
         run = r;
+        extFilter = ext;
         strTP = titlePrefix;
         strBack = back;
         strAccept = accept;
@@ -56,7 +61,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
 
     // Should we show a given item, by postfix? (Point for future expansion)
     public boolean shouldShow(String possiblePostfix) {
-        return true;
+        return possiblePostfix.toLowerCase().endsWith(extFilter);
     }
 
     // Translates the current path components (and possibly the 'last' component, which might be null) into a system path.
@@ -140,11 +145,10 @@ public class UIFileBrowser extends UIElement.UIProxy {
                 }
             }
         } else {
-            if (GaBIEn.fileOrDirExists(exact))
-                if (!GaBIEn.dirExists(exact)) {
-                    showManualControl = false;
-                    // having a separate screen allows user to back out
-                    basicLayout.panelsAdd(new UITextButton(strAccept, fontSize, new Runnable() {
+            if (!GaBIEn.dirExists(exact)) {
+                showManualControl = false;
+                // having a separate screen allows user to back out
+                basicLayout.panelsAdd(new UITextButton(strAccept + " " + exact, fontSize, new Runnable() {
                         @Override
                         public void run() {
                             if (!done) {
@@ -152,8 +156,8 @@ public class UIFileBrowser extends UIElement.UIProxy {
                                 run.accept(exact);
                             }
                         }
-                    }));
-                }
+                }));
+            }
         }
 
         if (showManualControl) {
