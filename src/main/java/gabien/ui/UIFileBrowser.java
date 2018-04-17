@@ -60,8 +60,8 @@ public class UIFileBrowser extends UIElement.UIProxy {
     }
 
     // Should we show a given item, by postfix? (Point for future expansion)
-    public boolean shouldShow(String possiblePostfix) {
-        return possiblePostfix.toLowerCase().endsWith(extFilter);
+    public boolean shouldShow(boolean dir, String possiblePostfix) {
+        return dir || possiblePostfix.toLowerCase().endsWith(extFilter);
     }
 
     // Translates the current path components (and possibly the 'last' component, which might be null) into a system path.
@@ -123,7 +123,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
             Collections.sort(dirs);
             Collections.sort(fils);
             for (final String s : dirs) {
-                if (shouldShow(s)) {
+                if (shouldShow(true, s)) {
                     basicLayout.panelsAdd(new UITextButton("D: " + s, fontSize, new Runnable() {
                         @Override
                         public void run() {
@@ -134,7 +134,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
                 }
             }
             for (final String s : fils) {
-                if (shouldShow(s)) {
+                if (shouldShow(false, s)) {
                     basicLayout.panelsAdd(new UITextButton("F: " + s, fontSize, new Runnable() {
                         @Override
                         public void run() {
