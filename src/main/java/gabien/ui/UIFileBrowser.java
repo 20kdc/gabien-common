@@ -114,7 +114,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
                     throw new RuntimeException("Backend Error (\\)");
                 if (s.contains("/"))
                     throw new RuntimeException("Backend Error (/)");
-                if (GaBIEn.dirExists(s)) {
+                if (GaBIEn.dirExists(exact + "/" + s)) {
                     dirs.add(s);
                 } else {
                     fils.add(s);

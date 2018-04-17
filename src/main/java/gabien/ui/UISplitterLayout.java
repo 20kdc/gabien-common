@@ -57,12 +57,26 @@ public class UISplitterLayout extends UIElement.UIPanel {
             bInitial = bWanted.width;
         }
         room -= aInitial + bInitial;
-        // Room is now the amount of spare space available. Surprisingly, this works well when room < 0...
-        // Check new alg.
+        // Room is now the amount of spare space available.
         int exactPos = (int) (splitPoint * allSpace);
-        boolean newAlg = ((exactPos >= aInitial) && (exactPos <= (allSpace - bInitial)));
-        if (!newAlg)
-            exactPos = ((int) (splitPoint * room)) + aInitial;
+        if (room >= 0) {
+            // If we *can* table-align, do so, but give that up if need be
+            boolean newAlg = ((exactPos >= aInitial) && (exactPos <= (allSpace - bInitial)));
+            int oldAlg = ((int) (splitPoint * room)) + aInitial;
+            if (!newAlg)
+                exactPos = oldAlg;
+        } else {
+            // Prioritize the element that's given the least room,
+            // since 1.0d/0.0d are used on elements that should use exactly what they want and no more/less
+            if (splitPoint >= 0.5d) {
+                exactPos = allSpace - bInitial;
+            } else {
+                exactPos = aInitial;
+            }
+            // That's not working? go to minimum usability mode
+            if ((exactPos < 0) || (exactPos > allSpace))
+                exactPos = allSpace / 2;
+        }
         Size newWanted;
         if (vertical) {
             a.setForcedBounds(this, new Rect(0, 0, r.width, exactPos));
