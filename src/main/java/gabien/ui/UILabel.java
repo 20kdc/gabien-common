@@ -7,7 +7,9 @@
 
 package gabien.ui;
 
-import gabien.*;
+import gabien.FontManager;
+import gabien.IGrDriver;
+import gabien.IPeripherals;
 
 /**
  * A label. Displays text.
@@ -87,8 +89,8 @@ public class UILabel extends UIBorderedElement {
                 // You may be wondering why this is set up the way it is.
                 // The answer is simply that B's height is what we need to be given the width,
                 //  and A is what we want to be, width and height alike.
-                Size a = getRecommendedTextSize(text, textHeight);
-                Size b = getRecommendedTextSize(textFormatted, textHeight);
+                Size a = getRecommendedTextSize(text, textHeight, bw);
+                Size b = getRecommendedTextSize(textFormatted, textHeight, bw);
                 sz2 = new Size(a.width, b.height);
             }
             return sz2;

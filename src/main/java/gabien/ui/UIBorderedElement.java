@@ -42,10 +42,12 @@ public abstract class UIBorderedElement extends UIElement {
     }
     // Used for various texty things.
     public static Size getRecommendedTextSize(String text, int textHeight) {
-        // Example figures: input 16
-        int bs = textHeight / 8; // 2
-        Size s = FontManager.getTextSize(text, textHeight); // ?, 14
-        return new Size(s.width + (bs * 2), s.height + (bs * 2)); // ?, 18;
+        return getRecommendedTextSize(text, textHeight, getRecommendedBorderWidth(textHeight));
+    }
+
+    public static Size getRecommendedTextSize(String text, int textHeight, int bs) {
+        Size s = FontManager.getTextSize(text, textHeight);
+        return new Size(s.width + (bs * 2), s.height + (bs * 2));
     }
 
 
