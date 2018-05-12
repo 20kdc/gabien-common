@@ -101,6 +101,10 @@ public abstract class UIBorderedElement extends UIElement {
         return getBorderFlag(i, 5);
     }
 
+    public static boolean getMoveDownFlag(int base) {
+        return getBorderFlag(base, 0);
+    }
+
     // flag 0: use 'pressed' offset effect
     // flag 4: hi-res section is tiled, mid-res becomes 3-pixel border w/ added weirdness
     // flag 5: text, etc. should be black

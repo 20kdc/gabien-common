@@ -44,7 +44,8 @@ public interface IGrDriver extends IImage {
     // Stop all drawing operations. Makes an OsbDriver unusable.
     void shutdown();
 
-    // Gets the local ST buffer.
+    // Gets the local ST buffer, in the order: translateX, translateY, cropL, cropU, cropR, cropD
+    // The crop coordinates are independent of the translation coordinates.
     int[] getLocalST();
     // Propagates changes to the local ST buffer (changes only take effect from this point on)
     void updateST();

@@ -478,5 +478,11 @@ public abstract class UIElement implements IPointerReceiver {
         public void handlePointerEnd(IPointer state) {
             currentElement.handlePointerEnd(state);
         }
+
+        public void release() {
+            if (currentElement.parent != this)
+                throw new RuntimeException("Cannot release twice.");
+            currentElement.parent = null;
+        }
     }
 }

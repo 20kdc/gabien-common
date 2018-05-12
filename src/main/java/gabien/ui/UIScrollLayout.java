@@ -16,7 +16,7 @@ import gabien.IPeripherals;
  */
 public class UIScrollLayout extends UIElement.UIPanel {
     public final UIScrollbar scrollbar;
-    private final int sbSize;
+    private int sbSize;
     // In most cases you want this on, but sometimes you don't.
     public boolean fullWanted = true;
     // How many pixels difference is there between a scroll value of 0 and a scroll value of 1?
@@ -116,6 +116,12 @@ public class UIScrollLayout extends UIElement.UIPanel {
         } else {
             setWantedSize(new Size(scrollLength, fullWanted ? maxA : r.height));
         }
+    }
+
+    public void setSBSize(int size) {
+        sbSize = size;
+        scrollbar.setSBSize(size);
+        runLayout();
     }
 
     // Lays out the elements with the current parameters.

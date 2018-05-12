@@ -149,7 +149,20 @@ public class TabUtils {
                     continue;
                 }
 
-                TabUtils.drawTab(base, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
+                if (UIBorderedElement.getMoveDownFlag(base)) {
+                    int[] localST = igd.getLocalST();
+                    int oldTY = localST[1];
+                    int oldCD = localST[5];
+                    localST[5] = Math.min(localST[5], localST[1] + tabBarHeight);
+                    localST[1] += tabBarHeight / 8;
+                    igd.updateST();
+                    TabUtils.drawTab(base, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
+                    localST[1] = oldTY;
+                    localST[5] = oldCD;
+                    igd.updateST();
+                } else {
+                    TabUtils.drawTab(base, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
+                }
 
                 pos += tabW;
             }

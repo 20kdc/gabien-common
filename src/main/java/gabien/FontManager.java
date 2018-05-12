@@ -100,7 +100,7 @@ public class FontManager {
             String workingText = text + '\n';
             int toy = oy;
             while ((lIdx = workingText.indexOf('\n')) != -1) {
-                igd.clearRect(cc, cc, cc, xptr - 1, toy - 1, getLineLength(workingText, height) + 1, height + 1);
+                igd.clearRect(cc, cc, cc, xptr - 1, toy - 1, getLineLength(workingText.substring(0, lIdx), height) + 1, height + 1);
                 workingText = workingText.substring(lIdx + 1);
                 toy += height;
             }

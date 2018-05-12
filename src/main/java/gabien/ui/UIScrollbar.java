@@ -24,6 +24,8 @@ public class UIScrollbar extends UIBorderedElement {
 
     public UIScrollbar(boolean vert, int sc) {
         super(6, Math.max(1, sc / 8), sc, sc);
+        // UIBorderedElement tries to he helpful, but we don't like it
+        setWantedSize(new Size(sc, sc));
         vertical = vert;
     }
 
@@ -31,6 +33,10 @@ public class UIScrollbar extends UIBorderedElement {
     public void renderContents(boolean blackText, IGrDriver igd) {
         Size bounds = getSize();
         int margin = (vertical ? bounds.width : bounds.height) / 8;
+
+        if (UIBorderedElement.getMoveDownFlag(7))
+            margin = 0;
+
         int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
         // within the nub & area, margin is repeated to add shading
 
@@ -45,7 +51,12 @@ public class UIScrollbar extends UIBorderedElement {
             nubY = margin;
         }
 
-        UIBorderedElement.drawBorder(igd, 7, nub / 3, nubX, nubY, nub, nub);
+        int n3 = nub / 3;
+        // Valid values are 1, 3, 6...
+        if (n3 < 3)
+            n3 = 1;
+        n3 = (n3 / 3) * 3;
+        UIBorderedElement.drawBorder(igd, 7, n3, nubX, nubY, nub, nub);
     }
 
     @Override
@@ -78,5 +89,9 @@ public class UIScrollbar extends UIBorderedElement {
             scrollPoint = 0;
         if (scrollPoint > 1)
             scrollPoint = 1;
+    }
+
+    public void setSBSize(int sbSize) {
+        setWantedSize(new Size(sbSize, sbSize));
     }
 }
