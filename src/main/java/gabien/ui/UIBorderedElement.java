@@ -95,6 +95,18 @@ public abstract class UIBorderedElement extends UIElement {
     public abstract void renderContents(boolean drawBlack, IGrDriver igd);
     public abstract void updateContents(double deltaTime, boolean selected, IPeripherals peripherals);
 
+    public static boolean getMoveDownFlag(int base) {
+        return getBorderFlag(base, 0);
+    }
+
+    public static boolean getClearFlag(int base) {
+        return getBorderFlag(base, 1);
+    }
+
+    public static boolean getTiledFlag(int base) {
+        return getBorderFlag(base, 4);
+    }
+
     public static boolean getBlackTextFlagWindowRoot() {
         return getBorderFlag(5, 5);
     }
@@ -103,11 +115,8 @@ public abstract class UIBorderedElement extends UIElement {
         return getBorderFlag(i, 5);
     }
 
-    public static boolean getMoveDownFlag(int base) {
-        return getBorderFlag(base, 0);
-    }
-
-    // flag 0: use 'pressed' offset effect
+    // flag 0: use 'pressed' offset effect (WHERE SUPPORTED)
+    // flag 1: Contents are black, use a clear for speed. (Ignored if tiling!)
     // flag 4: hi-res section is tiled, mid-res becomes 3-pixel border w/ added weirdness
     // flag 5: text, etc. should be black
     private static boolean getBorderFlag(int borderType, int flag) {
@@ -132,7 +141,7 @@ public abstract class UIBorderedElement extends UIElement {
         int baseX;
         int baseY;
         int chunkSize, chunkSizeO;
-        if (getBorderFlag(borderType, 4)) {
+        if (getTiledFlag(borderType)) {
             // Bite the bullet - user *wants* tiling
             if (lastCachedThemeTiles != borderTheme)
                 cachedThemeTiles = null;
@@ -172,7 +181,11 @@ public abstract class UIBorderedElement extends UIElement {
             }
 
             chunkSizeO = chunkSize;
-            igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSizeO, chunkSizeO, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), cachedTheme);
+            if (getClearFlag(borderType)) {
+                igd.clearRect(0, 0, 0, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2));
+            } else {
+                igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSizeO, chunkSizeO, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), cachedTheme);
+            }
         }
 
         if (borderWidth <= 0)
