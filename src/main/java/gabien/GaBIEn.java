@@ -171,11 +171,20 @@ public class GaBIEn {
         return internal.listEntries(s);
     }
 
+    // NOTE: These two assume / is used. Run other functions beforehand to convert.
+
     public static String basename(String s) {
         int p = s.lastIndexOf('/');
         if (p == -1)
             return s;
         return s.substring(p + 1);
+    }
+
+    public static String dirname(String s) {
+        int p = s.lastIndexOf('/');
+        if (p == -1)
+            return s;
+        return s.substring(0, p);
     }
 
     public static void makeDirectories(String s) {

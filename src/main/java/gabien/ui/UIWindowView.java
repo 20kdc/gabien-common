@@ -10,7 +10,10 @@ package gabien.ui;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.
@@ -41,7 +44,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 int x = iPointer.getX();
                 int y = iPointer.getY();
                 boolean buttonOne = iPointer.getType() == IPointer.PointerType.Generic;
-                // We don't have any lifecycle flags, but there is this, and it's rarely true.
+                boolean wasBackingSelected = backingSelected;
                 backingSelected = false;
                 int index = windowList.size();
                 int frameHeight = getWindowFrameHeight();
@@ -140,7 +143,7 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                     }
                 }
                 // didn't hit anything?
-                if (!backingSelected)
+                if (!wasBackingSelected)
                     clearKeysLater = true;
                 backingSelected = true;
                 if (backing != null)
