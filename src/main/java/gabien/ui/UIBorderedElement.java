@@ -162,7 +162,7 @@ public abstract class UIBorderedElement extends UIElement {
             baseX = (borderType * 12) + 6;
             baseY = borderTheme * 18;
             if (borderWidth != 0)
-                borderWidth = Math.max(borderWidth, 3);
+                borderWidth = ensureBWV(Math.max(borderWidth, 3), chunkSize);
         } else {
             int eBorderWidth = borderWidth;
             if (borderWidth == 0)
@@ -180,6 +180,8 @@ public abstract class UIBorderedElement extends UIElement {
                 chunkSize = 4;
             }
 
+            borderWidth = ensureBWV(borderWidth, chunkSize);
+
             chunkSizeO = chunkSize;
             if (getClearFlag(borderType)) {
                 igd.clearRect(0, 0, 0, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2));
@@ -193,6 +195,13 @@ public abstract class UIBorderedElement extends UIElement {
 
         drawBorderCore(igd, baseX, baseY, chunkSize, chunkSizeO, borderWidth, x, y, w, h);
     }
+
+    private static int ensureBWV(int borderWidth, int chunk) {
+        if (borderWidth > chunk)
+            return ((borderWidth + 2) / chunk) * chunk;
+        return borderWidth;
+    }
+
     private static void drawBorderCore(IGrDriver igd, int x0, int y0, int chunkSizeLR, int chunkSizeM, int borderWidth, int x, int y, int w, int h) {
         IImage im = cachedTheme;
 
