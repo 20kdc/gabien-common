@@ -101,7 +101,8 @@ public class UITabPane extends UIElement.UIPanel {
     }
 
     public void handleClosedUserTab(UIWindowView.WVWindow wvWindow, boolean selfDestruct) {
-        // exists to be overridden, do not assume super is called or uncalled
+        // Default behavior: override as you wish
+        wvWindow.contents.onWindowClose();
     }
 
     // Used as a base for drawing.

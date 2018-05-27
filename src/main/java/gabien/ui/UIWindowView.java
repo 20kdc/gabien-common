@@ -223,7 +223,8 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
     }
 
     public void handleClosedUserWindow(WVWindow wvWindow, boolean selfDestruct) {
-        // exists to be overridden, do not assume super is called or uncalled
+        // Default behavior: override as you wish
+        wvWindow.contents.onWindowClose();
     }
 
     @Override

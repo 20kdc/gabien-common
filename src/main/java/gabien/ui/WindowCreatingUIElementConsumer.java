@@ -146,7 +146,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     }
 
     public void handleClosedUserWindow(UIElement wvWindow, boolean selfDestruct) {
-        // exists to be overridden, do not assume super is called or uncalled
+        // Default behavior: override as you wish
+        wvWindow.onWindowClose();
     }
 
 
