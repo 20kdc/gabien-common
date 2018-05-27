@@ -61,8 +61,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         LinkedList<ActiveWindow> closeThese = new LinkedList<ActiveWindow>();
         for (ActiveWindow aw : new LinkedList<ActiveWindow>(activeWindows)) {
             if (!aw.igd.stillRunning()) {
+                handleClosedUserWindow(aw.ue, false);
                 closeThese.add(aw);
-                aw.ue.handleRootDisconnect();
                 continue;
             }
 
@@ -121,8 +121,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (aw.igd.stillRunning())
                 aw.igd.flush();
             if (aw.ue.requestsUnparenting()) {
+                handleClosedUserWindow(aw.ue, true);
                 closeThese.add(aw);
-                aw.ue.handleRootDisconnect();
                 aw.igd.shutdown();
             }
         }
@@ -138,12 +138,17 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (aw.ue == uie)
                 w.add(aw);
         for (ActiveWindow aw : w) {
+            handleClosedUserWindow(aw.ue, false);
             activeWindows.remove(aw);
             incomingWindows.remove(aw);
             aw.igd.shutdown();
-            aw.ue.handleRootDisconnect();
         }
     }
+
+    public void handleClosedUserWindow(UIElement wvWindow, boolean selfDestruct) {
+        // exists to be overridden, do not assume super is called or uncalled
+    }
+
 
     private class ActiveWindow {
         IGrInDriver igd;

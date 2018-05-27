@@ -131,8 +131,8 @@ public abstract class UIElement implements IPointerReceiver {
         return false;
     }
 
-    // If this occurs, the containing window has been closed.
-    public void handleRootDisconnect() {
+    // Also only processed for window-level elements.
+    public void onWindowClose() {
 
     }
 
@@ -205,7 +205,6 @@ public abstract class UIElement implements IPointerReceiver {
                 selectedElement = null;
             allElements.remove(uie);
             visElements.remove(uie);
-            uie.handleRootDisconnect();
         }
 
         protected final void layoutSetElementVis(UIElement uie, boolean visible) {
@@ -320,13 +319,6 @@ public abstract class UIElement implements IPointerReceiver {
         // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
         @Override
         public abstract void runLayout();
-
-        @Override
-        public void handleRootDisconnect() {
-            super.handleRootDisconnect();
-            for (UIElement uie : allElements)
-                uie.handleRootDisconnect();
-        }
 
         @Override
         public void handleMousewheel(int x, int y, boolean north) {
@@ -455,11 +447,6 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void handleRootDisconnect() {
-            currentElement.handleRootDisconnect();
-        }
-
-        @Override
         public void handleMousewheel(int x, int y, boolean north) {
             currentElement.handleMousewheel(x, y, north);
         }
@@ -483,6 +470,11 @@ public abstract class UIElement implements IPointerReceiver {
             if (currentElement.parent != this)
                 throw new RuntimeException("Cannot release twice.");
             currentElement.parent = null;
+        }
+
+        @Override
+        public void onWindowClose() {
+            currentElement.onWindowClose();
         }
     }
 }

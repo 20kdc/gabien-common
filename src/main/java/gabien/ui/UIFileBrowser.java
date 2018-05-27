@@ -185,8 +185,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
     }
 
     @Override
-    public void handleRootDisconnect() {
-        super.handleRootDisconnect();
+    public void onWindowClose() {
         if (!done) {
             done = true;
             run.accept(null);

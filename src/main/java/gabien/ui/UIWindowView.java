@@ -202,7 +202,6 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
         for (WVWindow uie : windowList) {
             boolean requestedUnparenting = uie.contents.requestsUnparenting();
             if (upcomingManualRemovals2.contains(uie.contents) || requestedUnparenting) {
-                uie.contents.handleRootDisconnect();
                 wantsDeleting.add(uie);
                 remaining--;
                 handleClosedUserWindow(uie, requestedUnparenting);
@@ -326,19 +325,6 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
                 window.contents.handleMousewheel(x - b.x, y - b.y, north);
             }
         }
-    }
-
-    @Override
-    public void handleRootDisconnect() {
-        super.handleRootDisconnect();
-        for (WVWindow w : windowList)
-            if (!upcomingManualRemovals.contains(w.contents))
-                w.contents.handleRootDisconnect();
-        for (WVWindow w : upcomingWindowList)
-            if (!upcomingManualRemovals.contains(w.contents))
-                w.contents.handleRootDisconnect();
-        if (backing != null)
-            backing.handleRootDisconnect();
     }
 
     public int getWindowFrameHeight() {
