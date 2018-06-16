@@ -25,7 +25,7 @@ public class UITextButton extends UIButton {
 
         setWantedSize(getRecommendedTextSize("", h, getBorderWidth()));
         // This overrides the previous wanted size!
-        forceToRecommended(null);
+        forceToRecommended();
     }
 
     @Override

@@ -171,7 +171,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
                     }
                 }
             }), false, 1.0d);
-            lowerSectionContents.forceToRecommended(null);
+            lowerSectionContents.forceToRecommended();
             lowerSection.layoutAddElement(lowerSectionContents);
         }
         basicLayout.runLayout();

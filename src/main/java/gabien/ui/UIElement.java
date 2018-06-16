@@ -64,15 +64,14 @@ public abstract class UIElement implements IPointerReceiver {
 
     /*
      * Forces the element to be at 0, 0 and with the optimal size.
+     * Since this messes with layout, it can't be used while a parent is allowed.
      */
-    public final void forceToRecommended(UIElement mustBeThis) {
-        if (mustBeThis != parent)
-            throw new RuntimeException("You aren't allowed to do that!");
+    public final void forceToRecommended() {
         runLayoutLoop();
         // Now that the wanted size is non-zero, let it stabilize
         Size lastWantedSize = getWantedSize();
         for (int i = 0; i < 16; i++) {
-            setForcedBounds(mustBeThis, new Rect(lastWantedSize));
+            setForcedBounds(null, new Rect(lastWantedSize));
             Size nextWantedSize = getWantedSize();
             if (lastWantedSize.sizeEquals(nextWantedSize))
                 break;
