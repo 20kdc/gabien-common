@@ -43,7 +43,6 @@ public class UIScrollLayout extends UIElement.UIPanel {
         for (UIElement uie : layoutGetElements())
             layoutRemoveElement(uie);
         runLayout();
-        earlyForceRunLayout = true;
     }
 
     public void panelsAdd(UIElement uie) {
@@ -52,7 +51,15 @@ public class UIScrollLayout extends UIElement.UIPanel {
         Size s = uie.getSize();
         // Store these offscreen to prevent accidental clicking.
         uie.setForcedBounds(this, new Rect(-s.width, -s.height, s.width, s.height));
+        Size gws = getWantedSize();
+        Size ws = uie.getWantedSize();
         earlyForceRunLayout = true;
+        // Make reasonable estimates of wanted size.
+        if (scrollbar.vertical) {
+            setWantedSize(new Size(Math.max(ws.width + sbSize, gws.width), gws.height + ws.height));
+        } else {
+            setWantedSize(new Size(gws.width + ws.width, Math.max(ws.height + sbSize, gws.height)));
+        }
     }
 
     // NOTE: What we do here is that we *say* we want everything, and then we take what we can get.

@@ -33,7 +33,8 @@ public abstract class UIElement implements IPointerReceiver {
     // In the first case, this prevents accidentally calling runLayout before the object is ready.
     // In the second case, this prevents a sub-element from calling a parent element's runLayout...
     //  during that same runLayout.
-    private boolean duringSetForcedBounds = false;
+    private boolean currentlyLayouting = false;
+    private boolean weNeedToKeepLayouting = false;
 
     public UIElement() {
         // This is sufficient.
@@ -42,10 +43,10 @@ public abstract class UIElement implements IPointerReceiver {
     public UIElement(int width, int height) {
         // Simplifies things.
         Rect sz = new Rect(0, 0, width, height);
-        duringSetForcedBounds = true;
+        currentlyLayouting = true;
         setWantedSize(sz);
         setForcedBounds(null, sz);
-        duringSetForcedBounds = false;
+        currentlyLayouting = false;
     }
 
     /*
@@ -57,11 +58,8 @@ public abstract class UIElement implements IPointerReceiver {
         boolean relayout = !r.sizeEquals(elementBounds);
         elementBounds = r;
         // Oh, *this* is a mindbender.
-        if ((!duringSetForcedBounds) && relayout) {
-            duringSetForcedBounds = true;
-            runLayout();
-            duringSetForcedBounds = false;
-        }
+        if (relayout)
+            runLayoutLoop();
     }
 
     /*
@@ -70,9 +68,7 @@ public abstract class UIElement implements IPointerReceiver {
     public final void forceToRecommended(UIElement mustBeThis) {
         if (mustBeThis != parent)
             throw new RuntimeException("You aren't allowed to do that!");
-        // Need to jiggle sizes a bit because of optimizations. Oops.
-        setForcedBounds(mustBeThis, new Rect(0, 0, 0, 0));
-        setForcedBounds(mustBeThis, new Rect(0, 0, 128, 128));
+        runLayoutLoop();
         // Now that the wanted size is non-zero, let it stabilize
         Size lastWantedSize = getWantedSize();
         for (int i = 0; i < 16; i++) {
@@ -95,24 +91,9 @@ public abstract class UIElement implements IPointerReceiver {
     public void setWantedSize(Size size) {
         boolean relayout = !wantedSize.sizeEquals(size);
         wantedSize = size;
-        if (relayout) {
-            if (parent != null) {
-                if (!duringSetForcedBounds) {
-                    parent.runLayout();
-                } else {
-                    if (parent instanceof UIPanel) {
-                        if (((UIPanel) parent).enableLayoutLogging) {
-                            try {
-                                throw new RuntimeException("call site");
-                            } catch (RuntimeException re) {
-                                re.printStackTrace();
-                            }
-                        }
-                        ((UIPanel) parent).pleaseContinueLayingOut = true;
-                    }
-                }
-            }
-        }
+        if (relayout)
+            if (parent != null)
+                parent.runLayoutLoop();
     }
 
     public final Size getWantedSize() {
@@ -122,6 +103,34 @@ public abstract class UIElement implements IPointerReceiver {
     public abstract void update(double deltaTime, boolean selected, IPeripherals peripherals);
     public abstract void render(IGrDriver igd);
 
+    // How you should call runLayout.
+    // Failure to call it this way can result in *stuff* not getting updated properly.
+    public final void runLayoutLoop() {
+        if (currentlyLayouting) {
+            weNeedToKeepLayouting = true;
+            return;
+        }
+        currentlyLayouting = true;
+        weNeedToKeepLayouting = true;
+        for (int i = 0; i < 16; i++) {
+            if (!weNeedToKeepLayouting)
+                break;
+            weNeedToKeepLayouting = false;
+            runLayout();
+        }
+        if (weNeedToKeepLayouting) {
+            System.err.println("UI: weNeedToKeepLayouting overload!");
+            weNeedToKeepLayouting = false;
+        }
+        currentlyLayouting = false;
+    }
+
+    // This method *SHOULD* work like this:
+    // 1. Get all wanted sizes
+    // 2. Adjust controls inside
+    // Step 2 will trigger "pleaseContinueLayingOut" to be set if necessary.
+    // UNDER NO CIRCUMSTANCES should this be non-super-called anywhere except from UIElement,
+    //  or classes with an understanding of what they're calling, i.e. their own runLayout method.
     public void runLayout() {
 
     }
@@ -177,8 +186,6 @@ public abstract class UIElement implements IPointerReceiver {
         private LinkedList<UIElement> allElements = new LinkedList<UIElement>();
         private HashSet<UIElement> visElements = new HashSet<UIElement>();
         private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
-        private boolean pleaseContinueLayingOut = false;
-        private boolean enableLayoutLogging = false;
         private boolean released = false;
 
         public UIPanel() {
@@ -246,19 +253,6 @@ public abstract class UIElement implements IPointerReceiver {
                 peripherals.performOffset(-x, -y);
                 uie.update(deltaTime, selected && (selectedElement == uie), peripherals);
                 peripherals.performOffset(x, y);
-            }
-            for (int i = 0; i < 16; i++) {
-                if (!pleaseContinueLayingOut)
-                    break;
-                pleaseContinueLayingOut = false;
-                runLayout();
-            }
-            if (pleaseContinueLayingOut) {
-                System.err.println("UI: pleaseContinueLayingOut overload! Details...");
-                enableLayoutLogging = true;
-                runLayout();
-                enableLayoutLogging = false;
-                pleaseContinueLayingOut = false; // Force termination
             }
         }
 
@@ -410,9 +404,8 @@ public abstract class UIElement implements IPointerReceiver {
             currentElement = element;
             currentElement.parent = this;
             if (wanted) {
-                currentElement.runLayout();
+                currentElement.runLayoutLoop();
                 currentElement.setForcedBounds(this, new Rect(currentElement.getWantedSize()));
-                currentElement.runLayout();
             }
             // As this is meant to be called during the constructor, we take on the proxy's size,
             //  not the other way around. Also, if this fails with a "you can't do that",
