@@ -16,6 +16,7 @@ import gabien.IPeripherals;
  */
 public class UIScrollLayout extends UIElement.UIPanel {
     public final UIScrollbar scrollbar;
+    // This is set to the scrollbar size, in full.
     private int sbSize;
     // In most cases you want this on, but sometimes you don't.
     public boolean fullWanted = true;
@@ -42,24 +43,16 @@ public class UIScrollLayout extends UIElement.UIPanel {
     public void panelsClear() {
         for (UIElement uie : layoutGetElements())
             layoutRemoveElement(uie);
-        runLayout();
+        runLayoutLoop();
     }
 
     public void panelsAdd(UIElement uie) {
+        // Store these offscreen to prevent accidental clicking.
+        Size s = uie.getSize();
+        uie.setForcedBounds(null, new Rect(-s.width, -s.height, s.width, s.height));
         layoutAddElement(uie);
         layoutSetElementVis(uie, false);
-        Size s = uie.getSize();
-        // Store these offscreen to prevent accidental clicking.
-        uie.setForcedBounds(this, new Rect(-s.width, -s.height, s.width, s.height));
-        Size gws = getWantedSize();
-        Size ws = uie.getWantedSize();
-        earlyForceRunLayout = true;
-        // Make reasonable estimates of wanted size.
-        if (scrollbar.vertical) {
-            setWantedSize(new Size(Math.max(ws.width + sbSize, gws.width), gws.height + ws.height));
-        } else {
-            setWantedSize(new Size(gws.width + ws.width, Math.max(ws.height + sbSize, gws.height)));
-        }
+        runLayoutLoop();
     }
 
     // NOTE: What we do here is that we *say* we want everything, and then we take what we can get.
@@ -182,7 +175,6 @@ public class UIScrollLayout extends UIElement.UIPanel {
         inconsistentLayoutKillswitch = 0;
         if (earlyForceRunLayout) {
             runLayout();
-            earlyForceRunLayout = false;
         } else {
             layoutScrollbounds();
         }
