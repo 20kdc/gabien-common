@@ -427,7 +427,12 @@ public abstract class UIElement implements IPointerReceiver {
 
         @Override
         public void runLayout() {
-            currentElement.setForcedBounds(this, new Rect(getSize()));
+            boolean cannotSFB = currentElement.getSize().sizeEquals(getSize());
+            if (!cannotSFB) {
+                currentElement.setForcedBounds(this, new Rect(getSize()));
+            } else {
+                currentElement.runLayoutLoop();
+            }
             setWantedSize(currentElement.getWantedSize());
         }
 

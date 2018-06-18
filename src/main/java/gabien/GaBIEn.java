@@ -19,9 +19,13 @@ public class GaBIEn {
     private static IImage errorImage;
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
     private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
+    private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
 
     // Additional resource load locations.
     public static String[] appPrefixes = new String[0];
+    // Can be used by internal UI.
+    public static String wordSave = "Save", wordLoad = "Load";
+    public static int sysCoreFontSize = 8;
 
     public static double getTime() {
         return internal.getTime();
@@ -223,6 +227,12 @@ public class GaBIEn {
         callbackQueueLock.unlock();
     }
 
+    public static void pushLaterCallback(Runnable runnable) {
+        callbackQueueLock.lock();
+        callbacksToAddAfterCallbacksQueue.add(runnable);
+        callbackQueueLock.unlock();
+    }
+
     public static void runCallbacks() {
         callbackQueueLock.lock();
         while (callbackQueue.size() > 0) {
@@ -230,6 +240,8 @@ public class GaBIEn {
             callbackQueue.removeFirst().run();
             callbackQueueLock.lock();
         }
+        callbackQueue.addAll(callbacksToAddAfterCallbacksQueue);
+        callbacksToAddAfterCallbacksQueue.clear();
         callbackQueueLock.unlock();
     }
 
