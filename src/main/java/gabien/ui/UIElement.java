@@ -401,11 +401,9 @@ public abstract class UIElement implements IPointerReceiver {
             if (element == null)
                 throw new RuntimeException("Cannot add null as the element of a proxy.");
             currentElement = element;
+            if (wanted)
+                currentElement.forceToRecommended();
             currentElement.parent = this;
-            if (wanted) {
-                currentElement.runLayoutLoop();
-                currentElement.setForcedBounds(this, new Rect(currentElement.getWantedSize()));
-            }
             // As this is meant to be called during the constructor, we take on the proxy's size,
             //  not the other way around. Also, if this fails with a "you can't do that",
             //  I'm not sure what you're trying to do, but it sounds fun!

@@ -121,6 +121,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
                 }
             }
             Collections.sort(dirs);
+            dirs.addFirst("..");
             Collections.sort(fils);
             for (final String s : dirs) {
                 if (shouldShow(true, s)) {

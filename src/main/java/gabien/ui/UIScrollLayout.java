@@ -52,7 +52,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
         uie.setForcedBounds(null, new Rect(-s.width, -s.height, s.width, s.height));
         layoutAddElement(uie);
         layoutSetElementVis(uie, false);
-        runLayoutLoop();
+        earlyForceRunLayout = true;
     }
 
     // NOTE: What we do here is that we *say* we want everything, and then we take what we can get.
