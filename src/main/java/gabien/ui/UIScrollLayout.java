@@ -174,7 +174,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
         inconsistentLayoutKillswitch = 0;
         if (earlyForceRunLayout) {
-            runLayout();
+            runLayoutLoop();
         } else {
             layoutScrollbounds();
         }

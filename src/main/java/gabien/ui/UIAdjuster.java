@@ -38,16 +38,7 @@ public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
         };
         layoutAddElement(numberDisplay);
 
-        Rect nBounds = calcWantedSize();
-        setForcedBounds(null, nBounds);
-        setWantedSize(nBounds);
-    }
-
-    private Rect calcWantedSize() {
-        Size incButtonSize = incButton.getWantedSize();
-        Size numberDisplaySize = numberDisplay.getWantedSize();
-        Size decButtonSize = decButton.getWantedSize();
-        return new Rect(0, 0, incButtonSize.width + numberDisplaySize.width + decButtonSize.width, Math.max(incButtonSize.height, Math.max(numberDisplaySize.height, decButtonSize.height)));
+        forceToRecommended();
     }
 
     @Override
@@ -65,7 +56,7 @@ public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
         numberDisplay.setForcedBounds(this, new Rect(dbw, 0, m.width - (dbw + ibw), numberDisplaySize.height));
         incButton.setForcedBounds(this, new Rect(m.width - ibw, 0, ibw, incButtonSize.height));
 
-        setWantedSize(calcWantedSize());
+        setWantedSize(new Rect(0, 0, incButtonSize.width + numberDisplaySize.width + decButtonSize.width, Math.max(incButtonSize.height, Math.max(numberDisplaySize.height, decButtonSize.height))));
     }
 
     @Override

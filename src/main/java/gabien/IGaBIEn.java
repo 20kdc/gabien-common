@@ -7,6 +7,8 @@
 
 package gabien;
 
+import gabien.ui.IConsumer;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -87,4 +89,10 @@ public interface IGaBIEn {
     boolean tryStartTextEditor(String fpath);
 
     void rmFile(String s);
+
+    // Starts a file browser.
+    // This is a replacement for UIFileBrowser, and uses native elements whenever possible.
+    // Regarding the path, the only guarantee is that it'll be null or a valid file path.
+    // It does not necessarily have to match the standard gabien path separator.
+    void startFileBrowser(String text, boolean saving, String exts, IConsumer<String> result);
 }

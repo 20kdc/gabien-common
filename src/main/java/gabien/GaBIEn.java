@@ -7,12 +7,18 @@
 
 package gabien;
 
+import gabien.ui.IConsumer;
+
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
     private static IImage errorImage;
+    private static ReentrantLock callbackQueueLock = new ReentrantLock();
+    private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
 
     // Additional resource load locations.
     public static String[] appPrefixes = new String[0];
@@ -197,5 +203,50 @@ public class GaBIEn {
 
     public static void rmFile(String s) {
         internal.rmFile(s);
+    }
+
+    // exts is in the *.abc;*.def;*.* form
+    // iConsumer is called as part of runCallbacks.
+    // Regarding the path, the only guarantee is that it'll be null or a valid file path.
+    // It does not necessarily have to match the standard gabien path separator.
+    public static void startFileBrowser(String s, boolean saving, String exts, IConsumer<String> iConsumer) {
+        internal.startFileBrowser(s, saving, exts, iConsumer);
+    }
+
+    // invokeLater-alike for the gabien main thread.
+    // This can be used by the application,
+    //  but mostly exists as a way to get application callbacks called on the thread they are expected to be called on.
+
+    public static void pushCallback(Runnable r) {
+        callbackQueueLock.lock();
+        callbackQueue.add(r);
+        callbackQueueLock.unlock();
+    }
+
+    public static void runCallbacks() {
+        callbackQueueLock.lock();
+        while (callbackQueue.size() > 0) {
+            callbackQueueLock.unlock();
+            callbackQueue.removeFirst().run();
+            callbackQueueLock.lock();
+        }
+        callbackQueueLock.unlock();
+    }
+
+    // DT compensation is optional.
+    public static double endFrame(double dTTarg) {
+        runCallbacks();
+        double dT = GaBIEn.timeDelta(false);
+        while (dT < dTTarg) {
+            try {
+                long ofs = (long) ((dT - dTTarg) * 1000);
+                if (ofs > 0)
+                    Thread.sleep(ofs);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            dT = GaBIEn.timeDelta(false);
+        }
+        return GaBIEn.timeDelta(true);
     }
 }
