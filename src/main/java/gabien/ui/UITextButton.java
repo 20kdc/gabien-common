@@ -51,6 +51,6 @@ public class UITextButton extends UIButton {
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
-        contents.render(textBlack, 0, 0, igd);
+        contents.render(textBlack, 0, 0, igd, true);
     }
 }

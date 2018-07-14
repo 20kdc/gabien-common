@@ -19,7 +19,7 @@ public class UILabel extends UIBorderedElement {
     public String text;
     private final Contents contents;
 
-    // Creates a label,with text,and sets the bounds accordingly.
+    // Creates a label, with text, and sets the bounds accordingly.
     public UILabel(String txt, int h) {
         super(2, getRecommendedBorderWidth(h));
         contents = new Contents(h);
@@ -47,7 +47,7 @@ public class UILabel extends UIBorderedElement {
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
-        contents.render(textBlack, 0, 0, igd);
+        contents.render(textBlack, 0, 0, igd, false);
     }
 
     /**
@@ -57,6 +57,7 @@ public class UILabel extends UIBorderedElement {
     public static class Contents {
         private String lastText = "", textFormatted = "";
         private Size lastSize = new Size(0, 0);
+        private Size lastActSize = new Size(0, 0);
         private String lastOverride = null;
         private boolean lastOverrideUE8 = false;
         private int lastBw = 1;
@@ -91,12 +92,16 @@ public class UILabel extends UIBorderedElement {
                 //  and A is what we want to be, width and height alike.
                 Size a = getRecommendedTextSize(text, textHeight, bw);
                 Size b = getRecommendedTextSize(textFormatted, textHeight, bw);
-                sz2 = new Size(a.width, b.height);
+                lastActSize = sz2 = new Size(a.width, b.height);
             }
             return sz2;
         }
 
-        public void render(boolean blackText, int x, int y, IGrDriver igd) {
+        public void render(boolean blackText, int x, int y, IGrDriver igd, boolean centre) {
+            if (centre) {
+                x += (lastSize.width - lastActSize.width) / 2;
+                y += (lastSize.height - lastActSize.height) / 2;
+            }
             FontManager.drawString(igd, x + lastBw, y + lastBw, textFormatted, true, blackText, textHeight);
         }
     }
@@ -123,7 +128,7 @@ public class UILabel extends UIBorderedElement {
             }
             UIBorderedElement.drawBorder(igd, 2, bw, x, y, w, height);
             boolean statusLineBT = UIBorderedElement.getBlackTextFlag(2);
-            statusLine.render(statusLineBT, x, y, igd);
+            statusLine.render(statusLineBT, x, y, igd, false);
         }
 
         private void pokeLastSize(int w, int h) {
