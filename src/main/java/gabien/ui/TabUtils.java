@@ -39,6 +39,8 @@ public class TabUtils {
     // -1 means not shortened, otherwise it's max length.
     protected int shortTabs = -1;
 
+    // If true when draggingTabs reaches zero elements, the parent view tabReorderComplete function is called.
+    private boolean tabReorderDidSomething = false;
     public WeakHashMap<UIWindowView.WVWindow, IPointerReceiver.RelativeResizePointerReceiver> draggingTabs = new WeakHashMap<UIWindowView.WVWindow, IPointerReceiver.RelativeResizePointerReceiver>();
 
     public IPointerReceiver.PointerConnector connector = new IPointerReceiver.PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
@@ -63,6 +65,8 @@ public class TabUtils {
                                             tabReorderer(size.width + (tabW / 2), w);
                                         } else {
                                             draggingTabs.remove(w);
+                                            if (draggingTabs.isEmpty())
+                                                allTabReordersComplete();
                                         }
                                     }
                                 }) {
@@ -70,6 +74,8 @@ public class TabUtils {
                                     public void handlePointerEnd(IPointer state) {
                                         super.handlePointerEnd(state);
                                         draggingTabs.remove(w);
+                                        if (draggingTabs.isEmpty())
+                                            allTabReordersComplete();
                                     }
                                 };
                                 draggingTabs.put(w, rrpr);
@@ -191,6 +197,7 @@ public class TabUtils {
     }
 
     private void tabReorderer(int x, UIWindowView.WVWindow target) {
+        int oldIndex = tabs.indexOf(target);
         // Oscillates if a tab that's being nudged left to make way moves out of range.
         // Since these are always two-frame oscillations, just deal with it the simple way...
         for (int pass = 0; pass < 2; pass++) {
@@ -216,6 +223,15 @@ public class TabUtils {
             UIWindowView.WVWindow w = tabs.remove(selectedIndex);
             tabs.add(expectedIndex, w);
         }
+        int newIndex = tabs.indexOf(target);
+        if (newIndex != oldIndex)
+            tabReorderDidSomething = true;
+    }
+
+    private void allTabReordersComplete() {
+        if (tabReorderDidSomething)
+            parentView.handleTabReorderComplete();
+        tabReorderDidSomething = false;
     }
 
     public static int getTabWidth(UIWindowView.WVWindow window, int shortTab, int h) {

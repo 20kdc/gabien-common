@@ -10,6 +10,7 @@ package gabien.ui;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
 
+import java.util.LinkedList;
 import java.util.Random;
 
 /**
@@ -104,6 +105,11 @@ public class UITabPane extends UIElement.UIPanel {
         // Default behavior: override as you wish
         wvWindow.contents.onWindowClose();
     }
+
+    public void handleTabReorderComplete() {
+        // Default behavior: override as you wish
+    }
+
 
     // Used as a base for drawing.
     protected int getScrollOffsetX() {
@@ -243,6 +249,14 @@ public class UITabPane extends UIElement.UIPanel {
         }
         tabManager.outgoingTabs.add(uiElement);
     }
+
+    public LinkedList<UIWindowView.WVWindow> getTabs() {
+        LinkedList<UIWindowView.WVWindow> wv = new LinkedList<UIWindowView.WVWindow>();
+        wv.addAll(tabManager.tabs);
+        wv.addAll(tabManager.incomingTabs);
+        return wv;
+    }
+
 
     @Override
     public void handlePointerBegin(IPointer state) {
