@@ -166,10 +166,19 @@ public abstract class UIElement implements IPointerReceiver {
 
     // Useful for various things. 'y' renamed to 'i' to shut up warnings.
     public static int sensibleCellDiv(int i, int sz) {
-        int r = i / sz;
         if (i < 0)
-            r--;
-        return r;
+            i -= (sz - 1);
+        return i / sz;
+    }
+
+    // Java's definition of % is weird.
+    // Right now not optimizing since I don't know which operators I can trust.
+    protected static int sensibleCellMod(int i, int sz) {
+        while (i < 0)
+            i += sz;
+        while (i >= sz)
+            i -= sz;
+        return i;
     }
 
     @Override
