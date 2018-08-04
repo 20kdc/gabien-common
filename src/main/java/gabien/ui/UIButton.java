@@ -8,14 +8,14 @@
 package gabien.ui;
 
 
-import gabien.*;
+import gabien.IPeripherals;
 
 /**
  * This was actually a totally different class at one point.
  * Now it's a superclass of UITextButton.
  * Unknown creation date.
  */
-public abstract class UIButton extends UIBorderedElement {
+public abstract class UIButton<ThisClass extends UIButton> extends UIBorderedElement {
     public Runnable onClick;
     public double pressedTime = 0;
     public boolean state = false;
@@ -25,10 +25,10 @@ public abstract class UIButton extends UIBorderedElement {
         super(0, bw);
     }
 
-    public UIButton togglable(boolean st) {
+    public ThisClass togglable(boolean st) {
         state = st;
         toggle = true;
-        return this;
+        return (ThisClass) this;
     }
 
     @Override

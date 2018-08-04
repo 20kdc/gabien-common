@@ -13,7 +13,7 @@ import gabien.IPeripherals;
 /**
  * Changed on 16th February 2018 for the usual fun w/ the redesign.
  */
-public class UITextButton extends UIButton {
+public class UITextButton extends UIButton<UITextButton> {
     public String text;
     private final UILabel.Contents contents;
     
@@ -26,12 +26,6 @@ public class UITextButton extends UIButton {
         setWantedSize(getRecommendedTextSize("", h, getBorderWidth()));
         // This overrides the previous wanted size!
         forceToRecommended();
-    }
-
-    @Override
-    public UITextButton togglable(boolean st) {
-        super.togglable(st);
-        return this;
     }
 
     @Override
