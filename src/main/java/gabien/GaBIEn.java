@@ -209,6 +209,10 @@ public class GaBIEn {
         internal.rmFile(s);
     }
 
+    public static void setBrowserDirectory(String s) {
+        internal.setBrowserDirectory(s);
+    }
+
     // exts is in the *.abc;*.def;*.* form
     // iConsumer is called as part of runCallbacks.
     // Regarding the path, the only guarantee is that it'll be null or a valid file path.

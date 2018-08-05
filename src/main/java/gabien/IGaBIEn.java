@@ -90,6 +90,10 @@ public interface IGaBIEn {
 
     void rmFile(String s);
 
+    // Sets the file browser directory path.
+    // Same path format as usual.
+    void setBrowserDirectory(String s);
+
     // Starts a file browser.
     // This is a replacement for UIFileBrowser, and uses native elements whenever possible.
     // Regarding the path, the only guarantee is that it'll be null or a valid file path.
