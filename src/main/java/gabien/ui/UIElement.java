@@ -173,7 +173,7 @@ public abstract class UIElement implements IPointerReceiver {
 
     // Java's definition of % is weird.
     // Right now not optimizing since I don't know which operators I can trust.
-    protected static int sensibleCellMod(int i, int sz) {
+    public static int sensibleCellMod(int i, int sz) {
         while (i < 0)
             i += sz;
         while (i >= sz)
