@@ -66,11 +66,11 @@ public class UISplitterLayout extends UIElement.UIPanel {
             if (!newAlg)
                 exactPos = oldAlg;
         } else {
-            // Prioritize the element that's given the least room,
-            // since 1.0d/0.0d are used on elements that should use exactly what they want and no more/less
-            if (splitPoint >= 0.5d) {
+            // If the weight is 1/0, just prioritize that,
+            //  since 1.0d/0.0d are used on elements that should use exactly what they want and no more/less
+            if (splitPoint == 1) {
                 exactPos = allSpace - bInitial;
-            } else {
+            } else if (splitPoint == 0) {
                 exactPos = aInitial;
             }
             // That's not working? go to minimum usability mode
