@@ -48,11 +48,15 @@ public abstract class UIButton<ThisClass extends UIButton> extends UIBorderedEle
             if (toggle) {
                 state = !state;
             } else {
-                state = true;
-                pressedTime = 0.5;
+                enableStateForClick();
             }
             if (onClick != null)
                 onClick.run();
         }
+    }
+
+    public void enableStateForClick() {
+        state = true;
+        pressedTime = 0.5;
     }
 }
