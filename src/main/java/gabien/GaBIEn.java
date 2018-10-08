@@ -255,9 +255,12 @@ public class GaBIEn {
         double dT = GaBIEn.timeDelta(false);
         while (dT < dTTarg) {
             try {
-                long ofs = (long) ((dT - dTTarg) * 1000);
-                if (ofs > 0)
+                long ofs = (long) ((dTTarg - dT) * 1000);
+                if (ofs > 0) {
                     Thread.sleep(ofs);
+                } else {
+                    Thread.yield();
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
