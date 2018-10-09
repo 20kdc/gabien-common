@@ -118,7 +118,7 @@ public abstract class UIElement implements IPointerReceiver {
             runLayout();
         }
         if (weNeedToKeepLayouting) {
-            System.err.println("UI: weNeedToKeepLayouting overload!");
+            System.err.println("UI: weNeedToKeepLayouting overload @ " + this.getClass() + " ( " + this + " )!");
             weNeedToKeepLayouting = false;
         }
         currentlyLayouting = false;
