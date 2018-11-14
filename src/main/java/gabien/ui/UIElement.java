@@ -10,7 +10,6 @@ package gabien.ui;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
 
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
 
@@ -34,7 +33,12 @@ public abstract class UIElement implements IPointerReceiver {
     // In the second case, this prevents a sub-element from calling a parent element's runLayout...
     //  during that same runLayout.
     private boolean currentlyLayouting = false;
+    // Fun fact: This confuses IDEA and/or the compiler. It thinks this is convertable to a local,
+    //  but what happens here is that a runLayoutLoop indirectly (via setWantedSize in a subelement) causes another runLayoutLoop call
+    //  in the same instance, which sets the variable to true, signalling to the first call that we need to keep going.
     private boolean weNeedToKeepLayouting = false;
+    // Used rather than a HashSet.
+    private boolean visibleFlag = false;
 
     public UIElement() {
         // This is sufficient.
@@ -191,8 +195,13 @@ public abstract class UIElement implements IPointerReceiver {
      */
     public static abstract class UIPanel extends UIElement {
         private UIElement selectedElement;
+        // DO NOT CHANGE WITHOUT SETTING ALLELEMENTSCHANGED. This will cause all sorts of fun and interesting bugs.
+        // Much like how stepping in a particle accelerator will cause all sorts of fun and interesting effects on your body.
         private LinkedList<UIElement> allElements = new LinkedList<UIElement>();
-        private HashSet<UIElement> visElements = new HashSet<UIElement>();
+        // As this can under some circumstances change, 'lock it in' with for (I i : a) syntax or a local variable before usage,
+        //  and use recacheElements before that because it's a cache and might be out of date otherwise.
+        private UIElement[] cachedAllElements;
+        private boolean allElementsChanged = true;
         private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
         private boolean released = false;
 
@@ -204,12 +213,20 @@ public abstract class UIElement implements IPointerReceiver {
             super(w, h);
         }
 
+        private void recacheElements() {
+            if (allElementsChanged) {
+                cachedAllElements = allElements.toArray(new UIElement[0]);
+                allElementsChanged = false;
+            }
+        }
+
         protected final void layoutAddElement(UIElement uie) {
             if (uie.parent != null)
                 throw new RuntimeException("UIE " + uie + " already has parent " + uie.parent + " in " + this);
             uie.parent = this;
+            uie.visibleFlag = true;
             allElements.add(uie);
-            visElements.add(uie);
+            allElementsChanged = true;
         }
 
         protected final void layoutRemoveElement(UIElement uie) {
@@ -219,31 +236,29 @@ public abstract class UIElement implements IPointerReceiver {
             if (selectedElement == uie)
                 selectedElement = null;
             allElements.remove(uie);
-            visElements.remove(uie);
+            allElementsChanged = true;
         }
 
         protected final void layoutSetElementVis(UIElement uie, boolean visible) {
-            if (!allElements.contains(uie))
-                throw new RuntimeException("Can't set visibility of an element we don't have in " + this);
-            if (visible) {
-                visElements.add(uie);
-            } else {
-                visElements.remove(uie);
-            }
+            if (uie.parent != this)
+                throw new RuntimeException("Can't set visibility of an element " + uie + " we don't have in " + this);
+            uie.visibleFlag = visible;
         }
 
         protected final boolean layoutContainsElement(UIElement uie) {
-            return allElements.contains(uie);
+            return uie.parent == this;
         }
 
         protected final boolean layoutElementVisible(UIElement uie) {
-            return visElements.contains(uie);
+            if (uie.parent != this)
+                throw new RuntimeException("Can't get visibility of an element " + uie + " we don't have in " + this);
+            return uie.visibleFlag;
         }
 
         protected final void layoutSelect(UIElement uie) {
             if (uie != null)
-                if (!allElements.contains(uie))
-                    throw new RuntimeException("Can't select something we don't have.");
+                if (uie.parent != this)
+                    throw new RuntimeException("Can't select something " + uie + " we " + this + " don't have.");
             selectedElement = uie;
         }
 
@@ -254,8 +269,9 @@ public abstract class UIElement implements IPointerReceiver {
         @Override
         public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
             if (released)
-                throw new RuntimeException("Trying to use released panel");
-            for (UIElement uie : new LinkedList<UIElement>(allElements)) {
+                throw new RuntimeException("Trying to use released panel.");
+            recacheElements();
+            for (UIElement uie : cachedAllElements) {
                 int x = uie.elementBounds.x;
                 int y = uie.elementBounds.y;
                 peripherals.performOffset(-x, -y);
@@ -267,17 +283,19 @@ public abstract class UIElement implements IPointerReceiver {
         @Override
         public void render(IGrDriver igd) {
             if (released)
-                throw new RuntimeException("Trying to use released panel");
+                throw new RuntimeException("Trying to use released panel.");
             // javac appears to be having conflicting memories.
             // elementBounds: invalid (something about not being static)
             // this.elementBounds: invalid (access error)
             // myself.elementBounds: ok
             UIElement myself = this;
-            for (UIElement uie : new LinkedList<UIElement>(visElements))
-                scissoredRender(uie, igd, myself.elementBounds.width, myself.elementBounds.height);
+            recacheElements();
+            for (UIElement uie : cachedAllElements)
+                if (uie.visibleFlag)
+                    scissoredRender(uie, igd);
         }
 
-        public static void scissoredRender(UIElement uie, IGrDriver igd, int w, int h) {
+        public static void scissoredRender(UIElement uie, IGrDriver igd) {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
             // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
@@ -297,8 +315,8 @@ public abstract class UIElement implements IPointerReceiver {
 
             left = Math.max(osTX + left, Math.max(osLeft, 0));
             top = Math.max(osTY + top, Math.max(osTop, 0));
-            right = Math.min(osTX + right, Math.min(osTX + w, osRight));
-            bottom = Math.min(osTY + bottom, Math.min(osTY + h, osBottom));
+            right = Math.min(osTX + right, osRight);
+            bottom = Math.min(osTY + bottom, osBottom);
 
             localBuffer[0] += x;
             localBuffer[1] += y;
@@ -324,21 +342,25 @@ public abstract class UIElement implements IPointerReceiver {
 
         @Override
         public void handleMousewheel(int x, int y, boolean north) {
-            for (UIElement uie : allElements) {
-                Rect r = uie.getParentRelativeBounds();
-                if (r.contains(x, y))
+            recacheElements();
+            for (UIElement uie : cachedAllElements) {
+                Rect r = uie.elementBounds;
+                if (r.contains(x, y)) {
                     uie.handleMousewheel(x - r.x, y - r.y, north);
+                    return;
+                }
             }
         }
 
         @Override
         public void handlePointerBegin(IPointer state) {
             selectedElement = null;
-            for (UIElement uie : allElements) {
+            recacheElements();
+            for (UIElement uie : cachedAllElements) {
                 if (uie.elementBounds.contains(state.getX(), state.getY())) {
                     selectedElement = uie;
-                    int x = selectedElement.elementBounds.x;
-                    int y = selectedElement.elementBounds.y;
+                    int x = uie.elementBounds.x;
+                    int y = uie.elementBounds.y;
                     state.performOffset(-x, -y);
                     selectedElement.handlePointerBegin(state);
                     pointerClickMapping.put(state, selectedElement);
@@ -352,7 +374,7 @@ public abstract class UIElement implements IPointerReceiver {
         public void handlePointerUpdate(IPointer state) {
             UIElement uie = pointerClickMapping.get(state);
             if (uie != null) {
-                if (allElements.contains(uie)) {
+                if (layoutContainsElement(uie)) {
                     int x = uie.elementBounds.x;
                     int y = uie.elementBounds.y;
                     state.performOffset(-x, -y);
@@ -366,7 +388,7 @@ public abstract class UIElement implements IPointerReceiver {
         public void handlePointerEnd(IPointer state) {
             UIElement uie = pointerClickMapping.get(state);
             if (uie != null) {
-                if (allElements.contains(uie)) {
+                if (layoutContainsElement(uie)) {
                     int x = uie.elementBounds.x;
                     int y = uie.elementBounds.y;
                     state.performOffset(-x, -y);
@@ -382,7 +404,7 @@ public abstract class UIElement implements IPointerReceiver {
             for (UIElement uie : allElements)
                 uie.parent = null;
             allElements.clear();
-            visElements.clear();
+            allElementsChanged = true;
             released = true;
         }
     }

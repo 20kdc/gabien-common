@@ -29,7 +29,7 @@ public class UITabPane extends UIElement.UIPanel {
     private int tabOverheadHeight;
     private int scrollAreaX;
 
-    protected UIWindowView.WVWindow selectedTab;
+    protected TabUtils.Tab selectedTab;
 
     private final UIScrollbar tabScroller;
 
@@ -101,7 +101,7 @@ public class UITabPane extends UIElement.UIPanel {
         }
     }
 
-    public void handleClosedUserTab(UIWindowView.WVWindow wvWindow, boolean selfDestruct) {
+    public void handleClosedUserTab(TabUtils.Tab wvWindow, boolean selfDestruct) {
         // Default behavior: override as you wish
         wvWindow.contents.onWindowClose();
     }
@@ -136,7 +136,7 @@ public class UITabPane extends UIElement.UIPanel {
         while (true) {
             int tl = 0;
             int longestTabName = 0;
-            for (UIWindowView.WVWindow tab : tabManager.tabs) {
+            for (TabUtils.Tab tab : tabManager.tabs) {
                 longestTabName = Math.max(tab.contents.toString().length(), longestTabName);
                 tl += TabUtils.getTabWidth(tab, tabManager.shortTabs, tabManager.tabBarHeight);
             }
@@ -197,7 +197,7 @@ public class UITabPane extends UIElement.UIPanel {
             return;
         }
         for (int i = 0; i < 2; i++) {
-            for (UIWindowView.WVWindow wv : tabManager.tabs) {
+            for (TabUtils.Tab wv : tabManager.tabs) {
                 if (wv.contents.equals(target)) {
                     // verified, actually do it
                     for (UIElement uie : layoutGetElements())
@@ -220,7 +220,7 @@ public class UITabPane extends UIElement.UIPanel {
 
     public int getTabIndex() {
         int idx = 0;
-        for (UIWindowView.WVWindow tab : tabManager.tabs) {
+        for (TabUtils.Tab tab : tabManager.tabs) {
             if (selectedTab == tab)
                 return idx;
             idx++;
@@ -232,26 +232,26 @@ public class UITabPane extends UIElement.UIPanel {
         return tabManager.shortTabs != -1;
     }
 
-    public void addTab(UIWindowView.WVWindow wvWindow) {
+    public void addTab(TabUtils.Tab wvWindow) {
         tabManager.incomingTabs.add(wvWindow);
     }
 
-    public void removeTab(UIElement uiElement) {
+    public void removeTab(TabUtils.Tab tab) {
         // Possible double-presence if we don't get rid of it NOW.
         // On next render of tabManager, the outgoing-tab is processed.
         // Other stuff should be prepared for this case.
         if (selectedTab != null) {
-            if (selectedTab.contents == uiElement) {
+            if (selectedTab.equals(tab)) {
                 layoutRemoveElement(selectedTab.contents);
                 selectedTab = null;
                 tabManager.findReplacementTab();
             }
         }
-        tabManager.outgoingTabs.add(uiElement);
+        tabManager.outgoingTabs.add(tab);
     }
 
-    public LinkedList<UIWindowView.WVWindow> getTabs() {
-        LinkedList<UIWindowView.WVWindow> wv = new LinkedList<UIWindowView.WVWindow>();
+    public LinkedList<TabUtils.Tab> getTabs() {
+        LinkedList<TabUtils.Tab> wv = new LinkedList<TabUtils.Tab>();
         wv.addAll(tabManager.tabs);
         wv.addAll(tabManager.incomingTabs);
         return wv;

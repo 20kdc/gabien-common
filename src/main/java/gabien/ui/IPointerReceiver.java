@@ -58,6 +58,20 @@ public interface IPointerReceiver {
         }
     }
 
+    class NopPointerReceiver implements IPointerReceiver {
+        @Override
+        public void handlePointerBegin(IPointer state) {
+        }
+
+        @Override
+        public void handlePointerUpdate(IPointer state) {
+        }
+
+        @Override
+        public void handlePointerEnd(IPointer state) {
+        }
+    }
+
     class TransformingElementPointerReceiver implements IPointerReceiver {
         public final UIElement element;
         public TransformingElementPointerReceiver(UIElement uie) {
@@ -89,7 +103,7 @@ public interface IPointerReceiver {
         }
     }
 
-    public class RelativeResizePointerReceiver implements IPointerReceiver {
+    class RelativeResizePointerReceiver implements IPointerReceiver {
         public final Size firstSize;
         public int xSt, ySt;
         public final IConsumer<Size> consumer;

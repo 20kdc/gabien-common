@@ -21,10 +21,10 @@ import java.util.WeakHashMap;
  * Created on February 13th 2018.
  */
 public class TabUtils {
-    public LinkedList<UIWindowView.WVWindow> tabs = new LinkedList<UIWindowView.WVWindow>();
-    public LinkedList<UIWindowView.WVWindow> incomingTabs = new LinkedList<UIWindowView.WVWindow>();
+    public LinkedList<Tab> tabs = new LinkedList<Tab>();
+    public LinkedList<Tab> incomingTabs = new LinkedList<Tab>();
 
-    public HashSet<UIElement> outgoingTabs = new HashSet<UIElement>();
+    public HashSet<Tab> outgoingTabs = new HashSet<Tab>();
 
     public final UITabPane parentView;
 
@@ -41,7 +41,7 @@ public class TabUtils {
 
     // If true when draggingTabs reaches zero elements, the parent view tabReorderComplete function is called.
     private boolean tabReorderDidSomething = false;
-    public WeakHashMap<UIWindowView.WVWindow, IPointerReceiver.RelativeResizePointerReceiver> draggingTabs = new WeakHashMap<UIWindowView.WVWindow, IPointerReceiver.RelativeResizePointerReceiver>();
+    public WeakHashMap<Tab, IPointerReceiver.RelativeResizePointerReceiver> draggingTabs = new WeakHashMap<Tab, IPointerReceiver.RelativeResizePointerReceiver>();
 
     public IPointerReceiver.PointerConnector connector = new IPointerReceiver.PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
         @Override
@@ -51,7 +51,7 @@ public class TabUtils {
             if (y < tabBarHeight) {
                 if (y >= 0) {
                     int pos = parentView.getScrollOffsetX();
-                    for (final UIWindowView.WVWindow w : tabs) {
+                    for (final Tab w : tabs) {
                         final int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
                         if (x < (pos + tabW)) {
                             if (TabUtils.clickInTab(w, x - pos, y - parentView.tabBarY, tabW, tabBarHeight))
@@ -106,19 +106,19 @@ public class TabUtils {
 
         UIBorderedElement.drawBorder(igd, 8, 0, 0, tabBarY, bounds.width, tabBarHeight);
 
-        LinkedList<UIWindowView.WVWindow> outgoing2 = new LinkedList<UIWindowView.WVWindow>();
-        HashSet<UIElement> outgoingTabs2 = outgoingTabs;
-        outgoingTabs = new HashSet<UIElement>();
-        for (UIWindowView.WVWindow w : tabs) {
+        LinkedList<Tab> outgoing2 = new LinkedList<Tab>();
+        HashSet<Tab> outgoingTabs2 = outgoingTabs;
+        outgoingTabs = new HashSet<Tab>();
+        for (Tab w : tabs) {
             boolean reqU = w.contents.requestsUnparenting();
-            if (outgoingTabs2.contains(w.contents) || reqU) {
+            if (outgoingTabs2.contains(w) || reqU) {
                 willUpdateLater = true;
                 outgoing2.add(w);
                 parentView.handleClosedUserTab(w, reqU);
             }
         }
         if (parentView.selectedTab != null)
-            if (outgoingTabs2.contains(parentView.selectedTab.contents))
+            if (outgoingTabs2.contains(parentView.selectedTab))
                 findReplacementTab();
         tabs.removeAll(outgoing2);
 
@@ -128,7 +128,7 @@ public class TabUtils {
         for (int pass = 0; pass < (((draggingTabs.size() > 0) && canDragTabs) ? 2 : 1); pass++) {
             int pos = parentView.getScrollOffsetX();
             boolean toggle = false;
-            for (UIWindowView.WVWindow w : tabs) {
+            for (Tab w : tabs) {
                 // This is used for all rendering.
                 int theDisplayOX = pos;
                 int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
@@ -196,7 +196,7 @@ public class TabUtils {
         return false;
     }
 
-    private void tabReorderer(int x, UIWindowView.WVWindow target) {
+    private void tabReorderer(int x, Tab target) {
         int oldIndex = tabs.indexOf(target);
         // Oscillates if a tab that's being nudged left to make way moves out of range.
         // Since these are always two-frame oscillations, just deal with it the simple way...
@@ -206,7 +206,7 @@ public class TabUtils {
             int selectedIndex = -1;
             int pos = parentView.getScrollOffsetX();
             int i = 0;
-            for (UIWindowView.WVWindow w : tabs) {
+            for (Tab w : tabs) {
                 int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
                 pos += tabW;
                 if (x < pos)
@@ -220,7 +220,7 @@ public class TabUtils {
                 expectedIndex = tabs.size() - 1;
             if (selectedIndex == -1)
                 return;
-            UIWindowView.WVWindow w = tabs.remove(selectedIndex);
+            Tab w = tabs.remove(selectedIndex);
             tabs.add(expectedIndex, w);
         }
         int newIndex = tabs.indexOf(target);
@@ -234,7 +234,7 @@ public class TabUtils {
         tabReorderDidSomething = false;
     }
 
-    public static int getTabWidth(UIWindowView.WVWindow window, int shortTab, int h) {
+    public static int getTabWidth(Tab window, int shortTab, int h) {
         int margin = h / 8;
         int tabExMargin = margin + (margin / 2);
         int textHeight = h - (margin * 2);
@@ -243,7 +243,7 @@ public class TabUtils {
         return FontManager.getLineLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
     }
 
-    public static String getVisibleTabName(UIWindowView.WVWindow w, int shortTab) {
+    public static String getVisibleTabName(Tab w, int shortTab) {
         String name = w.contents.toString();
         if (shortTab != -1)
             return name.substring(0, Math.min(name.length(), shortTab));
@@ -260,7 +260,7 @@ public class TabUtils {
         return h + ((h / 8) * 2);
     }
 
-    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, UIWindowView.IWVWindowIcon[] icons) {
+    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, TabIcon[] icons) {
         int margin = h / 8;
         int textHeight = h - (margin * 2);
         int tabExMargin = margin + (margin / 2);
@@ -271,7 +271,7 @@ public class TabUtils {
         FontManager.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, UIBorderedElement.getBlackTextFlag(border), textHeight);
 
         int icoBack = h;
-        for (UIWindowView.IWVWindowIcon i : icons) {
+        for (TabIcon i : icons) {
             // sometimes too bright, deal with that
             int size = h - (tabIcoMargin * 2);
             int subMargin = tabIcoMargin / 2;
@@ -281,20 +281,39 @@ public class TabUtils {
         }
     }
 
-    public static boolean clickInTab(UIWindowView.WVWindow wn, int x, int y, int w, int h) {
+    public static boolean clickInTab(Tab wn, int x, int y, int w, int h) {
         int tabIcoMargin = h / 4;
 
         int icoBack = h;
-        for (UIWindowView.IWVWindowIcon i : wn.icons) {
+        for (TabIcon i : wn.icons) {
             // sometimes too bright, deal with that
             int size = h - (tabIcoMargin * 2);
             Rect rc = new Rect(w - (icoBack - tabIcoMargin), tabIcoMargin, size, size);
             if (rc.contains(x, y)) {
-                i.click();
+                i.click(wn);
                 return true;
             }
             icoBack += h;
         }
         return false;
+    }
+
+    public interface TabIcon {
+        void draw(IGrDriver igd, int x, int y, int size);
+
+        // The 'parent' instance provided must be usable to remove the tab.
+        void click(Tab parent);
+    }
+
+    public static class Tab {
+        // requestsUnparenting and onWindowClosed are called on this.
+        // The bounds position is controlled by the tab host (such as a UIWindowView.TabShell).
+        public final UIElement contents;
+        public final TabIcon[] icons;
+
+        public Tab(UIElement con, TabIcon[] ico) {
+            contents = con;
+            icons = ico;
+        }
     }
 }

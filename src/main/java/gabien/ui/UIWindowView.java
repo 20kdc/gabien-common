@@ -10,144 +10,49 @@ package gabien.ui;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
 
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Random;
 
 /**
  * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.
- * However, this does implement the root-disconnected callback, and request-close.
- * The request-close triggers a blank method for extra post-close behavior for... reasons.
+ * However, TabShell should be a good base, implementing most things you could want.
  * Created on 12/27/16. Revamped on December 15th, 2017.
  * Ported on February 17th, 2018, as part of what I'm now calling "Project IPCRESS" for no discernible reason.
  * (Oh, shush, if you were doing this you'd go mad too.)
+ * Revamped yet again ('Shell') starting November 13th, 2018.
  */
-public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WVWindow> {
-    public UIElement backing;
-    public final LinkedList<WVWindow> windowList = new LinkedList<WVWindow>();
-    private HashSet<UIElement> upcomingManualRemovals = new HashSet<UIElement>();
-    private final LinkedList<WVWindow> upcomingWindowList = new LinkedList<WVWindow>();
+public class UIWindowView extends UIElement {
+
+    // Rather than use the 'upcoming' system, this system is used instead:
+    private final LinkedList<IShell> desktop = new LinkedList<IShell>();
+    // Entirely visual.
+    public IShell selectedWindow;
+    private IShell[] desktopCache = new IShell[0];
+    private boolean desktopChanged = false;
+
     private final IPointerReceiver.PointerConnector connector;
     private boolean clearKeysLater = false;
-    private boolean backingSelected = false;
 
-    // This ought to be used for frame calculations
     public int windowTextHeight = 12;
     public int sizerVisual = 3;
     public int sizerActual = 8;
+
+    public int getWindowFrameHeight() {
+        return TabUtils.getHeight(windowTextHeight);
+    }
+
 
     public UIWindowView() {
         connector = new PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
             @Override
             public IPointerReceiver apply(IPointer iPointer) {
-                int x = iPointer.getX();
-                int y = iPointer.getY();
-                boolean buttonOne = iPointer.getType() == IPointer.PointerType.Generic;
-                boolean wasBackingSelected = backingSelected;
-                backingSelected = false;
-                int index = windowList.size();
-                int frameHeight = getWindowFrameHeight();
-                for (Iterator<WVWindow> i = windowList.descendingIterator(); i.hasNext(); ) {
-                    index--;
-                    final WVWindow uie = i.next();
-                    Rect innerWindow = uie.contents.getParentRelativeBounds();
-                    final Rect windowFrame = new Rect(innerWindow.x, innerWindow.y - frameHeight, innerWindow.width, frameHeight);
-
-                    // ABC
-                    // D E
-                    // FGH
-                    Rect windowSz = new Rect(innerWindow.x - sizerActual, innerWindow.y - (frameHeight + sizerActual), innerWindow.width + (sizerActual * 2), frameHeight + innerWindow.height + (sizerActual * 2));
-
-                    if (innerWindow.contains(x, y)) {
-                        clearKeysLater = true;
-                        windowList.remove(index);
-                        windowList.addLast(uie);
-                        return new IPointerReceiver.TransformingElementPointerReceiver(uie.contents);
-                    }
-                    if (windowFrame.contains(x, y)) {
-                        clearKeysLater = true;
-                        windowList.remove(index);
-                        windowList.addLast(uie);
-                        if (buttonOne)
-                            if (TabUtils.clickInTab(uie, x - windowFrame.x, y - windowFrame.y, innerWindow.width, windowFrame.height))
-                                return null;
-                        // Dragging...
-                        return new IPointerReceiver.RelativeResizePointerReceiver(innerWindow.x, innerWindow.y, new IConsumer<Size>() {
-                            @Override
-                            public void accept(Size size) {
-                                if (windowList.contains(uie)) {
-                                    Rect r = uie.contents.getParentRelativeBounds();
-                                    uie.contents.setForcedBounds(null, new Rect(size.width, size.height, r.width, r.height));
-                                    windowBoundsCheck(uie);
-                                }
-                            }
-                        });
-                    }
-                    // if it hasn't hit the other two, check for the sizer
-                    if (windowSz.contains(x, y)) {
-                        clearKeysLater = true;
-                        windowList.remove(index);
-                        windowList.addLast(uie);
-                        int px = 0;
-                        int py = 0;
-                        int tX = innerWindow.width / 3;
-                        int tY = (innerWindow.height + frameHeight) / 3;
-                        if (x < (innerWindow.x + tX))
-                            px--;
-                        if (x >= (innerWindow.x + innerWindow.width - tX))
-                            px++;
-                        if (y < ((innerWindow.y - frameHeight) + tY))
-                            py--;
-                        if (y >= ((innerWindow.y - frameHeight) + innerWindow.height - tY))
-                            py++;
-                        final int fpx = px;
-                        final int fpy = py;
-                        // Dragging...
-                        return new IPointerReceiver.RelativeResizePointerReceiver(fpx == -1 ? innerWindow.x : innerWindow.width, fpy == -1 ? innerWindow.y : innerWindow.height, new IConsumer<Size>() {
-                            @Override
-                            public void accept(Size size) {
-                                if (windowList.contains(uie)) {
-                                    Rect r = uie.contents.getParentRelativeBounds();
-                                    int a = r.x;
-                                    int b = r.y;
-                                    int c = r.width;
-                                    int d = r.height;
-                                    a = processFPA(fpx, size.width, r.x, r.width);
-                                    c = processFPB(fpx, size.width, r.x, r.width);
-                                    b = processFPA(fpy, size.height, r.y, r.height);
-                                    d = processFPB(fpy, size.height, r.y, r.height);
-                                    uie.contents.setForcedBounds(null, new Rect(a, b, c, d));
-                                    windowBoundsCheck(uie);
-                                }
-                            }
-
-                            private int processFPA(int fp, int sz, int l, int s) {
-                                if (fp == -1) {
-                                    return sz;
-                                } else if (fp == 1) {
-                                    return l;
-                                }
-                                return l;
-                            }
-
-                            private int processFPB(int fp, int sz, int l, int s) {
-                                if (fp == -1) {
-                                    return s - (sz - l);
-                                } else if (fp == 1) {
-                                    return sz;
-                                }
-                                return s;
-                            }
-                        });
-                    }
+                updateDesktopCache();
+                IShell[] array = desktopCache;
+                for (int i = array.length - 1; i >= 0; i--) {
+                    IPointerReceiver ipr = array[i].provideReceiver(iPointer);
+                    if (ipr != null)
+                        return ipr;
                 }
-                // didn't hit anything?
-                if (!wasBackingSelected)
-                    clearKeysLater = true;
-                backingSelected = true;
-                if (backing != null)
-                    return new IPointerReceiver.TransformingElementPointerReceiver(backing);
                 return null;
             }
         });
@@ -159,120 +64,23 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
             peripherals.clearKeys();
             clearKeysLater = false;
         }
-        if (backing != null)
-            backing.update(deltaTime, selected && backingSelected, peripherals);
-        int remaining = windowList.size();
-        for (WVWindow window : windowList) {
-            remaining--;
-            Rect p = window.contents.getParentRelativeBounds();
-            peripherals.performOffset(-p.x, -p.y);
-            window.contents.update(deltaTime, selected && (!backingSelected) && (remaining == 0), peripherals);
-            peripherals.performOffset(p.x, p.y);
-        }
+        updateDesktopCache();
+        for (IShell shl : desktopCache)
+            shl.update(deltaTime, selected, peripherals);
     }
 
     @Override
     public void render(IGrDriver igd) {
-        windowList.addAll(upcomingWindowList);
-        upcomingWindowList.clear();
-        int remaining = windowList.size();
-        Size bounds = getSize();
-        if (backing != null) {
-            Rect backOldBounds = backing.getParentRelativeBounds();
-            boolean backingNeedsRefresh = false;
-            if (backOldBounds.x != 0)
-                backingNeedsRefresh = true;
-            if (backOldBounds.y != 0)
-                backingNeedsRefresh = true;
-            if (backOldBounds.width != bounds.width)
-                backingNeedsRefresh = true;
-            if (backOldBounds.height != bounds.height)
-                backingNeedsRefresh = true;
-            if (backingNeedsRefresh)
-                backing.setForcedBounds(null, new Rect(0, 0, bounds.width, bounds.height));
-            backing.render(igd);
-        } else {
-            igd.clearRect(0, 0, 64, 0, 0, bounds.width, bounds.height);
-        }
-
-        LinkedList<WVWindow> wantsDeleting = new LinkedList<WVWindow>();
-        int windowFrameHeight = getWindowFrameHeight();
-        HashSet<UIElement> upcomingManualRemovals2 = upcomingManualRemovals;
-        upcomingManualRemovals = new HashSet<UIElement>();
-        for (WVWindow uie : windowList) {
-            boolean requestedUnparenting = uie.contents.requestsUnparenting();
-            if (upcomingManualRemovals2.contains(uie.contents) || requestedUnparenting) {
-                wantsDeleting.add(uie);
-                remaining--;
-                handleClosedUserWindow(uie, requestedUnparenting);
-                continue;
-            }
-            // Just do this, just in case.
-            remaining--;
-            windowBoundsCheck(uie);
-            boolean winSelected = (!backingSelected) && (remaining == 0);
-            Rect b = uie.contents.getParentRelativeBounds();
-
-            UIBorderedElement.drawBorder(igd, 5, sizerVisual, b.x - sizerVisual,b.y - (windowFrameHeight + sizerVisual), b.width + (sizerVisual * 2), b.height + (windowFrameHeight + (sizerVisual * 2)));
-
-            TabUtils.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, uie.contents.toString(), uie.icons);
-
-            UIPanel.scissoredRender(uie.contents, igd, bounds.width, bounds.height);
-        }
-        windowList.removeAll(wantsDeleting);
+        updateDesktopCache();
+        for (IShell shl : desktopCache)
+            shl.render(igd);
     }
 
-    public void handleClosedUserWindow(WVWindow wvWindow, boolean selfDestruct) {
-        // Default behavior: override as you wish
-        wvWindow.contents.onWindowClose();
-    }
-
-    @Override
-    public void accept(WVWindow win) {
-        if (upcomingWindowList.contains(win)) {
-            System.out.println("Warning: Window already in upcoming window list, this would just break stuff");
-            return;
-        } else if (windowList.contains(win)) {
-            System.out.println("Warning: Window already in window list, this would just break stuff");
-            return;
+    private void updateDesktopCache() {
+        if (desktopChanged) {
+            desktopCache = desktop.toArray(new IShell[0]);
+            desktopChanged = false;
         }
-        Rect r = win.contents.getParentRelativeBounds();
-        Size g = getSize();
-        int area = g.width - r.width;
-        if (area < 0)
-            area = 0;
-        int cX = new Random().nextInt(area + 1);
-        if ((g.height - 64) < r.height)
-            win.contents.setForcedBounds(null, new Rect(cX, 0, r.width, r.height));
-        win.contents.setForcedBounds(null, new Rect(cX, 64, r.width, r.height));
-        upcomingWindowList.add(win);
-    }
-
-    private void windowBoundsCheck(WVWindow wv) {
-        int fh = getWindowFrameHeight();
-        Rect scr = getParentRelativeBounds();
-        Rect s = wv.contents.getParentRelativeBounds();
-        int ox = s.x;
-        int oy = s.y;
-        if (ox < 0)
-            ox = 0;
-        if (ox > (scr.width - s.width))
-            ox = scr.width - s.width;
-        if (oy < fh)
-            oy = fh;
-        if (oy > scr.height)
-            oy = scr.height;
-        int ow = s.width;
-        int oh = s.height;
-        // Can only happen at this point if forced left by above code?
-        if (ox < 0) {
-            ow += ox;
-            ox = 0;
-        }
-        ow = Math.max(ow, TabUtils.getTabWidth(wv, 0, fh));
-        oh = Math.max(oh, 0);
-        if ((ox != s.x) || (oy != s.y) || (ow != s.width) || (oh != s.height))
-            wv.contents.setForcedBounds(null, new Rect(ox, oy, ow, oh));
     }
 
     @Override
@@ -292,64 +100,278 @@ public class UIWindowView extends UIElement implements IConsumer<UIWindowView.WV
 
     @Override
     public void handleMousewheel(final int x, final int y, boolean north) {
-        // This should select the window it's used over, so give an Obviously Fake Mouse to the generateReceivers callback,
-        //  which won't have any *undesired* side-effects if given an Obviously Fake Mouse.
-        connector.generateReceivers.apply(new IPointer() {
-            @Override
-            public int getX() {
-                return x;
-            }
+        // NEED TO MAKE THIS WORK
+    }
 
-            @Override
-            public int getY() {
-                return y;
-            }
+    public void addShell(IShell t) {
+        desktop.add(t);
+        desktopChanged = true;
+    }
 
-            @Override
-            public PointerType getType() {
-                return null;
-            }
+    public void removeShell(IShell t) {
+        removeShell(t, RemoveReason.Manual);
+    }
 
-            @Override
-            public void performOffset(int x, int y) {
-                System.err.println("gabien.ui: If you're encountering this message, the Obviously Fake Mouse got run through a strip-search in airport inspection.");
-            }
-        });
-        // Use the currently selected whatever it is.
-        if (backingSelected) {
-            if (backing != null)
-                backing.handleMousewheel(x, y, north);
-        } else {
-            if (windowList.size() > 0) {
-                WVWindow window = windowList.getLast();
-                Rect b = window.contents.getParentRelativeBounds();
-                window.contents.handleMousewheel(x - b.x, y - b.y, north);
+    public void removeShell(IShell t, RemoveReason selfDestruct) {
+        desktop.remove(t);
+        desktopChanged = true;
+        t.removed(selfDestruct);
+    }
+
+    public void raiseShell(IShell t) {
+        selectedWindow = t;
+        desktop.remove(t);
+        desktop.add(t);
+        desktopChanged = true;
+    }
+
+    public void lowerShell(IShell t) {
+        desktop.remove(t);
+        desktop.addFirst(t);
+        desktopChanged = true;
+    }
+
+    public void removeTab(TabUtils.Tab win) {
+        removeTab(win, RemoveReason.Manual);
+    }
+
+    public void removeTab(TabUtils.Tab win, RemoveReason selfDestruct) {
+        updateDesktopCache();
+        for (IShell s : desktopCache) {
+            if (s.equals(win)) {
+                removeShell(s, selfDestruct);
+                return;
             }
         }
     }
 
-    public int getWindowFrameHeight() {
-        return TabUtils.getHeight(windowTextHeight);
+    public void cleanup() {
+        updateDesktopCache();
+        for (IShell s : desktopCache)
+            removeShell(s, RemoveReason.Cleanup);
+        updateDesktopCache();
     }
 
-    public void removeByUIE(UIElement uiElement) {
-        upcomingManualRemovals.add(uiElement);
+    @Override
+    public void onWindowClose() {
+        cleanup();
     }
 
-    public interface IWVWindowIcon {
-        void draw(IGrDriver igd, int x, int y, int size);
+    // Represents a surface that controls its own position and has complex hit detection.
+    // Must be an interface so that an extension of Tab can implement it.
+    public interface IShell {
+        // Called in front-to-back order. The first Shell to provide a non-null receiver wins.
+        IPointerReceiver provideReceiver(IPointer i);
 
-        void click();
+        void render(IGrDriver igd);
+
+        void update(double deltaTime, boolean selected, IPeripherals peripherals);
+
+        void removed(RemoveReason reason);
     }
 
-    public static class WVWindow {
-        // bounds is relevant, and this may be a IWindowElement
-        public final UIElement contents;
-        public final IWVWindowIcon[] icons;
+    public enum RemoveReason {
+        Cleanup,
+        RequestedUnparent,
+        Manual
+    }
 
-        public WVWindow(UIElement con, IWVWindowIcon[] ico) {
-            contents = con;
-            icons = ico;
+    public static class TabShell extends TabUtils.Tab implements IShell {
+        public final UIWindowView parent;
+
+        public TabShell(UIWindowView p, UIElement contents, TabUtils.TabIcon[] icons) {
+            super(contents, icons);
+            parent = p;
+
+            finishInit();
+        }
+
+        private void finishInit() {
+            Rect r = contents.getParentRelativeBounds();
+            Size g = parent.getSize();
+            int area = g.width - r.width;
+            if (area < 0)
+                area = 0;
+            int cX = new Random().nextInt(area + 1);
+            if ((g.height - 64) < r.height) {
+                contents.setForcedBounds(null, new Rect(cX, 0, r.width, r.height));
+            } else {
+                contents.setForcedBounds(null, new Rect(cX, 64, r.width, r.height));
+            }
+
+            windowBoundsCheck();
+        }
+
+        @Override
+        public IPointerReceiver provideReceiver(IPointer i) {
+            final Rect r = contents.getParentRelativeBounds();
+            int fh = parent.getWindowFrameHeight();
+            Rect mainframe = new Rect(r.x - parent.sizerActual, r.y - (parent.sizerActual + fh), r.width + (parent.sizerActual * 2), r.height + (parent.sizerActual * 2) + fh);
+            Rect framebar = new Rect(r.x, r.y - fh, r.width, fh);
+            int x = i.getX();
+            int y = i.getY();
+            if (framebar.contains(x, y)) {
+                parent.selectedWindow = this;
+                if (!TabUtils.clickInTab(this, x - framebar.x, y - framebar.y, framebar.width, fh))
+                    return new RelativeResizePointerReceiver(r.x, r.y, new IConsumer<Size>() {
+                        @Override
+                        public void accept(Size size) {
+                            Size cs = contents.getSize();
+                            contents.setForcedBounds(null, new Rect(size.width, size.height, cs.width, cs.height));
+                            windowBoundsCheck();
+                        }
+                    });
+                return new NopPointerReceiver();
+            } else if (r.contains(x, y)) {
+                parent.selectedWindow = this;
+                return new TransformingElementPointerReceiver(contents);
+            } else if (mainframe.contains(x, y)) {
+                parent.selectedWindow = this;
+                int tx = x - mainframe.x;
+                int ty = y - mainframe.y;
+                int third = Math.max(parent.sizerActual, Math.min(mainframe.width / 3, mainframe.height / 3));
+                int ttx = 0;
+                int tty = 0;
+                int rw = 0;
+                int rh = 0;
+                if (tx < third) {
+                    ttx = -1;
+                    rw = r.x;
+                } else if (tx >= mainframe.width - tx) {
+                    ttx = 1;
+                    rw = r.width;
+                }
+                if (ty < third) {
+                    tty = -1;
+                    rh = r.y;
+                } else if (ty >= mainframe.height - ty) {
+                    tty = 1;
+                    rh = r.height;
+                }
+                final int tfx = ttx;
+                final int tfy = tty;
+                return new RelativeResizePointerReceiver(rw, rh, new IConsumer<Size>() {
+                    @Override
+                    public void accept(Size size) {
+                        Rect basis = contents.getParentRelativeBounds();
+                        int resX = basis.x;
+                        int resY = basis.y;
+                        int resW = basis.width;
+                        int resH = basis.height;
+                        if (tfx == -1) {
+                            resX = size.width;
+                            resW = (r.x + r.width) - size.width;
+                        } else if (tfx == 1) {
+                            resW = size.width;
+                        }
+                        if (tfy == -1) {
+                            resY = size.height;
+                            resH = (r.y + r.height) - size.height;
+                        } else if (tfy == 1) {
+                            resH = size.height;
+                        }
+                        contents.setForcedBounds(null, new Rect(resX, resY, resW, resH));
+                    }
+                });
+            }
+            return null;
+        }
+
+        @Override
+        public void render(IGrDriver igd) {
+            int windowFrameHeight = parent.getWindowFrameHeight();
+
+            Rect b = contents.getParentRelativeBounds();
+
+            UIBorderedElement.drawBorder(igd, 5, parent.sizerVisual, b.x - parent.sizerVisual, b.y - (windowFrameHeight + parent.sizerVisual), b.width + (parent.sizerVisual * 2), b.height + (windowFrameHeight + (parent.sizerVisual * 2)));
+
+            boolean winSelected = parent.selectedWindow == this;
+            TabUtils.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), icons);
+
+            UIPanel.scissoredRender(contents, igd);
+        }
+
+        @Override
+        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+            // Only really needed in case of parent resize
+            windowBoundsCheck();
+            boolean requestedUnparenting = contents.requestsUnparenting();
+            if (requestedUnparenting)
+                parent.removeShell(this, RemoveReason.RequestedUnparent);
+            contents.update(deltaTime, selected, peripherals);
+        }
+
+        @Override
+        public void removed(RemoveReason destroy) {
+            if (destroy != RemoveReason.Manual)
+                contents.onWindowClose();
+        }
+
+        public void windowBoundsCheck() {
+            int fh = parent.getWindowFrameHeight();
+            Size scr = parent.getSize();
+            Rect s = contents.getParentRelativeBounds();
+            int ox = s.x;
+            int oy = s.y;
+            if (ox < 0)
+                ox = 0;
+            if (ox > (scr.width - s.width))
+                ox = scr.width - s.width;
+            if (oy < fh)
+                oy = fh;
+            if (oy > scr.height)
+                oy = scr.height;
+            int ow = s.width;
+            int oh = s.height;
+            // Can only happen at this point if forced left by above code?
+            if (ox < 0) {
+                ow += ox;
+                ox = 0;
+            }
+            ow = Math.max(ow, TabUtils.getTabWidth(this, 0, fh));
+            oh = Math.max(oh, 0);
+            if ((ox != s.x) || (oy != s.y) || (ow != s.width) || (oh != s.height))
+                contents.setForcedBounds(null, new Rect(ox, oy, ow, oh));
+        }
+    }
+
+    public static class ScreenShell implements IShell {
+        public final UIWindowView parent;
+        public final UIElement uie;
+
+        public ScreenShell(UIWindowView parent, UIElement element) {
+            this.parent = parent;
+            uie = element;
+        }
+
+        @Override
+        public IPointerReceiver provideReceiver(IPointer i) {
+            parent.selectedWindow = this;
+            return new TransformingElementPointerReceiver(uie);
+        }
+
+        private void updateSize() {
+            Size gs = parent.getSize();
+            if (!gs.sizeEquals(uie.getSize()))
+                uie.setForcedBounds(null, new Rect(gs));
+        }
+
+        @Override
+        public void render(IGrDriver igd) {
+            updateSize();
+            uie.render(igd);
+        }
+
+        @Override
+        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+            updateSize();
+            uie.update(deltaTime, selected, peripherals);
+        }
+
+        @Override
+        public void removed(RemoveReason reason) {
+            if (reason != RemoveReason.Manual)
+                uie.onWindowClose();
         }
     }
 }
