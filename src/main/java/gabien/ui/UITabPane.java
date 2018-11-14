@@ -102,8 +102,9 @@ public class UITabPane extends UIElement.UIPanel {
     }
 
     public void handleClosedUserTab(TabUtils.Tab wvWindow, boolean selfDestruct) {
-        // Default behavior: override as you wish
-        wvWindow.contents.onWindowClose();
+        // Same reasoning as in UIWindowView: If it was manually removed, responsibility goes to remover.
+        if (selfDestruct)
+            wvWindow.contents.onWindowClose();
     }
 
     public void handleTabReorderComplete() {

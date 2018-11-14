@@ -100,7 +100,11 @@ public class UIWindowView extends UIElement {
 
     @Override
     public void handleMousewheel(final int x, final int y, boolean north) {
-        // NEED TO MAKE THIS WORK
+        updateDesktopCache();
+        IShell[] array = desktopCache;
+        for (int i = array.length - 1; i >= 0; i--)
+            if (array[i].handleMousewheel(x, y, north))
+                return;
     }
 
     public void addShell(IShell t) {
@@ -163,6 +167,8 @@ public class UIWindowView extends UIElement {
         // Called in front-to-back order. The first Shell to provide a non-null receiver wins.
         IPointerReceiver provideReceiver(IPointer i);
 
+        boolean handleMousewheel(int x, int y, boolean north);
+
         void render(IGrDriver igd);
 
         void update(double deltaTime, boolean selected, IPeripherals peripherals);
@@ -212,6 +218,7 @@ public class UIWindowView extends UIElement {
             int y = i.getY();
             if (framebar.contains(x, y)) {
                 parent.selectedWindow = this;
+                parent.raiseShell(this);
                 if (!TabUtils.clickInTab(this, x - framebar.x, y - framebar.y, framebar.width, fh))
                     return new RelativeResizePointerReceiver(r.x, r.y, new IConsumer<Size>() {
                         @Override
@@ -224,9 +231,11 @@ public class UIWindowView extends UIElement {
                 return new NopPointerReceiver();
             } else if (r.contains(x, y)) {
                 parent.selectedWindow = this;
+                parent.raiseShell(this);
                 return new TransformingElementPointerReceiver(contents);
             } else if (mainframe.contains(x, y)) {
                 parent.selectedWindow = this;
+                parent.raiseShell(this);
                 int tx = x - mainframe.x;
                 int ty = y - mainframe.y;
                 int third = Math.max(parent.sizerActual, Math.min(mainframe.width / 3, mainframe.height / 3));
@@ -275,6 +284,21 @@ public class UIWindowView extends UIElement {
                 });
             }
             return null;
+        }
+
+        @Override
+        public boolean handleMousewheel(int x, int y, boolean north) {
+            final Rect r = contents.getParentRelativeBounds();
+            int fh = parent.getWindowFrameHeight();
+            Rect mainframe = new Rect(x - parent.sizerActual, y - (parent.sizerActual + fh), r.width + (parent.sizerActual * 2), r.height + (parent.sizerActual * 2) + fh);
+            if (mainframe.contains(x, y)) {
+                parent.selectedWindow = this;
+                parent.raiseShell(this);
+                if (r.contains(x, y))
+                    contents.handleMousewheel(x - r.x, y - r.y, north);
+                return true;
+            }
+            return false;
         }
 
         @Override
@@ -342,12 +366,19 @@ public class UIWindowView extends UIElement {
         public ScreenShell(UIWindowView parent, UIElement element) {
             this.parent = parent;
             uie = element;
+            uie.setForcedBounds(null, new Rect(parent.getSize()));
         }
 
         @Override
         public IPointerReceiver provideReceiver(IPointer i) {
             parent.selectedWindow = this;
             return new TransformingElementPointerReceiver(uie);
+        }
+
+        @Override
+        public boolean handleMousewheel(int x, int y, boolean north) {
+            uie.handleMousewheel(x, y, north);
+            return true;
         }
 
         private void updateSize() {
