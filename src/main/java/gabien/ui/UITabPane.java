@@ -199,7 +199,7 @@ public class UITabPane extends UIElement.UIPanel {
         }
         for (int i = 0; i < 2; i++) {
             for (TabUtils.Tab wv : tabManager.tabs) {
-                if (wv.contents.equals(target)) {
+                if (wv.contents == target) {
                     // verified, actually do it
                     for (UIElement uie : layoutGetElements())
                         layoutRemoveElement(uie);

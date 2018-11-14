@@ -161,6 +161,10 @@ public class UIWindowView extends UIElement {
         cleanup();
     }
 
+    public LinkedList<IShell> getShells() {
+        return new LinkedList<IShell>(desktop);
+    }
+
     // Represents a surface that controls its own position and has complex hit detection.
     // Must be an interface so that an extension of Tab can implement it.
     public interface IShell {
@@ -320,9 +324,15 @@ public class UIWindowView extends UIElement {
             // Only really needed in case of parent resize
             windowBoundsCheck();
             boolean requestedUnparenting = contents.requestsUnparenting();
-            if (requestedUnparenting)
+            if (requestedUnparenting) {
                 parent.removeShell(this, RemoveReason.RequestedUnparent);
-            contents.update(deltaTime, selected, peripherals);
+            } else {
+                Rect r = contents.getParentRelativeBounds();
+
+                peripherals.performOffset(-r.x, -r.y);
+                contents.update(deltaTime, selected, peripherals);
+                peripherals.performOffset(r.x, r.y);
+            }
         }
 
         @Override
@@ -359,26 +369,64 @@ public class UIWindowView extends UIElement {
         }
     }
 
-    public static class ScreenShell implements IShell {
+    public static class ElementShell implements IShell {
         public final UIWindowView parent;
         public final UIElement uie;
 
-        public ScreenShell(UIWindowView parent, UIElement element) {
+        public ElementShell(UIWindowView parent, UIElement element) {
             this.parent = parent;
             uie = element;
-            uie.setForcedBounds(null, new Rect(parent.getSize()));
         }
 
         @Override
         public IPointerReceiver provideReceiver(IPointer i) {
+            if (!uie.getParentRelativeBounds().contains(i.getX(), i.getY()))
+                return null;
+            // ElementShell & ScreenShell do NOT raise themselves.
             parent.selectedWindow = this;
             return new TransformingElementPointerReceiver(uie);
         }
 
         @Override
         public boolean handleMousewheel(int x, int y, boolean north) {
-            uie.handleMousewheel(x, y, north);
-            return true;
+            Rect r = uie.getParentRelativeBounds();
+            if (r.contains(x, y)) {
+                uie.handleMousewheel(x - r.x, y - r.y, north);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void render(IGrDriver igd) {
+            UIPanel.scissoredRender(uie, igd);
+        }
+
+        @Override
+        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+            boolean requestedUnparenting = uie.requestsUnparenting();
+            if (requestedUnparenting) {
+                parent.removeShell(this, RemoveReason.RequestedUnparent);
+            } else {
+                Rect r = uie.getParentRelativeBounds();
+
+                peripherals.performOffset(-r.x, -r.y);
+                uie.update(deltaTime, selected, peripherals);
+                peripherals.performOffset(r.x, r.y);
+            }
+        }
+
+        @Override
+        public void removed(RemoveReason reason) {
+            if (reason != RemoveReason.Manual)
+                uie.onWindowClose();
+        }
+    }
+
+    public static class ScreenShell extends ElementShell {
+        public ScreenShell(UIWindowView parent, UIElement element) {
+            super(parent, element);
+            uie.setForcedBounds(null, new Rect(parent.getSize()));
         }
 
         private void updateSize() {
@@ -390,19 +438,13 @@ public class UIWindowView extends UIElement {
         @Override
         public void render(IGrDriver igd) {
             updateSize();
-            uie.render(igd);
+            super.render(igd);
         }
 
         @Override
         public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
             updateSize();
-            uie.update(deltaTime, selected, peripherals);
-        }
-
-        @Override
-        public void removed(RemoveReason reason) {
-            if (reason != RemoveReason.Manual)
-                uie.onWindowClose();
+            super.update(deltaTime, selected, peripherals);
         }
     }
 }

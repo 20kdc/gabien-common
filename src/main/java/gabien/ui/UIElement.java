@@ -190,6 +190,10 @@ public abstract class UIElement implements IPointerReceiver {
         return getClass().getName();
     }
 
+    public UIElement getParent() {
+        return parent;
+    }
+
     /**
      * UIPanel is the basis of all layouts.
      */
