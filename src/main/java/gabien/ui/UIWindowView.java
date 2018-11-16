@@ -294,8 +294,9 @@ public class UIWindowView extends UIElement {
         public boolean handleMousewheel(int x, int y, boolean north) {
             final Rect r = contents.getParentRelativeBounds();
             int fh = parent.getWindowFrameHeight();
-            Rect mainframe = new Rect(x - parent.sizerActual, y - (parent.sizerActual + fh), r.width + (parent.sizerActual * 2), r.height + (parent.sizerActual * 2) + fh);
-            if (mainframe.contains(x, y)) {
+            // Note: mainframe is used for most pointers because of the way sizer hit-detection works.
+            Rect visframe = new Rect(r.x - parent.sizerVisual, r.y - (parent.sizerVisual + fh), r.width + (parent.sizerVisual * 2), r.height + (parent.sizerVisual * 2) + fh);
+            if (visframe.contains(x, y)) {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
                 if (r.contains(x, y))
@@ -391,6 +392,7 @@ public class UIWindowView extends UIElement {
         public boolean handleMousewheel(int x, int y, boolean north) {
             Rect r = uie.getParentRelativeBounds();
             if (r.contains(x, y)) {
+                parent.selectedWindow = this;
                 uie.handleMousewheel(x - r.x, y - r.y, north);
                 return true;
             }
