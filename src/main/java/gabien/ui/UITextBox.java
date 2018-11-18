@@ -63,7 +63,8 @@ public class UITextBox extends UILabel {
     }
 
     @Override
-    public void handlePointerBegin(IPointer ip) {
+    public IPointerReceiver handleNewPointer(IPointer state) {
         tempDisableSelection = false;
+        return super.handleNewPointer(state);
     }
 }

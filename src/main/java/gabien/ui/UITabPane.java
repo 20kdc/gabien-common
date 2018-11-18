@@ -258,22 +258,11 @@ public class UITabPane extends UIElement.UIPanel {
         return wv;
     }
 
-
     @Override
-    public void handlePointerBegin(IPointer state) {
-        super.handlePointerBegin(state);
-        tabManager.connector.handlePointerBegin(state);
-    }
-
-    @Override
-    public void handlePointerUpdate(IPointer state) {
-        super.handlePointerUpdate(state);
-        tabManager.connector.handlePointerUpdate(state);
-    }
-
-    @Override
-    public void handlePointerEnd(IPointer state) {
-        super.handlePointerEnd(state);
-        tabManager.connector.handlePointerEnd(state);
+    public IPointerReceiver handleNewPointer(IPointer state) {
+        IPointerReceiver ipr = tabManager.apply(state);
+        if (ipr != null)
+            return ipr;
+        return super.handleNewPointer(state);
     }
 }

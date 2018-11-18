@@ -11,7 +11,6 @@ import gabien.IGrDriver;
 import gabien.IPeripherals;
 
 import java.util.LinkedList;
-import java.util.WeakHashMap;
 
 /**
  * Once a simple class. Now it's not.
@@ -23,7 +22,7 @@ import java.util.WeakHashMap;
  *
  * Redesigned on February 16th, 2018.
  */
-public abstract class UIElement implements IPointerReceiver {
+public abstract class UIElement {
     private Rect elementBounds = new Rect(0, 0, 0, 0);
 
     private UIElement parent;
@@ -153,19 +152,10 @@ public abstract class UIElement implements IPointerReceiver {
 
     }
 
-    @Override
-    public void handlePointerBegin(IPointer state) {
-
-    }
-
-    @Override
-    public void handlePointerUpdate(IPointer state) {
-
-    }
-
-    @Override
-    public void handlePointerEnd(IPointer state) {
-
+    // Attempts to assign the pointer or returns null otherwise.
+    // Null will cause further element checks, so be sure this is what you want.
+    public IPointerReceiver handleNewPointer(IPointer state) {
+        return new IPointerReceiver.NopPointerReceiver();
     }
 
     // Useful for various things. 'y' renamed to 'i' to shut up warnings.
@@ -206,7 +196,6 @@ public abstract class UIElement implements IPointerReceiver {
         //  and use recacheElements before that because it's a cache and might be out of date otherwise.
         private UIElement[] cachedAllElements;
         private boolean allElementsChanged = true;
-        private WeakHashMap<IPointer, UIElement> pointerClickMapping = new WeakHashMap<IPointer, UIElement>();
         private boolean released = false;
 
         public UIPanel() {
@@ -357,50 +346,24 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void handlePointerBegin(IPointer state) {
+        public IPointerReceiver handleNewPointer(IPointer state) {
             selectedElement = null;
             recacheElements();
             for (UIElement uie : cachedAllElements) {
                 if (uie.elementBounds.contains(state.getX(), state.getY())) {
-                    selectedElement = uie;
                     int x = uie.elementBounds.x;
                     int y = uie.elementBounds.y;
                     state.performOffset(-x, -y);
-                    selectedElement.handlePointerBegin(state);
-                    pointerClickMapping.put(state, selectedElement);
+                    IPointerReceiver ipr = uie.handleNewPointer(state);
                     state.performOffset(x, y);
-                    return;
+                    if (ipr != null) {
+                        selectedElement = uie;
+                        return new IPointerReceiver.TransformingElementPointerReceiver(this, selectedElement, ipr);
+                    }
                 }
             }
-        }
-
-        @Override
-        public void handlePointerUpdate(IPointer state) {
-            UIElement uie = pointerClickMapping.get(state);
-            if (uie != null) {
-                if (layoutContainsElement(uie)) {
-                    int x = uie.elementBounds.x;
-                    int y = uie.elementBounds.y;
-                    state.performOffset(-x, -y);
-                    uie.handlePointerUpdate(state);
-                    state.performOffset(x, y);
-                }
-            }
-        }
-
-        @Override
-        public void handlePointerEnd(IPointer state) {
-            UIElement uie = pointerClickMapping.get(state);
-            if (uie != null) {
-                if (layoutContainsElement(uie)) {
-                    int x = uie.elementBounds.x;
-                    int y = uie.elementBounds.y;
-                    state.performOffset(-x, -y);
-                    uie.handlePointerEnd(state);
-                    state.performOffset(x, y);
-                }
-            }
-            pointerClickMapping.remove(state);
+            // Returns null so that UIGrid & such can use that to mean 'not handled by existing elements'.
+            return null;
         }
 
         // Used by some UI stuff that needs to reuse elements.
@@ -482,18 +445,8 @@ public abstract class UIElement implements IPointerReceiver {
         }
 
         @Override
-        public void handlePointerBegin(IPointer state) {
-            currentElement.handlePointerBegin(state);
-        }
-
-        @Override
-        public void handlePointerUpdate(IPointer state) {
-            currentElement.handlePointerUpdate(state);
-        }
-
-        @Override
-        public void handlePointerEnd(IPointer state) {
-            currentElement.handlePointerEnd(state);
+        public IPointerReceiver handleNewPointer(IPointer state) {
+            return currentElement.handleNewPointer(state);
         }
 
         public void release() {

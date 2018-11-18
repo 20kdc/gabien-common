@@ -42,8 +42,7 @@ public abstract class UIButton<ThisClass extends UIButton> extends UIBorderedEle
     }
 
     @Override
-    public void handlePointerBegin(IPointer stat) {
-        super.handlePointerBegin(stat);
+    public IPointerReceiver handleNewPointer(IPointer stat) {
         if (stat.getType() == IPointer.PointerType.Generic) {
             if (toggle) {
                 state = !state;
@@ -53,6 +52,7 @@ public abstract class UIButton<ThisClass extends UIButton> extends UIBorderedEle
             if (onClick != null)
                 onClick.run();
         }
+        return super.handleNewPointer(stat);
     }
 
     public void enableStateForClick() {

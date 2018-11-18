@@ -73,32 +73,42 @@ public interface IPointerReceiver {
     }
 
     class TransformingElementPointerReceiver implements IPointerReceiver {
-        public final UIElement element;
-        public TransformingElementPointerReceiver(UIElement uie) {
+        public final UIElement parent, element;
+        public final IPointerReceiver ipr;
+
+        public TransformingElementPointerReceiver(UIElement par, UIElement uie, IPointerReceiver i) {
+            this.parent = par;
             element = uie;
+            ipr = i;
         }
 
         @Override
         public void handlePointerBegin(IPointer state) {
+            if (element.getParent() != parent)
+                return;
             Rect r = element.getParentRelativeBounds();
             state.performOffset(-r.x, -r.y);
-            element.handlePointerBegin(state);
+            ipr.handlePointerBegin(state);
             state.performOffset(r.x, r.y);
         }
 
         @Override
         public void handlePointerUpdate(IPointer state) {
+            if (element.getParent() != parent)
+                return;
             Rect r = element.getParentRelativeBounds();
             state.performOffset(-r.x, -r.y);
-            element.handlePointerUpdate(state);
+            ipr.handlePointerUpdate(state);
             state.performOffset(r.x, r.y);
         }
 
         @Override
         public void handlePointerEnd(IPointer state) {
+            if (element.getParent() != parent)
+                return;
             Rect r = element.getParentRelativeBounds();
             state.performOffset(-r.x, -r.y);
-            element.handlePointerEnd(state);
+            ipr.handlePointerEnd(state);
             state.performOffset(r.x, r.y);
         }
     }

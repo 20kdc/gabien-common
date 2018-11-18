@@ -65,21 +65,37 @@ public class UIScrollbar extends UIBorderedElement {
     }
 
     @Override
-    public void handlePointerUpdate(IPointer pointer) {
-        Size bounds = getSize();
-        int margin = (vertical ? bounds.width : bounds.height) / 8;
-        int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
+    public IPointerReceiver handleNewPointer(IPointer state) {
+        // This could be improved, but this will do for now.
+        return new IPointerReceiver() {
+            @Override
+            public void handlePointerBegin(IPointer state) {
 
-        double scalingFactor = 1.0 / ((vertical ? bounds.height : bounds.width) - ((margin * 2) + nub));
-        if (vertical) {
-            scrollPoint = (pointer.getY() - (margin + (nub / 2))) * scalingFactor;
-        } else {
-            scrollPoint = (pointer.getX() - (margin + (nub / 2))) * scalingFactor;
-        }
-        if (scrollPoint < 0)
-            scrollPoint = 0;
-        if (scrollPoint > 1)
-            scrollPoint = 1;
+            }
+
+            @Override
+            public void handlePointerUpdate(IPointer pointer) {
+                Size bounds = getSize();
+                int margin = (vertical ? bounds.width : bounds.height) / 8;
+                int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
+
+                double scalingFactor = 1.0 / ((vertical ? bounds.height : bounds.width) - ((margin * 2) + nub));
+                if (vertical) {
+                    scrollPoint = (pointer.getY() - (margin + (nub / 2))) * scalingFactor;
+                } else {
+                    scrollPoint = (pointer.getX() - (margin + (nub / 2))) * scalingFactor;
+                }
+                if (scrollPoint < 0)
+                    scrollPoint = 0;
+                if (scrollPoint > 1)
+                    scrollPoint = 1;
+            }
+
+            @Override
+            public void handlePointerEnd(IPointer state) {
+
+            }
+        };
     }
 
     @Override

@@ -34,7 +34,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     }
 
     public void accept(UIElement o, int scale, boolean fullscreen, boolean resizable) {
-        ActiveWindow aw = new ActiveWindow();
+        final ActiveWindow aw = new ActiveWindow();
         Rect bounds = o.getParentRelativeBounds();
         WindowSpecs ws = GaBIEn.defaultWindowSpecs(o.toString(), bounds.width, bounds.height);
         ws.scale = scale;
@@ -43,6 +43,12 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
         aw.peripherals = aw.igd.getPeripherals();
         aw.ue = o;
+        aw.pc = new IPointerReceiver.PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
+            @Override
+            public IPointerReceiver apply(IPointer pointer) {
+                return aw.ue.handleNewPointer(pointer);
+            }
+        });
         incomingWindows.add(aw);
     }
 
@@ -97,16 +103,16 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             for (IPointer ip : pointersNext) {
                 if (!aw.lastActivePointers.contains(ip)) {
                     // New pointer.
-                    aw.ue.handlePointerBegin(ip);
+                    aw.pc.handlePointerBegin(ip);
                 } else {
                     // Continuing pointer.
-                    aw.ue.handlePointerUpdate(ip);
+                    aw.pc.handlePointerUpdate(ip);
                 }
             }
             for (IPointer ip : aw.lastActivePointers) {
                 if (!pointersNext.contains(ip)) {
                     // Ending pointer.
-                    aw.ue.handlePointerEnd(ip);
+                    aw.pc.handlePointerEnd(ip);
                 }
             }
             aw.lastActivePointers = pointersNext;
@@ -156,5 +162,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         UIElement ue;
         IPeripherals peripherals;
         HashSet<IPointer> lastActivePointers = new HashSet<IPointer>();
+        IPointerReceiver.PointerConnector pc;
     }
 }

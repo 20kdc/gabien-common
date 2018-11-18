@@ -30,7 +30,6 @@ public class UIWindowView extends UIElement {
     private IShell[] desktopCache = new IShell[0];
     private boolean desktopChanged = false;
 
-    private final IPointerReceiver.PointerConnector connector;
     private boolean clearKeysLater = false;
 
     public int windowTextHeight = 12;
@@ -39,23 +38,6 @@ public class UIWindowView extends UIElement {
 
     public int getWindowFrameHeight() {
         return TabUtils.getHeight(windowTextHeight);
-    }
-
-
-    public UIWindowView() {
-        connector = new PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
-            @Override
-            public IPointerReceiver apply(IPointer iPointer) {
-                updateDesktopCache();
-                IShell[] array = desktopCache;
-                for (int i = array.length - 1; i >= 0; i--) {
-                    IPointerReceiver ipr = array[i].provideReceiver(iPointer);
-                    if (ipr != null)
-                        return ipr;
-                }
-                return null;
-            }
-        });
     }
 
     @Override
@@ -84,18 +66,15 @@ public class UIWindowView extends UIElement {
     }
 
     @Override
-    public void handlePointerBegin(IPointer state) {
-        connector.handlePointerBegin(state);
-    }
-
-    @Override
-    public void handlePointerUpdate(IPointer state) {
-        connector.handlePointerUpdate(state);
-    }
-
-    @Override
-    public void handlePointerEnd(IPointer state) {
-        connector.handlePointerEnd(state);
+    public IPointerReceiver handleNewPointer(IPointer state) {
+        updateDesktopCache();
+        IShell[] array = desktopCache;
+        for (int i = array.length - 1; i >= 0; i--) {
+            IPointerReceiver ipr = array[i].provideReceiver(state);
+            if (ipr != null)
+                return ipr;
+        }
+        return null;
     }
 
     @Override
@@ -224,7 +203,7 @@ public class UIWindowView extends UIElement {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
                 if (!TabUtils.clickInTab(this, x - framebar.x, y - framebar.y, framebar.width, fh))
-                    return new RelativeResizePointerReceiver(r.x, r.y, new IConsumer<Size>() {
+                    return new IPointerReceiver.RelativeResizePointerReceiver(r.x, r.y, new IConsumer<Size>() {
                         @Override
                         public void accept(Size size) {
                             Size cs = contents.getSize();
@@ -232,11 +211,16 @@ public class UIWindowView extends UIElement {
                             windowBoundsCheck();
                         }
                     });
-                return new NopPointerReceiver();
+                return new IPointerReceiver.NopPointerReceiver();
             } else if (r.contains(x, y)) {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
-                return new TransformingElementPointerReceiver(contents);
+                i.performOffset(-r.x, -r.y);
+                IPointerReceiver ipr = contents.handleNewPointer(i);
+                i.performOffset(r.x, r.y);
+                if (ipr != null)
+                    return new IPointerReceiver.TransformingElementPointerReceiver(null, contents, ipr);
+                return new IPointerReceiver.NopPointerReceiver();
             } else if (mainframe.contains(x, y)) {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
@@ -263,7 +247,7 @@ public class UIWindowView extends UIElement {
                 }
                 final int tfx = ttx;
                 final int tfy = tty;
-                return new RelativeResizePointerReceiver(rw, rh, new IConsumer<Size>() {
+                return new IPointerReceiver.RelativeResizePointerReceiver(rw, rh, new IConsumer<Size>() {
                     @Override
                     public void accept(Size size) {
                         Rect basis = contents.getParentRelativeBounds();
@@ -381,11 +365,17 @@ public class UIWindowView extends UIElement {
 
         @Override
         public IPointerReceiver provideReceiver(IPointer i) {
-            if (!uie.getParentRelativeBounds().contains(i.getX(), i.getY()))
+            Rect bounds = uie.getParentRelativeBounds();
+            if (!bounds.contains(i.getX(), i.getY()))
+                return null;
+            i.performOffset(-bounds.x, -bounds.y);
+            IPointerReceiver ipr = uie.handleNewPointer(i);
+            i.performOffset(bounds.x, bounds.y);
+            if (ipr == null)
                 return null;
             // ElementShell & ScreenShell do NOT raise themselves.
             parent.selectedWindow = this;
-            return new TransformingElementPointerReceiver(uie);
+            return new IPointerReceiver.TransformingElementPointerReceiver(null, uie, ipr);
         }
 
         @Override

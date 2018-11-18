@@ -43,62 +43,59 @@ public class TabUtils {
     private boolean tabReorderDidSomething = false;
     public WeakHashMap<Tab, IPointerReceiver.RelativeResizePointerReceiver> draggingTabs = new WeakHashMap<Tab, IPointerReceiver.RelativeResizePointerReceiver>();
 
-    public IPointerReceiver.PointerConnector connector = new IPointerReceiver.PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
-        @Override
-        public IPointerReceiver apply(IPointer pointer) {
-            int x = pointer.getX();
-            int y = pointer.getY() - parentView.tabBarY;
-            if (y < tabBarHeight) {
-                if (y >= 0) {
-                    int pos = parentView.getScrollOffsetX();
-                    for (final Tab w : tabs) {
-                        final int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
-                        if (x < (pos + tabW)) {
-                            if (TabUtils.clickInTab(w, x - pos, y - parentView.tabBarY, tabW, tabBarHeight))
-                                return null;
-                            parentView.selectTab(w.contents);
-                            if (canDragTabs) {
-                                IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new IConsumer<Size>() {
-                                    @Override
-                                    public void accept(Size size) {
-                                        if (tabs.contains(w)) {
-                                            tabReorderer(size.width + (tabW / 2), w);
-                                        } else {
-                                            draggingTabs.remove(w);
-                                            if (draggingTabs.isEmpty())
-                                                allTabReordersComplete();
-                                        }
-                                    }
-                                }) {
-                                    @Override
-                                    public void handlePointerEnd(IPointer state) {
-                                        super.handlePointerEnd(state);
-                                        draggingTabs.remove(w);
-                                        if (draggingTabs.isEmpty())
-                                            allTabReordersComplete();
-                                    }
-                                };
-                                draggingTabs.put(w, rrpr);
-                                return rrpr;
-                            } else {
-                                return null;
-                            }
-                        }
-                        pos += tabW;
-                    }
-                    if (canSelectNone)
-                        parentView.selectTab(null);
-                }
-            }
-            return null;
-        }
-    });
-
     public TabUtils(boolean selectNone, boolean canDrag, UITabPane par, int h) {
         canSelectNone = selectNone;
         canDragTabs = canDrag;
         parentView = par;
         tabBarHeight = getHeight(h);
+    }
+
+    public IPointerReceiver apply(IPointer pointer) {
+        int x = pointer.getX();
+        int y = pointer.getY() - parentView.tabBarY;
+        if (y < tabBarHeight) {
+            if (y >= 0) {
+                int pos = parentView.getScrollOffsetX();
+                for (final Tab w : tabs) {
+                    final int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
+                    if (x < (pos + tabW)) {
+                        if (TabUtils.clickInTab(w, x - pos, y - parentView.tabBarY, tabW, tabBarHeight))
+                            return null;
+                        parentView.selectTab(w.contents);
+                        if (canDragTabs) {
+                            IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new IConsumer<Size>() {
+                                @Override
+                                public void accept(Size size) {
+                                    if (tabs.contains(w)) {
+                                        tabReorderer(size.width + (tabW / 2), w);
+                                    } else {
+                                        draggingTabs.remove(w);
+                                        if (draggingTabs.isEmpty())
+                                            allTabReordersComplete();
+                                    }
+                                }
+                            }) {
+                                @Override
+                                public void handlePointerEnd(IPointer state) {
+                                    super.handlePointerEnd(state);
+                                    draggingTabs.remove(w);
+                                    if (draggingTabs.isEmpty())
+                                        allTabReordersComplete();
+                                }
+                            };
+                            draggingTabs.put(w, rrpr);
+                            return rrpr;
+                        } else {
+                            return null;
+                        }
+                    }
+                    pos += tabW;
+                }
+                if (canSelectNone)
+                    parentView.selectTab(null);
+            }
+        }
+        return null;
     }
 
     public void render(Size bounds, int tabBarY, IGrDriver igd) {
