@@ -11,6 +11,7 @@ import gabien.*;
 
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.WeakHashMap;
 
 /**
  * Utility class useful for dealing with the boilerplate UI bootstrap code
@@ -43,12 +44,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
         aw.peripherals = aw.igd.getPeripherals();
         aw.ue = o;
-        aw.pc = new IPointerReceiver.PointerConnector(new IFunction<IPointer, IPointerReceiver>() {
-            @Override
-            public IPointerReceiver apply(IPointer pointer) {
-                return aw.ue.handleNewPointer(pointer);
-            }
-        });
         incomingWindows.add(aw);
     }
 
@@ -103,16 +98,26 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             for (IPointer ip : pointersNext) {
                 if (!aw.lastActivePointers.contains(ip)) {
                     // New pointer.
-                    aw.pc.handlePointerBegin(ip);
+                    IPointerReceiver ipr = aw.ue.handleNewPointer(ip);
+                    if (ipr != null) {
+                        ipr.handlePointerBegin(ip);
+                        aw.receiverMap.put(ip, ipr);
+                    }
                 } else {
                     // Continuing pointer.
-                    aw.pc.handlePointerUpdate(ip);
+                    IPointerReceiver ipr = aw.receiverMap.get(ip);
+                    if (ipr != null)
+                        ipr.handlePointerUpdate(ip);
                 }
             }
             for (IPointer ip : aw.lastActivePointers) {
                 if (!pointersNext.contains(ip)) {
                     // Ending pointer.
-                    aw.pc.handlePointerEnd(ip);
+                    IPointerReceiver ipr = aw.receiverMap.get(ip);
+                    if (ipr != null) {
+                        ipr.handlePointerEnd(ip);
+                        aw.receiverMap.remove(ip);
+                    }
                 }
             }
             aw.lastActivePointers = pointersNext;
@@ -162,6 +167,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         UIElement ue;
         IPeripherals peripherals;
         HashSet<IPointer> lastActivePointers = new HashSet<IPointer>();
-        IPointerReceiver.PointerConnector pc;
+        WeakHashMap<IPointer, IPointerReceiver> receiverMap = new WeakHashMap<IPointer, IPointerReceiver>();
     }
 }

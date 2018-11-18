@@ -21,9 +21,6 @@ public class UITextBox extends UILabel {
         borderType = 3;
     }
 
-    public static Size getRecommendedSize(int h) {
-        return getRecommendedTextSize("Highly Responsive To Eggnog", h);
-    }
 
     private String textLastSeen = "";
     private String textCStr = "";
@@ -34,6 +31,7 @@ public class UITextBox extends UILabel {
             // do nothing-this is one of those boxes that just sits there.
         }
     };
+    public IFunction<String, String> feedback;
 
     private boolean tempDisableSelection = false;
 
@@ -48,7 +46,7 @@ public class UITextBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected) {
-            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, text, null);
+            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, text, feedback);
             text = ss;
             textLastSeen = ss;
             if (peripherals.isEnterJustPressed()) {

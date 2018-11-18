@@ -7,8 +7,6 @@
 
 package gabien.ui;
 
-import java.util.WeakHashMap;
-
 /**
  * Another part of multi-touch stuff.
  * Imagine, if you will, the scene in Elephant's Dream where there are many plugs, and many sockets,
@@ -19,44 +17,6 @@ public interface IPointerReceiver {
     void handlePointerBegin(IPointer state);
     void handlePointerUpdate(IPointer state);
     void handlePointerEnd(IPointer state);
-
-    // Implements the standard click-lock behavior in a multi-touch environment,
-    //  WITHOUT CAUSING PEOPLE TO LOSE ALL THEIR HAIR.
-    // Additional benefit, actually cleans up UIWindowView's mouse code.
-    class PointerConnector implements IPointerReceiver {
-        public WeakHashMap<IPointer, IPointerReceiver> receiverMap = new WeakHashMap<IPointer, IPointerReceiver>();
-        public IFunction<IPointer, IPointerReceiver> generateReceivers;
-        public PointerConnector(IFunction<IPointer, IPointerReceiver> f) {
-            generateReceivers = f;
-        }
-
-        @Override
-        public void handlePointerBegin(IPointer state) {
-            if (receiverMap.containsKey(state)) {
-                receiverMap.remove(state);
-                System.err.println("gabien.ui: Got a pointerbegin from a pointer in use. Be afraid.");
-            }
-            IPointerReceiver ipr = generateReceivers.apply(state);
-            if (ipr != null) {
-                ipr.handlePointerBegin(state);
-                receiverMap.put(state, ipr);
-            }
-        }
-
-        @Override
-        public void handlePointerUpdate(IPointer state) {
-            IPointerReceiver ipr = receiverMap.get(state);
-            if (ipr != null)
-                ipr.handlePointerUpdate(state);
-        }
-
-        @Override
-        public void handlePointerEnd(IPointer state) {
-            IPointerReceiver ipr = receiverMap.get(state);
-            if (ipr != null)
-                ipr.handlePointerEnd(state);
-        }
-    }
 
     class NopPointerReceiver implements IPointerReceiver {
         @Override
