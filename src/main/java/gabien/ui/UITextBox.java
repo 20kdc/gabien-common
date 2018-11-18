@@ -7,7 +7,6 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
 import gabien.IPeripherals;
 
 // This serves a dual purpose:
@@ -49,7 +48,7 @@ public class UITextBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected) {
-            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, text);
+            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, text, null);
             text = ss;
             textLastSeen = ss;
             if (peripherals.isEnterJustPressed()) {

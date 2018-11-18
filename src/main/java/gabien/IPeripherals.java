@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.ui.IFunction;
 import gabien.ui.IPointer;
 
 import java.util.HashSet;
@@ -30,6 +31,7 @@ public interface IPeripherals {
     // Only one can be maintained at a given time.
     // The Y position is the *centre* - the textbox will be as tall as it wants to be.
     // Note that the textbox is still hooked into key events, so make sure not to respond to anything that could ever be used in normal typing.
-    String maintain(int x, int y, int width, String text);
+    // 'feedback' provides live feedback, and should be null under most circumstances.
+    String maintain(int x, int y, int width, String text, IFunction<String, String> feedback);
     boolean isEnterJustPressed();
 }

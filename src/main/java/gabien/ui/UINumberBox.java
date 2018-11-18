@@ -7,7 +7,6 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
 import gabien.IPeripherals;
 
 /**
@@ -56,7 +55,7 @@ public class UINumberBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected && (!readOnly)) {
-            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, String.valueOf(number));
+            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, String.valueOf(number), null);
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
             if (lastMinusIdx > 0) {

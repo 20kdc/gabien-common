@@ -16,14 +16,14 @@ import gabien.*;
 public abstract class UIBorderedElement extends UIElement {
     public static int borderTheme = 0;
     public static final int BORDER_THEMES = 4;
-    public static final int BORDER_TYPES = 13;
+    public static final int BORDER_TYPES = 14;
     private static IImage cachedTheme = null;
     private static int[] cachedThemeInts;
 
     private static int lastCachedThemeTiles = -1;
     private static IImage[] cachedThemeTiles;
 
-    protected int borderType;
+    public int borderType;
     private int borderWidth;
 
     public UIBorderedElement(int bt, int bw) {
@@ -48,13 +48,6 @@ public abstract class UIBorderedElement extends UIElement {
     public static Size getRecommendedTextSize(String text, int textHeight, int bs) {
         Size s = FontManager.getTextSize(text, textHeight);
         return new Size(s.width + (bs * 2), s.height + (bs * 2));
-    }
-
-
-    // NOTE: Obviously, this may require you change your layout.
-    //       ... that's *your* problem.
-    protected void setBorderWidth(int w) {
-        borderWidth = w;
     }
 
     public int getBorderWidth() {
