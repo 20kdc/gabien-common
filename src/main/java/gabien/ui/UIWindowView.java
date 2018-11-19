@@ -219,7 +219,7 @@ public class UIWindowView extends UIElement {
                 IPointerReceiver ipr = contents.handleNewPointer(i);
                 i.performOffset(r.x, r.y);
                 if (ipr != null)
-                    return new IPointerReceiver.TransformingElementPointerReceiver(null, contents, ipr);
+                    return new IPointerReceiver.TransformingElementPointerReceiver(contents, ipr);
                 return new IPointerReceiver.NopPointerReceiver();
             } else if (mainframe.contains(x, y)) {
                 parent.selectedWindow = this;
@@ -375,7 +375,7 @@ public class UIWindowView extends UIElement {
                 return null;
             // ElementShell & ScreenShell do NOT raise themselves.
             parent.selectedWindow = this;
-            return new IPointerReceiver.TransformingElementPointerReceiver(null, uie, ipr);
+            return new IPointerReceiver.TransformingElementPointerReceiver(uie, ipr);
         }
 
         @Override

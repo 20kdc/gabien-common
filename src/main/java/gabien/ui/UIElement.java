@@ -358,7 +358,7 @@ public abstract class UIElement {
                     state.performOffset(x, y);
                     if (ipr != null) {
                         selectedElement = uie;
-                        return new IPointerReceiver.TransformingElementPointerReceiver(this, selectedElement, ipr);
+                        return new IPointerReceiver.TransformingElementPointerReceiver(selectedElement, ipr);
                     }
                 }
             }

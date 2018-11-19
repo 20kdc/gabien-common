@@ -33,19 +33,16 @@ public interface IPointerReceiver {
     }
 
     class TransformingElementPointerReceiver implements IPointerReceiver {
-        public final UIElement parent, element;
+        public final UIElement element;
         public final IPointerReceiver ipr;
 
-        public TransformingElementPointerReceiver(UIElement par, UIElement uie, IPointerReceiver i) {
-            this.parent = par;
+        public TransformingElementPointerReceiver(UIElement uie, IPointerReceiver i) {
             element = uie;
             ipr = i;
         }
 
         @Override
         public void handlePointerBegin(IPointer state) {
-            if (element.getParent() != parent)
-                return;
             Rect r = element.getParentRelativeBounds();
             state.performOffset(-r.x, -r.y);
             ipr.handlePointerBegin(state);
@@ -54,8 +51,6 @@ public interface IPointerReceiver {
 
         @Override
         public void handlePointerUpdate(IPointer state) {
-            if (element.getParent() != parent)
-                return;
             Rect r = element.getParentRelativeBounds();
             state.performOffset(-r.x, -r.y);
             ipr.handlePointerUpdate(state);
@@ -64,8 +59,6 @@ public interface IPointerReceiver {
 
         @Override
         public void handlePointerEnd(IPointer state) {
-            if (element.getParent() != parent)
-                return;
             Rect r = element.getParentRelativeBounds();
             state.performOffset(-r.x, -r.y);
             ipr.handlePointerEnd(state);
