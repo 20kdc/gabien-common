@@ -37,9 +37,11 @@ Do something similar with your Eclipse workspace if you use Eclipse,
 
 ## Notes on Code Style
 
-The code style isn't really documented as such, but it's basically the IDEA default with one change.
+The code style isn't really documented as such, but it's basically the IDEA default with two changes.
 
-Which is that `new int[]{` or such is wrong, and should be `new int[] {`.
+Firstly, `new int[]{` or such is wrong, and should be `new int[] {`.
+
+Secondly, annotation wrapping is a per-class matter of stylistic choice - some annotations are deliberately grouped together.
 
 Pedantic, I know.
 

@@ -1,9 +1,11 @@
-<code_scheme name="GaBIen Standard">
+<code_scheme name="GaBIen Standard" version="173">
     <option name="AUTODETECT_INDENTS" value="false"/>
     <XML>
         <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true"/>
     </XML>
     <codeStyleSettings language="JAVA">
         <option name="SPACE_BEFORE_ARRAY_INITIALIZER_LBRACE" value="true"/>
+        <option name="CLASS_ANNOTATION_WRAP" value="0"/>
+        <option name="FIELD_ANNOTATION_WRAP" value="0"/>
     </codeStyleSettings>
 </code_scheme>
