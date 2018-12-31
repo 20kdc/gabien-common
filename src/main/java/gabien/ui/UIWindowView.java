@@ -234,14 +234,14 @@ public class UIWindowView extends UIElement {
                 if (tx < third) {
                     ttx = -1;
                     rw = r.x;
-                } else if (tx >= mainframe.width - tx) {
+                } else if (tx >= mainframe.width - third) {
                     ttx = 1;
                     rw = r.width;
                 }
                 if (ty < third) {
                     tty = -1;
                     rh = r.y;
-                } else if (ty >= mainframe.height - ty) {
+                } else if (ty >= mainframe.height - third) {
                     tty = 1;
                     rh = r.height;
                 }
