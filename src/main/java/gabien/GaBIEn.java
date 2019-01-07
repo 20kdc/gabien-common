@@ -213,7 +213,7 @@ public class GaBIEn {
         internal.setBrowserDirectory(s);
     }
 
-    // exts is in the *.abc;*.def;*.* form
+    // exts should just be left blank for now.
     // iConsumer is called as part of runCallbacks.
     // Regarding the path, the only guarantee is that it'll be null or a valid file path.
     // It does not necessarily have to match the standard gabien path separator.
