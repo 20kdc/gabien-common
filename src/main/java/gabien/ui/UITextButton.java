@@ -16,6 +16,7 @@ import gabien.IPeripherals;
 public class UITextButton extends UIButton<UITextButton> {
     public String text;
     private final UILabel.Contents contents;
+    public boolean centred;
     
     public UITextButton(String tex, int h, Runnable click) {
         super(UIBorderedElement.getRecommendedBorderWidth(h));
@@ -45,6 +46,11 @@ public class UITextButton extends UIButton<UITextButton> {
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
-        contents.render(textBlack, 0, 0, igd, false);
+        contents.render(textBlack, 0, 0, igd, centred);
+    }
+
+    public UITextButton centred() {
+        centred = true;
+        return this;
     }
 }
