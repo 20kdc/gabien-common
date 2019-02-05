@@ -19,89 +19,52 @@ import java.util.WeakHashMap;
  * Static methods assist UIWindowView - the actual instance form is for UITabPane.
  *
  * Created on February 13th 2018.
+ * A UI element as of February 4th 2019.
  */
-public class TabUtils {
+public class UITabBar extends UIElement.UIPanel {
     public LinkedList<Tab> tabs = new LinkedList<Tab>();
     public LinkedList<Tab> incomingTabs = new LinkedList<Tab>();
 
     public HashSet<Tab> outgoingTabs = new HashSet<Tab>();
 
     public final UITabPane parentView;
+    private final UIScrollbar tabScroller;
 
     // If this is false, the tab pane should try and actively avoid situations in which no tab is selected by choosing the first tab.
     // That said, it's not impossible the calling application could force the pane into a situation where no tab is selected...
     public final boolean canSelectNone;
     public final boolean canDragTabs;
 
-    // This is used as the basis for calculations.
-    public final int tabBarHeight;
-
     // -1 means not shortened, otherwise it's max length.
     protected int shortTabs = -1;
+
+    private final int wantedHeight;
+    private int effectiveHeight, fullWantedHeight;
+    private int scrollAreaX;
 
     // If true when draggingTabs reaches zero elements, the parent view tabReorderComplete function is called.
     private boolean tabReorderDidSomething = false;
     public WeakHashMap<Tab, IPointerReceiver.RelativeResizePointerReceiver> draggingTabs = new WeakHashMap<Tab, IPointerReceiver.RelativeResizePointerReceiver>();
 
-    public TabUtils(boolean selectNone, boolean canDrag, UITabPane par, int h) {
+    public UITabBar(boolean selectNone, boolean canDrag, UITabPane par, int h, int scrollerSize) {
         canSelectNone = selectNone;
         canDragTabs = canDrag;
         parentView = par;
-        tabBarHeight = getHeight(h);
-    }
-
-    public IPointerReceiver apply(IPointer pointer) {
-        int x = pointer.getX();
-        int y = pointer.getY() - parentView.tabBarY;
-        if (y < tabBarHeight) {
-            if (y >= 0) {
-                int pos = parentView.getScrollOffsetX();
-                for (final Tab w : tabs) {
-                    final int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
-                    if (x < (pos + tabW)) {
-                        if (TabUtils.clickInTab(w, x - pos, y - parentView.tabBarY, tabW, tabBarHeight))
-                            return null;
-                        parentView.selectTab(w.contents);
-                        if (canDragTabs) {
-                            IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new IConsumer<Size>() {
-                                @Override
-                                public void accept(Size size) {
-                                    if (tabs.contains(w)) {
-                                        tabReorderer(size.width + (tabW / 2), w);
-                                    } else {
-                                        draggingTabs.remove(w);
-                                        if (draggingTabs.isEmpty())
-                                            allTabReordersComplete();
-                                    }
-                                }
-                            }) {
-                                @Override
-                                public void handlePointerEnd(IPointer state) {
-                                    super.handlePointerEnd(state);
-                                    draggingTabs.remove(w);
-                                    if (draggingTabs.isEmpty())
-                                        allTabReordersComplete();
-                                }
-                            };
-                            draggingTabs.put(w, rrpr);
-                            return rrpr;
-                        } else {
-                            return null;
-                        }
-                    }
-                    pos += tabW;
-                }
-                if (canSelectNone)
-                    parentView.selectTab(null);
-            }
+        wantedHeight = getHeight(h);
+        if (scrollerSize == 0) {
+            tabScroller = null;
+        } else {
+            tabScroller = new UIScrollbar(false, scrollerSize);
         }
-        return null;
     }
 
-    public void render(Size bounds, int tabBarY, IGrDriver igd) {
+    @Override
+    public void render(IGrDriver igd) {
+        super.render(igd);
+        Size bounds = getSize();
         boolean willUpdateLater = parentView.handleIncoming();
 
-        UIBorderedElement.drawBorder(igd, 8, 0, 0, tabBarY, bounds.width, tabBarHeight);
+        UIBorderedElement.drawBorder(igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
 
         LinkedList<Tab> outgoing2 = new LinkedList<Tab>();
         HashSet<Tab> outgoingTabs2 = outgoingTabs;
@@ -123,12 +86,12 @@ public class TabUtils {
             parentView.runLayout();
 
         for (int pass = 0; pass < (((draggingTabs.size() > 0) && canDragTabs) ? 2 : 1); pass++) {
-            int pos = parentView.getScrollOffsetX();
+            int pos = getScrollOffsetX();
             boolean toggle = false;
             for (Tab w : tabs) {
                 // This is used for all rendering.
                 int theDisplayOX = pos;
-                int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
+                int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
                 int base = toggle ? 9 : 8;
                 if (parentView.selectedTab == w)
                     base = 10;
@@ -156,20 +119,117 @@ public class TabUtils {
                     int[] localST = igd.getLocalST();
                     int oldTY = localST[1];
                     int oldCD = localST[5];
-                    localST[5] = Math.min(localST[5], localST[1] + tabBarHeight);
-                    localST[1] += tabBarHeight / 8;
+                    localST[5] = Math.min(localST[5], localST[1] + effectiveHeight);
+                    localST[1] += effectiveHeight / 8;
                     igd.updateST();
-                    TabUtils.drawTab(base, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
+                    UITabBar.drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, UITabBar.getVisibleTabName(w, shortTabs), w.icons);
                     localST[1] = oldTY;
                     localST[5] = oldCD;
                     igd.updateST();
                 } else {
-                    TabUtils.drawTab(base, theDisplayOX, tabBarY, tabW, tabBarHeight, igd, TabUtils.getVisibleTabName(w, shortTabs), w.icons);
+                    UITabBar.drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, UITabBar.getVisibleTabName(w, shortTabs), w.icons);
                 }
 
                 pos += tabW;
             }
         }
+    }
+
+    private int calculateTabBarWidth() {
+        int tl = 0;
+        for (UITabBar.Tab tab : tabs)
+            tl += UITabBar.getTabWidth(tab, shortTabs, effectiveHeight);
+        int extra = canSelectNone ? wantedHeight : 0;
+        return tl + extra;
+    }
+
+    private int calculateLongestTabName() {
+        int longestTabName = 0;
+        for (UITabBar.Tab tab : tabs)
+            longestTabName = Math.max(tab.contents.toString().length(), longestTabName);
+        return longestTabName;
+    }
+
+    @Override
+    public void runLayout() {
+        Size bounds = getSize();
+        Size wantedSize = null;
+
+        for (int pass = ((tabScroller == null) ? 1 : 0); pass < ((tabScroller == null) ? 2 : 3); pass++) {
+            // Pass 0: With scrollbar
+            // Pass 1 (if sufficent room estimated, or if no scrollbar): Without scrollbar
+            // Pass 2 (if pass 1 fail): Restore scrollbar
+            boolean thisPassHasScrollbar = pass != 1;
+
+            fullWantedHeight = wantedHeight;
+
+            effectiveHeight = bounds.height;
+            if (thisPassHasScrollbar) {
+                // tabScroller can't be null in a situation where passes other than 1 are run.
+                if (!layoutContainsElement(tabScroller))
+                    layoutAddElement(tabScroller);
+
+                int tsh = tabScroller.getWantedSize().height;
+
+                effectiveHeight -= tsh;
+                fullWantedHeight += tsh;
+
+                tabScroller.setForcedBounds(this, new Rect(0, effectiveHeight, bounds.width, tsh));
+            } else {
+                if (tabScroller != null)
+                    if (layoutContainsElement(tabScroller))
+                        layoutRemoveElement(tabScroller);
+            }
+
+            shortTabs = -1;
+            int longestWidth = calculateTabBarWidth();
+            int eScrollAreaX = Math.max(0, longestWidth - bounds.width);
+            if (thisPassHasScrollbar) {
+                scrollAreaX = eScrollAreaX;
+            } else {
+                scrollAreaX = 0;
+            }
+            if (tabScroller == null) {
+                int lastWidth = longestWidth;
+                int longestTabName = calculateLongestTabName();
+                while (lastWidth > bounds.width) {
+                    // advance
+                    if (shortTabs == -1) {
+                        shortTabs = longestTabName - 1;
+                    } else {
+                        shortTabs--;
+                    }
+                    if (shortTabs <= 0) {
+                        shortTabs = 0;
+                        break;
+                    }
+                    lastWidth = calculateTabBarWidth();
+                }
+            }
+
+            wantedSize = new Size(longestWidth, fullWantedHeight);
+
+            // Implement pass sufficiency rules
+            if (pass == 0) {
+                // Scroll area > 0: scrollbar definitely needed, break now as one is setup now
+                // otherwise, scrollbar may not be needed so do no scrollbar pass
+                if (eScrollAreaX > 0)
+                    break;
+            } else if (pass == 1) {
+                // Scroll area == 0: everything contained properly, break now
+                // otherwise, scrollbar needed so do final scrollbar pass
+                if (eScrollAreaX == 0)
+                    break;
+            }
+        }
+        setWantedSize(wantedSize);
+    }
+
+    // Used as a base for drawing.
+    protected int getScrollOffsetX() {
+        if (tabScroller != null)
+            return -(int) (tabScroller.scrollPoint * scrollAreaX);
+        return 0;
     }
 
     public void findReplacementTab() {
@@ -188,6 +248,7 @@ public class TabUtils {
             incomingTabs.clear();
             if (parentView.selectedTab == null)
                 parentView.selectTab(tabs.getFirst().contents);
+            runLayoutLoop();
             return true;
         }
         return false;
@@ -201,10 +262,10 @@ public class TabUtils {
             // Used to reorder tabs
             int expectedIndex = -1;
             int selectedIndex = -1;
-            int pos = parentView.getScrollOffsetX();
+            int pos = getScrollOffsetX();
             int i = 0;
             for (Tab w : tabs) {
-                int tabW = TabUtils.getTabWidth(w, shortTabs, tabBarHeight);
+                int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
                 pos += tabW;
                 if (x < pos)
                     if (expectedIndex == -1)
@@ -293,6 +354,65 @@ public class TabUtils {
             icoBack += h;
         }
         return false;
+    }
+
+    @Override
+    public IPointerReceiver handleNewPointer(IPointer pointer) {
+        int x = pointer.getX();
+        int y = pointer.getY();
+        if (y < effectiveHeight) {
+            int pos = getScrollOffsetX();
+            for (final Tab w : tabs) {
+                final int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
+                if (x < (pos + tabW)) {
+                    if (UITabBar.clickInTab(w, x - pos, y, tabW, effectiveHeight))
+                        return null;
+                    parentView.selectTab(w.contents);
+                    if (canDragTabs) {
+                        IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new IConsumer<Size>() {
+                            @Override
+                            public void accept(Size size) {
+                                if (tabs.contains(w)) {
+                                    tabReorderer(size.width + (tabW / 2), w);
+                                } else {
+                                    draggingTabs.remove(w);
+                                    if (draggingTabs.isEmpty())
+                                        allTabReordersComplete();
+                                }
+                            }
+                        }) {
+                            @Override
+                            public void handlePointerEnd(IPointer state) {
+                                super.handlePointerEnd(state);
+                                draggingTabs.remove(w);
+                                if (draggingTabs.isEmpty())
+                                    allTabReordersComplete();
+                            }
+                        };
+                        draggingTabs.put(w, rrpr);
+                        return rrpr;
+                    } else {
+                        return super.handleNewPointer(pointer);
+                    }
+                }
+                pos += tabW;
+            }
+            if (canSelectNone)
+                parentView.selectTab(null);
+        }
+        return super.handleNewPointer(pointer);
+    }
+
+    @Override
+    public void handleMousewheel(int x, int y, boolean north) {
+        // Please don't throw computer monitors at me for this.
+        if (tabScroller != null) {
+            if (y < fullWantedHeight) {
+                tabScroller.handleMousewheel(x, y, north);
+                return;
+            }
+        }
+        super.handleMousewheel(x, y, north);
     }
 
     public interface TabIcon {

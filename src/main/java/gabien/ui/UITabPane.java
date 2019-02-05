@@ -21,17 +21,13 @@ import java.util.Random;
  */
 public class UITabPane extends UIElement.UIPanel {
 
-    private final TabUtils tabManager;
+    private final UIElement thbrLeft, thbrRight;
+    private final UITabBar tabManager;
 
     // tabOverheadHeight is the Y position of the selected window.
-    // tabBarY is where the bar is in the overhead.
-    protected int tabBarY;
     private int tabOverheadHeight;
-    private int scrollAreaX;
 
-    protected TabUtils.Tab selectedTab;
-
-    private final UIScrollbar tabScroller;
+    protected UITabBar.Tab selectedTab;
 
     // for if no tab is selected
     private double[] currentNTState = new double[8 * 8];
@@ -41,21 +37,23 @@ public class UITabPane extends UIElement.UIPanel {
     private Random ntRandom = new Random();
     public double visualizationOrange = 0.0d;
 
-    // Not to actually be used.
-    public final int tabBarHeight;
-
     public UITabPane(int h, boolean csn, boolean cdt) {
         this(h, csn, cdt, 0);
     }
 
     public UITabPane(int h, boolean csn, boolean cdt, int scrollerSize) {
-        tabManager = new TabUtils(csn, cdt, this, h);
-        if (scrollerSize == 0) {
-            tabScroller = null;
-        } else {
-            tabScroller = new UIScrollbar(false, scrollerSize);
-        }
-        tabBarHeight = tabManager.tabBarHeight;
+        this(h, csn, cdt, scrollerSize, null, null);
+    }
+
+    public UITabPane(int h, boolean csn, boolean cdt, int scrollerSize, UIElement tl, UIElement tr) {
+        tabManager = new UITabBar(csn, cdt, this, h, scrollerSize);
+        layoutAddElement(tabManager);
+        thbrLeft = tl;
+        thbrRight = tr;
+        if (thbrLeft != null)
+            layoutAddElement(thbrLeft);
+        if (thbrRight != null)
+            layoutAddElement(thbrRight);
     }
 
     @Override
@@ -88,7 +86,6 @@ public class UITabPane extends UIElement.UIPanel {
     public void render(IGrDriver igd) {
         super.render(igd);
         Size bounds = getSize();
-        tabManager.render(bounds, tabBarY, igd);
         if (selectedTab == null) {
             int w = bounds.width / 8;
             int h = (bounds.height - tabOverheadHeight) / 8;
@@ -109,7 +106,7 @@ public class UITabPane extends UIElement.UIPanel {
         }
     }
 
-    public void handleClosedUserTab(TabUtils.Tab wvWindow, boolean selfDestruct) {
+    public void handleClosedUserTab(UITabBar.Tab wvWindow, boolean selfDestruct) {
         // Same reasoning as in UIWindowView: If it was manually removed, responsibility goes to remover.
         if (selfDestruct)
             wvWindow.contents.onWindowClose();
@@ -119,14 +116,6 @@ public class UITabPane extends UIElement.UIPanel {
         // Default behavior: override as you wish
     }
 
-
-    // Used as a base for drawing.
-    protected int getScrollOffsetX() {
-        if (tabScroller != null)
-            return -(int) (tabScroller.scrollPoint * scrollAreaX);
-        return 0;
-    }
-
     public boolean handleIncoming() {
         return tabManager.handleIncoming();
     }
@@ -134,67 +123,36 @@ public class UITabPane extends UIElement.UIPanel {
     @Override
     public void runLayout() {
         Size r = getSize();
-        if (tabScroller != null)
-            if (layoutContainsElement(tabScroller))
-                layoutRemoveElement(tabScroller);
-        tabBarY = 0;
-        tabManager.shortTabs = -1;
-        tabOverheadHeight = tabManager.tabBarHeight;
-        // IDE warning being silly again.
-        int longestWidth = tabOverheadHeight;
-        while (true) {
-            int tl = 0;
-            int longestTabName = 0;
-            for (TabUtils.Tab tab : tabManager.tabs) {
-                longestTabName = Math.max(tab.contents.toString().length(), longestTabName);
-                tl += TabUtils.getTabWidth(tab, tabManager.shortTabs, tabManager.tabBarHeight);
-            }
-            int extra = 0;
-            // If the user can select nothing, then add extra margin for it (!)
-            if (tabManager.canSelectNone)
-                extra = tabManager.tabBarHeight;
-            longestWidth = Math.max(longestWidth, tl + extra);
-            if ((tl + extra) <= r.width)
-                break;
-            if (tabScroller != null) {
-                tabBarY = 0;
-                int tsh = tabScroller.getWantedSize().height;
-                tabOverheadHeight = tabManager.tabBarHeight + tsh;
-                tabScroller.setForcedBounds(null, new Rect(0, tabManager.tabBarHeight, r.width, tsh));
-                scrollAreaX = (tl + extra) - r.width;
-                layoutAddElement(tabScroller);
-                break;
-            }
-            // advance
-            if (tabManager.shortTabs == -1) {
-                tabManager.shortTabs = longestTabName - 1;
-            } else {
-                tabManager.shortTabs--;
-            }
-            if (tabManager.shortTabs <= 0) {
-                tabManager.shortTabs = 0;
-                break;
-            }
-        }
-        if (selectedTab != null) {
-            selectedTab.contents.setForcedBounds(this, new Rect(0, tabOverheadHeight, r.width, r.height - tabOverheadHeight));
-            Size gws = selectedTab.contents.getWantedSize();
-            setWantedSize(new Size(Math.max(longestWidth, gws.width), tabOverheadHeight + gws.height));
-        } else {
-            setWantedSize(new Size(longestWidth, longestWidth));
-        }
-    }
+        Size w = tabManager.getWantedSize();
+        tabOverheadHeight = w.height;
 
-    @Override
-    public void handleMousewheel(int x, int y, boolean north) {
-        // Please don't throw computer monitors at me for this.
-        if (tabScroller != null) {
-            if (y < tabOverheadHeight) {
-                tabScroller.handleMousewheel(x, y, north);
-                return;
-            }
+        int tmLeftMargin = 0;
+        int tmRightMargin = 0;
+        if (thbrLeft != null) {
+            Size sz = thbrLeft.getWantedSize();
+            tmLeftMargin = sz.width;
+            tabOverheadHeight = Math.max(tabOverheadHeight, sz.height);
         }
-        super.handleMousewheel(x, y, north);
+        if (thbrRight != null) {
+            Size sz = thbrRight.getWantedSize();
+            tmRightMargin = sz.width;
+            tabOverheadHeight = Math.max(tabOverheadHeight, sz.height);
+        }
+        if (thbrLeft != null)
+            thbrLeft.setForcedBounds(this, new Rect(0, 0, tmLeftMargin, tabOverheadHeight));
+        if (thbrRight != null)
+            thbrRight.setForcedBounds(this, new Rect(r.width - tmRightMargin, 0, tmRightMargin, tabOverheadHeight));
+
+        tabManager.setForcedBounds(this, new Rect(tmLeftMargin, 0, r.width - (tmLeftMargin + tmRightMargin), tabOverheadHeight));
+
+
+        Size uhoh = new Size(0, 0);
+        if (selectedTab != null) {
+            UIElement uie = selectedTab.contents;
+            uhoh = uie.getWantedSize();
+            uie.setForcedBounds(this, new Rect(0, tabOverheadHeight, r.width, r.height - tabOverheadHeight));
+        }
+        setWantedSize(new Size(Math.max(w.width, uhoh.width), w.height + uhoh.height));
     }
 
     public void selectTab(UIElement target) {
@@ -206,11 +164,12 @@ public class UITabPane extends UIElement.UIPanel {
             return;
         }
         for (int i = 0; i < 2; i++) {
-            for (TabUtils.Tab wv : tabManager.tabs) {
+            for (UITabBar.Tab wv : tabManager.tabs) {
                 if (wv.contents == target) {
                     // verified, actually do it
                     for (UIElement uie : layoutGetElements())
-                        layoutRemoveElement(uie);
+                        if ((uie != tabManager) && (uie != thbrLeft) && (uie != thbrRight))
+                            layoutRemoveElement(uie);
                     selectedTab = wv;
                     layoutAddElement(selectedTab.contents);
                     layoutSelect(selectedTab.contents);
@@ -229,7 +188,7 @@ public class UITabPane extends UIElement.UIPanel {
 
     public int getTabIndex() {
         int idx = 0;
-        for (TabUtils.Tab tab : tabManager.tabs) {
+        for (UITabBar.Tab tab : tabManager.tabs) {
             if (selectedTab == tab)
                 return idx;
             idx++;
@@ -241,11 +200,11 @@ public class UITabPane extends UIElement.UIPanel {
         return tabManager.shortTabs != -1;
     }
 
-    public void addTab(TabUtils.Tab wvWindow) {
+    public void addTab(UITabBar.Tab wvWindow) {
         tabManager.incomingTabs.add(wvWindow);
     }
 
-    public void removeTab(TabUtils.Tab tab) {
+    public void removeTab(UITabBar.Tab tab) {
         // Possible double-presence if we don't get rid of it NOW.
         // On next render of tabManager, the outgoing-tab is processed.
         // Other stuff should be prepared for this case.
@@ -259,18 +218,10 @@ public class UITabPane extends UIElement.UIPanel {
         tabManager.outgoingTabs.add(tab);
     }
 
-    public LinkedList<TabUtils.Tab> getTabs() {
-        LinkedList<TabUtils.Tab> wv = new LinkedList<TabUtils.Tab>();
+    public LinkedList<UITabBar.Tab> getTabs() {
+        LinkedList<UITabBar.Tab> wv = new LinkedList<UITabBar.Tab>();
         wv.addAll(tabManager.tabs);
         wv.addAll(tabManager.incomingTabs);
         return wv;
-    }
-
-    @Override
-    public IPointerReceiver handleNewPointer(IPointer state) {
-        IPointerReceiver ipr = tabManager.apply(state);
-        if (ipr != null)
-            return ipr;
-        return super.handleNewPointer(state);
     }
 }

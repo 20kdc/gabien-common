@@ -37,7 +37,7 @@ public class UIWindowView extends UIElement {
     public int sizerActual = 8;
 
     public int getWindowFrameHeight() {
-        return TabUtils.getHeight(windowTextHeight);
+        return UITabBar.getHeight(windowTextHeight);
     }
 
     @Override
@@ -114,11 +114,11 @@ public class UIWindowView extends UIElement {
         desktopChanged = true;
     }
 
-    public void removeTab(TabUtils.Tab win) {
+    public void removeTab(UITabBar.Tab win) {
         removeTab(win, RemoveReason.Manual);
     }
 
-    public void removeTab(TabUtils.Tab win, RemoveReason selfDestruct) {
+    public void removeTab(UITabBar.Tab win, RemoveReason selfDestruct) {
         updateDesktopCache();
         for (IShell s : desktopCache) {
             if (s.equals(win)) {
@@ -165,10 +165,10 @@ public class UIWindowView extends UIElement {
         Manual
     }
 
-    public static class TabShell extends TabUtils.Tab implements IShell {
+    public static class TabShell extends UITabBar.Tab implements IShell {
         public final UIWindowView parent;
 
-        public TabShell(UIWindowView p, UIElement contents, TabUtils.TabIcon[] icons) {
+        public TabShell(UIWindowView p, UIElement contents, UITabBar.TabIcon[] icons) {
             super(contents, icons);
             parent = p;
 
@@ -202,7 +202,7 @@ public class UIWindowView extends UIElement {
             if (framebar.contains(x, y)) {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
-                if (!TabUtils.clickInTab(this, x - framebar.x, y - framebar.y, framebar.width, fh))
+                if (!UITabBar.clickInTab(this, x - framebar.x, y - framebar.y, framebar.width, fh))
                     return new IPointerReceiver.RelativeResizePointerReceiver(r.x, r.y, new IConsumer<Size>() {
                         @Override
                         public void accept(Size size) {
@@ -299,7 +299,7 @@ public class UIWindowView extends UIElement {
             UIBorderedElement.drawBorder(igd, 5, parent.sizerVisual, b.x - parent.sizerVisual, b.y - (windowFrameHeight + parent.sizerVisual), b.width + (parent.sizerVisual * 2), b.height + (windowFrameHeight + (parent.sizerVisual * 2)));
 
             boolean winSelected = parent.selectedWindow == this;
-            TabUtils.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), icons);
+            UITabBar.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), icons);
 
             UIPanel.scissoredRender(contents, igd);
         }
@@ -347,7 +347,7 @@ public class UIWindowView extends UIElement {
                 ow += ox;
                 ox = 0;
             }
-            ow = Math.max(ow, TabUtils.getTabWidth(this, 0, fh));
+            ow = Math.max(ow, UITabBar.getTabWidth(this, 0, fh));
             oh = Math.max(oh, 0);
             if ((ox != s.x) || (oy != s.y) || (ow != s.width) || (oh != s.height))
                 contents.setForcedBounds(null, new Rect(ox, oy, ow, oh));
