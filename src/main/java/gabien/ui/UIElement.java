@@ -107,7 +107,8 @@ public abstract class UIElement {
 
     // How you should call runLayout.
     // Failure to call it this way can result in *stuff* not getting updated properly.
-    public final void runLayoutLoop() {
+    // In particular, this is now NON-FINAL.
+    public void runLayoutLoop() {
         if (currentlyLayouting) {
             weNeedToKeepLayouting = true;
             return;
@@ -168,11 +169,7 @@ public abstract class UIElement {
     // Java's definition of % is weird.
     // Right now not optimizing since I don't know which operators I can trust.
     public static int sensibleCellMod(int i, int sz) {
-        while (i < 0)
-            i += sz;
-        while (i >= sz)
-            i -= sz;
-        return i;
+        return i - (sensibleCellDiv(i, sz) * sz);
     }
 
     @Override
@@ -281,7 +278,6 @@ public abstract class UIElement {
             // elementBounds: invalid (something about not being static)
             // this.elementBounds: invalid (access error)
             // myself.elementBounds: ok
-            UIElement myself = this;
             recacheElements();
             for (UIElement uie : cachedAllElements)
                 if (uie.visibleFlag)
