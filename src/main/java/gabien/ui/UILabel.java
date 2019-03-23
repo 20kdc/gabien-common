@@ -18,6 +18,7 @@ import gabien.IPeripherals;
 public class UILabel extends UIBorderedElement {
     public String text;
     private final Contents contents;
+    public boolean centre;
 
     // Creates a label, with text, and sets the bounds accordingly.
     public UILabel(String txt, int h) {
@@ -28,6 +29,11 @@ public class UILabel extends UIBorderedElement {
         setWantedSize(getRecommendedTextSize("", h));
         runLayout();
         setForcedBounds(null, new Rect(getWantedSize()));
+    }
+
+    public UILabel centred() {
+        centre = true;
+        return this;
     }
 
     @Override
@@ -47,7 +53,7 @@ public class UILabel extends UIBorderedElement {
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
-        contents.render(textBlack, 0, 0, igd, false);
+        contents.render(textBlack, 0, 0, igd, centre);
     }
 
     /**
