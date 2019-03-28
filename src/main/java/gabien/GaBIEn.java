@@ -193,7 +193,7 @@ public class GaBIEn {
     public static String dirname(String s) {
         int p = s.lastIndexOf('/');
         if (p == -1)
-            return s;
+            return "";
         return s.substring(0, p);
     }
 

@@ -66,21 +66,20 @@ public class UITabBar extends UIElement.UIPanel {
 
         UIBorderedElement.drawBorder(igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
 
-        LinkedList<Tab> outgoing2 = new LinkedList<Tab>();
         HashSet<Tab> outgoingTabs2 = outgoingTabs;
         outgoingTabs = new HashSet<Tab>();
         for (Tab w : tabs) {
             boolean reqU = w.contents.requestsUnparenting();
             if (outgoingTabs2.contains(w) || reqU) {
                 willUpdateLater = true;
-                outgoing2.add(w);
+                outgoingTabs2.add(w);
                 parentView.handleClosedUserTab(w, reqU);
             }
         }
         if (parentView.selectedTab != null)
             if (outgoingTabs2.contains(parentView.selectedTab))
                 findReplacementTab();
-        tabs.removeAll(outgoing2);
+        tabs.removeAll(outgoingTabs2);
 
         if (willUpdateLater)
             parentView.runLayout();
