@@ -56,8 +56,10 @@ public class UIScrollLayout extends UIElement.UIPanel {
     // 2. It allows pulling off tricks like this:
     @Override
     public void runLayoutLoop() {
-        if (currentlyPerformingTriwayLayout)
+        if (currentlyPerformingTriwayLayout) {
+            super.runLayoutLoop();
             return;
+        }
         currentlyPerformingTriwayLayout = true;
 
         Size gs = getSize();
