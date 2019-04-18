@@ -146,6 +146,10 @@ public class UIScrollLayout extends UIElement.UIPanel {
         runLayoutLoop();
     }
 
+    protected int calcScrollHeight(Size bounds) {
+        return Math.max(scrollLength - (scrollbar.vertical ? bounds.height : bounds.width), 0);
+    }
+
     // Lays out the elements with the current parameters.
     // DOES NOT add/remove scrollbar as it did previously. That was a bad idea
     // DOES update scrollLength.
@@ -155,8 +159,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
         lastScrollPoint = scrollbar.scrollPoint;
 
         Size bounds = getSize();
-        int screenLength = scrollbar.vertical ? bounds.height : bounds.width;
-        int scrollHeight = Math.max(scrollLength - screenLength, 0);
+        int scrollHeight = calcScrollHeight(bounds);
         int appliedScrollbarSz = sbSize;
 
         int rY = (int) (-scrollbar.scrollPoint * scrollHeight);
