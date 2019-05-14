@@ -9,6 +9,9 @@ package gabien;
 
 import gabien.ui.Size;
 
+import java.util.WeakHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Just get this out of UILabel so I can continue doing meaningful stuff.
  * Created on 16th February 2018.
@@ -22,6 +25,10 @@ public class FontManager {
     private static IImage internalFont6, internalFont6B;
     private static IImage internalFont8, internalFont8B;
     private static IImage internalFont16, internalFont16B;
+
+    private static ReentrantLock formatLock = new ReentrantLock();
+    // Key format is a weird mess, check the relevant function
+    private static WeakHashMap<String, String> formatData = new WeakHashMap<String, String>();
 
     private static IImage getInternalFontFor(int height, boolean textBlack) {
         if (height >= 16) {
@@ -60,15 +67,6 @@ public class FontManager {
             px[i] &= 0xFF000000;
         }
         return GaBIEn.createImage(px, internalFont16.getWidth(), internalFont16.getHeight());
-    }
-
-    public static void resetInternalFonts() {
-        internalFont6 = null;
-        internalFont8 = null;
-        internalFont16 = null;
-        internalFont6B = null;
-        internalFont8B = null;
-        internalFont16B = null;
     }
 
     private static boolean useSystemFont(String text, int height) {
@@ -173,38 +171,62 @@ public class FontManager {
     }
 
     public static String formatTextFor(String text, int textHeight, int width) {
-        // Best used for reading the IPCRESS file.
+        // This is a bunch of worst-case scenarios that should be ignored anyway
+        if (width <= 0)
+            return "";
+        String fo = fontOverride;
+        String key = (fo == null ? "<NULL, NOBODY WOULD NAME A FONT THIS, IF YOU DO, PLEASE DON'T>" : fo) + ";`bird`;" + text + ";`bird`;" + width + ";" + textHeight;
+        String res;
+        // This takes a while, and is a critical path, particularly on Android.
+        // So *cache it*.
+        formatLock.lock();
+        res = formatData.get(key);
+        formatLock.unlock();
+        if (res != null)
+            return res;
+        String[] newlines = text.split("\n", -1);
         StringBuilder work = new StringBuilder();
-        while (text.length() > 0) {
-            String firstLine = text;
-            int firstLinePtrIdx = firstLine.indexOf('\n');
-            if (firstLinePtrIdx != -1) {
-                text = firstLine.substring(firstLinePtrIdx + 1);
-                firstLine = firstLine.substring(0, firstLinePtrIdx);
-            } else {
-                text = "";
-            }
-            boolean testLen = getLineLength(firstLine, textHeight) > width;
-            String spaceAppend = (text.length() > 0) ? "\n" : "";
-            if (testLen) {
-                int space = firstLine.lastIndexOf(' ');
-                while ((space > 0) && testLen) {
-                    text = " " + firstLine.substring(space + 1) + spaceAppend + text;
-                    spaceAppend = "";
-                    firstLine = firstLine.substring(0, space);
-                    testLen = getLineLength(firstLine, textHeight) > width;
-                    space = firstLine.lastIndexOf(' ');
+        if (newlines.length == 1) {
+            String firstLine = newlines[0];
+            while (true) {
+                String nextFirstLine = "";
+                boolean testLen = getLineLength(firstLine, textHeight) > width;
+                if (testLen) {
+                    // Break down words...
+                    int space;
+                    while (((space = firstLine.lastIndexOf(' ')) > 0) && testLen) {
+                        nextFirstLine = firstLine.substring(space) + nextFirstLine;
+                        firstLine = firstLine.substring(0, space);
+                        testLen = getLineLength(firstLine, textHeight) > width;
+                    }
+                    // And, if need be, letters.
+                    while (testLen && (firstLine.length() > 1)) {
+                        int split = firstLine.length() / 2;
+                        nextFirstLine = firstLine.substring(split) + nextFirstLine;
+                        firstLine = firstLine.substring(0, split);
+                        testLen = getLineLength(firstLine, textHeight) > width;
+                    }
+                }
+
+                work.append(firstLine);
+                firstLine = nextFirstLine;
+                if (firstLine.length() > 0) {
+                    work.append("\n");
+                } else {
+                    break;
                 }
             }
-            while (testLen && (firstLine.length() > 1)) {
-                text = firstLine.substring(firstLine.length() - 1) + text;
-                firstLine = firstLine.substring(0, firstLine.length() - 1);
-                testLen = getLineLength(firstLine, textHeight) > width;
+        } else {
+            // This causes the caching to be applied per-line.
+            for (int i = 0; i < newlines.length; i++) {
+                if (i != 0)
+                    work.append('\n');
+                work.append(formatTextFor(newlines[i], textHeight, width));
             }
-            work.append(firstLine);
-            if ((text.length() > 0) || (firstLinePtrIdx != -1))
-                work.append('\n');
         }
-        return work.toString();
+        formatLock.lock();
+        formatData.put(key, res = work.toString());
+        formatLock.unlock();
+        return res;
     }
 }

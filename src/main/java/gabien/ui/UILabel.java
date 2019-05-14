@@ -97,8 +97,8 @@ public class UILabel extends UIBorderedElement {
                 // The answer is simply that B's height is what we need to be given the width,
                 //  and A is what we want to be, width and height alike.
                 Size a = getRecommendedTextSize(text, textHeight, bw);
-                Size b = getRecommendedTextSize(textFormatted, textHeight, bw);
-                lastActSize = sz2 = new Size(a.width, b.height);
+                Size b = lastActSize = getRecommendedTextSize(textFormatted, textHeight, bw);
+                sz2 = new Size(a.width, b.height);
             }
             return sz2;
         }

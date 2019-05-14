@@ -422,12 +422,15 @@ public abstract class UIElement {
         @Override
         public void runLayout() {
             boolean cannotSFB = currentElement.getSize().sizeEquals(getSize());
-            if (!cannotSFB) {
+            if (!cannotSFB)
                 currentElement.setForcedBounds(this, new Rect(getSize()));
-            } else {
-                currentElement.runLayoutLoop();
-            }
+            currentElement.runLayoutLoop();
             setWantedSize(currentElement.getWantedSize());
+        }
+
+        @Override
+        public void runLayoutLoop() {
+            runLayout();
         }
 
         @Override
