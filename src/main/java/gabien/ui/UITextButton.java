@@ -24,7 +24,7 @@ public class UITextButton extends UIButton<UITextButton> {
         text = tex;
         onClick = click;
 
-        setWantedSize(getRecommendedTextSize("", h, getBorderWidth()));
+        setForcedBounds(null, new Rect(getRecommendedTextSize(tex, h, getBorderWidth())));
         // This overrides the previous wanted size!
         forceToRecommended();
     }

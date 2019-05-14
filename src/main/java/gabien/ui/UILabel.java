@@ -26,7 +26,7 @@ public class UILabel extends UIBorderedElement {
         contents = new Contents(h);
         text = txt;
 
-        setWantedSize(getRecommendedTextSize("", h));
+        setForcedBounds(null, new Rect(getRecommendedTextSize(text, h)));
         runLayout();
         setForcedBounds(null, new Rect(getWantedSize()));
     }

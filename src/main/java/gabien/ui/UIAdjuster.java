@@ -15,6 +15,8 @@ public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
     public final UINumberBox numberDisplay;
 
     public UIAdjuster(int h, long initial, final IFunction<Long, Long> write) {
+        // Not entirely correct, but reduces time wasted on word-wrapping
+        super(h * 16, h);
         incButton = new UITextButton("+", h, new Runnable() {
             @Override
             public void run() {
