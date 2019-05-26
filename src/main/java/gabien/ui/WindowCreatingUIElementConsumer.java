@@ -59,11 +59,11 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
     public void runTick(double dT) {
         activeWindows.addAll(incomingWindows);
         incomingWindows.clear();
-        LinkedList<ActiveWindow> closeThese = new LinkedList<ActiveWindow>();
+        LinkedList<ActiveWindow> closeTheseSD = new LinkedList<ActiveWindow>();
+        LinkedList<ActiveWindow> closeTheseNS = new LinkedList<ActiveWindow>();
         for (ActiveWindow aw : new LinkedList<ActiveWindow>(activeWindows)) {
             if (!aw.igd.stillRunning()) {
-                handleClosedUserWindow(aw.ue, false);
-                closeThese.add(aw);
+                closeTheseNS.add(aw);
                 continue;
             }
 
@@ -132,12 +132,16 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (aw.igd.stillRunning())
                 aw.igd.flush();
             if (aw.ue.requestsUnparenting()) {
-                handleClosedUserWindow(aw.ue, true);
-                closeThese.add(aw);
+                closeTheseSD.add(aw);
                 aw.igd.shutdown();
             }
         }
-        activeWindows.removeAll(closeThese);
+        activeWindows.removeAll(closeTheseSD);
+        activeWindows.removeAll(closeTheseNS);
+        for (ActiveWindow aw : closeTheseSD)
+            handleClosedUserWindow(aw.ue, true);
+        for (ActiveWindow aw : closeTheseNS)
+            handleClosedUserWindow(aw.ue, false);
     }
 
     public void forceRemove(UIElement uie) {
