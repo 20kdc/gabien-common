@@ -93,7 +93,8 @@ public abstract class UIElement {
     public void setWantedSize(Size size) {
         boolean relayout = !wantedSize.sizeEquals(size);
         wantedSize = size;
-        if (relayout)
+        // The !currentlyLayouting is balanced out in runLayoutLoop
+        if (relayout && !currentlyLayouting)
             if (parent != null)
                 parent.runLayoutLoop();
     }
@@ -109,6 +110,7 @@ public abstract class UIElement {
     // Failure to call it this way can result in *stuff* not getting updated properly.
     // In particular, this is now NON-FINAL.
     public void runLayoutLoop() {
+        Size oldWS = getWantedSize();
         if (currentlyLayouting) {
             weNeedToKeepLayouting = true;
             return;
@@ -126,6 +128,9 @@ public abstract class UIElement {
             weNeedToKeepLayouting = false;
         }
         currentlyLayouting = false;
+        if (!oldWS.sizeEquals(getWantedSize()))
+            if (parent != null)
+                parent.runLayoutLoop();
     }
 
     // This method *SHOULD* work like this:
