@@ -121,7 +121,9 @@ public class UIWindowView extends UIElement {
     public void removeTab(UITabBar.Tab win, RemoveReason selfDestruct) {
         updateDesktopCache();
         for (IShell s : desktopCache) {
-            if (s.equals(win)) {
+        	// Not unlikely because TabShell exists.
+        	// That said, this used to use .equals, which makes no sense but isn't really wrong
+            if (s == win) {
                 removeShell(s, selfDestruct);
                 return;
             }
