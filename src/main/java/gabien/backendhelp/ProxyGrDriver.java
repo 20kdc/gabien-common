@@ -17,7 +17,7 @@ import gabien.IImage;
  * Created on 08/06/17.
  */
 public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeImageHolder {
-    public final T target;
+    public T target;
 
     public ProxyGrDriver(T targ) {
         target = targ;

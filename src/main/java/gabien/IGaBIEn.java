@@ -42,20 +42,12 @@ public interface IGaBIEn {
     // Failing that, returns null.
     OutputStream getOutFile(String resource);
 
-    //Means that only one IGrInDriver can be active at a time.
-    //Typically,the last will be active,and all others will be ignored.
-    boolean singleWindowApp();
-
     IRawAudioDriver getRawAudio(); // This is a singleton, but may be created when used.
     void hintShutdownRawAudio();
 
     void ensureQuit();
 
-    //On SingleWindowApp-style platforms,where windowing doesn't exist,ignore windowspecs.
-    IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs);
     IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha);
-
-    WindowSpecs defaultWindowSpecs(String name, int w, int h);
 
     // Get an image.
     // Notably, the image format supports ARGB.
@@ -89,14 +81,4 @@ public interface IGaBIEn {
     boolean tryStartTextEditor(String fpath);
 
     void rmFile(String s);
-
-    // Sets the file browser directory path.
-    // Same path format as usual.
-    void setBrowserDirectory(String s);
-
-    // Starts a file browser.
-    // This is a replacement for UIFileBrowser, and uses native elements whenever possible.
-    // Regarding the path, the only guarantee is that it'll be null or a valid file path.
-    // It does not necessarily have to match the standard gabien path separator.
-    void startFileBrowser(String text, boolean saving, String exts, IConsumer<String> result);
 }

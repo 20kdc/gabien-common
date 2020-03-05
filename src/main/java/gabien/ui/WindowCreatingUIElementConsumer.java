@@ -34,14 +34,19 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         accept(o, scale, fullscreen, true);
     }
 
-    public void accept(UIElement o, int scale, boolean fullscreen, boolean resizable) {
-        final ActiveWindow aw = new ActiveWindow();
+    protected WindowSpecs setupSpecs(UIElement o, int scale, boolean fullscreen, boolean resizable) {
         Rect bounds = o.getParentRelativeBounds();
         WindowSpecs ws = GaBIEn.defaultWindowSpecs(o.toString(), bounds.width, bounds.height);
         ws.scale = scale;
         ws.resizable = resizable;
         ws.fullscreen = fullscreen;
-        aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, ws);
+        return ws;
+    }
+    
+    public void accept(UIElement o, int scale, boolean fullscreen, boolean resizable) {
+        final ActiveWindow aw = new ActiveWindow();
+        Rect bounds = o.getParentRelativeBounds();
+        aw.igd = GaBIEn.makeGrIn(o.toString(), bounds.width, bounds.height, setupSpecs(o, scale, fullscreen, resizable));
         aw.peripherals = aw.igd.getPeripherals();
         aw.ue = o;
         incomingWindows.add(aw);

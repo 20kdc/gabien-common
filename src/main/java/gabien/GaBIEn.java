@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.ui.IConsumer;
 
 import java.io.InputStream;
@@ -16,6 +17,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
+    protected static IGaBIEnMultiWindow internalWindowing;
+    protected static IGaBIEnFileBrowser internalFileBrowser = new EmulatedFileBrowser();
     private static IImage errorImage;
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
     private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
@@ -60,7 +63,7 @@ public class GaBIEn {
     }
 
     public static boolean singleWindowApp() {
-        return internal.singleWindowApp();
+        return internalWindowing.isActuallySingleWindow();
     }
 
     public static IRawAudioDriver getRawAudio() {
@@ -75,7 +78,7 @@ public class GaBIEn {
     }
 
     public static WindowSpecs defaultWindowSpecs(String name, int w, int h) {
-        return internal.defaultWindowSpecs(name, w, h);
+        return internalWindowing.defaultWindowSpecs(name, w, h);
     }
 
     public static IGrInDriver makeGrIn(String name, int w, int h) {
@@ -84,7 +87,7 @@ public class GaBIEn {
     }
 
     public static IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs specs) {
-        return internal.makeGrIn(name, w, h, specs);
+        return internalWindowing.makeGrIn(name, w, h, specs);
     }
 
     // Note: The buffer does not have an alpha channel.
@@ -210,7 +213,7 @@ public class GaBIEn {
     }
 
     public static void setBrowserDirectory(String s) {
-        internal.setBrowserDirectory(s);
+        internalFileBrowser.setBrowserDirectory(s);
     }
 
     // exts should just be left blank for now.
@@ -218,7 +221,7 @@ public class GaBIEn {
     // Regarding the path, the only guarantee is that it'll be null or a valid file path.
     // It does not necessarily have to match the standard gabien path separator.
     public static void startFileBrowser(String s, boolean saving, String exts, IConsumer<String> iConsumer) {
-        internal.startFileBrowser(s, saving, exts, iConsumer);
+        internalFileBrowser.startFileBrowser(s, saving, exts, iConsumer);
     }
 
     // invokeLater-alike for the gabien main thread.

@@ -19,4 +19,8 @@ public final class WindowSpecs {
     // NOTE: On SWA platforms, this is totally ignored.
     // Should attempt to "follow the screen the last window was already on".
     public boolean fullscreen = false;
+    
+    // Creates the window with 'system priority'.
+    // This is used for file browsers or other backend-level modal dialogs.
+    boolean hasSystemPriority = false;
 }
