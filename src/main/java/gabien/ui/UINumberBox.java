@@ -56,6 +56,7 @@ public class UINumberBox extends UILabel {
         Size bounds = getSize();
         if (selected && (!readOnly)) {
             String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, String.valueOf(number), null);
+            // Update storage.
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
             if (lastMinusIdx > 0) {
@@ -71,14 +72,18 @@ public class UINumberBox extends UILabel {
                     newNum = -newNum;
             } catch (Exception e) {
             }
+            number = newNum;
+            editingNLast = number;
+            // Enter confirmation.
+            // NOTE: This has to be after the update to the local number.
+            // Not doing this lead to an interesting bug where number boxes
+            //  wouldn't work because the 'enter' press would revert the number.
             if (peripherals.isEnterJustPressed()) {
                 editingCNumber = number;
                 onEdit.run();
                 peripherals.clearKeys();
                 tempDisableSelection = true;
             }
-            number = newNum;
-            editingNLast = number;
         }
         borderType = selected ? 4 : 3;
         super.updateContents(deltaTime, selected, peripherals);
