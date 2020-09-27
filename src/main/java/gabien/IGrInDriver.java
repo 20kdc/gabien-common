@@ -128,4 +128,7 @@ public interface IGrInDriver extends IGrDriver {
     // Gets an IPeripherals object with a zero offset (if relevant) suitable for passing to UI.
 
     IPeripherals getPeripherals();
+
+    // Estimates UI scale (for DPI support)
+    int estimateUIScaleTenths();
 }

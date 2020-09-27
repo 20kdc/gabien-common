@@ -142,5 +142,10 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
                 performWindowTransition(old);
             }
         }
+        
+        @Override
+        public int estimateUIScaleTenths() {
+            return underlyingWindow.estimateUIScaleTenths();
+        }
     }
 }
