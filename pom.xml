@@ -37,6 +37,7 @@
 		<module>uslx</module>
 		<module>common</module>
 		<module>javase</module>
+		<module>android</module>
 	</modules>
 </project>
 

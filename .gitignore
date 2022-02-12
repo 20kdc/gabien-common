@@ -24,4 +24,15 @@
 !javase/src/
 !javase/src/**
 
+!android
+!android/res
+!android/res/drawable
+!android/res/drawable/hi.txt
+!android/res/values
+!android/res/values/**
+!android/src
+!android/src/**
+!android/*.lua
+!android/*.sh
+
 !example-toolchains.xml
