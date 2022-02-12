@@ -7,6 +7,16 @@ Firstly.
     To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
     You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
+## Current instructions
+
+Everything got switched to Maven when Gradle proved to be a breaking incompatible mess.
+
+That in mind, `mvn install` this and the `gabien-javase` project.
+
+Everything is in flux right now and I might not come back to update this text. Good luck.
+
+## History notes that are themselves semi-outdated
+
 Secondly, this is not very good. Any of it.
 
 "gabien" was a framework I built in 2014 to make writing Java 
