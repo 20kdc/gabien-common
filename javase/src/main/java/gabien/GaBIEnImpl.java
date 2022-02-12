@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.ui.IConsumer;
+import gabien.uslx.append.*;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;

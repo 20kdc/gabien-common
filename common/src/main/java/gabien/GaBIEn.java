@@ -8,7 +8,7 @@
 package gabien;
 
 import gabien.backendhelp.EmulatedFileBrowser;
-import gabien.ui.IConsumer;
+import gabien.uslx.append.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;

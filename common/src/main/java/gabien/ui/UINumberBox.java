@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.IPeripherals;
+import gabien.uslx.append.*;
 
 /**
  * Forgot creation date, but it was back at the time of IkachanMapEdit.

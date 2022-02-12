@@ -12,6 +12,7 @@ import gabien.IPeripherals;
 
 import java.util.LinkedList;
 import java.util.Random;
+import gabien.uslx.append.*;
 
 /**
  * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.

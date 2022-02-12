@@ -18,8 +18,7 @@ import gabien.IGrInDriver;
 import gabien.IPeripherals;
 import gabien.PriorityElevatorForUseByBackendHelp;
 import gabien.WindowSpecs;
-import gabien.ui.IFunction;
-import gabien.ui.IPointer;
+import gabien.uslx.append.*;
 
 /**
  * This 'mux' provides the illusion of multi-window support using:

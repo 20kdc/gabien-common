@@ -6,7 +6,7 @@
  */
 package gabien;
 
-import gabien.ui.IConsumer;
+import gabien.uslx.append.*;
 
 /**
  * This abstracts specifically file browser functionality,

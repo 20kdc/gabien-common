@@ -12,7 +12,7 @@ import gabien.GaBIEn;
 import gabien.IGaBIEnFileBrowser;
 import gabien.PriorityElevatorForUseByBackendHelp;
 import gabien.WindowSpecs;
-import gabien.ui.IConsumer;
+import gabien.uslx.append.*;
 import gabien.ui.UIElement;
 import gabien.ui.WindowCreatingUIElementConsumer;
 

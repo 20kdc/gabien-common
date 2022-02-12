@@ -13,6 +13,7 @@ import gabien.IGrDriver;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
+import gabien.uslx.append.*;
 
 /**
  * Because frankly, the previous tab/window code sucked.

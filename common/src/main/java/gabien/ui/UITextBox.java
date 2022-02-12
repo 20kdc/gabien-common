@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.IPeripherals;
+import gabien.uslx.append.*;
 
 // This serves a dual purpose:
 // 1. text is *always* the current text in the box.

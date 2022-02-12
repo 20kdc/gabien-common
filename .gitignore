@@ -6,6 +6,12 @@
 !.gitignore
 !IDEA-Code-Style.xml
 
+!uslx
+!uslx/
+!uslx/src
+!uslx/src/
+!uslx/src/**
+
 !common
 !common/
 !common/src

@@ -7,8 +7,6 @@
 
 package gabien;
 
-import gabien.ui.IConsumer;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 

@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.ui.IFunction;
+import gabien.uslx.append.*;
 
 import javax.swing.*;
 import java.awt.*;

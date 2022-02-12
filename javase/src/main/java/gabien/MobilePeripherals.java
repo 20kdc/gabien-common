@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.ui.IFunction;
+import gabien.uslx.append.*;
 import gabien.ui.IPointer;
 
 import java.util.HashSet;

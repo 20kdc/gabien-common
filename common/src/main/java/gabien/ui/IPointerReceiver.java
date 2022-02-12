@@ -7,6 +7,8 @@
 
 package gabien.ui;
 
+import gabien.uslx.append.*;
+
 /**
  * Another part of multi-touch stuff.
  * Imagine, if you will, the scene in Elephant's Dream where there are many plugs, and many sockets,

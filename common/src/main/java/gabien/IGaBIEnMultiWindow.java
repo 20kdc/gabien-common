@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.ui.IConsumer;
+import gabien.uslx.append.*;
 
 /**
  * This represents a multi-window environment.

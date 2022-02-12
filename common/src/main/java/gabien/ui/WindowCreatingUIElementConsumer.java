@@ -12,6 +12,7 @@ import gabien.*;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
+import gabien.uslx.append.*;
 
 /**
  * Utility class useful for dealing with the boilerplate UI bootstrap code

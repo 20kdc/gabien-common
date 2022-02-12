@@ -9,7 +9,7 @@ package gabien.backendhelp;
 import java.util.HashSet;
 
 import gabien.IPeripherals;
-import gabien.ui.IFunction;
+import gabien.uslx.append.*;
 import gabien.ui.IPointer;
 
 /**
