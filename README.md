@@ -1,49 +1,45 @@
 # gabien-common
 
-Firstly.
+## License
 
     gabien-common - Cross-platform game and UI framework
     Written starting in 2016 by contributors (see CREDITS.txt)
     To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
     You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-## Current instructions
+## Build Instructions (Command-Line)
 
-Everything got switched to Maven when Gradle proved to be a breaking incompatible mess.
+Ensure Maven is installed and functional. At the present time, I'm using Apache Maven 3.8.4.
 
-That in mind, `mvn install` this and the `gabien-javase` project.
+Run `mvn install` from this repository directory.
 
-Everything is in flux right now and I might not come back to update this text. Good luck.
+All projects will be automatically compiled (and possibly unit-tested).
 
-## History notes that are themselves semi-outdated
+## Build Instructions (Eclipse IDE)
 
-Secondly, this is not very good. Any of it.
+Ensure Maven support is available. Use `File > Import...`.
 
-"gabien" was a framework I built in 2014 to make writing Java 
- applications a bit less painful.
+Select `Maven > Existing Maven Projects`.
 
-Why Java? Portability, and a lack of reliance on external libraries.
+Select this repository directory.
 
-Why? Because external libraries mean dealing with licenses.
+When choosing which sub-projects to import, you may wish to deselect the parent project.
 
-(If C# had the APIs I needed portably and without external libraries, I would switch.
- For now, though, Java's the only one-file no legal madness solution I have.
- There's also the accelerated Java2D thing, which is useful.)
+## History
 
-Instructions:
+"gabien" (Graphics And Basic Input ENgine was at least one of the acronyms) was originally developed as a part of an unofficial map editor for an old freeware game.
 
-    1. Clone the common, JavaSE and target application repositories.
-    2. Build the common, JavaSE and application repositories in that order.
-    3. Run the application repository.
+Mainly, it served as a cross-platform rendering backend, running on both JavaSE and Android.
 
-If using IDEA, run the idea generation on all three repositories seperately,
- then open IDEA on the application repository and fix up the dependencies.
+It was later refactored into a separate library to be used across my personal projects.
 
-Do something similar with your Eclipse workspace if you use Eclipse,
- only now you don't have to be careful as to open the application first,
- or repeat some of the steps for every application being edited.
+Parts of that map editor were eventually integrated into R48 (`gabien-app-r48`), but they were different projects.
 
-(This is as simple a system as I could work out.)
+Since then, it's had peaks and declines, the worst relating to build system issues.
+
+As Java continues to decline, I consider the Godot 3.x series to be the best target for further development, but I have severe hardware compatibility concerns about Godot 4.
+
+With this in mind, I intend to keep this around, just in case.
 
 ## Notes on Code Style
 
@@ -58,3 +54,4 @@ Pedantic, I know.
 Otherwise, 4-spaces indentation, and do NOT use any "rearrange definitions" feature.
 
 Sometimes there's a method to the definition order. (Sometimes there isn't, but still.)
+
