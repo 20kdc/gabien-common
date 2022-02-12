@@ -5,27 +5,16 @@
 !COPYING.txt
 !.gitignore
 !IDEA-Code-Style.xml
-!src
-!src/
-!src/main
-!src/main/
-!src/main/resources
-!src/main/java
 
-# assets
-!src/main/resources/*
+!common
+!common/
+!common/src
+!common/src/
+!common/src/**
 
-# stuff in assets
-!src/main/resources/*/*
+!javase
+!javase/
+!javase/src
+!javase/src/
+!javase/src/**
 
-# stuff in schema subdirs
-!src/main/resources/*/*/*
-
-!src/main/java/*
-!src/main/java/*/*
-!src/main/java/*/*/*
-!src/main/java/*/*/*/*
-!src/main/java/*/*/*/*/*
-!src/main/java/*/*/*/*/*/*
-!src/main/java/*/*/*/*/*/*/*
-!src/main/java/*/*/*/*/*/*/*/*
