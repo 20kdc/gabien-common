@@ -98,24 +98,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         return ClassLoader.getSystemClassLoader().getResourceAsStream("assets/" + resource);
     }
 
-    public InputStream getFile(String FDialog) {
-        try {
-            return new FileInputStream(FDialog);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    @Override
-    public OutputStream getOutFile(String FDialog) {
-        try {
-            return new FileOutputStream(FDialog);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-
     protected IWindowGrBackend makeOffscreenBufferInt(int w, int h, boolean alpha) {
         // Note all the multithreading occurs in OsbDriverMT.
         if (w <= 0)
@@ -179,7 +161,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
             return loadedImages.get(ki);
         try {
             AWTImage img = new AWTImage();
-            img.buf = ImageIO.read(res ? getResource(a) : getFile(a));
+            img.buf = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
             if (img.buf == null)
                 throw new NullPointerException();
             loadedImages.put(ki, img);
@@ -199,7 +181,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         try {
             AWTImage img = new AWTImage();
             BufferedImage tmp;
-            tmp = ImageIO.read(res ? getResource(a) : getFile(a));
+            tmp = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
             img.buf = new BufferedImage(tmp.getWidth(), tmp.getHeight(), BufferedImage.TYPE_INT_ARGB);
             for (int px = 0; px < tmp.getWidth(); px++) {
                 for (int py = 0; py < tmp.getHeight(); py++) {
@@ -282,11 +264,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public void makeDirectories(String s) {
-        new File(s).mkdirs();
-    }
-
-    @Override
     public boolean fileOrDirExists(String s) {
         return new File(s).exists();
     }
@@ -306,11 +283,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
             return false;
         }
         return true;
-    }
-
-    @Override
-    public void rmFile(String s) {
-        new File(s).delete();
     }
 
     @Override

@@ -10,6 +10,8 @@ package gabien;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import gabien.uslx.vfs.FSBackend;
+
 /**
  * This instance should be the entry point to the program.
  * It should call the static method gabienapp.Application.gabienmain(),
@@ -31,14 +33,6 @@ public interface IGaBIEn {
     // Gets a resource from the application binary.
     // Failing that, returns null.
     InputStream getResource(String resource);
-
-    // Looks for a file in the data directory.
-    // Failing that, returns null.
-    InputStream getFile(String resource);
-
-    // Creates or overwrites a file in the data directory.
-    // Failing that, returns null.
-    OutputStream getOutFile(String resource);
 
     IRawAudioDriver getRawAudio(); // This is a singleton, but may be created when used.
     void hintShutdownRawAudio();
@@ -71,12 +65,8 @@ public interface IGaBIEn {
 
     String[] listEntries(String s);
 
-    void makeDirectories(String s);
-
     boolean fileOrDirExists(String s);
     boolean dirExists(String s);
 
     boolean tryStartTextEditor(String fpath);
-
-    void rmFile(String s);
 }

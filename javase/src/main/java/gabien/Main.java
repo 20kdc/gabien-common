@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 import gabien.backendhelp.WindowMux;
+import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
 abstract class Main {
 
@@ -75,6 +76,7 @@ abstract class Main {
         }.start();
         GaBIEnImpl impl = new GaBIEnImpl(useMT);
         GaBIEn.internal = impl;
+        GaBIEn.mutableDataFS = new JavaIOFSBackend("");
         if (!GaBIEnImpl.mobileEmulation) {
         	GaBIEn.internalWindowing = impl;
         	GaBIEn.internalFileBrowser = impl;

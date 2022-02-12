@@ -9,7 +9,9 @@ package gabien;
 
 import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.uslx.append.*;
+import gabien.uslx.vfs.FSBackend;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
@@ -19,6 +21,7 @@ public class GaBIEn {
     protected static IGaBIEn internal;
     protected static IGaBIEnMultiWindow internalWindowing;
     protected static IGaBIEnFileBrowser internalFileBrowser = new EmulatedFileBrowser();
+    public static FSBackend mutableDataFS;
     private static IImage errorImage;
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
     private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
@@ -55,11 +58,19 @@ public class GaBIEn {
     }
 
     public static InputStream getInFile(String resource) {
-        return internal.getFile(resource);
+        try {
+            return mutableDataFS.openRead(resource);
+        } catch (Exception ioe) {
+            return null;
+        }
     }
 
     public static OutputStream getOutFile(String string) {
-        return internal.getOutFile(string);
+        try {
+            return mutableDataFS.openWrite(string);
+        } catch (Exception ioe) {
+            return null;
+        }
     }
 
     public static boolean singleWindowApp() {
@@ -201,7 +212,18 @@ public class GaBIEn {
     }
 
     public static void makeDirectories(String s) {
-        internal.makeDirectories(s);
+        // Nope! No making directories that end in /
+        // It's just bad and wrong - so bad and wrong you get an exception for trying
+        if (s.endsWith("/"))
+            throw new RuntimeException("Not valid");
+        String dn = GaBIEn.dirname(s);
+        if (!dn.equals(""))
+            makeDirectories(dn);
+        try {
+            mutableDataFS.mkdir(s);
+        } catch (Exception ex) {
+            // :D
+        }
     }
 
     public static boolean tryStartTextEditor(String fpath) {
@@ -209,7 +231,11 @@ public class GaBIEn {
     }
 
     public static void rmFile(String s) {
-        internal.rmFile(s);
+        try {
+            mutableDataFS.delete(s);
+        } catch (Exception e) {
+            // errors are silenced
+        }
     }
 
     public static void setBrowserDirectory(String s) {
