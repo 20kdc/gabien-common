@@ -13,6 +13,10 @@ Ensure Maven is installed and functional. At the present time, I'm using Apache 
 
 Run `mvn install` from this repository directory.
 
+To avoid running unit tests, run `mvn install -DskipTests`.
+
+You may need a `toolchains.xml` file setup in your Maven configuration directory - see `example-toolchains.xml`.
+
 All projects will be automatically compiled (and possibly unit-tested).
 
 ## Build Instructions (Eclipse IDE)

@@ -24,3 +24,4 @@
 !javase/src/
 !javase/src/**
 
+!example-toolchains.xml
