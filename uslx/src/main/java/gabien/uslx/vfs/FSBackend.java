@@ -91,6 +91,12 @@ public abstract class FSBackend {
      */
     public abstract String nameOf(String fileName);
 
+    /**
+     * Returns the absolute path of the given file.
+     * May be a no-op if the FS doesn't actually have such a concept, so should only be really used for display.
+     */
+    public abstract String absolutePathOf(String fileName);
+
     public static class XState {
 
     }

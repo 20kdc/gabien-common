@@ -30,7 +30,7 @@ public class EmulatedFileBrowser extends PriorityElevatorForUseByBackendHelp imp
 
     @Override
     public void setBrowserDirectory(String s) {
-        browserDirectory = new File(s).getAbsolutePath();
+        browserDirectory = GaBIEn.absolutePathOf(s);
     }
 
     @Override

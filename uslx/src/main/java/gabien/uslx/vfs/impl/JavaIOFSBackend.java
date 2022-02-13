@@ -68,13 +68,18 @@ public class JavaIOFSBackend extends FSBackend {
         File fn = asFile(fileName);
         String parent = fn.getParent();
         if (parent == null)
-            parent = fn.getAbsoluteFile().getParent();
+            parent = asFile(absolutePathOf(fileName)).getParent();
         return parent;
     }
 
     @Override
     public String nameOf(String fileName) {
         return asFile(fileName).getName();
+    }
+
+    @Override
+    public String absolutePathOf(String fileName) {
+        return asFile(fileName).getAbsolutePath();
     }
 
     @Override

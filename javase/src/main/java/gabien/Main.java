@@ -10,6 +10,7 @@ package gabien;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
+import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.backendhelp.WindowMux;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
@@ -82,13 +83,13 @@ abstract class Main {
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         if (!GaBIEnImpl.mobileEmulation) {
         	GaBIEn.internalWindowing = impl;
-        	if (!useInternalBrowser)
-        	    GaBIEn.internalFileBrowser = impl;
         } else {
         	WindowSpecs ws = new WindowSpecs();
         	ws.resizable = false;
         	GaBIEn.internalWindowing = new WindowMux(impl.makeGrIn("Mobile", 960, 540, ws));
+            useInternalBrowser = true;
         }
+        GaBIEn.internalFileBrowser = useInternalBrowser ? new EmulatedFileBrowser() : impl;
         try {
             Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
         } catch (Exception e) {

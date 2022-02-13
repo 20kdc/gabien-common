@@ -47,12 +47,7 @@ public final class GaBIenImpl implements IGaBIEn {
     	    }
     	};
     	GaBIEn.internalWindowing = new WindowMux(MainActivity.theMainWindow);
-    	GaBIEn.internalFileBrowser = new EmulatedFileBrowser() {
-    	    @Override
-    	    public void setBrowserDirectory(String s) {
-    	        super.setBrowserDirectory(new File(s).getAbsolutePath());
-    	    }
-    	};
+    	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
     }
 

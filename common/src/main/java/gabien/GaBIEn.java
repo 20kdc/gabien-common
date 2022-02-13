@@ -24,7 +24,7 @@ import org.eclipse.jdt.annotation.Nullable;
 public class GaBIEn {
     protected static IGaBIEn internal;
     protected static IGaBIEnMultiWindow internalWindowing;
-    protected static IGaBIEnFileBrowser internalFileBrowser = new EmulatedFileBrowser();
+    protected static IGaBIEnFileBrowser internalFileBrowser;
     public static FSBackend mutableDataFS;
     private static IImage errorImage;
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
@@ -201,6 +201,10 @@ public class GaBIEn {
         if (xs instanceof DirectoryState)
             return ((DirectoryState) xs).entries;
         return null;
+    }
+
+    public static String absolutePathOf(String s) {
+        return mutableDataFS.absolutePathOf(s);
     }
 
     public static String nameOf(String s) {

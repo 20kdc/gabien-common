@@ -25,6 +25,7 @@ import java.util.LinkedList;
 public class UIFileBrowser extends UIElement.UIProxy {
     private boolean done;
     private IConsumer<String> run;
+    private UILabel upperSection;
     private UIScrollLayout basicLayout;
     private UISplitterLayout outerLayout;
     private UIPublicPanel lowerSection;
@@ -39,6 +40,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
         strAccept = accept;
         pathComponents = UIFileBrowser.createComponents(actPath);
         basicLayout = new UIScrollLayout(true, scrollerSize);
+        upperSection = new UILabel("!", fSize);
         lowerSection = new UIPublicPanel(1, 1) {
             @Override
             public void runLayout() {
@@ -54,7 +56,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
             }
         };
         fontSize = fSize;
-        outerLayout = new UISplitterLayout(basicLayout, lowerSection, true, 1);
+        outerLayout = new UISplitterLayout(upperSection, new UISplitterLayout(basicLayout, lowerSection, true, 1), true, 0);
         rebuild();
         outerLayout.setForcedBounds(null, new Rect(outerLayout.getWantedSize()));
         outerLayout.runLayout();
@@ -106,6 +108,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
 
         boolean showManualControl = true;
         final String exact = getPath();
+        upperSection.text = exact;
         String[] paths = GaBIEn.listEntries(exact);
         basicLayout.panelsAdd(new UITextButton("<-", fontSize, new Runnable() {
                 @Override
