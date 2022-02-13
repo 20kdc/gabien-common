@@ -63,10 +63,5 @@ public interface IGaBIEn {
     // Note that this implies at least one font will be listed.
     String[] getFontOverrides();
 
-    String[] listEntries(String s);
-
-    boolean fileOrDirExists(String s);
-    boolean dirExists(String s);
-
     boolean tryStartTextEditor(String fpath);
 }

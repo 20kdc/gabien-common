@@ -29,6 +29,8 @@ Select this repository directory.
 
 When choosing which sub-projects to import, you may wish to deselect the parent project.
 
+*You may need to get Eclipse to ignore the toolchain plugin.*
+
 ## History
 
 "gabien" (Graphics And Basic Input ENgine was at least one of the acronyms) was originally developed as a part of an unofficial map editor for an old freeware game.

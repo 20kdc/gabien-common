@@ -14,25 +14,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.uslx.vfs.*;
 
 /**
  * IO backend based on java.io.File
  */
 public class JavaIOFSBackend extends FSBackend {
-    public String prefix;
-
-    public JavaIOFSBackend(String pfx) {
-        prefix = pfx;
+    public JavaIOFSBackend() {
     }
 
     @Override
     public String toString() {
-        return "real:" + prefix;
+        return "real";
     }
 
     public File asFile(String fileName) {
-        return new File(prefix + fileName);
+        return new File(fileName);
     }
 
     @Override
@@ -58,6 +57,20 @@ public class JavaIOFSBackend extends FSBackend {
     @Override
     public OutputStream openWrite(String fileName) throws IOException {
         return new FileOutputStream(asFile(fileName));
+    }
+
+    @Override
+    public String parentOf(String fileName) {
+        File fn = asFile(fileName);
+        String parent = fn.getParent();
+        if (parent == null)
+            parent = fn.getAbsoluteFile().getParent();
+        return parent;
+    }
+
+    @Override
+    public String nameOf(String fileName) {
+        return asFile(fileName).getName();
     }
 
     @Override

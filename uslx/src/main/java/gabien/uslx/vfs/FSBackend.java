@@ -11,11 +11,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * This represents a raw filesystem backend with few capabilities.
  * Paths: "" is the root directory.
  *        "a" is a file or directory called "a" in the root directory.
  *        "a/b" is a file called "b" in the directory called "a" in the root directory.
+ * Note that FOR DIRECTORIES, a trailing "/" is allowed to refer to the directory.
  */
 public abstract class FSBackend {
     /**
@@ -60,42 +63,33 @@ public abstract class FSBackend {
     public abstract void mkdir(String fileName);
 
     /**
-     * Creates directories to contain the given file.
+     * Attempts to create a set of directories.
      */
-    public void ensureDirsToContain(String fileName) {
-        int idx = fileName.lastIndexOf('/');
-        if (idx != -1) {
-            String dirName = fileName.substring(0, idx);
-            ensureDirsToContain(dirName);
-            XState state = getState(dirName);
-            if (state == null) {
-                mkdir(dirName);
-            } else if (!(state instanceof DirectoryState)) {
-                throw new RuntimeException("Conflict between directory and file at " + this + ":" + fileName);
-            }
+    public void mkdirs(String s) {
+        String dn = parentOf(s);
+        if (dn != null)
+            if (getState(dn) == null)
+                mkdirs(dn);
+        try {
+            mkdir(s);
+        } catch (Exception ex) {
+            // :D
         }
     }
 
     /**
-     * Splits off the last part of a path.
-     * Returns null if there is no directory separator.
+     * Returns the parent path of the given path.
+     * Returns null if you hit a root.
+     * The target need not exist.
+     * Relative paths will be converted to absolute if necessary.
      */
-    public static String dirname(String fileName) {
-        int idx = fileName.lastIndexOf('/');
-        if (idx != -1)
-            return fileName.substring(0, idx);
-        return null;
-    }
+    public abstract @Nullable String parentOf(String fileName);
 
     /**
-     * Splits off the last part of a path.
+     * Returns the name of the given file.
+     * The target need not exist.
      */
-    public static String basename(String fileName) {
-        int idx = fileName.lastIndexOf('/');
-        if (idx != -1)
-            return fileName.substring(idx + 1);
-        return fileName;
-    }
+    public abstract String nameOf(String fileName);
 
     public static class XState {
 

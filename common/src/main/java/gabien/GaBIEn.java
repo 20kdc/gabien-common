@@ -10,12 +10,16 @@ package gabien;
 import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
+import gabien.uslx.vfs.FSBackend.DirectoryState;
+import gabien.uslx.vfs.FSBackend.XState;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 public class GaBIEn {
     protected static IGaBIEn internal;
@@ -183,47 +187,42 @@ public class GaBIEn {
     }
 
     public static boolean fileOrDirExists(String s) {
-        return internal.fileOrDirExists(s);
+        return mutableDataFS.getState(s) != null;
     }
     public static boolean dirExists(String s) {
-        return internal.dirExists(s);
+        return mutableDataFS.getState(s) instanceof DirectoryState;
     }
 
     // Resources DO NOT QUALIFY.
     // It is possible that this will be called with or without a trailing "/".
+    // Note that directories here are listed with a "/" trailer.
     public static String[] listEntries(String s) {
-        return internal.listEntries(s);
+        String sWithTrailer = s;
+        if (!sWithTrailer.endsWith("/"))
+            sWithTrailer += "/";
+        XState xs = mutableDataFS.getState(s);
+        if (xs instanceof DirectoryState) {
+            String[] resEnt = ((DirectoryState) xs).entries;
+            for (int i = 0; i < resEnt.length; i++) {
+                String full = sWithTrailer + resEnt[i];
+                if (mutableDataFS.getState(full) instanceof DirectoryState)
+                    resEnt[i] += "/";
+            }
+            return resEnt;
+        }
+        return null;
     }
 
-    // NOTE: These two assume / is used. Run other functions beforehand to convert.
-
-    public static String basename(String s) {
-        int p = s.lastIndexOf('/');
-        if (p == -1)
-            return s;
-        return s.substring(p + 1);
+    public static String nameOf(String s) {
+        return mutableDataFS.nameOf(s);
     }
 
-    public static String dirname(String s) {
-        int p = s.lastIndexOf('/');
-        if (p == -1)
-            return "";
-        return s.substring(0, p);
+    public static @Nullable String parentOf(String s) {
+        return mutableDataFS.parentOf(s);
     }
 
     public static void makeDirectories(String s) {
-        // Nope! No making directories that end in /
-        // It's just bad and wrong - so bad and wrong you get an exception for trying
-        if (s.endsWith("/"))
-            throw new RuntimeException("Not valid");
-        String dn = GaBIEn.dirname(s);
-        if (!dn.equals(""))
-            makeDirectories(dn);
-        try {
-            mutableDataFS.mkdir(s);
-        } catch (Exception ex) {
-            // :D
-        }
+        mutableDataFS.mkdirs(s);
     }
 
     public static boolean tryStartTextEditor(String fpath) {

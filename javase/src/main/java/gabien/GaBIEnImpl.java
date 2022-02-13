@@ -259,21 +259,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public String[] listEntries(String s) {
-        return new File(s).list();
-    }
-
-    @Override
-    public boolean fileOrDirExists(String s) {
-        return new File(s).exists();
-    }
-
-    @Override
-    public boolean dirExists(String s) {
-        return new File(s).isDirectory();
-    }
-
-    @Override
     public boolean tryStartTextEditor(String fpath) {
         try {
             // edit fails here, for some reason?

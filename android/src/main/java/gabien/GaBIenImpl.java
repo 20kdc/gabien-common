@@ -37,17 +37,25 @@ public final class GaBIenImpl implements IGaBIEn {
         FontManager.fontsReady = true;
         final GaBIenImpl impl = new GaBIenImpl();
     	GaBIEn.internal = impl;
-    	GaBIEn.mutableDataFS = new JavaIOFSBackend("/sdcard/");
+    	GaBIEn.mutableDataFS = new JavaIOFSBackend() {
+    	    @Override
+    	    public File asFile(String fileName) {
+    	        File f = new File(fileName);
+    	        if (f.isAbsolute())
+    	            return f;
+    	        return new File("/sdcard", fileName);
+    	    }
+    	};
     	GaBIEn.internalWindowing = new WindowMux(MainActivity.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser() {
     	    @Override
     	    public void setBrowserDirectory(String s) {
-    	        super.setBrowserDirectory(new File("/sdcard/" + s).getAbsolutePath());
+    	        super.setBrowserDirectory(new File(s).getAbsolutePath());
     	    }
     	};
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
     }
-    
+
     public double getTime() {
         return (System.currentTimeMillis() - startup) / 1000.0d;
     }
@@ -83,21 +91,6 @@ public final class GaBIenImpl implements IGaBIEn {
         return new String[] {
                 "Nautilus"
         };
-    }
-
-    @Override
-    public String[] listEntries(String s) {
-        return new File("/sdcard/" + s).list();
-    }
-
-    @Override
-    public boolean fileOrDirExists(String s) {
-        return new File("/sdcard/" + s).exists();
-    }
-
-    @Override
-    public boolean dirExists(String s) {
-        return new File("/sdcard/" + s).isDirectory();
     }
 
     @Override
