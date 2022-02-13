@@ -195,21 +195,11 @@ public class GaBIEn {
 
     // Resources DO NOT QUALIFY.
     // It is possible that this will be called with or without a trailing "/".
-    // Note that directories here are listed with a "/" trailer.
+    // Elements are listed just with names and no further detail.
     public static String[] listEntries(String s) {
-        String sWithTrailer = s;
-        if (!sWithTrailer.endsWith("/"))
-            sWithTrailer += "/";
         XState xs = mutableDataFS.getState(s);
-        if (xs instanceof DirectoryState) {
-            String[] resEnt = ((DirectoryState) xs).entries;
-            for (int i = 0; i < resEnt.length; i++) {
-                String full = sWithTrailer + resEnt[i];
-                if (mutableDataFS.getState(full) instanceof DirectoryState)
-                    resEnt[i] += "/";
-            }
-            return resEnt;
-        }
+        if (xs instanceof DirectoryState)
+            return ((DirectoryState) xs).entries;
         return null;
     }
 
@@ -217,6 +207,10 @@ public class GaBIEn {
         return mutableDataFS.nameOf(s);
     }
 
+    /**
+     * See FSBackend.parentOf
+     * TLDR: Returns null if no parent exists, is supposed to switch to absolute paths when necessary.
+     */
     public static @Nullable String parentOf(String s) {
         return mutableDataFS.parentOf(s);
     }

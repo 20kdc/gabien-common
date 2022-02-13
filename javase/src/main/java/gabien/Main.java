@@ -23,6 +23,7 @@ abstract class Main {
         boolean useMT = false;
         boolean ignoreDPI = false;
         boolean ignoreBlindingSun = false;
+        boolean useInternalBrowser = false;
         if (args.length > 0) {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
@@ -35,6 +36,8 @@ abstract class Main {
                     ignoreDPI = true;
                 if (s.equalsIgnoreCase("blindingSun"))
                     ignoreBlindingSun = true;
+                if (s.equalsIgnoreCase("useInternalBrowser"))
+                    useInternalBrowser = true;
             }
         }
         if (tryForceOpenGL) {
@@ -79,7 +82,8 @@ abstract class Main {
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         if (!GaBIEnImpl.mobileEmulation) {
         	GaBIEn.internalWindowing = impl;
-        	GaBIEn.internalFileBrowser = impl;
+        	if (!useInternalBrowser)
+        	    GaBIEn.internalFileBrowser = impl;
         } else {
         	WindowSpecs ws = new WindowSpecs();
         	ws.resizable = false;

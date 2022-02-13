@@ -41,6 +41,10 @@ public class JavaIOFSBackend extends FSBackend {
             return null;
         if (f.isDirectory()) {
             File[] list = f.listFiles();
+            if (list == null) {
+                System.err.println("File that is a directory but isn't listable: " + fileName + " (probably an access error)");
+                return new DirectoryState(new String[0]);
+            }
             String[] ents = new String[list.length];
             for (int i = 0; i < ents.length; i++)
                 ents[i] = list[i].getName();
