@@ -359,6 +359,8 @@ public abstract class UIElement {
             selectedElement = null;
             recacheElements();
             for (UIElement uie : cachedAllElements) {
+                if (!uie.visibleFlag)
+                    continue;
                 if (uie.elementBounds.contains(state.getX(), state.getY())) {
                     int x = uie.elementBounds.x;
                     int y = uie.elementBounds.y;
