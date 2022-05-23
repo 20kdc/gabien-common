@@ -73,25 +73,19 @@ final class RawSoundDriver implements IRawAudioDriver, Runnable {
 
     @Override
     public void run() {
-        int buf = 800; // Increase this to decrease CPU usage, but at a cost of latency
         while (alive) {
-            int a = (sdl.available() / 4);
             // a is in sample frames now.
             // So a/2205 == amount of 10-millisecond blocks you can sleep in.
-            while (a < buf) {
+            int a = (sdl.available() / 4);
+            if (a > 0) {
+                byte[] bytes = createData(a);
+                sdl.write(bytes, 0, bytes.length);
+            } else {
                 try {
                     Thread.sleep((2205 - a) / 221);
                 } catch (InterruptedException e) {
                 }
-                a = (sdl.available() / 4);
             }
-            a = (sdl.available() / 4);
-            if (a <= 0) {
-                continue;
-            }
-            byte[] bytes = createData(a);
-
-            sdl.write(bytes, 0, bytes.length);
             if (!sdl.isRunning()) {
                 System.err.println("SOUND:needed restart...");
                 sdl.start();
