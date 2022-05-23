@@ -42,14 +42,19 @@ public class UIFileBrowser extends UIElement.UIProxy {
         basicLayout = new UIScrollLayout(true, scrollerSize);
         upperSection = new UILabel("!", fSize);
         lowerSection = new UIPublicPanel(1, 1) {
+            UIElement currentLSC;
             @Override
             public void runLayout() {
-                for (UIElement uie : layoutGetElements())
-                    layoutRemoveElement(uie);
-                if (lowerSectionContents != null) {
-                    layoutAddElement(lowerSectionContents);
-                    lowerSectionContents.setForcedBounds(this, new Rect(getSize()));
-                    setWantedSize(lowerSectionContents.getWantedSize());
+                if (currentLSC != lowerSectionContents) {
+                    if (currentLSC != null)
+                        layoutRemoveElement(currentLSC);
+                    if (lowerSectionContents != null)
+                        layoutAddElement(lowerSectionContents);
+                    currentLSC = lowerSectionContents;
+                }
+                if (currentLSC != null) {
+                    currentLSC.setForcedBounds(this, new Rect(getSize()));
+                    setWantedSize(currentLSC.getWantedSize());
                 } else {
                     setWantedSize(new Size(0, 0));
                 }

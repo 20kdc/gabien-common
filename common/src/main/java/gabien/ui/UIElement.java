@@ -190,6 +190,9 @@ public abstract class UIElement {
      * UIPanel is the basis of all layouts.
      */
     public static abstract class UIPanel extends UIElement {
+        // Selection matters for textbox issues so make it easy to debug.
+        private final static boolean debugSelection = false;
+
         private UIElement selectedElement;
         // DO NOT CHANGE WITHOUT SETTING ALLELEMENTSCHANGED. This will cause all sorts of fun and interesting bugs.
         // Much like how stepping in a particle accelerator will cause all sorts of fun and interesting effects on your body.
@@ -228,8 +231,11 @@ public abstract class UIElement {
             if (uie.parent != this)
                 throw new RuntimeException("UIE " + uie + " already lost parent somehow in " + this);
             uie.parent = null;
-            if (selectedElement == uie)
+            if (selectedElement == uie) {
+                if (debugSelection)
+                    System.err.println("Deselected " + uie.toString() + " due to removal.");
                 selectedElement = null;
+            }
             allElements.remove(uie);
             allElementsChanged = true;
         }
@@ -254,6 +260,8 @@ public abstract class UIElement {
             if (uie != null)
                 if (uie.parent != this)
                     throw new RuntimeException("Can't select something " + uie + " we " + this + " don't have.");
+            if (debugSelection)
+                System.err.println("Selected " + uie.toString() + " by force.");
             selectedElement = uie;
         }
 
@@ -359,10 +367,14 @@ public abstract class UIElement {
                     state.performOffset(x, y);
                     if (ipr != null) {
                         selectedElement = uie;
+                        if (debugSelection)
+                            System.err.println("Selected " + uie.toString() + " by pointer.");
                         return new IPointerReceiver.TransformingElementPointerReceiver(selectedElement, ipr);
                     }
                 }
             }
+            if (debugSelection)
+                System.err.println("Deselected by pointer.");
             // Returns null so that UIGrid & such can use that to mean 'not handled by existing elements'.
             return null;
         }
