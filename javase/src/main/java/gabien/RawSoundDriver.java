@@ -27,7 +27,9 @@ final class RawSoundDriver implements IRawAudioDriver, Runnable {
     public RawSoundDriver() throws LineUnavailableException {
         AudioFormat af = new AudioFormat(22050, 16, 2, true, true);
         sdl = AudioSystem.getSourceDataLine(af);
-        sdl.open(af, 8820);
+        sdl.open(af, 22050);
+        soundthread.setName("GaBIEn.Sound");
+        soundthread.setPriority(Thread.MAX_PRIORITY);
         soundthread.start();
     }
 
@@ -43,25 +45,10 @@ final class RawSoundDriver implements IRawAudioDriver, Runnable {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(baos);
-            int[] L = new int[amount];
-            int[] R = new int[amount];
             short[] data = source.get().pullData(amount);
-            for (int px = 0; px < amount; px++) {
-                L[px] += data[(px * 2)];
-                R[px] += data[(px * 2) + 1];
-            }
-            for (int px = 0; px < amount; px++) {
-                if (L[px] > 32767)
-                    L[px] = 32767;
-                if (L[px] < -32768)
-                    L[px] = -32768;
-                if (R[px] > 32767)
-                    R[px] = 32767;
-                if (R[px] < -32768)
-                    R[px] = -32768;
-                dos.writeShort(L[px]);
-                dos.writeShort(R[px]);
-            }
+            int pt = 0;
+            for (int px = 0; px < amount * 2; px++)
+                dos.writeShort(data[pt++]);
             dos.flush();
             return baos.toByteArray();
         } catch (IOException ex) {
@@ -80,16 +67,16 @@ final class RawSoundDriver implements IRawAudioDriver, Runnable {
             if (a > 0) {
                 byte[] bytes = createData(a);
                 sdl.write(bytes, 0, bytes.length);
+            } else if (!sdl.isRunning()) {
+                System.err.println("SOUND:needed restart...");
+                sdl.start();
             } else {
                 try {
-                    Thread.sleep((2205 - a) / 221);
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
                 }
             }
-            if (!sdl.isRunning()) {
-                System.err.println("SOUND:needed restart...");
-                sdl.start();
-            }
+            
         }
     }
 

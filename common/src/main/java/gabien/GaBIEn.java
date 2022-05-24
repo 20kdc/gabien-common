@@ -294,4 +294,15 @@ public class GaBIEn {
         }
         return GaBIEn.timeDelta(true);
     }
+
+    /**
+     * Useful for embedded command-line applications that don't want to muck up the classpath.
+     */
+    public static void initializeEmbedded() {
+        try {
+            Class.forName("gabien.Main").getDeclaredMethod("initializeEmbedded").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

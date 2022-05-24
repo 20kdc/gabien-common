@@ -15,15 +15,14 @@ import gabien.backendhelp.WindowMux;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
 abstract class Main {
-
+    private static boolean useMT = false;
+    private static boolean ignoreBlindingSun = false;
     /**
      * Use reflection to find and run the application.
      */
     public static void main(String[] args) {
         boolean tryForceOpenGL = false;
-        boolean useMT = false;
         boolean ignoreDPI = false;
-        boolean ignoreBlindingSun = false;
         boolean useInternalBrowser = false;
         if (args.length > 0) {
             for (String s : args) {
@@ -45,11 +44,6 @@ abstract class Main {
             System.setProperty("sun.java2d.opengl", "true");
             System.setProperty("sun.java2d.xrender", "true");
         }
-        if (!ignoreBlindingSun) {
-            // Seriously, Sun, were you trying to cause epilepsy episodes?!?!
-            System.setProperty("sun.awt.noerasebackground", "true");
-            System.setProperty("sun.awt.erasebackgroundonresize", "true");
-        }
         if (!ignoreDPI) {
         	try {
             	System.setProperty("sun.java2d.uiScale", "1");
@@ -61,6 +55,32 @@ abstract class Main {
         	}
         }
 
+        initializeEmbedded();
+        if (GaBIEnImpl.mobileEmulation) {
+        	WindowSpecs ws = new WindowSpecs();
+        	ws.resizable = false;
+        	GaBIEn.internalWindowing = new WindowMux(GaBIEn.internalWindowing.makeGrIn("Mobile", 960, 540, ws));
+            useInternalBrowser = true;
+        }
+        if (useInternalBrowser)
+            GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
+        try {
+            Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            GaBIEn.ensureQuit();
+        }
+    }
+
+    /**
+     * See GaBIEn.initializeEmbedded.
+     */
+    public static void initializeEmbedded() {
+        if (!ignoreBlindingSun) {
+            // Seriously, Sun, were you trying to cause epilepsy episodes?!?!
+            System.setProperty("sun.awt.noerasebackground", "true");
+            System.setProperty("sun.awt.erasebackgroundonresize", "true");
+        }
         new Thread() {
             @Override
             public void run() {
@@ -81,21 +101,7 @@ abstract class Main {
         GaBIEnImpl impl = new GaBIEnImpl(useMT);
         GaBIEn.internal = impl;
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
-        if (!GaBIEnImpl.mobileEmulation) {
-        	GaBIEn.internalWindowing = impl;
-        } else {
-        	WindowSpecs ws = new WindowSpecs();
-        	ws.resizable = false;
-        	GaBIEn.internalWindowing = new WindowMux(impl.makeGrIn("Mobile", 960, 540, ws));
-            useInternalBrowser = true;
-        }
-        GaBIEn.internalFileBrowser = useInternalBrowser ? new EmulatedFileBrowser() : impl;
-        try {
-            Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            GaBIEn.ensureQuit();
-        }
+        GaBIEn.internalWindowing = impl;
+        GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
     }
-
 }
