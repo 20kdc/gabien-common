@@ -40,6 +40,26 @@ public class UISplitterLayout extends UIElement.UIPanel {
         setForcedBounds(null, new Rect(getWantedSize()));
     }
 
+    public static UIElement produceSideAlignedList(boolean rd, boolean vertical, UIElement... elements) {
+        return produceSideAlignedList(rd, vertical, elements, 0, elements.length);
+    }
+
+    public static UIElement produceSideAlignedList(boolean rd, boolean vertical, UIElement[] elements, int offset, int length) {
+        if (length == 0)
+            throw new RuntimeException("no arguments");
+        if (length == 1)
+            return elements[offset];
+        if (rd) {
+            // Right/Down
+            UIElement remainder = produceSideAlignedList(rd, vertical, elements, offset + 1, length - 1);
+            return new UISplitterLayout(elements[offset], remainder, vertical, 1);
+        } else {
+            // Left/Up
+            UIElement remainder = produceSideAlignedList(rd, vertical, elements, offset, length - 1);
+            return new UISplitterLayout(remainder, elements[offset + (length - 1)], vertical, 0);
+        }
+    }
+
     @Override
     public void runLayout() {
         int room, allSpace;

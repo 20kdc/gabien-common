@@ -17,13 +17,17 @@ import gabien.IPeripherals;
  */
 public class UILabel extends UIBorderedElement {
     public String text;
-    private final Contents contents;
-    public boolean centre;
+    protected final Contents contents;
+    public int alignX, alignY;
 
     // Creates a label, with text, and sets the bounds accordingly.
     public UILabel(String txt, int h) {
+        this(txt, h, "");
+    }
+
+    public UILabel(String txt, int h, String spacer) {
         super(2, getRecommendedBorderWidth(h));
-        contents = new Contents(h);
+        contents = new Contents(h, spacer);
         text = txt;
 
         setForcedBounds(null, new Rect(getRecommendedTextSize(text, h)));
@@ -32,7 +36,8 @@ public class UILabel extends UIBorderedElement {
     }
 
     public UILabel centred() {
-        centre = true;
+        alignX = 1;
+        alignY = 1;
         return this;
     }
 
@@ -53,7 +58,7 @@ public class UILabel extends UIBorderedElement {
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
-        contents.render(textBlack, 0, 0, igd, centre);
+        contents.render(textBlack, 0, 0, igd, alignX, alignY);
     }
 
     /**
@@ -64,13 +69,23 @@ public class UILabel extends UIBorderedElement {
         private String lastText = "", textFormatted = "";
         private Size lastSize = new Size(0, 0);
         private Size lastActSize = new Size(0, 0);
+        private Size lastSpacerSize = null;
         private String lastOverride = null;
         private boolean lastOverrideUE8 = false;
         private int lastBw = 1;
+
         public final int textHeight;
+        public final String spacerText;
+
         public Contents(int th) {
-            textHeight = th;
+            this(th, "");
         }
+
+        public Contents(int th, String st) {
+            textHeight = th;
+            spacerText = st;
+        }
+
         public Size update(Size sz, int bw, String text) {
             // run formatting...
             Size sz2 = null;
@@ -86,7 +101,7 @@ public class UILabel extends UIBorderedElement {
             } else if (lastOverrideUE8 != FontManager.fontOverrideUE8) {
                 overrideChanged = true;
             }
-            if ((!lastText.equals(text)) || (lastBw != bw) || (!lastSize.sizeEquals(sz)) || overrideChanged) {
+            if ((lastSpacerSize == null) || (!lastText.equals(text)) || (lastBw != bw) || (!lastSize.sizeEquals(sz)) || overrideChanged) {
                 lastText = text;
                 lastSize = sz;
                 lastBw = bw;
@@ -98,16 +113,20 @@ public class UILabel extends UIBorderedElement {
                 //  and A is what we want to be, width and height alike.
                 Size a = getRecommendedTextSize(text, textHeight, bw);
                 Size b = lastActSize = getRecommendedTextSize(textFormatted, textHeight, bw);
+                lastSpacerSize = getRecommendedTextSize(spacerText, textHeight, bw);
                 sz2 = new Size(a.width, b.height);
+                sz2 = sz2.sizeMax(lastSpacerSize);
             }
             return sz2;
         }
 
         public void render(boolean blackText, int x, int y, IGrDriver igd, boolean centre) {
-            if (centre) {
-                x += (lastSize.width - lastActSize.width) / 2;
-                y += (lastSize.height - lastActSize.height) / 2;
-            }
+            render(blackText, x, y, igd, centre ? 1 : 0, centre ? 1 : 0);
+        }
+
+        public void render(boolean blackText, int x, int y, IGrDriver igd, int alignX, int alignY) {
+            x += ((lastSize.width - lastActSize.width) * alignX) / 2;
+            y += ((lastSize.height - lastActSize.height) * alignY) / 2;
             FontManager.drawString(igd, x + lastBw, y + lastBw, textFormatted, true, blackText, textHeight);
         }
     }

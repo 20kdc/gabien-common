@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.IGrDriver;
 import gabien.IPeripherals;
 import gabien.uslx.append.*;
 
@@ -17,9 +18,14 @@ import gabien.uslx.append.*;
 public class UINumberBox extends UILabel {
 
     public UINumberBox(long number, int h) {
-        super(Long.toString(number), h);
+        this(number, h, "0000");
+    }
+
+    public UINumberBox(long number, int h, String spacer) {
+        super(Long.toString(number), h, spacer);
         this.number = number;
         borderType = 3;
+        alignX = 2;
     }
 
     // The caching exists so that edits have to be confirmed for onEdit usage.

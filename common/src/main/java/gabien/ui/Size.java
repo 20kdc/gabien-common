@@ -29,4 +29,14 @@ public class Size {
     public boolean sizeEquals(Size s) {
         return (s.width == width) && (s.height == height);
     }
+
+    public Size sizeMax(Size b) {
+        int w = b.width;
+        if (width > b.width)
+            w = width;
+        int h = b.height;
+        if (height > b.height)
+            h = height;
+        return new Size(w, h);
+    }
 }
