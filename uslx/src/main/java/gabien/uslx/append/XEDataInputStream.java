@@ -11,17 +11,30 @@ import java.io.DataInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteOrder;
 
 import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Created on 6th June 2022 as part of project VE2Bun
  */
-public class LEDataInputStream extends FilterInputStream implements DataInput {
+public class XEDataInputStream extends FilterInputStream implements DataInput {
+    /**
+     * Current byte order. Defaults to little-endian, because if you wanted BE you'd just use DataOutputStream.
+     */
+    public ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
     private @NonNull final DataInputStream baseDataInput;
-    protected LEDataInputStream(InputStream in) {
+    protected XEDataInputStream(@NonNull InputStream in) {
         super(in);
         baseDataInput = new DataInputStream(this);
+    }
+
+    public final String readFourCC() throws IOException {
+        char a = (char) readUnsignedByte();
+        char b = (char) readUnsignedByte();
+        char c = (char) readUnsignedByte();
+        char d = (char) readUnsignedByte();
+        return new String(new char[] {a, b, c, d});
     }
 
     @Override
@@ -56,6 +69,8 @@ public class LEDataInputStream extends FilterInputStream implements DataInput {
     
     @Override
     public final short readShort() throws IOException {
+        if (byteOrder == ByteOrder.BIG_ENDIAN)
+            return baseDataInput.readShort();
         byte bL = baseDataInput.readByte();
         byte bH = baseDataInput.readByte();
         return (short) ((bL & 0xFF) | ((bH & 0xFF) << 8));
@@ -73,6 +88,8 @@ public class LEDataInputStream extends FilterInputStream implements DataInput {
     
     @Override
     public final int readInt() throws IOException {
+        if (byteOrder == ByteOrder.BIG_ENDIAN)
+            return baseDataInput.readInt();
         int sL = readShort() & 0xFFFF;
         int sH = readShort() & 0xFFFF;
         return sL | (sH << 16);
@@ -80,6 +97,8 @@ public class LEDataInputStream extends FilterInputStream implements DataInput {
     
     @Override
     public final long readLong() throws IOException {
+        if (byteOrder == ByteOrder.BIG_ENDIAN)
+            return baseDataInput.readLong();
         long iL = readInt() & 0xFFFFFFFFL;
         long iH = readInt() & 0xFFFFFFFFL;
         return iL | (iH << 32);

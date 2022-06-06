@@ -11,20 +11,25 @@ import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteOrder;
 
 import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Created on 6th June 2022 as part of project VE2Bun
  */
-public class LEDataOutputStream extends FilterOutputStream implements DataOutput {
+public class XEDataOutputStream extends FilterOutputStream implements DataOutput {
+    /**
+     * Current byte order. Defaults to little-endian, because if you wanted BE you'd just use DataOutputStream.
+     */
+    public ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
     private @NonNull final DataOutputStream baseDataOutput;
     /**
      * Maintains a tally of written bytes.
      */
     protected int written = 0;
 
-    public LEDataOutputStream(OutputStream base) {
+    public XEDataOutputStream(@NonNull OutputStream base) {
         super(base);
         baseDataOutput = new DataOutputStream(this);
     }
@@ -64,9 +69,13 @@ public class LEDataOutputStream extends FilterOutputStream implements DataOutput
 
     @Override
     public final void writeChars(String s) throws IOException {
-        int len = s.length();
-        for (int i = 0; i < len; i++)
-            writeShort(s.charAt(i));
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+            baseDataOutput.writeChars(s);
+        } else {
+            int len = s.length();
+            for (int i = 0; i < len; i++)
+                writeShort(s.charAt(i));
+        }
     }
 
     @Override
@@ -81,21 +90,33 @@ public class LEDataOutputStream extends FilterOutputStream implements DataOutput
 
     @Override
     public final void writeInt(int v) throws IOException {
-        writeShort(v);
-        writeShort(v >> 16);
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+            baseDataOutput.writeInt(v);
+        } else {
+            writeShort(v);
+            writeShort(v >> 16);
+        }
     }
 
     @Override
     public final void writeLong(long v) throws IOException {
-        writeInt((int) v);
-        writeInt((int) (v >> 32));
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+            baseDataOutput.writeLong(v);
+        } else {
+            writeInt((int) v);
+            writeInt((int) (v >> 32));
+        }
     }
 
     @Override
     public final void writeShort(int v) throws IOException {
-        out.write(v);
-        out.write(v >> 8);
-        written += 2;
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+            baseDataOutput.writeShort(v);
+        } else {
+            out.write(v);
+            out.write(v >> 8);
+            written += 2;
+        }
     }
 
     @Override
