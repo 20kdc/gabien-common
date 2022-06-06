@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import gabien.uslx.append.LEDataOutputStream;
+import gabien.uslx.append.RIFFOutputStream;
 
 /**
  * Contains a streaming WAV writer.
@@ -22,6 +23,7 @@ import gabien.uslx.append.LEDataOutputStream;
 public class WavIO {
     public static final int FORMAT_PCM = 1;
     public static final int FORMAT_FLOAT = 3;
+
     public static void writeWAV(OutputStream fos, ISource dataSource) throws IOException {
         // Details of the format.
         int sampleRate = dataSource.sampleRate();
@@ -29,36 +31,42 @@ public class WavIO {
         int frameCount = dataSource.frameCount();
         int sampleBits = sampleBytes * 8;
         int channels = dataSource.channels();
-        int totalSampleBytes = frameCount * channels * sampleBytes;
+        int frameBytes = channels * sampleBytes;
+        int totalSampleBytes = frameCount * frameBytes;
         // Now we know exactly what we're going to generate, let's build a header!
-        LEDataOutputStream ledos = new LEDataOutputStream(fos);
-        int headSize = 44;
-        // Header start...
-        ledos.writeBytes("RIFF");
-        // What's the rest of the file going to be?
-        ledos.writeInt(headSize + totalSampleBytes - 8);
+        int interiorContent = 4;
+        interiorContent += RIFFOutputStream.getInteriorChunkSize(0x10);
+        interiorContent += RIFFOutputStream.getInteriorChunkSize(totalSampleBytes);
+        RIFFOutputStream riffChunk = new RIFFOutputStream(fos, "RIFF", interiorContent);
         // Filetype
-        ledos.writeBytes("WAVEfmt ");
-        ledos.writeInt(0x10);
-        // fmt...
-        ledos.writeShort(dataSource.formatTag());
-        ledos.writeShort(channels);
-        ledos.writeInt(sampleRate);
-        ledos.writeInt(sampleRate * sampleBytes * channels);
-        ledos.writeShort(sampleBytes * channels);
-        ledos.writeShort(sampleBits);
-        ledos.writeBytes("data");
-        ledos.writeInt(totalSampleBytes);
+        riffChunk.writeBytes("WAVE");
+        // fmt {
+        RIFFOutputStream fmtChunk = new RIFFOutputStream(riffChunk, "fmt ", 0x10);
+        fmtChunk.writeShort(dataSource.formatTag());
+        fmtChunk.writeShort(channels);
+        fmtChunk.writeInt(sampleRate);
+        fmtChunk.writeInt(sampleRate * sampleBytes * channels);
+        fmtChunk.writeShort(sampleBytes * channels);
+        fmtChunk.writeShort(sampleBits);
+        fmtChunk.close();
+        // }
+        // data {
+        RIFFOutputStream dataChunk = new RIFFOutputStream(riffChunk, "data", totalSampleBytes);
         // And now for the sample data!
-        ByteBuffer bb = ByteBuffer.allocate(sampleBytes * channels);
+        ByteBuffer bb = ByteBuffer.allocate(frameBytes);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         for (int i = 0; i < frameCount; i++) {
             // Stereo data.
             bb.position(0);
             dataSource.nextFrame(bb);
-            fos.write(bb.array());
+            dataChunk.write(bb.array(), 0, frameBytes);
         }
+        dataChunk.close();
+        // }
+        // Close off.
+        riffChunk.close();
     }
+
     public interface ISource {
         /**
          * The amount of channels (referred to as C later).

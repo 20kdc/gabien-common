@@ -12,14 +12,33 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * Created on 6th June 2022 as part of project VE2Bun
  */
 public class LEDataOutputStream extends FilterOutputStream implements DataOutput {
-    private final DataOutputStream baseDataOutput;
+    private @NonNull final DataOutputStream baseDataOutput;
+    /**
+     * Maintains a tally of written bytes.
+     */
+    protected int written = 0;
+
     public LEDataOutputStream(OutputStream base) {
         super(base);
-        baseDataOutput = new DataOutputStream(base);
+        baseDataOutput = new DataOutputStream(this);
+    }
+
+    @Override
+    public void write(int b) throws IOException {
+        out.write(b);
+        written++;
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        out.write(b, off, len);
+        written += len;
     }
 
     @Override
@@ -30,6 +49,7 @@ public class LEDataOutputStream extends FilterOutputStream implements DataOutput
     @Override
     public final void writeByte(int v) throws IOException {
         out.write(v);
+        written++;
     }
 
     @Override
@@ -75,6 +95,7 @@ public class LEDataOutputStream extends FilterOutputStream implements DataOutput
     public final void writeShort(int v) throws IOException {
         out.write(v);
         out.write(v >> 8);
+        written += 2;
     }
 
     @Override

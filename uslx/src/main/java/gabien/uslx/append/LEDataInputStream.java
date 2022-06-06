@@ -12,14 +12,16 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * Created on 6th June 2022 as part of project VE2Bun
  */
 public class LEDataInputStream extends FilterInputStream implements DataInput {
-    private final DataInputStream baseDataInput;
+    private @NonNull final DataInputStream baseDataInput;
     protected LEDataInputStream(InputStream in) {
         super(in);
-        baseDataInput = new DataInputStream(in);
+        baseDataInput = new DataInputStream(this);
     }
 
     @Override
