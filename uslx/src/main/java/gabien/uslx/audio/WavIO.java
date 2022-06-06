@@ -12,6 +12,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import gabien.uslx.append.LEDataOutputStream;
+
 /**
  * Contains a streaming WAV writer.
  * For now, that's all.
@@ -29,29 +31,26 @@ public class WavIO {
         int channels = dataSource.channels();
         int totalSampleBytes = frameCount * channels * sampleBytes;
         // Now we know exactly what we're going to generate, let's build a header!
+        LEDataOutputStream ledos = new LEDataOutputStream(fos);
         int headSize = 44;
-        ByteBuffer bb = ByteBuffer.allocate(headSize);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
         // Header start...
-        bb.put(new byte[] {(byte) 'R', (byte) 'I', (byte) 'F', (byte) 'F'});
+        ledos.writeBytes("RIFF");
         // What's the rest of the file going to be?
-        bb.putInt(headSize + totalSampleBytes - 8);
+        ledos.writeInt(headSize + totalSampleBytes - 8);
         // Filetype
-        bb.put(new byte[] {(byte) 'W', (byte) 'A', (byte) 'V', (byte) 'E'});
-        bb.put(new byte[] {(byte) 'f', (byte) 'm', (byte) 't', (byte) ' '});
-        bb.putInt(0x10);
+        ledos.writeBytes("WAVEfmt ");
+        ledos.writeInt(0x10);
         // fmt...
-        bb.putShort((short) dataSource.formatTag());
-        bb.putShort((short) channels);
-        bb.putInt(sampleRate);
-        bb.putInt(sampleRate * sampleBytes * channels);
-        bb.putShort((short) (sampleBytes * channels));
-        bb.putShort((short) sampleBits);
-        bb.put(new byte[] {(byte) 'd', (byte) 'a', (byte) 't', (byte) 'a'});
-        bb.putInt(totalSampleBytes);
-        fos.write(bb.array());
+        ledos.writeShort(dataSource.formatTag());
+        ledos.writeShort(channels);
+        ledos.writeInt(sampleRate);
+        ledos.writeInt(sampleRate * sampleBytes * channels);
+        ledos.writeShort(sampleBytes * channels);
+        ledos.writeShort(sampleBits);
+        ledos.writeBytes("data");
+        ledos.writeInt(totalSampleBytes);
         // And now for the sample data!
-        bb = ByteBuffer.allocate(sampleBytes * channels);
+        ByteBuffer bb = ByteBuffer.allocate(sampleBytes * channels);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         for (int i = 0; i < frameCount; i++) {
             // Stereo data.
