@@ -20,7 +20,7 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
     public final int chunkLen;
     protected int chunkPos;
     protected int resetPos;
-    private boolean duringInit = true;
+    protected boolean holdoffLimiters = true;
 
     /**
      * A subclass of this class is expected to.
@@ -28,7 +28,7 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
     public ChunkedInputStream(@NonNull InputStream in, @Nullable Object indicator) throws IOException {
         super(in);
         chunkLen = readChunkHeader(indicator);
-        duringInit = false;
+        holdoffLimiters = false;
     }
 
     /**
@@ -56,7 +56,7 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
 
     @Override
     public int read() throws IOException {
-        if (duringInit)
+        if (holdoffLimiters)
             return super.read();
         if (chunkPos >= chunkLen)
             return -1;
@@ -68,7 +68,7 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        if (duringInit)
+        if (holdoffLimiters)
             return super.read(b, off, len);
         int efAvailable = chunkLen - chunkPos;
         if (efAvailable < len)
@@ -81,7 +81,7 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
 
     @Override
     public int available() throws IOException {
-        if (duringInit)
+        if (holdoffLimiters)
             return super.available();
         int actualAvailable = super.available();
         int efAvailable = chunkLen - chunkPos;
@@ -92,11 +92,14 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
 
     @Override
     public long skip(long n) throws IOException {
+        if (holdoffLimiters)
+            return super.skip(n);
+        // System.out.println("SKIP " + n);
         int efAvailable = chunkLen - chunkPos;
         if (n > efAvailable)
             n = efAvailable;
         long res = super.skip(n);
-        chunkPos += (int) n;
+        chunkPos += (int) res;
         return res;
     }
 

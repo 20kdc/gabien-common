@@ -40,6 +40,7 @@ public class XEDataInputStream extends FilterInputStream implements DataInput {
 
     public final byte[] readToEnd() throws IOException {
         int av = available();
+        // System.out.println("RTE Av" + av);
         ByteArrayOutputStream baos = new ByteArrayOutputStream(av);
         while (av > 0) {
             byte[] data = new byte[av];

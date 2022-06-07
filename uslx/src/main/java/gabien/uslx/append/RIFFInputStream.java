@@ -6,7 +6,6 @@
  */
 package gabien.uslx.append;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -52,6 +51,8 @@ public class RIFFInputStream extends ChunkedInputStream {
     @Override
     public void close() throws IOException {
         // override again because of padding
+        holdoffLimiters = true;
         skipBytes(chunkPaddedLen - chunkPos);
+        holdoffLimiters = false;
     }
 }
