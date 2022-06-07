@@ -71,7 +71,7 @@ public class Peripherals implements IPeripherals {
     }
 
     @Override
-    public String maintain(Rect area, String text, int textHeight, IFunction<String, String> feedback) {
+    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
         ITextboxImplementation impl = TextboxImplObject.getInstance();
         if ((lastTextSentToTextbox == null) || (!lastTextSentToTextbox.equals(text))) {
             impl.setActive(text, feedback);

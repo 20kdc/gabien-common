@@ -25,7 +25,7 @@ public class XEDataInputStream extends FilterInputStream implements DataInput {
      */
     public ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
     private @NonNull final DataInputStream baseDataInput;
-    protected XEDataInputStream(@NonNull InputStream in) {
+    public XEDataInputStream(@NonNull InputStream in) {
         super(in);
         baseDataInput = new DataInputStream(this);
     }
