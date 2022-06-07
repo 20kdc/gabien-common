@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.append.*;
 
@@ -24,13 +25,16 @@ import gabien.uslx.append.*;
  * Reading support added 6th June, 2022
  */
 public class WavIO {
-    public static AudioIOSource readWAV(@NonNull final InputStream fis) throws IOException {
+    public static AudioIOSource readWAV(@NonNull final InputStream fis, final boolean close) throws IOException {
         RIFFInputStream ris = new RIFFInputStream(fis);
-        if (!ris.chunkId.equals("RIFF"))
+        if (!(ris.chunkId.equals("RIFF") || ris.chunkId.equals("LIST")))
             throw new IOException("This 'WAV' isn't even a RIFF file");
         String rc = ris.readFourCC();
         if (!rc.equals("WAVE"))
             throw new IOException("This RIFF isn't a WAVE.");
+        return readWAVInterior(ris, close ? fis : null);
+    }
+    public static AudioIOSource readWAVInterior(@NonNull final InputStream ris, @Nullable final InputStream closeMe) throws IOException {
         AudioIOFormat fmt = null;
         AudioIOCRSet cr = null;
         while (ris.available() > 0) {
@@ -69,8 +73,8 @@ public class WavIO {
 
                     @Override
                     public void close() throws IOException {
-                        // don't bother with a proper RIFF close
-                        fis.close();
+                        if (closeMe != null)
+                            closeMe.close();
                     }
                 };
             }
@@ -80,37 +84,48 @@ public class WavIO {
     }
 
     public static void writeWAV(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {
+        int interiorContent = 4 + sizeWAVInterior(dataSource);
+        RIFFOutputStream riffChunk = new RIFFOutputStream(fos, "RIFF", interiorContent);
+        // Filetype
+        riffChunk.writeBytes("WAVE");
+        writeWAVInterior(riffChunk, dataSource);
+        // Close off.
+        riffChunk.close();
+        dataSource.close();
+    }
+
+    public static void writeWAVInterior(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {
+        // Details of the format.
+        int requirements = inferFullRequirements(dataSource);
+        int fmtSize = fmtSizeFromRequirements(requirements);
+        writeWAVInteriorFMT(fos, dataSource, fmtSize);
+        if ((requirements & AudioIOFormat.REQ_FACT) != 0)
+            writeWAVInteriorFACT(fos, dataSource);
+        writeWAVInteriorDATA(fos, dataSource);
+    }
+
+    public static int sizeWAVInterior(@NonNull AudioIOSource dataSource) throws IOException {
         // Details of the format.
         AudioIOCRSet cr = dataSource.crSet;
         AudioIOFormat fmt = dataSource.format;
         int frameCount = dataSource.frameCount();
         int frameBytes = cr.channels * fmt.bytesPerSample;
         int totalSampleBytes = frameCount * frameBytes;
-        // Expand requirements.
-        int requirements = fmt.requirements;
-        // channel mask implies EXT_MODE
-        if (cr.channelMask != 0)
-            requirements |= AudioIOFormat.REQ_EXT_MODE;
-        // EXT_MODE implies EXT_SIZE and FACT
-        if ((requirements & AudioIOFormat.REQ_EXT_MODE) != 0) {
-            requirements |= AudioIOFormat.REQ_EXT_SIZE;
-            requirements |= AudioIOFormat.REQ_FACT;
-        }
-        // Determine "fmt " chunk size from requirements.
-        int fmtSize = 0x10;
-        if ((requirements & AudioIOFormat.REQ_EXT_SIZE) != 0)
-            fmtSize = 0x12;
-        if ((requirements & AudioIOFormat.REQ_EXT_MODE) != 0)
-            fmtSize = 0x28;
+        int requirements = inferFullRequirements(dataSource);
+        int fmtSize = fmtSizeFromRequirements(requirements);
         // Now we know exactly what we're going to generate, let's build a header!
-        int interiorContent = 4;
+        int interiorContent = 0;
         interiorContent += RIFFOutputStream.getInteriorChunkSize(fmtSize);
         interiorContent += RIFFOutputStream.getInteriorChunkSize(totalSampleBytes);
-        RIFFOutputStream riffChunk = new RIFFOutputStream(fos, "RIFF", interiorContent);
-        // Filetype
-        riffChunk.writeBytes("WAVE");
+        return interiorContent;
+    }
+
+    public static void writeWAVInteriorFMT(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource, int fmtSize) throws IOException {
+        // Details of the format.
+        AudioIOCRSet cr = dataSource.crSet;
+        AudioIOFormat fmt = dataSource.format;
         // fmt {
-        RIFFOutputStream fmtChunk = new RIFFOutputStream(riffChunk, "fmt ", fmtSize);
+        RIFFOutputStream fmtChunk = new RIFFOutputStream(fos, "fmt ", fmtSize);
         fmtChunk.writeShort(fmtSize == 0x28 ? 0xFFFE : fmt.formatCode);
         fmtChunk.writeShort(cr.channels);
         fmtChunk.writeInt(cr.sampleRate);
@@ -134,15 +149,26 @@ public class WavIO {
         }
         fmtChunk.close();
         // }
-        if ((requirements & AudioIOFormat.REQ_FACT) != 0) {
-            // fact {
-            RIFFOutputStream factChunk = new RIFFOutputStream(riffChunk, "fact", 4);
-            factChunk.writeInt(frameCount);
-            factChunk.close();
-            // }
-        }
+    }
+
+    public static void writeWAVInteriorFACT(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {
+        int frameCount = dataSource.frameCount();
+        // fact {
+        RIFFOutputStream factChunk = new RIFFOutputStream(fos, "fact", 4);
+        factChunk.writeInt(frameCount);
+        factChunk.close();
+        // }
+    }
+
+    public static void writeWAVInteriorDATA(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {
+        // Details of the format.
+        AudioIOCRSet cr = dataSource.crSet;
+        AudioIOFormat fmt = dataSource.format;
+        int frameCount = dataSource.frameCount();
+        int frameBytes = cr.channels * fmt.bytesPerSample;
+        int totalSampleBytes = frameCount * frameBytes;
         // data {
-        RIFFOutputStream dataChunk = new RIFFOutputStream(riffChunk, "data", totalSampleBytes);
+        RIFFOutputStream dataChunk = new RIFFOutputStream(fos, "data", totalSampleBytes);
         // And now for the sample data!
         byte[] data = new byte[frameBytes];
         ByteBuffer bb = ByteBuffer.wrap(data);
@@ -155,8 +181,29 @@ public class WavIO {
         }
         dataChunk.close();
         // }
-        // Close off.
-        riffChunk.close();
-        dataSource.close();
+    }
+
+    private static int inferFullRequirements(@NonNull AudioIOSource dataSource) throws IOException {
+        // Expand requirements.
+        int requirements = dataSource.format.requirements;
+        // channel mask implies EXT_MODE
+        if (dataSource.crSet.channelMask != 0)
+            requirements |= AudioIOFormat.REQ_EXT_MODE;
+        // EXT_MODE implies EXT_SIZE and FACT
+        if ((requirements & AudioIOFormat.REQ_EXT_MODE) != 0) {
+            requirements |= AudioIOFormat.REQ_EXT_SIZE;
+            requirements |= AudioIOFormat.REQ_FACT;
+        }
+        return requirements;
+    }
+
+    private static int fmtSizeFromRequirements(int requirements) throws IOException {
+        // Determine "fmt " chunk size from requirements.
+        int fmtSize = 0x10;
+        if ((requirements & AudioIOFormat.REQ_EXT_SIZE) != 0)
+            fmtSize = 0x12;
+        if ((requirements & AudioIOFormat.REQ_EXT_MODE) != 0)
+            fmtSize = 0x28;
+        return fmtSize;
     }
 }
