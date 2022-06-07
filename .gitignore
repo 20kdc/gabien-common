@@ -36,3 +36,7 @@
 !android/*.sh
 
 !example-toolchains.xml
+
+!unzip-desktop-jars.sh
+!copy-desktop-sources.sh
+
