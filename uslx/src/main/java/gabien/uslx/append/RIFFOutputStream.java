@@ -109,6 +109,8 @@ public class RIFFOutputStream extends XEDataOutputStream {
             int sz = buffer.size();
             targetDos.writeInt(sz);
             buffer.writeTo(targetDos);
+            if ((sz & 1) != 0)
+                out.write(0);
         } else {
             if (written != plannedLength)
                 throw new IOException("Fixed-size RIFFOutputStream was told to write " + plannedLength + " but got " + written + ".");
