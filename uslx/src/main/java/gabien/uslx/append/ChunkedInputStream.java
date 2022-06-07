@@ -91,6 +91,16 @@ public abstract class ChunkedInputStream extends XEDataInputStream {
     }
 
     @Override
+    public long skip(long n) throws IOException {
+        int efAvailable = chunkLen - chunkPos;
+        if (n > efAvailable)
+            n = efAvailable;
+        long res = super.skip(n);
+        chunkPos += (int) n;
+        return res;
+    }
+
+    @Override
     public synchronized void reset() throws IOException {
         chunkPos = resetPos;
         super.reset();

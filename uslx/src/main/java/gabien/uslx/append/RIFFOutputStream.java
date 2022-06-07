@@ -44,7 +44,7 @@ public class RIFFOutputStream extends XEDataOutputStream {
      */
     public RIFFOutputStream(@NonNull XEDataOutputStream base, @NonNull String id) throws IOException {
         super(new ByteArrayOutputStream());
-        targetDos = new XEDataOutputStream(base);
+        targetDos = base;
         buffer = (ByteArrayOutputStream) out;
         if (id.length() != 4)
             throw new IOException("RIFF chunk ID must be 4 characters.");
@@ -53,7 +53,7 @@ public class RIFFOutputStream extends XEDataOutputStream {
     }
 
     public static int getInteriorChunkSize(int len) {
-        return 8 + len + (len & 1);
+        return 8 + len + (shouldPad(len) ? 1 : 0);
     }
 
     /**
@@ -97,10 +97,17 @@ public class RIFFOutputStream extends XEDataOutputStream {
         if (id.length() != 4)
             throw new IOException("RIFF chunk ID must be 4 characters.");
         os.writeBytes(id);
-        os.writeInt(content.length);
+        int len = content.length;
+        os.writeInt(len);
         os.write(content);
-        if ((content.length & 1) != 0)
+        // System.out.println("X " + id + " " + len + " " + pad);
+        if (shouldPad(len))
             os.write(0);
+    }
+
+    public static boolean shouldPad(int len) {
+        int pad = len & 1;
+        return pad != 0;
     }
 
     @Override
@@ -109,12 +116,12 @@ public class RIFFOutputStream extends XEDataOutputStream {
             int sz = buffer.size();
             targetDos.writeInt(sz);
             buffer.writeTo(targetDos);
-            if ((sz & 1) != 0)
-                out.write(0);
+            if (shouldPad(sz))
+                targetDos.write(0);
         } else {
             if (written != plannedLength)
                 throw new IOException("Fixed-size RIFFOutputStream was told to write " + plannedLength + " but got " + written + ".");
-            if ((plannedLength & 1) != 0)
+            if (shouldPad(plannedLength))
                 out.write(0);
         }
         // This prevents further writing.

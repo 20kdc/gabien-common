@@ -118,6 +118,8 @@ public class WavIO {
         // Now we know exactly what we're going to generate, let's build a header!
         int interiorContent = 0;
         interiorContent += RIFFOutputStream.getInteriorChunkSize(fmtSize);
+        if ((requirements & AudioIOFormat.REQ_FACT) != 0)
+            interiorContent += RIFFOutputStream.getInteriorChunkSize(4);
         interiorContent += RIFFOutputStream.getInteriorChunkSize(totalSampleBytes);
         return interiorContent;
     }

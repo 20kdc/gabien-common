@@ -32,7 +32,9 @@ public class RIFFInputStream extends ChunkedInputStream {
     protected int readChunkHeader(Object indicator) throws IOException {
         chunkIdTmp = readFourCC();
         int len = super.readInt();
-        chunkPaddedLen = len + (len & 1);
+        chunkPaddedLen = len;
+        if (RIFFOutputStream.shouldPad(len))
+            chunkPaddedLen++;
         return len;
     }
 
