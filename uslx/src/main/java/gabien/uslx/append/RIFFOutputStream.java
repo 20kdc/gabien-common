@@ -32,6 +32,17 @@ public class RIFFOutputStream extends XEDataOutputStream {
      * @throws IOException
      */
     public RIFFOutputStream(@NonNull OutputStream base, @NonNull String id) throws IOException {
+        this(new XEDataOutputStream(base), id);
+    }
+
+    /**
+     * Opens a RIFF chunk with an unknown length.
+     * The contents will be buffered in memory until closing.
+     * @param base Target output stream to write to.
+     * @param id RIFF chunk ID.
+     * @throws IOException
+     */
+    public RIFFOutputStream(@NonNull XEDataOutputStream base, @NonNull String id) throws IOException {
         super(new ByteArrayOutputStream());
         targetDos = new XEDataOutputStream(base);
         buffer = (ByteArrayOutputStream) out;
@@ -62,6 +73,34 @@ public class RIFFOutputStream extends XEDataOutputStream {
         writeInt(length);
         written = 0;
         plannedLength = length;
+    }
+
+    /**
+     * Writes a RIFF chunk with known contents.
+     * @param os Target output stream to write to.
+     * @param id RIFF chunk ID.
+     * @param content Contents.
+     * @throws IOException
+     */
+    public static void putChunk(OutputStream os, String id, byte[] content) throws IOException {
+        putChunk(new XEDataOutputStream(os), id, content);
+    }
+
+    /**
+     * Writes a RIFF chunk with known contents.
+     * @param os Target output stream to write to.
+     * @param id RIFF chunk ID.
+     * @param content Contents.
+     * @throws IOException
+     */
+    public static void putChunk(XEDataOutputStream os, String id, byte[] content) throws IOException {
+        if (id.length() != 4)
+            throw new IOException("RIFF chunk ID must be 4 characters.");
+        os.writeBytes(id);
+        os.writeInt(content.length);
+        os.write(content);
+        if ((content.length & 1) != 0)
+            os.write(0);
     }
 
     @Override

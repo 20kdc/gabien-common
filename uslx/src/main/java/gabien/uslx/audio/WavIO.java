@@ -7,6 +7,7 @@
 
 package gabien.uslx.audio;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,60 +28,61 @@ import gabien.uslx.append.*;
 public class WavIO {
     public static AudioIOSource readWAV(@NonNull final InputStream fis, final boolean close) throws IOException {
         RIFFInputStream ris = new RIFFInputStream(fis);
-        if (!(ris.chunkId.equals("RIFF") || ris.chunkId.equals("LIST")))
-            throw new IOException("This 'WAV' isn't even a RIFF file");
-        String rc = ris.readFourCC();
-        if (!rc.equals("WAVE"))
-            throw new IOException("This RIFF isn't a WAVE.");
+        ris.readListOrRiffTypeAndVerify("WAVE", "wave");
         return readWAVInterior(ris, close ? fis : null);
     }
-    public static AudioIOSource readWAVInterior(@NonNull final InputStream ris, @Nullable final InputStream closeMe) throws IOException {
-        AudioIOFormat fmt = null;
-        AudioIOCRSet cr = null;
+    public static AudioIOSource readWAVInterior(@NonNull final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
+        AudioIOCRFmt fmt = null;
         while (ris.available() > 0) {
             RIFFInputStream chk = new RIFFInputStream(ris);
             if (chk.chunkId.equals("fmt ")) {
-                int fmtTag = chk.readUnsignedShort();
-                int channels = chk.readUnsignedShort();
-                int channelMask = 0;
-                int sampleRate = chk.readInt();
-                chk.readInt(); // bytes per second
-                chk.readUnsignedShort();
-                int sampleBits = chk.readUnsignedShort(); // sample bits
-                if (fmtTag == 0xFFFE) {
-                    if (chk.readUnsignedShort() < 0x16)
-                        throw new IOException("Extensible WAVE format, but not enough header for it");
-                    chk.readShort();
-                    channelMask = chk.readInt();
-                    fmtTag = chk.readUnsignedShort();
-                }
-                fmt = AudioIOFormat.detect(fmtTag, sampleBits);
-                cr = new AudioIOCRSet(channels, channelMask, sampleRate);
+                fmt = readFMT(chk);
             } else if (chk.chunkId.equals("data")) {
-                final RIFFInputStream data = chk;
-                final int frameBytes = fmt.bytesPerSample * cr.channels;
-                final int frameCount = chk.chunkLen / frameBytes;
-                return new AudioIOSource(cr, fmt) {
-                    @Override
-                    public int frameCount() {
-                        return frameCount;
-                    }
-
-                    @Override
-                    public void nextFrame(@NonNull ByteBuffer frame) throws IOException {
-                        data.readFully(frame.array(), frame.arrayOffset(), frameBytes);
-                    }
-
-                    @Override
-                    public void close() throws IOException {
-                        if (closeMe != null)
-                            closeMe.close();
-                    }
-                };
+                if (fmt == null)
+                    throw new IOException("Got 'data' chunk before 'fmt ' chunk");
+                return readDATA(chk, fmt, closeMe);
             }
             chk.close();
         }
-        throw new IOException("Never found data chunk");
+        throw new IOException("Never found 'data' chunk");
+    }
+    public static AudioIOCRFmt readFMT(@NonNull XEDataInputStream fmtChk) throws IOException {
+        int fmtTag = fmtChk.readUnsignedShort();
+        int channels = fmtChk.readUnsignedShort();
+        int channelMask = 0;
+        int sampleRate = fmtChk.readInt();
+        fmtChk.readInt(); // bytes per second
+        fmtChk.readUnsignedShort();
+        int sampleBits = fmtChk.readUnsignedShort(); // sample bits
+        if (fmtTag == 0xFFFE) {
+            if (fmtChk.readUnsignedShort() < 0x16)
+                throw new IOException("Extensible WAVE format, but not enough header for it");
+            fmtChk.readShort();
+            channelMask = fmtChk.readInt();
+            fmtTag = fmtChk.readUnsignedShort();
+        }
+        return new AudioIOCRFmt(AudioIOFormat.detect(fmtTag, sampleBits), channels, channelMask, sampleRate);
+    }
+    public static AudioIOSource readDATA(@NonNull final RIFFInputStream data, @NonNull AudioIOCRFmt fmt, @Nullable final Closeable closeMe) throws IOException {
+        final int frameBytes = fmt.format.bytesPerSample * fmt.channels;
+        final int frameCount = data.chunkLen / frameBytes;
+        return new AudioIOSource(fmt, fmt.format) {
+            @Override
+            public int frameCount() {
+                return frameCount;
+            }
+
+            @Override
+            public void nextFrame(@NonNull ByteBuffer frame) throws IOException {
+                data.readFully(frame.array(), frame.arrayOffset(), frameBytes);
+            }
+
+            @Override
+            public void close() throws IOException {
+                if (closeMe != null)
+                    closeMe.close();
+            }
+        };
     }
 
     public static void writeWAV(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {

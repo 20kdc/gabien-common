@@ -6,6 +6,7 @@
  */
 package gabien.uslx.append;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.FilterInputStream;
@@ -35,6 +36,18 @@ public class XEDataInputStream extends FilterInputStream implements DataInput {
         char c = (char) readUnsignedByte();
         char d = (char) readUnsignedByte();
         return new String(new char[] {a, b, c, d});
+    }
+
+    public final byte[] readToEnd() throws IOException {
+        int av = available();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(av);
+        while (av > 0) {
+            byte[] data = new byte[av];
+            readFully(data);
+            baos.write(data);
+            av = available();
+        }
+        return baos.toByteArray();
     }
 
     @Override

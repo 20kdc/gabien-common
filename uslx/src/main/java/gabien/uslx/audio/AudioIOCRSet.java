@@ -10,7 +10,7 @@ package gabien.uslx.audio;
  * Channel/rate setup.
  * Created on 6th June 2022 as part of project VE2Bun
  */
-public final class AudioIOCRSet {
+public class AudioIOCRSet {
     public final int channels;
     public final int channelMask;
     public final int sampleRate;
@@ -36,5 +36,15 @@ public final class AudioIOCRSet {
         channels = ch;
         channelMask = chm;
         sampleRate = sr;
+    }
+
+    /**
+     * Creates a new AudioIOCRSet from another.
+     * @param cr Source
+     */
+    public AudioIOCRSet(AudioIOCRSet cr) {
+        channels = cr.channels;
+        channelMask = cr.channelMask;
+        sampleRate = cr.sampleRate;
     }
 }

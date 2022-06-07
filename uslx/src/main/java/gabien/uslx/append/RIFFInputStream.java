@@ -36,6 +36,14 @@ public class RIFFInputStream extends ChunkedInputStream {
         return len;
     }
 
+    public void readListOrRiffTypeAndVerify(String expectedRIFFHead, String expectedLISTHead) throws IOException {
+        String rc = readFourCC();
+        boolean isRIFFWAVE = chunkId.equals("RIFF") && rc.equals(expectedRIFFHead);
+        boolean isLISTwave = chunkId.equals("LIST") && rc.equals(expectedLISTHead);
+        if (!(isRIFFWAVE || isLISTwave))
+            throw new IOException("File expected to be RIFF;" + expectedRIFFHead + " or LIST;" + expectedLISTHead + " but was actually " + chunkId + ";" + rc);
+    }
+
     /**
      * Terminates the chunk (doesn't close parent stream).
      */
