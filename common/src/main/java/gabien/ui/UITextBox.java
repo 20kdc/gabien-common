@@ -47,7 +47,8 @@ public class UITextBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected) {
-            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, text, feedback);
+            Rect crib = getContentsRelativeInputBounds();
+            String ss = peripherals.maintain(crib.x, crib.y, crib.width, crib.height, text, contents.textHeight, feedback);
             // Update storage.
             text = ss;
             textLastSeen = ss;

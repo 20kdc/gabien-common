@@ -29,9 +29,10 @@ public interface IPeripherals {
 
     // Must be called once every frame to maintain a textbox.
     // Only one can be maintained at a given time.
-    // The Y position is the *centre* - the textbox will be as tall as it wants to be.
+    // The Y centre is the *centre* - the textbox will be as tall as it wants to be.
     // Note that the textbox is still hooked into key events, so make sure not to respond to anything that could ever be used in normal typing.
     // 'feedback' provides live feedback, and should be null under most circumstances.
-    String maintain(int x, int y, int width, String text, IFunction<String, String> feedback);
+    // textHeight is the text height of the textbox content.
+    String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback);
     boolean isEnterJustPressed();
 }

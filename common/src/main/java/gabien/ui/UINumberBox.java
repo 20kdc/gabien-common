@@ -62,7 +62,8 @@ public class UINumberBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected && (!readOnly)) {
-            String ss = peripherals.maintain(-getBorderWidth(), (bounds.height / 2) - getBorderWidth(), bounds.width, String.valueOf(number), null);
+            Rect crib = getContentsRelativeInputBounds();
+            String ss = peripherals.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number), contents.textHeight, null);
             // Update storage.
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;

@@ -26,15 +26,19 @@ public abstract class UIBorderedElement extends UIElement {
     public int borderType;
     private int borderWidth;
 
+    private Rect contentsRelativeInputBounds;
+
     public UIBorderedElement(int bt, int bw) {
         borderType = bt;
         borderWidth = bw;
+        calcContentsRelativeInputBounds();
     }
 
     public UIBorderedElement(int bt, int bw, int w, int h) {
         super(w + (bw * 2), h + (bw * 2));
         borderType = bt;
         borderWidth = bw;
+        calcContentsRelativeInputBounds();
     }
 
     public static int getRecommendedBorderWidth(int textHeight) {
@@ -52,6 +56,25 @@ public abstract class UIBorderedElement extends UIElement {
 
     public int getBorderWidth() {
         return borderWidth;
+    }
+
+    private void calcContentsRelativeInputBounds() {
+        int bw = borderWidth;
+        int bwy = bw;
+        if (getBorderFlag(borderType, 0))
+            bwy *= 2;
+        Size sz = getSize();
+        contentsRelativeInputBounds = new Rect(-bw, -bwy, sz.width, sz.height);
+    }
+
+    protected Rect getContentsRelativeInputBounds() {
+        return contentsRelativeInputBounds;
+    }
+
+    @Override
+    public void runLayout() {
+        super.runLayout();
+        calcContentsRelativeInputBounds();
     }
 
     @Override
@@ -75,13 +98,9 @@ public abstract class UIBorderedElement extends UIElement {
 
     @Override
     public final void update(double deltaTime, boolean selected, IPeripherals peripherals) {
-        int bw = borderWidth;
-        int bwy = bw;
-        if (getBorderFlag(borderType, 0))
-            bwy *= 2;
-        peripherals.performOffset(-bw, -bwy);
+        peripherals.performOffset(contentsRelativeInputBounds.x, contentsRelativeInputBounds.y);
         updateContents(deltaTime, selected, peripherals);
-        peripherals.performOffset(bw, bwy);
+        peripherals.performOffset(-contentsRelativeInputBounds.x, -contentsRelativeInputBounds.y);
     }
 
     // This is the one you override.

@@ -113,8 +113,8 @@ public class MobilePeripherals implements IPeripherals {
     }
 
     @Override
-    public String maintain(int x, int y, int width, String text, IFunction<String, String> feedback) {
-        return parent.tm.maintain((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, width, text, feedback);
+    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
+        return parent.tm.maintain((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, w, h, text, textHeight, feedback);
     }
 
     @Override

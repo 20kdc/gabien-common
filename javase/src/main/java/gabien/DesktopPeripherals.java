@@ -8,6 +8,7 @@
 package gabien;
 
 import gabien.ui.IPointer;
+import gabien.ui.Rect;
 import gabien.uslx.append.*;
 
 import java.util.HashMap;
@@ -87,8 +88,8 @@ public class DesktopPeripherals implements IDesktopPeripherals {
     }
 
     @Override
-    public String maintain(int x, int y, int width, String text, IFunction<String, String> fun) {
-        return parent.tm.maintain((x - shadowScissorX) * parent.sc, (y - shadowScissorY) * parent.sc, width * parent.sc, text, fun);
+    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> fun) {
+        return parent.tm.maintain((x - shadowScissorX) * parent.sc, (y - shadowScissorY) * parent.sc, w * parent.sc, h * parent.sc, text, textHeight, fun);
     }
 
     @Override

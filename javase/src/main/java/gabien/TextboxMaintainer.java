@@ -38,16 +38,21 @@ public class TextboxMaintainer {
         maintainedThisFrame = false;
     }
 
-    public String maintain(int x, int y, int width, String text, final IFunction<String, String> feedback) {
+    public String maintain(int x, int y, int width, int height, String text, int textHeight, final IFunction<String, String> feedback) {
+        // Adjust stuff
+        y = y + (height / 2);
+        if (textHeight < 16)
+            textHeight = 16;
+        // Continue
         if (target == null) {
             // wait as long as possible because of font loading perf.
             // IDK if it's loading every font on the system or something but this is a real issue...
             target = new JTextField();
             parent.add(target);
             // apparently it's not capable of setting sensible defaults
-            target.setBounds(0, 0, 32, 17);
+            target.setBounds(0, 0, 32, textHeight + 1);
             // use a sane font
-            target.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
+            target.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, textHeight));
             target.addKeyListener(kl);
             // Allows some access for debugging purposes to the mobile feedback.
             if (GaBIEnImpl.mobileEmulation) {
