@@ -7,6 +7,8 @@
 
 package gabien.uslx.audio;
 
+import gabien.uslx.append.*;
+
 /**
  * Represents the abstract concept of a sample.
  * Note that length is not directly specified - this sample may be generative and/or infinite.

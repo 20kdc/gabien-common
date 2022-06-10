@@ -29,17 +29,18 @@ public abstract class AudioIOSource implements Closeable {
     }
 
     /**
-     * The amount of frames (referred to as F).
+     * The amount of frames.
+     * Note that this is not necessarily the amount of frames *remaining*.
      */
     public abstract int frameCount();
 
     /**
-     * Retrieves the next frame.
+     * Retrieves the next frame into the given byte buffer at the given position.
      * Length is channels * format.bytesPerSample bytes.
      * Order is of course little-endian.
      * @param frame Buffer to fill with the next frame of data. Must support array().
      */
-    public abstract void nextFrame(@NonNull ByteBuffer frame) throws IOException;
+    public abstract void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException;
 
     /**
      * Retrieves all frames as signed 32-bit PCM.
@@ -54,8 +55,7 @@ public abstract class AudioIOSource implements Closeable {
         frameBuffer.order(ByteOrder.LITTLE_ENDIAN);
         int resPtr = 0;
         for (int i = 0; i < frames; i++) {
-            nextFrame(frameBuffer);
-            frameBuffer.position(0);
+            nextFrame(frameBuffer, 0);
             for (int c = 0; c < crSet.channels; c++)
                 res[resPtr++] = format.asS32(frameBuffer, c * format.bytesPerSample);
         }
@@ -75,7 +75,7 @@ public abstract class AudioIOSource implements Closeable {
         frameBuffer.order(ByteOrder.LITTLE_ENDIAN);
         int resPtr = 0;
         for (int i = 0; i < frames; i++) {
-            nextFrame(frameBuffer);
+            nextFrame(frameBuffer, 0);
             for (int c = 0; c < crSet.channels; c++)
                 res[resPtr++] = format.asF64(frameBuffer, c * format.bytesPerSample);
         }
@@ -105,10 +105,12 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public void nextFrame(@NonNull ByteBuffer frame) {
+        public void nextFrame(@NonNull ByteBuffer frame, int at) {
             nextFrame(tmpBuf);
-            for (short s : tmpBuf)
-                frame.putShort(s);
+            for (short s : tmpBuf) {
+                frame.putShort(at, s);
+                at += 2;
+            }
         }
 
         public abstract void nextFrame(short[] buffer);
@@ -127,10 +129,12 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public void nextFrame(@NonNull ByteBuffer frame) {
+        public void nextFrame(@NonNull ByteBuffer frame, int at) {
             nextFrame(tmpBuf);
-            for (float s : tmpBuf)
-                frame.putFloat(s);
+            for (float s : tmpBuf) {
+                frame.putFloat(at, s);
+                at += 4;
+            }
         }
 
         public abstract void nextFrame(float[] buffer);

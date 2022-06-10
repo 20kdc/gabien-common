@@ -73,8 +73,8 @@ public class WavIO {
             }
 
             @Override
-            public void nextFrame(@NonNull ByteBuffer frame) throws IOException {
-                data.readFully(frame.array(), frame.arrayOffset(), frameBytes);
+            public void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException {
+                data.readFully(frame.array(), frame.arrayOffset() + at, frameBytes);
             }
 
             @Override
@@ -179,8 +179,7 @@ public class WavIO {
         bb.order(ByteOrder.LITTLE_ENDIAN);
         for (int i = 0; i < frameCount; i++) {
             // Stereo data.
-            bb.position(0);
-            dataSource.nextFrame(bb);
+            dataSource.nextFrame(bb, 0);
             dataChunk.write(data);
         }
         dataChunk.close();
