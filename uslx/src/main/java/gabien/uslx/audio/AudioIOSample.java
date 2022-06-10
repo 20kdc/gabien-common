@@ -18,7 +18,6 @@ import org.eclipse.jdt.annotation.NonNull;
  * Created on 10th June 2022 as part of WTFr7.
  */
 public final class AudioIOSample extends DiscreteSample {
-    public final AudioIOCRSet crSet;
     public final AudioIOFormat format;
     public final ByteBuffer data;
     public final int bytesPerFrame;
@@ -34,8 +33,7 @@ public final class AudioIOSample extends DiscreteSample {
     }
 
     public AudioIOSample(AudioIOCRSet crs, AudioIOFormat fmt, int len) {
-        super(len);
-        crSet = crs;
+        super(crs, len);
         format = fmt;
         bytesPerFrame = crs.channels * fmt.bytesPerSample;
         data = ByteBuffer.allocate(length * bytesPerFrame);
@@ -43,7 +41,7 @@ public final class AudioIOSample extends DiscreteSample {
     }
 
     public AudioIOSource getSource() {
-        return new AudioIOSource(crSet, format) {
+        return new AudioIOSource(this, format) {
             int ptr = 0;
             @Override
             public void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException {
@@ -62,7 +60,7 @@ public final class AudioIOSample extends DiscreteSample {
     @Override
     public void getF64(int frame, double[] buffer) {
         int at = frame * bytesPerFrame;
-        for (int i = 0; i < crSet.channels; i++) {
+        for (int i = 0; i < channels; i++) {
             buffer[i] = format.asF64(data, at);
             at += format.bytesPerSample;
         }
@@ -71,7 +69,7 @@ public final class AudioIOSample extends DiscreteSample {
     @Override
     public void getS32(int frame, int[] buffer) {
         int at = frame * bytesPerFrame;
-        for (int i = 0; i < crSet.channels; i++) {
+        for (int i = 0; i < channels; i++) {
             buffer[i] = format.asS32(data, at);
             at += format.bytesPerSample;
         }

@@ -11,12 +11,13 @@ package gabien.uslx.audio;
  * Samples, but discrete!
  * Created on 10th June 2022 as part of project WTFr7
  */
-public abstract class DiscreteSample {
+public abstract class DiscreteSample extends AudioIOCRSet {
     /**
      * Length in frames
      */
     public final int length;
-    public DiscreteSample(int l) {
+    public DiscreteSample(AudioIOCRSet crs, int l) {
+        super(crs);
         length = l;
     }
     public abstract void getS32(int frame, int[] buffer);
