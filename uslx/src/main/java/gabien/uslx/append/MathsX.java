@@ -19,6 +19,30 @@ public final class MathsX {
     }
 
     /**
+     * Linearly interpolates between two values.
+     * Values outside the range 0-1 continue the 'line'.
+     */
+    public static float lerpUnclamped(float from, float to, float mix) {
+        return from + ((to - from) * mix);
+    }
+
+    // Clamps
+
+    /**
+     * Clamps a value between two other values.
+     */
+    public static int clamp(int val, int min, int max) {
+        return Math.min(Math.max(val, min), max);
+    }
+
+    /**
+     * Clamps a value between two other values.
+     */
+    public static long clamp(long val, long min, long max) {
+        return Math.min(Math.max(val, min), max);
+    }
+
+    /**
      * Clamps a value between two other values.
      */
     public static float clamp(float val, float min, float max) {
@@ -26,10 +50,10 @@ public final class MathsX {
     }
 
     /**
-     * Linearly interpolates between two values.
-     * Values outside the range 0-1 continue the 'line'.
+     * Clamps a value between two other values.
      */
-    public static float lerpUnclamped(float from, float to, float mix) {
-        return from + ((to - from) * mix);
+    public static double clamp(double val, double min, double max) {
+        return Math.min(Math.max(val, min), max);
     }
+
 }

@@ -28,8 +28,25 @@ public final class ArrayConversions {
             dest[destOfs++] = vX | (vX << 8) | (vX << 16) | (v << 24);
         }
     }
-    public static void pcmSSToS32(byte[] source, int[] dest) {
+    public static void pcmS8ToS32(byte[] source, int[] dest) {
         pcmS8ToS32(source, 0, dest, 0, source.length);
+    }
+
+    // Downward PCM conversions
+    public static void pcmS32ToS16(int[] source, int sourceOfs, short[] dest, int destOfs, int sourceLen) {
+        for (int i = 0; i < sourceLen; i++)
+            dest[destOfs++] = (short) (source[sourceOfs++] >> 16);
+    }
+    public static void pcmS32ToS16(int[] source, short[] dest) {
+        pcmS32ToS16(source, 0, dest, 0, source.length);
+    }
+
+    public static void pcmS32ToS8(int[] source, int sourceOfs, byte[] dest, int destOfs, int sourceLen) {
+        for (int i = 0; i < sourceLen; i++)
+            dest[destOfs++] = (byte) (source[sourceOfs++] >> 24);
+    }
+    public static void pcmS32ToS8(int[] source, byte[] dest) {
+        pcmS32ToS8(source, 0, dest, 0, source.length);
     }
 
     // Downward Integer Casts
@@ -64,6 +81,52 @@ public final class ArrayConversions {
     }
     public static void castF32ToF64(float[] source, double[] dest) {
         castF32ToF64(source, 0, dest, 0, source.length);
+    }
+
+    // PCM x Float casts, F32/S16
+    public static void pcmF32ToS16(float[] source, int sourceOfs, short[] dest, int destOfs, int sourceLen) {
+        for (int i = 0; i < sourceLen; i++) {
+            float flt = source[sourceOfs++];
+            flt *= flt < 0 ? 32768f : 32767f;
+            flt = MathsX.clamp(flt, -32768, 32767);
+            dest[destOfs++] = (short) flt;
+        }
+    }
+    public static void pcmF32ToS16(float[] source, short[] dest) {
+        pcmF32ToS16(source, 0, dest, 0, source.length);
+    }
+    public static void pcmS16ToF32(short[] source, int sourceOfs, float[] dest, int destOfs, int sourceLen) {
+        for (int i = 0; i < sourceLen; i++) {
+            float flt = source[sourceOfs++];
+            flt /= flt < 0 ? 32768f : 32767f;
+            dest[destOfs++] = flt;
+        }
+    }
+    public static void pcmS16ToF32(short[] source, float[] dest) {
+        pcmS16ToF32(source, 0, dest, 0, source.length);
+    }
+
+    // PCM x Float casts, F64/S32
+    public static void pcmF64ToS32(double[] source, int sourceOfs, int[] dest, int destOfs, int sourceLen) {
+        for (int i = 0; i < sourceLen; i++) {
+            double flt = source[sourceOfs++];
+            flt *= flt < 0 ? 2147483648d : 2147483647d;
+            flt = MathsX.clamp(flt, -2147483648, 2147483647);
+            dest[destOfs++] = (int) flt;
+        }
+    }
+    public static void pcmF64ToS32(double[] source, int[] dest) {
+        pcmF64ToS32(source, 0, dest, 0, source.length);
+    }
+    public static void pcmS32ToF64(int[] source, int sourceOfs, double[] dest, int destOfs, int sourceLen) {
+        for (int i = 0; i < sourceLen; i++) {
+            double flt = source[sourceOfs++];
+            flt /= flt < 0 ? 2147483648d : 2147483647d;
+            dest[destOfs++] = (int) flt;
+        }
+    }
+    public static void pcmS32ToF64(int[] source, double[] dest) {
+        pcmS32ToF64(source, 0, dest, 0, source.length);
     }
 
     /**

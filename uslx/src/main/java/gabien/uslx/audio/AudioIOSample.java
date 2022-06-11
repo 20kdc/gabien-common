@@ -58,10 +58,10 @@ public final class AudioIOSample extends DiscreteSample {
     }
 
     @Override
-    public void getF64(int frame, double[] buffer) {
+    public void getF32(int frame, float[] buffer) {
         int at = frame * bytesPerFrame;
         for (int i = 0; i < channels; i++) {
-            buffer[i] = format.asF64(data, at);
+            buffer[i] = (float) format.asF64(data, at);
             at += format.bytesPerSample;
         }
     }
