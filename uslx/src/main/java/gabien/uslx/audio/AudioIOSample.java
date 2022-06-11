@@ -58,7 +58,7 @@ public final class AudioIOSample extends DiscreteSample {
     }
 
     @Override
-    public void getF32(int frame, float[] buffer) {
+    public final void getF32(int frame, float[] buffer) {
         int at = frame * bytesPerFrame;
         for (int i = 0; i < channels; i++) {
             buffer[i] = (float) format.asF64(data, at);
@@ -67,10 +67,26 @@ public final class AudioIOSample extends DiscreteSample {
     }
 
     @Override
-    public void getS32(int frame, int[] buffer) {
+    public final void getS32(int frame, int[] buffer) {
         int at = frame * bytesPerFrame;
         for (int i = 0; i < channels; i++) {
             buffer[i] = format.asS32(data, at);
+            at += format.bytesPerSample;
+        }
+    }
+
+    public final void setF32(int frame, float[] buffer) {
+        int at = frame * bytesPerFrame;
+        for (int i = 0; i < channels; i++) {
+            format.ofF64(data, at, buffer[i]);
+            at += format.bytesPerSample;
+        }
+    }
+
+    public final void setS32(int frame, int[] buffer) {
+        int at = frame * bytesPerFrame;
+        for (int i = 0; i < channels; i++) {
+            format.ofS32(data, at, buffer[i]);
             at += format.bytesPerSample;
         }
     }
