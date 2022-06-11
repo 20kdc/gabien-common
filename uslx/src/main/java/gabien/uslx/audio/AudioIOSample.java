@@ -74,19 +74,4 @@ public final class AudioIOSample extends DiscreteSample {
             at += format.bytesPerSample;
         }
     }
-
-    /**
-     * Why, what a temporary holdover this is! Would be a shame if it were to disappear in the next commit...
-     * Gets a 32-bit PCM sample given a position (as if indexing a flattened [length][channels] array)
-     */
-    public int getS32(int at) {
-        return format.asS32(data, format.bytesPerSample * at);
-    }
-    /**
-     * Why, what a temporary holdover this is! Would be a shame if it were to disappear in the next commit...
-     * Gets a 64-bit floating point sample given a position (as if indexing a flattened [length][channels] array)
-     */
-    public double getF64(int at) {
-        return format.asF64(data, format.bytesPerSample * at);
-    }
 }
