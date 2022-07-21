@@ -185,10 +185,11 @@ public class UIWindowView extends UIElement {
             if (area < 0)
                 area = 0;
             int cX = new Random().nextInt(area + 1);
-            if ((g.height - 64) < r.height) {
+            int tabShellNewAreaForgiveness = parent.windowTextHeight * 6;
+            if ((g.height - tabShellNewAreaForgiveness) < r.height) {
                 contents.setForcedBounds(null, new Rect(cX, 0, r.width, r.height));
             } else {
-                contents.setForcedBounds(null, new Rect(cX, 64, r.width, r.height));
+                contents.setForcedBounds(null, new Rect(cX, tabShellNewAreaForgiveness, r.width, r.height));
             }
 
             windowBoundsCheck();
