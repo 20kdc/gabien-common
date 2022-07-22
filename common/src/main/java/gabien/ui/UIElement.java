@@ -23,10 +23,10 @@ import java.util.LinkedList;
  * Redesigned on February 16th, 2018.
  */
 public abstract class UIElement {
-    private Rect elementBounds = new Rect(0, 0, 0, 0);
+    private Rect elementBounds = Rect.ZERO;
 
     private UIElement parent;
-    private Size wantedSize = new Size(0, 0);
+    private Size wantedSize = Size.ZERO;
     // Used during construction & setForcedBounds.
     // In the first case, this prevents accidentally calling runLayout before the object is ready.
     // In the second case, this prevents a sub-element from calling a parent element's runLayout...

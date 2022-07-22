@@ -30,7 +30,13 @@ public class FontManager {
     // Key format is a weird mess, check the relevant function
     private static WeakHashMap<String, String> formatData = new WeakHashMap<String, String>();
 
-    private static IImage getInternalFontFor(int height, boolean textBlack) {
+    /**
+     * Returns an internal font sheet. 
+     * @param height The target font height (pixels per line).
+     * @param textBlack If the font should be inverted.
+     * @return A 128-character image covering ASCII (with some codepage 437)
+     */
+    public static IImage getInternalFontImageFor(int height, boolean textBlack) {
         if (height >= 16) {
             if (internalFont16 == null)
                 internalFont16 = GaBIEn.getImageCKEx("font2x.png", false, true, 0, 0, 0);
@@ -114,7 +120,7 @@ public class FontManager {
             return;
         }
         byte[] ascii = text.getBytes();
-        IImage font = getInternalFontFor(height, textBlack);
+        IImage font = getInternalFontImageFor(height, textBlack);
         int hchSize = font.getWidth() / 16;
         int vchSize = font.getHeight() / 8;
         int oldXPtr = xptr;

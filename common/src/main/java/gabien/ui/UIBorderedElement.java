@@ -144,6 +144,9 @@ public abstract class UIBorderedElement extends UIElement {
         return cachedThemeInts[idx] == -1;
     }
 
+    public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, Rect where) {
+        drawBorder(igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
+    }
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
         if (cachedTheme == null) {
             cachedTheme = GaBIEn.getImageEx("themes.png", false, true);

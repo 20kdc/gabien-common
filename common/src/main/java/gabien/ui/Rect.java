@@ -12,6 +12,8 @@ package gabien.ui;
  * Creation date unknown.
  */
 public final class Rect extends Size {
+    public static final Rect ZERO = new Rect(0, 0, 0, 0);
+
     public final int x, y;
 
     public Rect(int i, int i0, int i1, int i2) {

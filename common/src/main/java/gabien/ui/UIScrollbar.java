@@ -7,7 +7,12 @@
 
 package gabien.ui;
 
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.FontManager;
+import gabien.GaBIEn;
 import gabien.IGrDriver;
+import gabien.IImage;
 import gabien.IPeripherals;
 
 /**
@@ -15,87 +20,199 @@ import gabien.IPeripherals;
  * ... Wow, this didn't need much work to update on feb17.2018 for the Change.
  * Probably because it has *almost no state*.
  * Then again, theming is important, so it did get changed to use borders with a side of more borders.
- * Created on 08/06/17.
+ * Created on 08/06/17, reworked 22nd July 2022
  */
-public class UIScrollbar extends UIBorderedElement {
+public class UIScrollbar extends UIElement {
     public double scrollPoint = 0.0;
     public double wheelScale = 0.1;
     public final boolean vertical;
 
+    // size of bar in pixels
+    private int barSize;
+    private int barLength;
+    private int carriageBorder;
+    private int carriageMargin;
+    private int carriageFloorLength;
+    private int nubBorder;
+    private int nubSize;
+    private double carriageFloorNubPositionScalingFactor;
+    private double negativeButtonTimer;
+    private double positiveButtonTimer;
+
+    // zones
+    private Rect boxNegative = Rect.ZERO;
+    private @Nullable Rect boxCarriage;
+    private @Nullable Rect boxCarriageFloor;
+    private Rect boxPositive = Rect.ZERO;
+
     public UIScrollbar(boolean vert, int sc) {
-        super(6, Math.max(1, sc / 8), sc, sc);
         // UIBorderedElement tries to he helpful, but we don't like it
-        setWantedSize(new Size(sc, sc));
         vertical = vert;
+        setSBSize(sc);
+        setForcedBounds(null, new Rect(getWantedSize()));
     }
 
     @Override
-    public void renderContents(boolean blackText, IGrDriver igd) {
-        Size bounds = getSize();
-        int margin = (vertical ? bounds.width : bounds.height) / 8;
+    public void runLayout() {
+        Size size = getSize();
 
+        barSize = vertical ? size.width : size.height;
+        barLength = vertical ? size.height : size.width;
+
+        carriageBorder = barSize / 8;
+        int carriageLength = barLength - (barSize * 2);
+        carriageMargin = carriageBorder;
         if (UIBorderedElement.getMoveDownFlag(7))
-            margin = 0;
+            carriageMargin = 0;
 
-        int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
-        // within the nub & area, margin is repeated to add shading
-
-        double scalingFactor = 1.0 / ((vertical ? bounds.height : bounds.width) - ((margin * 2) + nub));
-
-        int nubX, nubY;
-        if (vertical) {
-            nubX = margin;
-            nubY = margin + ((int) Math.ceil(scrollPoint / scalingFactor));
-        } else {
-            nubX = margin + ((int) Math.ceil(scrollPoint / scalingFactor));
-            nubY = margin;
-        }
-
-        int n3 = nub / 3;
+        nubSize = barSize - (carriageMargin * 2);
+        int n3 = nubSize / 3;
         // Valid values are 1, 3, 6...
         if (n3 < 3)
             n3 = 1;
         n3 = (n3 / 3) * 3;
-        UIBorderedElement.drawBorder(igd, 7, n3, nubX, nubY, nub, nub);
+        nubBorder = n3;
+
+        if (carriageLength < (barSize * 2)) {
+            // not enough room for carriage
+            boxCarriage = null;
+            boxCarriageFloor = null;
+            if (vertical) {
+                boxNegative = new Rect(0, 0, barSize, barLength >> 1);
+                boxPositive = new Rect(0, boxNegative.height, barSize, barLength - boxNegative.height);
+            } else {
+                boxNegative = new Rect(0, 0, barLength >> 1, barSize);
+                boxPositive = new Rect(boxNegative.width, 0, barLength - boxNegative.width, barSize);
+            }
+        } else {
+            // carriage-layout
+            boxNegative = new Rect(0, 0, barSize, barSize);
+            if (vertical) {
+                boxPositive = new Rect(0, barLength - barSize, barSize, barSize);
+                boxCarriage = new Rect(0, barSize, barSize, carriageLength);
+            } else {
+                boxPositive = new Rect(barLength - barSize, 0, barSize, barSize);
+                boxCarriage = new Rect(barSize, 0, carriageLength, barSize);
+            }
+            boxCarriageFloor = new Rect(boxCarriage.x + carriageMargin, boxCarriage.y + carriageMargin, boxCarriage.width - (carriageMargin * 2), boxCarriage.height - (carriageMargin * 2));
+            carriageFloorLength = vertical ? boxCarriageFloor.height : boxCarriageFloor.width;
+            carriageFloorNubPositionScalingFactor = carriageFloorLength - nubSize;
+        }
     }
 
     @Override
-    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
+    public void render(IGrDriver igd) {
+        // Negative and Positive Buttons
+        drawNPB(igd, negativeButtonTimer, boxNegative, 0);
+        drawNPB(igd, positiveButtonTimer, boxPositive, 7);
+        if (boxCarriage != null) {
+            // Carriage
+            UIBorderedElement.drawBorder(igd, 6, carriageBorder, boxCarriage);
+            // Nub
+            int nubX = boxCarriageFloor.x;
+            int nubY = boxCarriageFloor.y;
+            int nubPoint = ((int) Math.ceil(scrollPoint * carriageFloorNubPositionScalingFactor));
+            if (vertical) {
+                nubY += nubPoint;
+            } else {
+                nubX += nubPoint;
+            }
 
+            UIBorderedElement.drawBorder(igd, 7, nubBorder, nubX, nubY, nubSize, nubSize);
+        }
+    }
+
+    public void drawNPB(IGrDriver igd, double timer, Rect box, int bump) {
+        boolean down = timer > 0;
+        int borderId = down ? 1 : 0;
+        IImage font = FontManager.getInternalFontImageFor(8, UIBorderedElement.getBlackTextFlag(borderId));
+        int iconSize = 7;
+        int maxIconSize = Math.min(box.width, box.height) - (carriageBorder * 2);
+        int iconSizeScale = maxIconSize / iconSize;
+        if (iconSizeScale > 0)
+            iconSize *= iconSizeScale;
+        int yOffset = 0;
+        if (UIBorderedElement.getMoveDownFlag(borderId))
+            yOffset += carriageBorder;
+        UIBorderedElement.drawBorder(igd, borderId, carriageBorder, box.x, box.y + yOffset, box.width, box.height);
+        igd.blitScaledImage(56 + bump, 7, 7, 7, box.x + ((box.width - iconSize) / 2), box.y + yOffset + ((box.height - iconSize) / 2), iconSize, iconSize, font);
+    }
+
+    @Override
+    public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        if (negativeButtonTimer >= 0)
+            negativeButtonTimer -= deltaTime;
+        if (positiveButtonTimer >= 0)
+            positiveButtonTimer -= deltaTime;
     }
 
     @Override
     public IPointerReceiver handleNewPointer(IPointer state) {
-        // This could be improved, but this will do for now.
-        return new IPointerReceiver() {
-            @Override
-            public void handlePointerBegin(IPointer state) {
-
-            }
-
-            @Override
-            public void handlePointerUpdate(IPointer pointer) {
-                Size bounds = getSize();
-                int margin = (vertical ? bounds.width : bounds.height) / 8;
-                int nub = (vertical ? bounds.width : bounds.height) - (margin * 2);
-
-                double scalingFactor = 1.0 / ((vertical ? bounds.height : bounds.width) - ((margin * 2) + nub));
-                if (vertical) {
-                    scrollPoint = (pointer.getY() - (margin + (nub / 2))) * scalingFactor;
-                } else {
-                    scrollPoint = (pointer.getX() - (margin + (nub / 2))) * scalingFactor;
+        if ((boxCarriage != null) && boxCarriage.contains(state.getX(), state.getY())) {
+            // This could be improved, but this will do for now.
+            return new IPointerReceiver() {
+                @Override
+                public void handlePointerBegin(IPointer state) {
+    
                 }
-                if (scrollPoint < 0)
-                    scrollPoint = 0;
-                if (scrollPoint > 1)
-                    scrollPoint = 1;
-            }
+    
+                @Override
+                public void handlePointerUpdate(IPointer pointer) {
+                    if (boxCarriage == null)
+                        return;
 
-            @Override
-            public void handlePointerEnd(IPointer state) {
+                    // intended range is 0 - (carriageFloorLength - nubSize)
+                    int source;
+                    if (vertical) {
+                        source = pointer.getY() - boxCarriageFloor.y;
+                    } else {
+                        source = pointer.getX() - boxCarriageFloor.x;
+                    }
+                    source -= nubSize / 2;
 
-            }
-        };
+                    scrollPoint = source / carriageFloorNubPositionScalingFactor;
+                    if (scrollPoint < 0)
+                        scrollPoint = 0;
+                    if (scrollPoint > 1)
+                        scrollPoint = 1;
+                }
+    
+                @Override
+                public void handlePointerEnd(IPointer state) {
+    
+                }
+            };
+        } else if (boxNegative.contains(state.getX(), state.getY())) {
+            return new IPointerReceiver() {
+                @Override
+                public void handlePointerBegin(IPointer state) {
+                    handleMousewheel(0, 0, true);
+                    negativeButtonTimer = 0.25d;
+                }
+                @Override
+                public void handlePointerUpdate(IPointer state) {
+                }
+                @Override
+                public void handlePointerEnd(IPointer state) {
+                }
+            };
+        } else if (boxPositive.contains(state.getX(), state.getY())) {
+            return new IPointerReceiver() {
+                @Override
+                public void handlePointerBegin(IPointer state) {
+                    handleMousewheel(0, 0, false);
+                    positiveButtonTimer = 0.25d;
+                }
+                @Override
+                public void handlePointerUpdate(IPointer state) {
+                }
+                @Override
+                public void handlePointerEnd(IPointer state) {
+                }
+            };
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -108,6 +225,6 @@ public class UIScrollbar extends UIBorderedElement {
     }
 
     public void setSBSize(int sbSize) {
-        setWantedSize(new Size(sbSize, sbSize));
+        setWantedSize(new Size(vertical ? sbSize : sbSize * 4, vertical ? sbSize * 4 : sbSize));
     }
 }

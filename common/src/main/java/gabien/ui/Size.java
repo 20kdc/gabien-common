@@ -11,6 +11,8 @@ package gabien.ui;
  * Created on February 16th 2018 to be a superclass to Rect, to avoid breaking relativity.
  */
 public class Size {
+    public static final Size ZERO = new Size(0, 0);
+
     public final int width, height;
     public Size(int i1, int i2) {
         width = i1;
