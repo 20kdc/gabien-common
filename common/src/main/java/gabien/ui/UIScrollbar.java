@@ -103,8 +103,8 @@ public class UIScrollbar extends UIElement {
     @Override
     public void render(IGrDriver igd) {
         // Negative and Positive Buttons
-        drawNPB(igd, negativeButtonTimer, boxNegative, 0);
-        drawNPB(igd, positiveButtonTimer, boxPositive, 7);
+        drawNPB(igd, negativeButtonTimer, boxNegative, vertical ? 0 : 21);
+        drawNPB(igd, positiveButtonTimer, boxPositive, vertical ? 7 : 14);
         if (boxCarriage != null) {
             // Carriage
             UIBorderedElement.drawBorder(igd, 6, carriageBorder, boxCarriage);
