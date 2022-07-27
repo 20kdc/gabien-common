@@ -1,0 +1,38 @@
+/*
+ * gabien-android - gabien backend for Android
+ * Written starting in 2016 by contributors (see CREDITS.txt)
+ * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+ * You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+ */
+
+package gabien;
+
+/**
+ * Advanced HFS (Hidden Fun Stuff) Protection
+ * Created on 27th July 2022
+ */
+public class GameThread extends Thread {
+    // UI thread accesses this
+    private static GameThread gameThread = null;
+
+    public static void ensureStartedFromUIThread() {
+        if (gameThread == null) {
+            gameThread = new GameThread();
+            gameThread.start();
+        }
+    }
+
+    private GameThread() {
+        super("Game Thread");
+    }
+
+    @Override
+    public void run() {
+        try {
+            GaBIenImpl.main();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+

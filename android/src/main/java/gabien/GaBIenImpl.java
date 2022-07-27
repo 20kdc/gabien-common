@@ -46,7 +46,7 @@ public final class GaBIenImpl implements IGaBIEn {
     	        return new File("/sdcard", fileName);
     	    }
     	};
-    	GaBIEn.internalWindowing = new WindowMux(MainActivity.theMainWindow);
+    	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
     }
@@ -95,7 +95,7 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     public InputStream getResource(String resource) {
-        AssetManager am = MainActivity.last.getAssets();
+        AssetManager am = AndroidPortGlobals.applicationContext.getAssets();
         try {
             return am.open(resource);
         } catch (Exception e) {

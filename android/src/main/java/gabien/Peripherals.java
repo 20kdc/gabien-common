@@ -72,14 +72,17 @@ public class Peripherals implements IPeripherals {
 
     @Override
     public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
-        ITextboxImplementation impl = TextboxImplObject.getInstance();
+        AndroidPortGlobals.mainActivityLock.lock();
+        ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
         if ((lastTextSentToTextbox == null) || (!lastTextSentToTextbox.equals(text))) {
             impl.setActive(text, feedback);
             lastTextSentToTextbox = text;
             textboxWasReadyAtLastCheck = true;
         }
         textboxMaintainedThisFrame = true;
-        return impl.getLastKnownText();
+        String result = impl.getLastKnownText();
+        AndroidPortGlobals.mainActivityLock.unlock();
+        return result;
     }
 
     @Override
@@ -90,25 +93,28 @@ public class Peripherals implements IPeripherals {
     }
     
     public void gdUpdateTextbox(boolean flushing) {
+        AndroidPortGlobals.mainActivityLock.lock();
+        ITextboxImplementation tio = TextboxImplObject.getInstanceHoldingMALock();
         if (flushing) {
             if (textboxMaintainedThisFrame) {
                 textboxMaintainedThisFrame = false;
             } else {
                 // textbox expired
                 if (lastTextSentToTextbox != null) {
-                    TextboxImplObject.getInstance().setInactive();
+                    tio.setInactive();
                     lastTextSentToTextbox = null;
                 }
             }
         }
         // detect specifically the *event* of textbox closure, but do not actually
         //  mark the textbox as unmaintained because this would cause it to be re-opened
-        if (!TextboxImplObject.getInstance().checkupUsage()) {
+        if (!tio.checkupUsage()) {
             if (textboxWasReadyAtLastCheck) {
                 textboxWasReadyAtLastCheck = false;
                 enterPressed = true;
             }
         }
+        AndroidPortGlobals.mainActivityLock.unlock();
     }
 
     public void gdResetPointers() {

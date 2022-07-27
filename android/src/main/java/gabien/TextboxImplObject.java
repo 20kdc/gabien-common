@@ -97,7 +97,7 @@ public class TextboxImplObject implements ITextboxImplementation {
                 if (lastFeedback == null) {
                     tv.setText("");
                 } else {
-                    tv.setText(feedback.apply(contents));
+                    tv.setText(lastFeedback.apply(contents));
                 }
                 host.requestLayout();
                 // -- don't bother repeating this part if unnecessary --
@@ -145,9 +145,9 @@ public class TextboxImplObject implements ITextboxImplementation {
         return lastKnownContents;
     }
 
-    public static ITextboxImplementation getInstance() {
-        if (MainActivity.last != null)
-            return MainActivity.last.myTIO;
+    public static ITextboxImplementation getInstanceHoldingMALock() {
+        if (AndroidPortGlobals.mainActivity != null)
+            return AndroidPortGlobals.mainActivity.myTIO;
         return DEAD;
     }
     

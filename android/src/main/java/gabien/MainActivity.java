@@ -17,17 +17,18 @@ import android.view.Window;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class MainActivity extends Activity implements Runnable {
-	public static Thread gameThread = null;
-	public static GrInDriver theMainWindow = new GrInDriver(800,  600);
-	public static MainActivity last; // W:UITHREAD R:GTHREAD
-
+public class MainActivity extends Activity {
 	public TextboxImplObject myTIO;
     public SurfaceView mySurface;
 
     @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// Just get this over with as early as possible
+		// (we need it for assets)
+		if (AndroidPortGlobals.applicationContext == null)
+		    AndroidPortGlobals.applicationContext = getApplicationContext();
+		// Actual MainActivity stuff
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		SurfaceView surfaceview = new SurfaceView(this);
         surfaceview.setOnTouchListener(new View.OnTouchListener() {
@@ -39,23 +40,23 @@ public class MainActivity extends Activity implements Runnable {
                 int ptrI = (acto >> 8) & 0xFF;
                 switch (act) {
                     case MotionEvent.ACTION_DOWN:
-                        mapToArea(theMainWindow, true, arg1, 0);
+                        mapToArea(AndroidPortGlobals.theMainWindow, true, arg1, 0);
                         break;
                     case MotionEvent.ACTION_POINTER_DOWN:
-                        mapToArea(theMainWindow, true, arg1, ptrI);
+                        mapToArea(AndroidPortGlobals.theMainWindow, true, arg1, ptrI);
                         break;
                     case MotionEvent.ACTION_MOVE:
                         for (int i = 0; i < arg1.getPointerCount(); i++)
-                            mapToArea(theMainWindow, true, arg1, i);
+                            mapToArea(AndroidPortGlobals.theMainWindow, true, arg1, i);
                         break;
                     case MotionEvent.ACTION_POINTER_UP:
-                        mapToArea(theMainWindow, false, arg1, ptrI);
+                        mapToArea(AndroidPortGlobals.theMainWindow, false, arg1, ptrI);
                         break;
                     // Sent "when the last pointer leaves the screen".
                     // I hope you aren't lying.
                     case MotionEvent.ACTION_UP:
-                        mapToArea(theMainWindow, false, arg1, 0);
-                        theMainWindow.peripherals.gdResetPointers();
+                        mapToArea(AndroidPortGlobals.theMainWindow, false, arg1, 0);
+                        AndroidPortGlobals.theMainWindow.peripherals.gdResetPointers();
                         break;
                 }
                 return true;
@@ -76,20 +77,10 @@ public class MainActivity extends Activity implements Runnable {
 		setContentView(surfaceview);
 		myTIO = new TextboxImplObject(this);
 		mySurface = surfaceview;
-		if (gameThread == null) {
-			gameThread = new Thread(this);
-			gameThread.start();
-		}
-		last = this;
-	}
-
-    @Override
-	public void run() {
-		try {
-			GaBIenImpl.main();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+        AndroidPortGlobals.mainActivityLock.lock();
+        AndroidPortGlobals.mainActivity = this;
+        AndroidPortGlobals.mainActivityLock.unlock();
+        GameThread.ensureStartedFromUIThread();
 	}
 
     @Override
@@ -99,5 +90,16 @@ public class MainActivity extends Activity implements Runnable {
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        // remove self so we don't raise the dead
+        AndroidPortGlobals.mainActivityLock.lock();
+        if (AndroidPortGlobals.mainActivity == this)
+            AndroidPortGlobals.mainActivity = null;
+        AndroidPortGlobals.mainActivityLock.unlock();
+        // then call super
+        super.onDestroy();
     }
 }
