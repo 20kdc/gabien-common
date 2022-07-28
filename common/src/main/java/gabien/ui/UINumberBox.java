@@ -36,13 +36,7 @@ public class UINumberBox extends UILabel {
     public long number = 0;
 
     public boolean readOnly = false;
-    public Runnable onEdit = new Runnable() {
-
-        @Override
-        public void run() {
-            // do nothing-this is one of those boxes that just sits there.
-        }
-    };
+    public Runnable onEdit = EmptyLambdas.emptyRunnable;
 
     private boolean tempDisableSelection = false;
 

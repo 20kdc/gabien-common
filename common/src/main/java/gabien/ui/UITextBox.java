@@ -26,13 +26,7 @@ public class UITextBox extends UILabel {
 
     private String textLastSeen = "";
     private String textCStr = "";
-    public Runnable onEdit = new Runnable() {
-
-        @Override
-        public void run() {
-            // do nothing-this is one of those boxes that just sits there.
-        }
-    };
+    public Runnable onEdit = EmptyLambdas.emptyRunnable;
     public IFunction<String, String> feedback;
 
     private boolean tempDisableSelection = false;
