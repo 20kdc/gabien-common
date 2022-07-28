@@ -30,8 +30,9 @@ public class GameThread extends Thread {
     public void run() {
         try {
             GaBIenImpl.main();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

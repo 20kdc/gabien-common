@@ -69,7 +69,8 @@ public class Peripherals implements IPeripherals {
         pointersLock.lock();
         pointersThatWePretendDoNotExist.addAll(pointersMap.values());
         pointersLock.unlock();
-        currentTextEditingSession.endSession();
+        if (currentTextEditingSession != null)
+            currentTextEditingSession.endSession();
     }
 
     @Override

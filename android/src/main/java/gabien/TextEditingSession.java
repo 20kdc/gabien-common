@@ -19,8 +19,9 @@ import gabien.uslx.append.IFunction;
 public class TextEditingSession implements ITextEditingSession {
     private final Peripherals parent;
     private boolean enterPressed;
-    private boolean sessionDead;
+    private boolean sessionDead, sessionOfficiallyDead;
     private String lastTextSentToTextbox;
+    private String lastTextReceivedFromTextbox;
     private IFunction<String, String> lastFeedback;
 
     public TextEditingSession(Peripherals par, @NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
@@ -33,6 +34,7 @@ public class TextEditingSession implements ITextEditingSession {
         ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
         impl.setActive(text, feedback);
         lastTextSentToTextbox = text;
+        lastTextReceivedFromTextbox = text;
         lastFeedback = feedback;
         AndroidPortGlobals.mainActivityLock.unlock();
     }
@@ -40,15 +42,16 @@ public class TextEditingSession implements ITextEditingSession {
     @Override
     public String maintain(int x, int y, int w, int h, String text) {
         if (sessionDead)
-            return text;
+            return lastTextReceivedFromTextbox;
         AndroidPortGlobals.mainActivityLock.lock();
         ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
-        if ((lastTextSentToTextbox == null) || (!lastTextSentToTextbox.equals(text))) {
+        if (!lastTextSentToTextbox.equals(text)) {
             impl.setActive(text, lastFeedback);
             lastTextSentToTextbox = text;
         }
         String result = impl.getLastKnownText();
         AndroidPortGlobals.mainActivityLock.unlock();
+        lastTextReceivedFromTextbox = result;
         return result;
     }
 
@@ -59,6 +62,8 @@ public class TextEditingSession implements ITextEditingSession {
 
     @Override
     public void endSession() {
+        sessionOfficiallyDead = true;
+        // actually end session
         if (sessionDead)
             return;
         sessionDead = true;
@@ -67,13 +72,14 @@ public class TextEditingSession implements ITextEditingSession {
 
         AndroidPortGlobals.mainActivityLock.lock();
         ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
+        lastTextReceivedFromTextbox = impl.getLastKnownText();
         impl.setInactive();
         AndroidPortGlobals.mainActivityLock.unlock();
     }
 
     @Override
     public boolean isSessionDead() {
-        return sessionDead;
+        return sessionOfficiallyDead;
     }
 
     public void gdUpdateTextbox(boolean flushing) {
@@ -83,8 +89,12 @@ public class TextEditingSession implements ITextEditingSession {
         AndroidPortGlobals.mainActivityLock.unlock();
         // detect specifically the *event* of textbox closure
         if (!alive) {
+            // end the session but mark us as having not actually ended the session
+            // this should cause app to see the enterPressed and formally end session
+            // if not,  who cares?
             enterPressed = true;
             endSession();
+            sessionOfficiallyDead = false;
         }
     }
 
