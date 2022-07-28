@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Just your ordinary IPCRESS peripherals implementation.
  * Created on 18th February 2018.
  */
-public class Peripherals implements IPeripherals {
+public class Peripherals implements IPeripherals, ITextEditingSession {
     // The parent GrInDriver. (GTHREAD)
     public GrInDriver parent;
 
@@ -68,6 +68,11 @@ public class Peripherals implements IPeripherals {
         pointersLock.lock();
         pointersThatWePretendDoNotExist.addAll(pointersMap.values());
         pointersLock.unlock();
+    }
+
+    @Override
+    public ITextEditingSession openTextEditingSession() {
+        return this;
     }
 
     @Override

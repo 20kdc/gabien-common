@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.IPeripherals;
+import gabien.ITextEditingSession;
 import gabien.uslx.append.*;
 
 // This serves a dual purpose:
@@ -48,12 +49,14 @@ public class UITextBox extends UILabel {
         Size bounds = getSize();
         if (selected) {
             Rect crib = getContentsRelativeInputBounds();
-            String ss = peripherals.maintain(crib.x, crib.y, crib.width, crib.height, text, contents.textHeight, feedback);
+            // TODO: Change this to use this API properly
+            ITextEditingSession tes = peripherals.openTextEditingSession();
+            String ss = tes.maintain(crib.x, crib.y, crib.width, crib.height, text, contents.textHeight, feedback);
             // Update storage.
             text = ss;
             textLastSeen = ss;
             // Enter confirmation.
-            if (peripherals.isEnterJustPressed()) {
+            if (tes.isEnterJustPressed()) {
                 textCStr = text;
                 onEdit.run();
                 peripherals.clearKeys();

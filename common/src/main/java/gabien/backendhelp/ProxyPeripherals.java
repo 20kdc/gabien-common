@@ -9,6 +9,7 @@ package gabien.backendhelp;
 import java.util.HashSet;
 
 import gabien.IPeripherals;
+import gabien.ITextEditingSession;
 import gabien.uslx.append.*;
 import gabien.ui.IPointer;
 import gabien.ui.Rect;
@@ -40,13 +41,7 @@ public class ProxyPeripherals<T extends IPeripherals> implements IPeripherals {
     }
 
     @Override
-    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
-        return target.maintain(x, y, w, h, text, textHeight, feedback);
+    public ITextEditingSession openTextEditingSession() {
+        return target.openTextEditingSession();
     }
-
-    @Override
-    public boolean isEnterJustPressed() {
-        return target.isEnterJustPressed();
-    }
-
 }

@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.IGrDriver;
 import gabien.IPeripherals;
+import gabien.ITextEditingSession;
 import gabien.uslx.append.*;
 
 /**
@@ -62,8 +63,10 @@ public class UINumberBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected && (!readOnly)) {
+            // TODO: Change this to use this API properly
+            ITextEditingSession tes = peripherals.openTextEditingSession();
             Rect crib = getContentsRelativeInputBounds();
-            String ss = peripherals.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number), contents.textHeight, null);
+            String ss = tes.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number), contents.textHeight, null);
             // Update storage.
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
@@ -86,7 +89,7 @@ public class UINumberBox extends UILabel {
             // NOTE: This has to be after the update to the local number.
             // Not doing this lead to an interesting bug where number boxes
             //  wouldn't work because the 'enter' press would revert the number.
-            if (peripherals.isEnterJustPressed()) {
+            if (tes.isEnterJustPressed()) {
                 editingCNumber = number;
                 onEdit.run();
                 peripherals.clearKeys();

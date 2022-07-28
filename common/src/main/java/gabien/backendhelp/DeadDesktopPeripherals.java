@@ -9,6 +9,7 @@ package gabien.backendhelp;
 import java.util.HashSet;
 
 import gabien.IDesktopPeripherals;
+import gabien.ITextEditingSession;
 import gabien.ui.IPointer;
 import gabien.ui.Rect;
 import gabien.uslx.append.*;
@@ -38,13 +39,8 @@ public class DeadDesktopPeripherals implements IDesktopPeripherals {
     }
 
     @Override
-    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
-        return text;
-    }
-
-    @Override
-    public boolean isEnterJustPressed() {
-        return false;
+    public ITextEditingSession openTextEditingSession() {
+        return new DeadTextEditingSession();
     }
 
     @Override

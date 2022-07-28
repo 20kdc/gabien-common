@@ -18,7 +18,7 @@ import java.util.HashSet;
  * Implements the IDesktopPeripherals interface for an IGrInDriver to use.
  * Created on February 17th, 2018.
  */
-public class DesktopPeripherals implements IDesktopPeripherals {
+public class DesktopPeripherals implements IDesktopPeripherals, ITextEditingSession {
     private GrInDriver parent;
 
     private int shadowScissorX, shadowScissorY;
@@ -85,6 +85,11 @@ public class DesktopPeripherals implements IDesktopPeripherals {
             if (parent.keys[i])
                 keysH.add(i);
         return keysH;
+    }
+
+    @Override
+    public ITextEditingSession openTextEditingSession() {
+        return this;
     }
 
     @Override

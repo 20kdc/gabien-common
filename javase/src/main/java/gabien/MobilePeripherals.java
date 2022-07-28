@@ -19,7 +19,7 @@ import java.util.LinkedList;
  * switch between them with Tab, etc.
  * Created on November 17, 2018.
  */
-public class MobilePeripherals implements IPeripherals {
+public class MobilePeripherals implements IPeripherals, ITextEditingSession {
     private final GrInDriver parent;
     private int offsetX, offsetY, activePointer;
     private LinkedList<DummyPointer> dummies = new LinkedList<DummyPointer>();
@@ -110,6 +110,11 @@ public class MobilePeripherals implements IPeripherals {
             parent.keys[p] = false;
         }
         parent.tm.clear();
+    }
+
+    @Override
+    public ITextEditingSession openTextEditingSession() {
+        return this;
     }
 
     @Override
