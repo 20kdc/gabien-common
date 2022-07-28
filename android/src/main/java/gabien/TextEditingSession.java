@@ -20,22 +20,25 @@ public class TextEditingSession implements ITextEditingSession {
     private final Peripherals parent;
     private boolean enterPressed;
     private boolean sessionDead, sessionOfficiallyDead;
+    private final boolean multiLine;
     private String lastTextSentToTextbox;
     private String lastTextReceivedFromTextbox;
     private IFunction<String, String> lastFeedback;
 
-    public TextEditingSession(Peripherals par, @NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
+    public TextEditingSession(Peripherals par, @NonNull String text, boolean ml, int textHeight, @Nullable IFunction<String, String> feedback) {
         parent = par;
         if (parent.currentTextEditingSession != null)
             parent.currentTextEditingSession.endSession();
         parent.currentTextEditingSession = this;
 
-        AndroidPortGlobals.mainActivityLock.lock();
-        ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
-        impl.setActive(text, feedback);
+        multiLine = ml;
         lastTextSentToTextbox = text;
         lastTextReceivedFromTextbox = text;
         lastFeedback = feedback;
+
+        AndroidPortGlobals.mainActivityLock.lock();
+        ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
+        impl.setActive(text, multiLine, feedback);
         AndroidPortGlobals.mainActivityLock.unlock();
     }
 
@@ -46,13 +49,13 @@ public class TextEditingSession implements ITextEditingSession {
         AndroidPortGlobals.mainActivityLock.lock();
         ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
         if (!lastTextSentToTextbox.equals(text)) {
-            impl.setActive(text, lastFeedback);
+            impl.setActive(text, multiLine, lastFeedback);
             lastTextSentToTextbox = text;
         }
-        String result = impl.getLastKnownText();
+        if (impl.isTrustworthy())
+            lastTextReceivedFromTextbox = impl.getLastKnownText();
         AndroidPortGlobals.mainActivityLock.unlock();
-        lastTextReceivedFromTextbox = result;
-        return result;
+        return lastTextReceivedFromTextbox;
     }
 
     @Override
@@ -72,7 +75,8 @@ public class TextEditingSession implements ITextEditingSession {
 
         AndroidPortGlobals.mainActivityLock.lock();
         ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
-        lastTextReceivedFromTextbox = impl.getLastKnownText();
+        if (impl.isTrustworthy())
+            lastTextReceivedFromTextbox = impl.getLastKnownText();
         impl.setInactive();
         AndroidPortGlobals.mainActivityLock.unlock();
     }

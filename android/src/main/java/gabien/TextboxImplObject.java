@@ -27,6 +27,8 @@ public class TextboxImplObject implements ITextboxImplementation {
     private final LinearLayout host;
     private IFunction<String, String> lastFeedback = null;
     private String lastKnownContents = "";
+    // UI thread
+    private boolean lastMultiLine;
 
     // Written on UI thread, read from MainActivity on UI thread.
     public boolean inTextboxMode;
@@ -38,9 +40,10 @@ public class TextboxImplObject implements ITextboxImplementation {
         tf.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         tv = new TextView(activity);
         host = new LinearLayout(activity);
-        host.setOrientation(LinearLayout.HORIZONTAL);
-        host.addView(tf);
-        host.addView(tv);
+        host.setOrientation(LinearLayout.VERTICAL);
+        host.addView(tf, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 0.5f));
+        // this filling gives a nice half/half view that should work???
+        host.addView(tv, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 0.5f));
         tf.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -57,9 +60,11 @@ public class TextboxImplObject implements ITextboxImplementation {
                 if (okay) {
                     String p = s.toString();
                     boolean disableOkay = false;
-                    if (p.contains("\n")) {
-                        p = p.replace("\n", "");
-                        disableOkay = true;
+                    if (!lastMultiLine) {
+                        if (p.contains("\n")) {
+                            p = p.replace("\n", "");
+                            disableOkay = true;
+                        }
                     }
                     lastKnownContents = p;
                     if (disableOkay)
@@ -71,7 +76,6 @@ public class TextboxImplObject implements ITextboxImplementation {
                 }
             }
         });
-        tf.setSingleLine(true);
         tf.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -86,13 +90,15 @@ public class TextboxImplObject implements ITextboxImplementation {
     }
 
     @Override
-    public void setActive(final String contents, final IFunction<String, String> feedback) {
+    public void setActive(final String contents, final boolean multiLine, final IFunction<String, String> feedback) {
         lastKnownContents = contents;
         lastFeedback = feedback;
         okay = true;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                lastMultiLine = multiLine;
+                tf.setSingleLine(!multiLine);
                 tf.setText(contents);
                 if (lastFeedback == null) {
                     tv.setText("");
@@ -141,6 +147,11 @@ public class TextboxImplObject implements ITextboxImplementation {
     }
 
     @Override
+    public boolean isTrustworthy() {
+        return true;
+    }
+
+    @Override
     public String getLastKnownText() {
         return lastKnownContents;
     }
@@ -158,7 +169,7 @@ public class TextboxImplObject implements ITextboxImplementation {
         public void setInactive() {
         }
         @Override
-        public void setActive(String contents, IFunction<String, String> feedback) {
+        public void setActive(String contents, boolean multiLine, IFunction<String, String> feedback) {
         }
         @Override
         public String getLastKnownText() {
@@ -166,6 +177,10 @@ public class TextboxImplObject implements ITextboxImplementation {
         }
         @Override
         public boolean checkupUsage() {
+            return false;
+        }
+        @Override
+        public boolean isTrustworthy() {
             return false;
         }
     };

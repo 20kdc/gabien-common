@@ -10,6 +10,7 @@ package gabien;
 import gabien.uslx.append.*;
 
 import javax.swing.*;
+import javax.swing.text.JTextComponent;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -27,27 +28,31 @@ import java.awt.event.MouseEvent;
 public class TextboxMaintainer implements ITextEditingSession {
     public final IGJSEPeripheralsInternal peripheralsInternal;
     public final Panel parent;
-    public JTextField target;
+    public final boolean multiLine;
+    public JTextComponent textComponent;
+    public JComponent placeComponent;
     private KeyListener kl;
     // null means unmaintained!
     public @Nullable String maintainedString;
     public boolean sessionIsDead = false;
     public boolean enterFlag = false;
 
-    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, int textHeight, final IFunction<String, String> feedback) {
+    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, boolean ml, int textHeight, final IFunction<String, String> feedback) {
         peripheralsInternal = pi;
         if (textHeight < 16)
             textHeight = 16;
         parent = panel;
         kl = k;
-        target = new JTextField();
-        parent.add(target);
+        multiLine = ml;
+        textComponent = ml ? new JTextArea() : new JTextField();
+        placeComponent = ml ? new JScrollPane(textComponent) : textComponent;
+        parent.add(placeComponent);
         // apparently it's not capable of setting sensible defaults
-        target.setBounds(0, 0, 32, textHeight + 1);
+        placeComponent.setBounds(0, 0, 32, textHeight + 1);
         // use a sane font
-        target.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, textHeight));
-        target.addKeyListener(kl);
-        target.addKeyListener(new KeyAdapter() {
+        textComponent.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, textHeight));
+        textComponent.addKeyListener(kl);
+        textComponent.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER)
@@ -57,10 +62,10 @@ public class TextboxMaintainer implements ITextEditingSession {
         // Allows some access for debugging purposes to the mobile feedback.
         if (GaBIEnImpl.mobileEmulation) {
             if (feedback != null)
-                target.addMouseListener(new MouseAdapter() {
+                textComponent.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseExited(MouseEvent mouseEvent) {
-                        System.err.println("on mobile, feedback says:" + feedback.apply(target.getText()));
+                        System.err.println("on mobile, feedback says:" + feedback.apply(textComponent.getText()));
                     }
                 });
         }
@@ -72,31 +77,37 @@ public class TextboxMaintainer implements ITextEditingSession {
     }
 
     public String maintainActual(int x, int y, int width, int height, String text) {
-        // Adjust stuff
-        y = y + (height / 2);
+        if (sessionIsDead)
+            return text;
+        if (!multiLine) {
+            // Adjust stuff
+            y = y + (height / 2);
+            y -= placeComponent.getHeight() / 2;
+            height = placeComponent.getHeight();
+        }
         // Continue
         boolean needToMove = false;
-        if (target.getX() != x)
+        if (placeComponent.getX() != x)
             needToMove = true;
-        if (target.getY() != (y - (target.getHeight() / 2)))
+        if (placeComponent.getY() != y)
             needToMove = true;
-        if (target.getWidth() != width)
+        if (placeComponent.getWidth() != width)
             needToMove = true;
-        if (needToMove) {
-            target.setLocation(x, y - (target.getHeight() / 2));
-            target.setSize(width, target.getHeight());
-        }
+        if (placeComponent.getHeight() != height)
+            needToMove = true;
+        if (needToMove)
+            placeComponent.setBounds(x, y, width, height);
 
         if (maintainedString != null) {
             if (!maintainedString.equals(text))
-                target.setText(text);
+                textComponent.setText(text);
         } else {
-            target.setText(text);
-            target.setVisible(true);
-            target.grabFocus();
+            textComponent.setText(text);
+            textComponent.setVisible(true);
+            textComponent.grabFocus();
         }
 
-        maintainedString = target.getText();
+        maintainedString = textComponent.getText();
         return maintainedString;
     }
 
@@ -109,10 +120,8 @@ public class TextboxMaintainer implements ITextEditingSession {
     public void endSession() {
         if (sessionIsDead)
             return;
-        target.setVisible(false);
-        parent.remove(target);
+        parent.remove(placeComponent);
         parent.transferFocusUpCycle();
-        target = null;
         sessionIsDead = true;
         peripheralsInternal.finishRemovingEditingSession();
     }

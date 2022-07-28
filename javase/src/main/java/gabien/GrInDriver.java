@@ -12,6 +12,8 @@ import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 
 import javax.swing.*;
+import javax.swing.text.JTextComponent;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -292,7 +294,7 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
 
     private void drawFrontBuffer(Graphics pg) {
         if (currentEditingSession != null) {
-            JTextField target = currentEditingSession.target;
+            JComponent target = currentEditingSession.placeComponent;
             int txX = target.getX();
             int txY = target.getY();
             int txW = target.getWidth();
@@ -352,9 +354,9 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
 		return uiGuessScaleTenths;
 	}
 
-    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, int textHeight, IFunction<String, String> fun) {
+    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, boolean multiLine, int textHeight, IFunction<String, String> fun) {
         if (currentEditingSession != null)
             currentEditingSession.endSession();
-        return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, textHeight, fun);
+        return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, multiLine, textHeight, fun);
     }
 }

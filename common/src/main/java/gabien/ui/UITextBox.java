@@ -18,19 +18,24 @@ import gabien.uslx.append.*;
 // 2. onEdit is called when enter is pressed, and otherwise the text will revert.
 //    (This makes it useful for property-editor interfaces which need that kind of confirmation.)
 public class UITextBox extends UILabel {
+    private String textLastSeen = "";
+    private String textCStr = "";
+    public Runnable onEdit = EmptyLambdas.emptyRunnable;
+    public IFunction<String, String> feedback;
+    public boolean multiLine;
+
+    private boolean tempDisableSelection = false;
+    private ITextEditingSession editingSession;
+
     public UITextBox(String text, int h) {
         super(text, h);
         borderType = 3;
     }
 
-
-    private String textLastSeen = "";
-    private String textCStr = "";
-    public Runnable onEdit = EmptyLambdas.emptyRunnable;
-    public IFunction<String, String> feedback;
-
-    private boolean tempDisableSelection = false;
-    private ITextEditingSession editingSession;
+    public UITextBox setMultiLine() {
+        multiLine = true;
+        return this;
+    }
 
     @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
@@ -39,33 +44,41 @@ public class UITextBox extends UILabel {
         if (!textLastSeen.equals(text)) {
             textCStr = text;
             textLastSeen = text;
-        } else if (!selected) {
-            text = textCStr;
         }
         Size bounds = getSize();
         if (selected) {
             // ensure we have an editing session
             if (editingSession == null)
-                editingSession = peripherals.openTextEditingSession(text, false, contents.textHeight, feedback);
+                editingSession = peripherals.openTextEditingSession(text, multiLine, contents.textHeight, feedback);
             Rect crib = getContentsRelativeInputBounds();
             String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text);
             // Update storage.
             text = ss;
             textLastSeen = ss;
-            // Enter confirmation.
-            if (editingSession.isEnterJustPressed()) {
-                textCStr = text;
-                onEdit.run();
-                peripherals.clearKeys();
-                tempDisableSelection = true;
-            } else if (editingSession.isSessionDead()) {
+            if (!multiLine) {
+                // Enter confirmation.
+                if (editingSession.isEnterJustPressed()) {
+                    textCStr = text;
+                    onEdit.run();
+                    peripherals.clearKeys();
+                    tempDisableSelection = true;
+                }
+            }
+            if (editingSession.isSessionDead()) {
                 tempDisableSelection = true;
             }
         } else {
+            // close off any editing session going on
             if (editingSession != null) {
+                if (multiLine) {
+                    textCStr = text;
+                    onEdit.run();
+                }
                 editingSession.endSession();
                 editingSession = null;
             }
+            // restore text from backup
+            text = textCStr;
         }
         borderType = selected ? 4 : 3;
         super.updateContents(deltaTime, selected, peripherals);

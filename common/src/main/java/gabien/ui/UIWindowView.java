@@ -88,6 +88,7 @@ public class UIWindowView extends UIElement {
     }
 
     public void addShell(IShell t) {
+        t.setAttachedToRoot(getAttachedToRoot());
         desktop.add(t);
         desktopChanged = true;
     }
@@ -99,6 +100,7 @@ public class UIWindowView extends UIElement {
     public void removeShell(IShell t, RemoveReason selfDestruct) {
         desktop.remove(t);
         desktopChanged = true;
+        t.setAttachedToRoot(false);
         t.removed(selfDestruct);
     }
 
@@ -147,6 +149,14 @@ public class UIWindowView extends UIElement {
         return new LinkedList<IShell>(desktop);
     }
 
+    @Override
+    public void setAttachedToRoot(boolean attached) {
+        super.setAttachedToRoot(attached);
+        updateDesktopCache();
+        for (IShell s : desktopCache)
+            s.setAttachedToRoot(attached);
+    }
+
     // Represents a surface that controls its own position and has complex hit detection.
     // Must be an interface so that an extension of Tab can implement it.
     public interface IShell {
@@ -157,9 +167,11 @@ public class UIWindowView extends UIElement {
 
         void render(IGrDriver igd);
 
-        void update(double deltaTime, boolean selected, IPeripherals peripherals);
+        void update(double deltaTime, boolean parentSelected, IPeripherals peripherals);
 
         void removed(RemoveReason reason);
+
+        void setAttachedToRoot(boolean attached);
     }
 
     public enum RemoveReason {
@@ -309,7 +321,7 @@ public class UIWindowView extends UIElement {
         }
 
         @Override
-        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        public void update(double deltaTime, boolean parentSelected, IPeripherals peripherals) {
             // Only really needed in case of parent resize
             windowBoundsCheck();
             boolean requestedUnparenting = contents.requestsUnparenting();
@@ -319,13 +331,14 @@ public class UIWindowView extends UIElement {
                 Rect r = contents.getParentRelativeBounds();
 
                 peripherals.performOffset(-r.x, -r.y);
-                contents.update(deltaTime, selected, peripherals);
+                contents.update(deltaTime, (parent.selectedWindow == this) && parentSelected, peripherals);
                 peripherals.performOffset(r.x, r.y);
             }
         }
 
         @Override
         public void removed(RemoveReason destroy) {
+            contents.setAttachedToRoot(false);
             if (destroy != RemoveReason.Manual)
                 contents.onWindowClose();
         }
@@ -355,6 +368,11 @@ public class UIWindowView extends UIElement {
             oh = Math.max(oh, 0);
             if ((ox != s.x) || (oy != s.y) || (ow != s.width) || (oh != s.height))
                 contents.setForcedBounds(null, new Rect(ox, oy, ow, oh));
+        }
+
+        @Override
+        public void setAttachedToRoot(boolean attached) {
+            contents.setAttachedToRoot(attached);
         }
     }
 
@@ -399,7 +417,7 @@ public class UIWindowView extends UIElement {
         }
 
         @Override
-        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        public void update(double deltaTime, boolean parentSelected, IPeripherals peripherals) {
             boolean requestedUnparenting = uie.requestsUnparenting();
             if (requestedUnparenting) {
                 parent.removeShell(this, RemoveReason.RequestedUnparent);
@@ -407,7 +425,7 @@ public class UIWindowView extends UIElement {
                 Rect r = uie.getParentRelativeBounds();
 
                 peripherals.performOffset(-r.x, -r.y);
-                uie.update(deltaTime, selected, peripherals);
+                uie.update(deltaTime, (parent.selectedWindow == this) && parentSelected, peripherals);
                 peripherals.performOffset(r.x, r.y);
             }
         }
@@ -416,6 +434,11 @@ public class UIWindowView extends UIElement {
         public void removed(RemoveReason reason) {
             if (reason != RemoveReason.Manual)
                 uie.onWindowClose();
+        }
+
+        @Override
+        public void setAttachedToRoot(boolean attached) {
+            uie.setAttachedToRoot(attached);
         }
     }
 
@@ -438,9 +461,9 @@ public class UIWindowView extends UIElement {
         }
 
         @Override
-        public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        public void update(double deltaTime, boolean parentSelected, IPeripherals peripherals) {
             updateSize();
-            super.update(deltaTime, selected, peripherals);
+            super.update(deltaTime, parentSelected, peripherals);
         }
     }
 }
