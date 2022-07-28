@@ -13,13 +13,16 @@ import gabien.ui.IPointer;
 import java.util.HashSet;
 import java.util.LinkedList;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Designed to emulate multitouch capability.
  * Create new pointers with the right mouse button,
  * switch between them with Tab, etc.
  * Created on November 17, 2018.
  */
-public class MobilePeripherals implements IPeripherals, ITextEditingSession {
+public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal {
     private final GrInDriver parent;
     private int offsetX, offsetY, activePointer;
     private LinkedList<DummyPointer> dummies = new LinkedList<DummyPointer>();
@@ -109,29 +112,23 @@ public class MobilePeripherals implements IPeripherals, ITextEditingSession {
             parent.keysjd[p] = false;
             parent.keys[p] = false;
         }
-        parent.tm.clear();
+        if (parent.currentEditingSession != null)
+            parent.currentEditingSession.endSession();
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession() {
-        return this;
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> fun) {
+        return parent.openEditingSession(this, textHeight, fun);
     }
 
     @Override
-    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
-        return parent.tm.maintain((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, w, h, text, textHeight, feedback);
+    public String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h, String text) {
+        return tm.maintainActual((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, w, h, text);
     }
 
     @Override
-    public boolean isEnterJustPressed() {
-        boolean b = parent.keysjd[IGrInDriver.VK_ENTER];
-        parent.keysjd[IGrInDriver.VK_ENTER] = false;
-        return b;
-    }
-
-    @Override
-    public void endSession() {
-        // uuuh something something something "when it gets rewritten"
+    public void finishRemovingEditingSession() {
+        parent.currentEditingSession = null;
     }
 
     public static class DummyPointer implements IPointer {

@@ -8,6 +8,9 @@ package gabien.backendhelp;
 
 import java.util.HashSet;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.IPeripherals;
 import gabien.ITextEditingSession;
 import gabien.uslx.append.*;
@@ -41,7 +44,7 @@ public class ProxyPeripherals<T extends IPeripherals> implements IPeripherals {
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession() {
-        return target.openTextEditingSession();
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
+        return target.openTextEditingSession(text, multiLine, textHeight, feedback);
     }
 }

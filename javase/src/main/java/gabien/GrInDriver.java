@@ -9,6 +9,7 @@ package gabien;
 
 import gabien.backendhelp.ProxyGrDriver;
 import gabien.ui.UIBorderedElement;
+import gabien.uslx.append.IFunction;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,8 +27,8 @@ import java.util.concurrent.locks.ReentrantLock;
 class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver {
     public Frame frame; // Really a JFrame for better close handling.
     public Panel panel; // Actually a Panel because there's no point for this to be a JPanel.
-    public TextboxMaintainer tm;
-    public IPeripherals peripherals;
+    public TextboxMaintainer currentEditingSession;
+    public IGJSEPeripheralsInternal peripherals;
     public boolean[] keys = new boolean[IGrInDriver.KEYS];
     public boolean[] keysjd = new boolean[IGrInDriver.KEYS];
     public int sc;
@@ -41,6 +42,8 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
     public HashSet<Integer> mouseJustUp = new HashSet<Integer>();
     public int mousewheelMovements = 0;
     public BufferedImage frontBuffer;
+
+    public final KeyListener commonKeyListener;
 
     Random fuzzer = new Random();
 
@@ -177,7 +180,7 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
             }
         });
 
-        KeyListener commonKeyListener = new KeyListener() {
+        commonKeyListener = new KeyListener() {
 
             @Override
             public void keyTyped(KeyEvent ke) {
@@ -220,8 +223,6 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         frame.addKeyListener(commonKeyListener);
         panel.addKeyListener(commonKeyListener);
 
-        tm = new TextboxMaintainer(panel, commonKeyListener);
-
         // This serves as the new disambiguator between emulated-mobile & desktop.
         if (GaBIEnImpl.mobileEmulation) {
             peripherals = new MobilePeripherals(this);
@@ -252,9 +253,6 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         Runnable[] l = getLockingSequenceN();
         if (l != null)
             l[0].run();
-
-        tm.newFrame();
-
 
         // Update frontBuffer for slowpaint, then perform fastpaint
         BufferedImage backBuffer = (BufferedImage) target.getNative();
@@ -293,11 +291,12 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
     }
 
     private void drawFrontBuffer(Graphics pg) {
-        if (tm.maintainedString != null) {
-            int txX = tm.target.getX();
-            int txY = tm.target.getY();
-            int txW = tm.target.getWidth();
-            int txH = tm.target.getHeight();
+        if (currentEditingSession != null) {
+            JTextField target = currentEditingSession.target;
+            int txX = target.getX();
+            int txY = target.getY();
+            int txW = target.getWidth();
+            int txH = target.getHeight();
             ClipBoundHelper cbh = new ClipBoundHelper();
             cbh.point(0, 0);
             cbh.point(getWidth() * sc, 0);
@@ -352,4 +351,10 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
 	public int estimateUIScaleTenths() {
 		return uiGuessScaleTenths;
 	}
+
+    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, int textHeight, IFunction<String, String> fun) {
+        if (currentEditingSession != null)
+            currentEditingSession.endSession();
+        return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, textHeight, fun);
+    }
 }

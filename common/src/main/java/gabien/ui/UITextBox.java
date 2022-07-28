@@ -46,9 +46,9 @@ public class UITextBox extends UILabel {
         if (selected) {
             // ensure we have an editing session
             if (editingSession == null)
-                editingSession = peripherals.openTextEditingSession();
+                editingSession = peripherals.openTextEditingSession(text, false, contents.textHeight, feedback);
             Rect crib = getContentsRelativeInputBounds();
-            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text, contents.textHeight, feedback);
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text);
             // Update storage.
             text = ss;
             textLastSeen = ss;
@@ -57,6 +57,8 @@ public class UITextBox extends UILabel {
                 textCStr = text;
                 onEdit.run();
                 peripherals.clearKeys();
+                tempDisableSelection = true;
+            } else if (editingSession.isSessionDead()) {
                 tempDisableSelection = true;
             }
         } else {
@@ -67,6 +69,15 @@ public class UITextBox extends UILabel {
         }
         borderType = selected ? 4 : 3;
         super.updateContents(deltaTime, selected, peripherals);
+    }
+
+    @Override
+    public void setAttachedToRoot(boolean attached) {
+        super.setAttachedToRoot(attached);
+        if (editingSession != null && !attached) {
+            editingSession.endSession();
+            editingSession = null;
+        }
     }
 
     @Override

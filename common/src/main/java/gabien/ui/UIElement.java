@@ -8,9 +8,12 @@
 package gabien.ui;
 
 import gabien.IGrDriver;
+import gabien.IGrInDriver;
 import gabien.IPeripherals;
 
 import java.util.LinkedList;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Once a simple class. Now it's not.
@@ -38,6 +41,8 @@ public abstract class UIElement {
     private boolean weNeedToKeepLayouting = false;
     // Used rather than a HashSet.
     private boolean visibleFlag = false;
+    // Used for textboxes
+    private boolean attachedToRootFlag;
 
     public UIElement() {
         // This is sufficient.
@@ -52,7 +57,7 @@ public abstract class UIElement {
         currentlyLayouting = false;
     }
 
-    /*
+    /**
      * Sets boundaries that this element MUST comply with.
      */
     public final void setForcedBounds(UIElement mustBeThis, Rect r) {
@@ -65,7 +70,7 @@ public abstract class UIElement {
             runLayoutLoop();
     }
 
-    /*
+    /**
      * Forces the element to be at 0, 0 and with the optimal size.
      * Since this messes with layout, it can't be used while a parent is allowed.
      */
@@ -106,9 +111,11 @@ public abstract class UIElement {
     public abstract void update(double deltaTime, boolean selected, IPeripherals peripherals);
     public abstract void render(IGrDriver igd);
 
-    // How you should call runLayout.
-    // Failure to call it this way can result in *stuff* not getting updated properly.
-    // In particular, this is now NON-FINAL.
+    /**
+     * How you should call runLayout.
+     * Failure to call it this way can result in *stuff* not getting updated properly.
+     * In particular, this is now NON-FINAL.
+     */
     public void runLayoutLoop() {
         Size oldWS = getWantedSize();
         if (currentlyLayouting) {
@@ -133,12 +140,14 @@ public abstract class UIElement {
                 parent.runLayoutLoop();
     }
 
-    // This method *SHOULD* work like this:
-    // 1. Get all wanted sizes
-    // 2. Adjust controls inside
-    // Step 2 will trigger "pleaseContinueLayingOut" to be set if necessary.
-    // UNDER NO CIRCUMSTANCES should this be non-super-called anywhere except from UIElement,
-    //  or classes with an understanding of what they're calling, i.e. their own runLayout method.
+    /**
+     * This method *SHOULD* work like this:
+     * 1. Get all wanted sizes
+     * 2. Adjust controls inside
+     * Step 2 will trigger "pleaseContinueLayingOut" to be set if necessary.
+     * UNDER NO CIRCUMSTANCES should this be non-super-called anywhere except from UIElement,
+     *  or classes with an understanding of what they're calling, i.e. their own runLayout method.
+     */
     public void runLayout() {
 
     }
@@ -151,6 +160,30 @@ public abstract class UIElement {
     // Also only processed for window-level elements.
     public void onWindowClose() {
 
+    }
+
+    /**
+     * Internal parent attach/detach logic, ensures root attach/detach is correct
+     */
+    private void internalSetParent(UIElement newParent) {
+        parent = newParent;
+        if (newParent != null)
+            setAttachedToRoot(newParent.attachedToRootFlag);
+        else
+            setAttachedToRoot(false);
+    }
+
+    /**
+     * Updates the attached root IGrInDriver of the element.
+     * Important because of things like textboxes which need to know when they're being mucked with.
+     * UNDER NO CIRCUMSTANCES should this be non-super-called anywhere except from UIElement.
+     */
+    public void setAttachedToRoot(boolean attached) {
+        attachedToRootFlag = attached;
+    }
+
+    public final boolean getAttachedToRoot() {
+        return attachedToRootFlag;
     }
 
     // Almost never used. Doesn't follow the normal system, shouldn't have to.
@@ -221,7 +254,7 @@ public abstract class UIElement {
         protected final void layoutAddElement(UIElement uie) {
             if (uie.parent != null)
                 throw new RuntimeException("UIE " + uie + " already has parent " + uie.parent + " in " + this);
-            uie.parent = this;
+            uie.internalSetParent(this);
             uie.visibleFlag = true;
             allElements.add(uie);
             allElementsChanged = true;
@@ -230,7 +263,7 @@ public abstract class UIElement {
         protected final void layoutRemoveElement(UIElement uie) {
             if (uie.parent != this)
                 throw new RuntimeException("UIE " + uie + " already lost parent somehow in " + this);
-            uie.parent = null;
+            uie.internalSetParent(null);
             if (selectedElement == uie) {
                 if (debugSelection)
                     System.err.println("Deselected " + uie.toString() + " due to removal.");
@@ -295,6 +328,14 @@ public abstract class UIElement {
             for (UIElement uie : cachedAllElements)
                 if (uie.visibleFlag)
                     scissoredRender(uie, igd);
+        }
+
+        @Override
+        public void setAttachedToRoot(boolean attached) {
+            super.setAttachedToRoot(attached);
+            recacheElements();
+            for (UIElement uie : cachedAllElements)
+                uie.setAttachedToRoot(attached);
         }
 
         public static void scissoredRender(UIElement uie, IGrDriver igd) {
@@ -384,7 +425,7 @@ public abstract class UIElement {
         // Used by some UI stuff that needs to reuse elements.
         public void release() {
             for (UIElement uie : allElements)
-                uie.parent = null;
+                uie.internalSetParent(null);
             allElements.clear();
             allElementsChanged = true;
             released = true;
@@ -416,7 +457,7 @@ public abstract class UIElement {
             currentElement = element;
             if (wanted)
                 currentElement.forceToRecommended();
-            currentElement.parent = this;
+            currentElement.internalSetParent(this);
             // As this is meant to be called during the constructor, we take on the proxy's size,
             //  not the other way around. Also, if this fails with a "you can't do that",
             //  I'm not sure what you're trying to do, but it sounds fun!
@@ -436,6 +477,12 @@ public abstract class UIElement {
         @Override
         public void render(IGrDriver igd) {
             currentElement.render(igd);
+        }
+
+        @Override
+        public void setAttachedToRoot(boolean attached) {
+            super.setAttachedToRoot(attached);
+            currentElement.setAttachedToRoot(attached);
         }
 
         @Override
@@ -470,7 +517,7 @@ public abstract class UIElement {
         public void release() {
             if (currentElement.parent != this)
                 throw new RuntimeException("Cannot release twice.");
-            currentElement.parent = null;
+            currentElement.internalSetParent(null);
         }
 
         @Override

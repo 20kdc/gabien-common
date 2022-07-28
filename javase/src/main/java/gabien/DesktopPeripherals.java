@@ -14,11 +14,14 @@ import gabien.uslx.append.*;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Implements the IDesktopPeripherals interface for an IGrInDriver to use.
  * Created on February 17th, 2018.
  */
-public class DesktopPeripherals implements IDesktopPeripherals, ITextEditingSession {
+public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripheralsInternal {
     private GrInDriver parent;
 
     private int shadowScissorX, shadowScissorY;
@@ -75,7 +78,8 @@ public class DesktopPeripherals implements IDesktopPeripherals, ITextEditingSess
         parent.mouseJustDown.clear();
         parent.mouseJustUp.clear();
         parent.mouseLock.unlock();
-        parent.tm.clear();
+        if (parent.currentEditingSession != null)
+            parent.currentEditingSession.endSession();
     }
 
     @Override
@@ -88,13 +92,18 @@ public class DesktopPeripherals implements IDesktopPeripherals, ITextEditingSess
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession() {
-        return this;
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> fun) {
+        return parent.openEditingSession(this, textHeight, fun);
     }
 
     @Override
-    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> fun) {
-        return parent.tm.maintain((x - shadowScissorX) * parent.sc, (y - shadowScissorY) * parent.sc, w * parent.sc, h * parent.sc, text, textHeight, fun);
+    public String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h, String text) {
+        return tm.maintainActual((x - shadowScissorX) * parent.sc, (y - shadowScissorY) * parent.sc, w * parent.sc, h * parent.sc, text);
+    }
+
+    @Override
+    public void finishRemovingEditingSession() {
+        parent.currentEditingSession = null;
     }
 
     @Override
@@ -133,16 +142,6 @@ public class DesktopPeripherals implements IDesktopPeripherals, ITextEditingSess
         }
         parent.mouseLock.unlock();
         return f;
-    }
-
-    @Override
-    public boolean isEnterJustPressed() {
-        return isKeyJustPressed(IGrInDriver.VK_ENTER);
-    }
-
-    @Override
-    public void endSession() {
-        // uuuh something something something "when it gets rewritten"
     }
 
     private class MousePointer implements IPointer {

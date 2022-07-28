@@ -51,6 +51,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         aw.peripherals = aw.igd.getPeripherals();
         aw.ue = o;
         incomingWindows.add(aw);
+        o.setAttachedToRoot(true);
     }
 
     public LinkedList<UIElement> runningWindows() {
@@ -69,6 +70,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         LinkedList<ActiveWindow> closeTheseNS = new LinkedList<ActiveWindow>();
         for (ActiveWindow aw : new LinkedList<ActiveWindow>(activeWindows)) {
             if (!aw.igd.stillRunning()) {
+                aw.ue.setAttachedToRoot(false);
                 closeTheseNS.add(aw);
                 continue;
             }
@@ -140,6 +142,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (aw.ue.requestsUnparenting()) {
                 closeTheseSD.add(aw);
                 aw.igd.shutdown();
+                aw.ue.setAttachedToRoot(false);
             }
         }
         activeWindows.removeAll(closeTheseSD);
@@ -159,6 +162,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (aw.ue == uie)
                 w.add(aw);
         for (ActiveWindow aw : w) {
+            aw.ue.setAttachedToRoot(false);
             handleClosedUserWindow(aw.ue, false);
             activeWindows.remove(aw);
             incomingWindows.remove(aw);

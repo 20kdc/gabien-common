@@ -8,6 +8,9 @@ package gabien.backendhelp;
 
 import java.util.HashSet;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.IDesktopPeripherals;
 import gabien.ITextEditingSession;
 import gabien.ui.IPointer;
@@ -39,7 +42,7 @@ public class DeadDesktopPeripherals implements IDesktopPeripherals {
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession() {
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
         return new DeadTextEditingSession();
     }
 

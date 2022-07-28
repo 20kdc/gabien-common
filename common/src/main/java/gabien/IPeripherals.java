@@ -12,6 +12,9 @@ import gabien.ui.IPointer;
 
 import java.util.HashSet;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * The minimum input peripheral interfaces needed for GaBIEn to operate properly.
  */
@@ -27,5 +30,9 @@ public interface IPeripherals {
     // This includes maintained textboxes and the mouse.
     void clearKeys();
 
-    ITextEditingSession openTextEditingSession();
+    /**
+     * Starts a new text editing session (any previous session will automatically be ended).
+     * feedback provides live editing feedback.
+     */
+    ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback);
 }

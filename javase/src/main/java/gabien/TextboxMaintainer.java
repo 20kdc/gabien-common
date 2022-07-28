@@ -10,7 +10,12 @@ package gabien;
 import gabien.uslx.append.*;
 
 import javax.swing.*;
+
+import org.eclipse.jdt.annotation.Nullable;
+
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -19,52 +24,57 @@ import java.awt.event.MouseEvent;
  * Maintains a textbox.
  * Created on 01/06/17.
  */
-public class TextboxMaintainer {
+public class TextboxMaintainer implements ITextEditingSession {
+    public final IGJSEPeripheralsInternal peripheralsInternal;
     public final Panel parent;
     public JTextField target;
     private KeyListener kl;
     // null means unmaintained!
-    public String maintainedString = null;
-    public boolean maintainedThisFrame = false;
+    public @Nullable String maintainedString;
+    public boolean sessionIsDead = false;
+    public boolean enterFlag = false;
 
-    public TextboxMaintainer(Panel panel, KeyListener k) {
-        parent = panel;
-        kl = k;
-    }
-
-    public void newFrame() {
-        if (!maintainedThisFrame)
-            clear();
-        maintainedThisFrame = false;
-    }
-
-    public String maintain(int x, int y, int width, int height, String text, int textHeight, final IFunction<String, String> feedback) {
-        // Adjust stuff
-        y = y + (height / 2);
+    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, int textHeight, final IFunction<String, String> feedback) {
+        peripheralsInternal = pi;
         if (textHeight < 16)
             textHeight = 16;
-        // Continue
-        if (target == null) {
-            // wait as long as possible because of font loading perf.
-            // IDK if it's loading every font on the system or something but this is a real issue...
-            target = new JTextField();
-            parent.add(target);
-            // apparently it's not capable of setting sensible defaults
-            target.setBounds(0, 0, 32, textHeight + 1);
-            // use a sane font
-            target.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, textHeight));
-            target.addKeyListener(kl);
-            // Allows some access for debugging purposes to the mobile feedback.
-            if (GaBIEnImpl.mobileEmulation) {
-                if (feedback != null)
-                    target.addMouseListener(new MouseAdapter() {
-                        @Override
-                        public void mouseExited(MouseEvent mouseEvent) {
-                            System.err.println("on mobile, feedback says:" + feedback.apply(target.getText()));
-                        }
-                    });
+        parent = panel;
+        kl = k;
+        target = new JTextField();
+        parent.add(target);
+        // apparently it's not capable of setting sensible defaults
+        target.setBounds(0, 0, 32, textHeight + 1);
+        // use a sane font
+        target.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, textHeight));
+        target.addKeyListener(kl);
+        target.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                    enterFlag = true;
             }
+        });
+        // Allows some access for debugging purposes to the mobile feedback.
+        if (GaBIEnImpl.mobileEmulation) {
+            if (feedback != null)
+                target.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseExited(MouseEvent mouseEvent) {
+                        System.err.println("on mobile, feedback says:" + feedback.apply(target.getText()));
+                    }
+                });
         }
+    }
+
+    @Override
+    public String maintain(int x, int y, int width, int height, String text) {
+        return peripheralsInternal.aroundTheBorderworldMaintain(this, x, y, width, height, text);
+    }
+
+    public String maintainActual(int x, int y, int width, int height, String text) {
+        // Adjust stuff
+        y = y + (height / 2);
+        // Continue
         boolean needToMove = false;
         if (target.getX() != x)
             needToMove = true;
@@ -86,19 +96,29 @@ public class TextboxMaintainer {
             target.grabFocus();
         }
 
-        maintainedThisFrame = true;
         maintainedString = target.getText();
         return maintainedString;
     }
 
-    public void clear() {
-        maintainedThisFrame = false;
-        maintainedString = null;
-        if (target != null) {
-            target.setVisible(false);
-            parent.remove(target);
-            parent.transferFocusUpCycle();
-            target = null;
-        }
+    @Override
+    public boolean isEnterJustPressed() {
+        return enterFlag;
+    }
+
+    @Override
+    public void endSession() {
+        if (sessionIsDead)
+            return;
+        target.setVisible(false);
+        parent.remove(target);
+        parent.transferFocusUpCycle();
+        target = null;
+        sessionIsDead = true;
+        peripheralsInternal.finishRemovingEditingSession();
+    }
+
+    @Override
+    public boolean isSessionDead() {
+        return sessionIsDead;
     }
 }

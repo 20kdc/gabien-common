@@ -16,7 +16,7 @@ import gabien.uslx.append.IFunction;
  */
 public class DeadTextEditingSession implements ITextEditingSession {
     @Override
-    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
+    public String maintain(int x, int y, int w, int h, String text) {
         return text;
     }
 
@@ -27,5 +27,10 @@ public class DeadTextEditingSession implements ITextEditingSession {
 
     @Override
     public void endSession() {
+    }
+
+    @Override
+    public boolean isSessionDead() {
+        return true;
     }
 }

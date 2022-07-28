@@ -15,11 +15,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Just your ordinary IPCRESS peripherals implementation.
  * Created on 18th February 2018.
  */
-public class Peripherals implements IPeripherals, ITextEditingSession {
+public class Peripherals implements IPeripherals {
     // The parent GrInDriver. (GTHREAD)
     public GrInDriver parent;
 
@@ -29,9 +32,8 @@ public class Peripherals implements IPeripherals, ITextEditingSession {
     public ReentrantLock pointersLock = new ReentrantLock();
     public HashSet<UPointer> pointersThatWePretendDoNotExist = new HashSet<UPointer>();
     public HashMap<Integer, UPointer> pointersMap = new HashMap<Integer, UPointer>();
-    
-    private boolean enterPressed, textboxMaintainedThisFrame, textboxWasReadyAtLastCheck;
-    private String lastTextSentToTextbox;
+
+    public TextEditingSession currentTextEditingSession;
 
     public Peripherals(GrInDriver gd) {
         parent = gd;
@@ -64,67 +66,20 @@ public class Peripherals implements IPeripherals, ITextEditingSession {
 
     @Override
     public void clearKeys() {
-        enterPressed = false;
         pointersLock.lock();
         pointersThatWePretendDoNotExist.addAll(pointersMap.values());
         pointersLock.unlock();
+        currentTextEditingSession.endSession();
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession() {
-        return this;
-    }
-
-    @Override
-    public String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback) {
-        AndroidPortGlobals.mainActivityLock.lock();
-        ITextboxImplementation impl = TextboxImplObject.getInstanceHoldingMALock();
-        if ((lastTextSentToTextbox == null) || (!lastTextSentToTextbox.equals(text))) {
-            impl.setActive(text, feedback);
-            lastTextSentToTextbox = text;
-            textboxWasReadyAtLastCheck = true;
-        }
-        textboxMaintainedThisFrame = true;
-        String result = impl.getLastKnownText();
-        AndroidPortGlobals.mainActivityLock.unlock();
-        return result;
-    }
-
-    @Override
-    public boolean isEnterJustPressed() {
-        boolean bv = enterPressed;
-        enterPressed = false;
-        return bv;
-    }
-
-    @Override
-    public void endSession() {
-        // uuuh something something something "when it gets rewritten"
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
+        return new TextEditingSession(this, text, multiLine, textHeight, feedback);
     }
 
     public void gdUpdateTextbox(boolean flushing) {
-        AndroidPortGlobals.mainActivityLock.lock();
-        ITextboxImplementation tio = TextboxImplObject.getInstanceHoldingMALock();
-        if (flushing) {
-            if (textboxMaintainedThisFrame) {
-                textboxMaintainedThisFrame = false;
-            } else {
-                // textbox expired
-                if (lastTextSentToTextbox != null) {
-                    tio.setInactive();
-                    lastTextSentToTextbox = null;
-                }
-            }
-        }
-        // detect specifically the *event* of textbox closure, but do not actually
-        //  mark the textbox as unmaintained because this would cause it to be re-opened
-        if (!tio.checkupUsage()) {
-            if (textboxWasReadyAtLastCheck) {
-                textboxWasReadyAtLastCheck = false;
-                enterPressed = true;
-            }
-        }
-        AndroidPortGlobals.mainActivityLock.unlock();
+        if (currentTextEditingSession != null)
+            currentTextEditingSession.gdUpdateTextbox(flushing);
     }
 
     public void gdResetPointers() {

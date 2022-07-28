@@ -56,13 +56,13 @@ public class UINumberBox extends UILabel {
         } else if (!selected) {
             number = editingCNumber;
         }
-        Size bounds = getSize();
         if (selected && (!readOnly)) {
             // ensure we have an editing session
-            if (editingSession == null)
-                editingSession = peripherals.openTextEditingSession();
+            if (editingSession == null) {
+                editingSession = peripherals.openTextEditingSession(String.valueOf(number), false, contents.textHeight, null);
+            }
             Rect crib = getContentsRelativeInputBounds();
-            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number), contents.textHeight, null);
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number));
             // Update storage.
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
@@ -90,6 +90,8 @@ public class UINumberBox extends UILabel {
                 onEdit.run();
                 peripherals.clearKeys();
                 tempDisableSelection = true;
+            } else if (editingSession.isSessionDead()) {
+                tempDisableSelection = true;
             }
         } else {
             if (editingSession != null) {
@@ -99,6 +101,15 @@ public class UINumberBox extends UILabel {
         }
         borderType = selected ? 4 : 3;
         super.updateContents(deltaTime, selected, peripherals);
+    }
+
+    @Override
+    public void setAttachedToRoot(boolean attached) {
+        super.setAttachedToRoot(attached);
+        if (editingSession != null && !attached) {
+            editingSession.endSession();
+            editingSession = null;
+        }
     }
 
     @Override
