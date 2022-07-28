@@ -39,6 +39,7 @@ public class UINumberBox extends UILabel {
     public Runnable onEdit = EmptyLambdas.emptyRunnable;
 
     private boolean tempDisableSelection = false;
+    private ITextEditingSession editingSession;
 
     @Override
     public void runLayout() {
@@ -57,10 +58,11 @@ public class UINumberBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected && (!readOnly)) {
-            // TODO: Change this to use this API properly
-            ITextEditingSession tes = peripherals.openTextEditingSession();
+            // ensure we have an editing session
+            if (editingSession == null)
+                editingSession = peripherals.openTextEditingSession();
             Rect crib = getContentsRelativeInputBounds();
-            String ss = tes.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number), contents.textHeight, null);
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number), contents.textHeight, null);
             // Update storage.
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
@@ -83,11 +85,16 @@ public class UINumberBox extends UILabel {
             // NOTE: This has to be after the update to the local number.
             // Not doing this lead to an interesting bug where number boxes
             //  wouldn't work because the 'enter' press would revert the number.
-            if (tes.isEnterJustPressed()) {
+            if (editingSession.isEnterJustPressed()) {
                 editingCNumber = number;
                 onEdit.run();
                 peripherals.clearKeys();
                 tempDisableSelection = true;
+            }
+        } else {
+            if (editingSession != null) {
+                editingSession.endSession();
+                editingSession = null;
             }
         }
         borderType = selected ? 4 : 3;

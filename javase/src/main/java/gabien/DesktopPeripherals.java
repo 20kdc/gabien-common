@@ -140,6 +140,11 @@ public class DesktopPeripherals implements IDesktopPeripherals, ITextEditingSess
         return isKeyJustPressed(IGrInDriver.VK_ENTER);
     }
 
+    @Override
+    public void endSession() {
+        // uuuh something something something "when it gets rewritten"
+    }
+
     private class MousePointer implements IPointer {
         public int button, offsetX, offsetY;
         @Override

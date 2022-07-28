@@ -12,6 +12,7 @@ import gabien.uslx.append.IFunction;
 
 /**
  * Continuation of DeadDesktopPeripherals
+ * Created 28th July 2022
  */
 public class DeadTextEditingSession implements ITextEditingSession {
     @Override
@@ -22,5 +23,9 @@ public class DeadTextEditingSession implements ITextEditingSession {
     @Override
     public boolean isEnterJustPressed() {
         return false;
+    }
+
+    @Override
+    public void endSession() {
     }
 }

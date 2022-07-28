@@ -30,10 +30,12 @@ public class UITextBox extends UILabel {
     public IFunction<String, String> feedback;
 
     private boolean tempDisableSelection = false;
+    private ITextEditingSession editingSession;
 
     @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         selected &= !tempDisableSelection;
+
         if (!textLastSeen.equals(text)) {
             textCStr = text;
             textLastSeen = text;
@@ -42,19 +44,25 @@ public class UITextBox extends UILabel {
         }
         Size bounds = getSize();
         if (selected) {
+            // ensure we have an editing session
+            if (editingSession == null)
+                editingSession = peripherals.openTextEditingSession();
             Rect crib = getContentsRelativeInputBounds();
-            // TODO: Change this to use this API properly
-            ITextEditingSession tes = peripherals.openTextEditingSession();
-            String ss = tes.maintain(crib.x, crib.y, crib.width, crib.height, text, contents.textHeight, feedback);
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text, contents.textHeight, feedback);
             // Update storage.
             text = ss;
             textLastSeen = ss;
             // Enter confirmation.
-            if (tes.isEnterJustPressed()) {
+            if (editingSession.isEnterJustPressed()) {
                 textCStr = text;
                 onEdit.run();
                 peripherals.clearKeys();
                 tempDisableSelection = true;
+            }
+        } else {
+            if (editingSession != null) {
+                editingSession.endSession();
+                editingSession = null;
             }
         }
         borderType = selected ? 4 : 3;

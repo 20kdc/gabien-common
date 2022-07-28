@@ -129,6 +129,11 @@ public class MobilePeripherals implements IPeripherals, ITextEditingSession {
         return b;
     }
 
+    @Override
+    public void endSession() {
+        // uuuh something something something "when it gets rewritten"
+    }
+
     public static class DummyPointer implements IPointer {
         public int x, y, ox, oy;
 

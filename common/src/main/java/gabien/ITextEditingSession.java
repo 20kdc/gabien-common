@@ -23,4 +23,9 @@ public interface ITextEditingSession {
     // textHeight is the text height of the textbox content.
     String maintain(int x, int y, int w, int h, String text, int textHeight, IFunction<String, String> feedback);
     boolean isEnterJustPressed();
+
+    /**
+     * Ends the session from the game side (i.e. if the box got deselected).
+     */
+    void endSession();
 }

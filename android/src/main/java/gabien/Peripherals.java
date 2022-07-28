@@ -96,7 +96,12 @@ public class Peripherals implements IPeripherals, ITextEditingSession {
         enterPressed = false;
         return bv;
     }
-    
+
+    @Override
+    public void endSession() {
+        // uuuh something something something "when it gets rewritten"
+    }
+
     public void gdUpdateTextbox(boolean flushing) {
         AndroidPortGlobals.mainActivityLock.lock();
         ITextboxImplementation tio = TextboxImplObject.getInstanceHoldingMALock();
