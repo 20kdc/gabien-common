@@ -29,7 +29,7 @@ public class AndroidPortGlobals {
      * The activity can't be *completely* destroyed while a lock is held.
      * This is important as it ensures we don't keep any undead Activities around.
      */
-    public static ReentrantLock mainActivityLock;
+    public static final ReentrantLock mainActivityLock = new ReentrantLock();
     /**
      * This is the activity. Careful with this, use mainActivityLock.
      */

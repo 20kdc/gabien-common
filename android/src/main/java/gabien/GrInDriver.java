@@ -33,33 +33,38 @@ public class GrInDriver extends OsbDriver implements IGrInDriver {
         while (true) {
             peripherals.gdUpdateTextbox(first);
             first = false;
-            MainActivity last = MainActivity.last;
-            if (last != null) {
-                try {
-                    SurfaceHolder sh = last.mySurface.getHolder();
-                    if (sh != null) {
-                        Canvas c = sh.lockCanvas();
-                        Rect r = sh.getSurfaceFrame();
-
-                        int letterboxing2 = 0;
-                        double realAspectRatio = w / (double) h;
-                        int goodWidth = (int)(realAspectRatio * r.height());
-                        // work out letterboxing from widths
-                        int letterboxing = (r.width() - goodWidth) / 2;
-
-                        displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
-                        c.drawBitmap(bitmap, new Rect(0, 0, w, h), displayArea, globalPaint);
-
-                        sh.unlockCanvasAndPost(c);
-                        if ((r.width() != w) || (r.height() != h)) {
-                            resize(r.width(), r.height());
-                            return true;
+            AndroidPortGlobals.mainActivityLock.lock();
+            try {
+                MainActivity last = AndroidPortGlobals.mainActivity;
+                if (last != null) {
+                    try {
+                        SurfaceHolder sh = last.mySurface.getHolder();
+                        if (sh != null) {
+                            Canvas c = sh.lockCanvas();
+                            Rect r = sh.getSurfaceFrame();
+    
+                            int letterboxing2 = 0;
+                            double realAspectRatio = w / (double) h;
+                            int goodWidth = (int)(realAspectRatio * r.height());
+                            // work out letterboxing from widths
+                            int letterboxing = (r.width() - goodWidth) / 2;
+    
+                            displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
+                            c.drawBitmap(bitmap, new Rect(0, 0, w, h), displayArea, globalPaint);
+    
+                            sh.unlockCanvasAndPost(c);
+                            if ((r.width() != w) || (r.height() != h)) {
+                                resize(r.width(), r.height());
+                                return true;
+                            }
+                            return false;
                         }
-                        return false;
+                    } catch (Exception e) {
+    
                     }
-                } catch (Exception e) {
-
                 }
+            } finally {
+                AndroidPortGlobals.mainActivityLock.unlock();
             }
             try {
                 Thread.sleep(100);
