@@ -11,7 +11,6 @@ import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
-import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -40,10 +39,8 @@ public class TextboxImplObject implements ITextboxImplementation {
         tf.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         tv = new TextView(activity);
         host = new LinearLayout(activity);
-        host.setOrientation(LinearLayout.VERTICAL);
-        host.addView(tf, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 0.5f));
-        // this filling gives a nice half/half view that should work???
-        host.addView(tv, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 0.5f));
+        lastMultiLine = true;
+        fixLayoutAC(false);
         tf.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -89,6 +86,24 @@ public class TextboxImplObject implements ITextboxImplementation {
         mainActivity = activity;
     }
 
+    public void fixLayoutAC(boolean multiLine) {
+        if (lastMultiLine != multiLine) {
+            lastMultiLine = multiLine;
+            host.removeAllViews();
+            if (multiLine) {
+                host.setOrientation(LinearLayout.VERTICAL);
+                host.addView(tf, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 0.5f));
+                // this filling gives a nice half/half view that should work???
+                host.addView(tv, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 0.5f));
+            } else {
+                host.setOrientation(LinearLayout.VERTICAL);
+                host.addView(tf, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                host.addView(tv, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            }
+            tf.setSingleLine(!lastMultiLine);
+        }
+    }
+
     @Override
     public void setActive(final String contents, final boolean multiLine, final IFunction<String, String> feedback) {
         lastKnownContents = contents;
@@ -97,14 +112,14 @@ public class TextboxImplObject implements ITextboxImplementation {
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                lastMultiLine = multiLine;
-                tf.setSingleLine(!multiLine);
+                fixLayoutAC(multiLine);
                 tf.setText(contents);
                 if (lastFeedback == null) {
                     tv.setText("");
                 } else {
                     tv.setText(lastFeedback.apply(contents));
                 }
+                tf.setSelection(contents.length());
                 host.requestLayout();
                 // -- don't bother repeating this part if unnecessary --
                 if (inTextboxMode)
