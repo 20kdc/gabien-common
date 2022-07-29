@@ -59,13 +59,16 @@ public class UITextBox extends UILabel {
                 // Enter confirmation.
                 if (editingSession.isEnterJustPressed()) {
                     textCStr = text;
+                    // warning: can bamboozle and cause editingSession loss!
                     onEdit.run();
                     peripherals.clearKeys();
                     tempDisableSelection = true;
                 }
             }
-            if (editingSession.isSessionDead()) {
+            if ((editingSession != null) && editingSession.isSessionDead()) {
+                // clean up if the session died
                 tempDisableSelection = true;
+                editingSession = null;
             }
         } else {
             // close off any editing session going on
@@ -74,8 +77,10 @@ public class UITextBox extends UILabel {
                     textCStr = text;
                     onEdit.run();
                 }
-                editingSession.endSession();
-                editingSession = null;
+                if (editingSession != null) {
+                    editingSession.endSession();
+                    editingSession = null;
+                }
             }
             // restore text from backup
             text = textCStr;
