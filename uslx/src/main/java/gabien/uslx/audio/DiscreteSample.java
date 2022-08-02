@@ -38,7 +38,11 @@ public abstract class DiscreteSample extends AudioIOCRSet {
 
     private final void getExtendedF32(int frame, float[] buffer, boolean loop) {
         if (loop) {
-            frame %= length;
+            if (length != 0) {
+                frame %= length;
+            } else {
+                frame = 0;
+            }
         } else {
             if ((frame < 0) || (frame >= length)) {
                 for (int i = 0; i < channels; i++)
@@ -50,8 +54,13 @@ public abstract class DiscreteSample extends AudioIOCRSet {
     }
 
     public final void getInterpolatedF32(double frame, float[] buffer, boolean loop) {
-        if (loop)
-            frame = frame % length;
+        if (loop) {
+            if (length != 0) {
+                frame %= length;
+            } else {
+                frame = 0;
+            }
+        }
         int frame1 = (int) Math.floor(frame);
         float frac = (float) (frame - frame1);
         int frame2 = frame1 + 1;
