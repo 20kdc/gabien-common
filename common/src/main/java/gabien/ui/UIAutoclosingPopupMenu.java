@@ -7,12 +7,22 @@
 
 package gabien.ui;
 
+import gabien.ui.UIPopupMenu.Entry;
+
 /**
  * Created on 13/08/17.
  */
 public class UIAutoclosingPopupMenu extends UIPopupMenu {
 
     private boolean wantsSelfClose = false;
+
+    public UIAutoclosingPopupMenu(Entry[] entries, int h, int sh, boolean rsz) {
+        super(entries, h, sh, rsz);
+    }
+
+    public UIAutoclosingPopupMenu(Iterable<Entry> entries, int h, int sh, boolean rsz) {
+        super(entries, h, sh, rsz);
+    }
 
     public UIAutoclosingPopupMenu(String[] strings, Runnable[] tilesets, int h, int sh, boolean rsz) {
         super(strings, tilesets, h, sh, rsz);
