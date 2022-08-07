@@ -45,7 +45,7 @@ public class EmulatedFileBrowser extends PriorityElevatorForUseByBackendHelp imp
             }
         };
         // if this crashes, you're pretty doomed
-        UIFileBrowser fb = new UIFileBrowser(browserDirectory, result, text, saving ? GaBIEn.wordSave : GaBIEn.wordLoad, GaBIEn.sysCoreFontSize, GaBIEn.sysCoreFontSize);
+        UIFileBrowser fb = new UIFileBrowser(browserDirectory, result, text, saving, GaBIEn.sysCoreFontSize, GaBIEn.sysCoreFontSize);
         wc.accept(fb);
         final Runnable tick = new Runnable() {
             double lastTime = GaBIEn.getTime();

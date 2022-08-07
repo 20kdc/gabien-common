@@ -35,6 +35,7 @@ public class GaBIEn {
     public static String[] appPrefixes = new String[0];
     // Can be used by internal UI.
     public static String wordSave = "Save", wordLoad = "Load";
+    public static String wordInvalidFileName = "Invalid or missing file name.";
     public static int sysCoreFontSize = 8;
 
     public static double getTime() {

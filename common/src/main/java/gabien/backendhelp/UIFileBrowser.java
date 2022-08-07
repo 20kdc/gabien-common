@@ -32,12 +32,13 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private UIElement lowerSectionContents;
     private int fontSize;
     private LinkedList<String> pathComponents;
-    private String strAccept, strTP;
+    private boolean saving;
+    private String strTP;
 
-    public UIFileBrowser(String actPath, IConsumer<String> r, String titlePrefix, String accept, int fSize, int scrollerSize) {
+    public UIFileBrowser(String actPath, IConsumer<String> r, String titlePrefix, boolean saving, int fSize, int scrollerSize) {
+        this.saving = saving;
         run = r;
         strTP = titlePrefix;
-        strAccept = accept;
         pathComponents = UIFileBrowser.createComponents(actPath);
         basicLayout = new UIScrollLayout(true, scrollerSize);
         upperSection = new UILabel("!", fSize);
@@ -112,6 +113,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
             lowerSectionContents = null;
 
         boolean showManualControl = true;
+        final String verb = saving ? GaBIEn.wordSave : GaBIEn.wordLoad;
         final String exact = getPath();
         upperSection.text = exact;
         String[] paths = GaBIEn.listEntries(exact);
@@ -171,7 +173,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
             if (!GaBIEn.dirExists(exact)) {
                 showManualControl = false;
                 // having a separate screen allows user to back out
-                basicLayout.panelsAdd(new UITextButton(strAccept + " " + exact, fontSize, new Runnable() {
+                basicLayout.panelsAdd(new UITextButton(verb + " " + exact, fontSize, new Runnable() {
                         @Override
                         public void run() {
                             if (!done) {
@@ -185,15 +187,24 @@ public class UIFileBrowser extends UIElement.UIProxy {
 
         if (showManualControl) {
             final UITextBox pathText = new UITextBox("", fontSize);
-            lowerSectionContents = new UISplitterLayout(pathText, new UITextButton(strAccept, fontSize, new Runnable() {
+            final UILabel statusLine = new UILabel("", fontSize);
+            UISplitterLayout mainLine = new UISplitterLayout(pathText, new UITextButton(verb, fontSize, new Runnable() {
                 @Override
                 public void run() {
+                    statusLine.text = "";
+                    String txt = pathText.text;
+                    // catch anything too obvious for better UX
+                    if (txt.equals(".") || txt.equals("..") || txt.contains("/") || txt.contains("\\") || txt.equals("")) {
+                        statusLine.text = GaBIEn.wordInvalidFileName;
+                        return;
+                    }
                     if (!done) {
                         done = true;
-                        run.accept(exact + "/" + pathText.text);
+                        run.accept(exact + "/" + txt);
                     }
                 }
             }), false, 1.0d);
+            lowerSectionContents = new UISplitterLayout(mainLine, statusLine, true, 0.5d);
             lowerSectionContents.forceToRecommended();
         }
         basicLayout.runLayoutLoop();
