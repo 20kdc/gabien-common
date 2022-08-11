@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Would be installed at ~/.m2/toolchains.xml -->
 <toolchains>
 	<toolchain>
 		<type>jdk</type>

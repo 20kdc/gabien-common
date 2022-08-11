@@ -12,6 +12,12 @@
 !uslx/src/
 !uslx/src/**
 
+!media
+!media/
+!media/src
+!media/src/
+!media/src/**
+
 !common
 !common/
 !common/src

@@ -5,7 +5,7 @@
  * You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
  */
 
-package gabien.uslx.audio;
+package gabien.media.audio;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -17,7 +17,8 @@ import java.nio.ByteOrder;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.uslx.append.*;
+import gabien.media.append.*;
+import gabien.uslx.append.XEDataInputStream;
 
 /**
  * Contains a streaming WAV reader and writer.
