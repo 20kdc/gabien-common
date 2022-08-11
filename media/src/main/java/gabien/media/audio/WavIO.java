@@ -17,8 +17,8 @@ import java.nio.ByteOrder;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.media.append.*;
-import gabien.uslx.append.XEDataInputStream;
+import gabien.media.*;
+import gabien.uslx.append.*;
 
 /**
  * Contains a streaming WAV reader and writer.
