@@ -10,25 +10,25 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Created on 6th August 2022.
+ * Created on 12th August 2022.
  */
-public final class ArrayIterable<T> implements Iterable<T> {
-    private final T[] source;
+public final class IntArrayIterable implements Iterable<Integer> {
+    private final int[] source;
 
-    public ArrayIterable(T[] array) {
+    public IntArrayIterable(int[] array) {
         source = array;
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return new ArrayIterator<T>(source);
+    public Iterator<Integer> iterator() {
+        return new ArrayIterator(source);
     }
 
-    public static final class ArrayIterator<T> implements Iterator<T> {
-        private final T[] source;
+    public static final class ArrayIterator implements Iterator<Integer> {
+        private final int[] source;
         private int index = 0;
 
-        public ArrayIterator(T[] src) {
+        public ArrayIterator(int[] src) {
             source = src;
         }
 
@@ -38,9 +38,9 @@ public final class ArrayIterable<T> implements Iterable<T> {
         }
 
         @Override
-        public T next() {
+        public Integer next() {
             if (index >= source.length)
-                throw new NoSuchElementException("Read off of end of ArrayIterable");
+                throw new NoSuchElementException("Read off of end of IntArrayIterable");
             return source[index++];
         }
     }
