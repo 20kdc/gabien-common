@@ -196,6 +196,13 @@ public class UITabPane extends UIElement.UIPanel {
         return -1;
     }
 
+    public double getScrollPoint() {
+        return tabManager.getScrollPoint();
+    }
+    public void setScrollPoint(double point) {
+        tabManager.setScrollPoint(point);
+    }
+
     public boolean getShortened() {
         return tabManager.shortTabs != -1;
     }

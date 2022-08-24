@@ -34,9 +34,11 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private LinkedList<String> pathComponents;
     private boolean saving;
     private String strTP;
+    private String defaultFileName;
 
-    public UIFileBrowser(String actPath, IConsumer<String> r, String titlePrefix, boolean saving, int fSize, int scrollerSize) {
+    public UIFileBrowser(String actPath, IConsumer<String> r, String titlePrefix, boolean saving, int fSize, int scrollerSize, String dfn) {
         this.saving = saving;
+        defaultFileName = dfn;
         run = r;
         strTP = titlePrefix;
         pathComponents = UIFileBrowser.createComponents(actPath);
@@ -186,7 +188,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
         }
 
         if (showManualControl) {
-            final UITextBox pathText = new UITextBox("", fontSize);
+            final UITextBox pathText = new UITextBox(defaultFileName, fontSize);
             final UILabel statusLine = new UILabel("", fontSize);
             UISplitterLayout mainLine = new UISplitterLayout(pathText, new UITextButton(verb, fontSize, new Runnable() {
                 @Override

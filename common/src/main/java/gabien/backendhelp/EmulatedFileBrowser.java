@@ -34,7 +34,7 @@ public class EmulatedFileBrowser extends PriorityElevatorForUseByBackendHelp imp
     }
 
     @Override
-    public void startFileBrowser(String text, boolean saving, String exts, IConsumer<String> result) {
+    public void startFileBrowser(String text, boolean saving, String exts, IConsumer<String> result, String initialName) {
         // Need to setup an environment for a file browser.
         final WindowCreatingUIElementConsumer wc = new WindowCreatingUIElementConsumer() {
             @Override
@@ -45,7 +45,7 @@ public class EmulatedFileBrowser extends PriorityElevatorForUseByBackendHelp imp
             }
         };
         // if this crashes, you're pretty doomed
-        UIFileBrowser fb = new UIFileBrowser(browserDirectory, result, text, saving, GaBIEn.sysCoreFontSize, GaBIEn.sysCoreFontSize);
+        UIFileBrowser fb = new UIFileBrowser(browserDirectory, result, text, saving, GaBIEn.sysCoreFontSize, GaBIEn.sysCoreFontSize, initialName);
         wc.accept(fb);
         final Runnable tick = new Runnable() {
             double lastTime = GaBIEn.getTime();

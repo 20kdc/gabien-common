@@ -232,6 +232,13 @@ public class UITabBar extends UIElement.UIPanel {
         return 0;
     }
 
+    public double getScrollPoint() {
+        return tabScroller.scrollPoint;
+    }
+    public void setScrollPoint(double point) {
+        tabScroller.scrollPoint = point;
+    }
+
     public void findReplacementTab() {
         if (canSelectNone) {
             parentView.selectTab(null);

@@ -245,7 +245,10 @@ public class GaBIEn {
     // Regarding the path, the only guarantee is that it'll be null or a valid file path.
     // It does not necessarily have to match the standard gabien path separator.
     public static void startFileBrowser(String s, boolean saving, String exts, IConsumer<String> iConsumer) {
-        internalFileBrowser.startFileBrowser(s, saving, exts, iConsumer);
+        internalFileBrowser.startFileBrowser(s, saving, exts, iConsumer, "");
+    }
+    public static void startFileBrowser(String s, boolean saving, String exts, IConsumer<String> iConsumer, String initialName) {
+        internalFileBrowser.startFileBrowser(s, saving, exts, iConsumer, initialName);
     }
 
     // invokeLater-alike for the gabien main thread.
