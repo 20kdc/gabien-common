@@ -182,6 +182,7 @@ public class UIWindowView extends UIElement {
 
     public static class TabShell extends UITabBar.Tab implements IShell {
         public final UIWindowView parent;
+        public boolean removed = false;
 
         public TabShell(UIWindowView p, UIElement contents, UITabBar.TabIcon[] icons) {
             super(contents, icons);
@@ -223,7 +224,8 @@ public class UIWindowView extends UIElement {
                         @Override
                         public void accept(Size size) {
                             Size cs = contents.getSize();
-                            contents.setForcedBounds(null, new Rect(size.width, size.height, cs.width, cs.height));
+                            if (!removed)
+                                contents.setForcedBounds(null, new Rect(size.width, size.height, cs.width, cs.height));
                             windowBoundsCheck();
                         }
                     });
@@ -283,7 +285,8 @@ public class UIWindowView extends UIElement {
                         } else if (tfy == 1) {
                             resH = size.height;
                         }
-                        contents.setForcedBounds(null, new Rect(resX, resY, resW, resH));
+                        if (!removed)
+                            contents.setForcedBounds(null, new Rect(resX, resY, resW, resH));
                     }
                 });
             }
@@ -338,6 +341,7 @@ public class UIWindowView extends UIElement {
 
         @Override
         public void removed(RemoveReason destroy) {
+            removed = true;
             contents.setAttachedToRoot(false);
             if (destroy != RemoveReason.Manual)
                 contents.onWindowClose();
