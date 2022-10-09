@@ -100,6 +100,7 @@ abstract class Main {
         }.start();
         GaBIEnImpl impl = new GaBIEnImpl(useMT);
         GaBIEn.internal = impl;
+        GaBIEn.clipboard = new ClipboardImpl();
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;

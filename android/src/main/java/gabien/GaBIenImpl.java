@@ -37,6 +37,7 @@ public final class GaBIenImpl implements IGaBIEn {
         FontManager.fontsReady = true;
         final GaBIenImpl impl = new GaBIenImpl();
     	GaBIEn.internal = impl;
+    	GaBIEn.clipboard = new ClipboardImpl();
     	GaBIEn.mutableDataFS = new JavaIOFSBackend() {
     	    @Override
     	    public File asFile(String fileName) {

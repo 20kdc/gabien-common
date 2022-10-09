@@ -7,13 +7,11 @@
 
 package gabien;
 
-import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
@@ -25,6 +23,7 @@ public class GaBIEn {
     protected static IGaBIEn internal;
     protected static IGaBIEnMultiWindow internalWindowing;
     protected static IGaBIEnFileBrowser internalFileBrowser;
+    public static IGaBIEnClipboard clipboard;
     public static FSBackend mutableDataFS;
     private static IImage errorImage;
     private static ReentrantLock callbackQueueLock = new ReentrantLock();

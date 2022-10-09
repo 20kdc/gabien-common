@@ -30,8 +30,10 @@ public interface IGaBIEn {
     // NOTE regarding the following two functions.
     // The raw API doesn't bother to do resource overlays - that's managed entirely in gabien-common.
 
-    // Gets a resource from the application binary.
-    // Failing that, returns null.
+    /**
+     * Gets a resource from the application binary.
+     * Failing that, returns null.
+     */
     InputStream getResource(String resource);
 
     IRawAudioDriver getRawAudio(); // This is a singleton, but may be created when used.
@@ -41,10 +43,12 @@ public interface IGaBIEn {
 
     IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha);
 
-    // Get an image.
-    // Notably, the image format supports ARGB.
-    // The colour-keying is just because it's simpler to make assets that way.
-    // 'res' should use GaBIEnImpl.getResource, otherwise GaBIEnImpl.getFile
+    /**
+     * Get an image.
+     * Notably, the image format supports ARGB.
+     * The colour-keying is just because it's simpler to make assets that way.
+     * 'res' should use GaBIEnImpl.getResource, otherwise GaBIEnImpl.getFile
+     */
     IImage getImage(String a, boolean res);
     // Get an image - and then cut out a given colour.
     IImage getImageCK(String a, boolean res, int r, int g, int b);
@@ -57,10 +61,12 @@ public interface IGaBIEn {
 
     int measureText(int i, String text);
 
-    // Gets font overrides UILabel can use.
-    // Note that IGrDriver is expected to honor UILabel font override if given.
-    // The first font override is the default font (if drawText is called on a driver without an override)
-    // Note that this implies at least one font will be listed.
+    /**
+     * Gets font overrides UILabel can use.
+     * Note that IGrDriver is expected to honor UILabel font override if given.
+     * The first font override is the default font (if drawText is called on a driver without an override)
+     * Note that this implies at least one font will be listed.
+     */
     String[] getFontOverrides();
 
     boolean tryStartTextEditor(String fpath);
