@@ -16,6 +16,7 @@ import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
 abstract class Main {
     private static boolean useMT = false;
+    private static boolean useDBG = false;
     private static boolean ignoreBlindingSun = false;
     /**
      * Use reflection to find and run the application.
@@ -30,6 +31,8 @@ abstract class Main {
                     tryForceOpenGL = true;
                 if (s.equalsIgnoreCase("mt"))
                     useMT = true;
+                if (s.equalsIgnoreCase("debug"))
+                    useDBG = true;
                 if (s.equalsIgnoreCase("iAmARobot"))
                     GaBIEnImpl.mobileEmulation = true;
                 if (s.equalsIgnoreCase("forceIgnoreDPI"))
@@ -98,7 +101,7 @@ abstract class Main {
                 FontManager.fontsReady = true;
             }
         }.start();
-        GaBIEnImpl impl = new GaBIEnImpl(useMT);
+        GaBIEnImpl impl = new GaBIEnImpl(useMT, useDBG);
         GaBIEn.internal = impl;
         GaBIEn.clipboard = new ClipboardImpl();
         GaBIEn.mutableDataFS = new JavaIOFSBackend();

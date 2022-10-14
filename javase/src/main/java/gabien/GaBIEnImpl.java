@@ -41,7 +41,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     protected static HashSet<GrInDriver> activeDrivers = new HashSet<GrInDriver>();
     protected static GraphicsDevice lastClosureDevice = null;
 
-    private final boolean useMultithread;
+    private final boolean useMultithread, useDebug;
 
     private long startup = System.currentTimeMillis();
 
@@ -51,8 +51,9 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     private String fbDirectory = ".";
 
-    public GaBIEnImpl(boolean useMT) {
+    public GaBIEnImpl(boolean useMT, boolean useD) {
         useMultithread = useMT;
+        useDebug = useD;
     }
 
     // Tries to work out a sensible device for fullscreen.
@@ -104,9 +105,15 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
             return new NullOsbDriver();
         if (h <= 0)
             return new NullOsbDriver();
-        if (useMultithread)
-            return new OsbDriverMT(w, h, alpha);
-        return new OsbDriverCore(w, h, alpha);
+        IWindowGrBackend oc;
+        if (useMultithread) {
+            oc = new OsbDriverMT(w, h, alpha);
+        } else {
+            oc = new OsbDriverCore(w, h, alpha);
+        }
+        if (useDebug)
+            oc = new OsbDriverDebugProxy(oc);
+        return oc;
     }
 
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs ws) {
