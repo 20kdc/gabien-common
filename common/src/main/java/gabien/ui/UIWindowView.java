@@ -194,13 +194,14 @@ public class UIWindowView extends UIElement {
         private void finishInit() {
             Rect r = contents.getParentRelativeBounds();
             Size g = parent.getSize();
-            int area = g.width - r.width;
-            if (area < 0)
-                area = 0;
-            int cX = new Random().nextInt(area + 1);
+            int areaX = g.width - r.width;
+            if (areaX < 0)
+                areaX = 0;
+            int cX = new Random().nextInt(areaX + 1);
             int tabShellNewAreaForgiveness = parent.windowTextHeight * 6;
             if ((g.height - tabShellNewAreaForgiveness) < r.height) {
-                contents.setForcedBounds(null, new Rect(cX, 0, r.width, r.height));
+                // out of room, start crunching
+                contents.setForcedBounds(null, new Rect(cX, 0, r.width, g.height - parent.getWindowFrameHeight()));
             } else {
                 contents.setForcedBounds(null, new Rect(cX, tabShellNewAreaForgiveness, r.width, r.height));
             }
