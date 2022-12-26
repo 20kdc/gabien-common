@@ -8,9 +8,6 @@
 package gabien;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-
-import gabien.uslx.vfs.FSBackend;
 
 /**
  * This instance should be the entry point to the program.

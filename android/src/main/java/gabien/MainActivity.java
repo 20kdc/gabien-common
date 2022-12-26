@@ -14,9 +14,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 
-import java.util.LinkedList;
-import java.util.concurrent.locks.ReentrantLock;
-
 public class MainActivity extends Activity {
 	public TextboxImplObject myTIO;
     public SurfaceView mySurface;

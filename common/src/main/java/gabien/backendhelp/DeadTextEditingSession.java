@@ -8,7 +8,6 @@
 package gabien.backendhelp;
 
 import gabien.ITextEditingSession;
-import gabien.uslx.append.IFunction;
 
 /**
  * Continuation of DeadDesktopPeripherals

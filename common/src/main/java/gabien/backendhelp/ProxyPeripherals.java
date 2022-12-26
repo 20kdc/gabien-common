@@ -15,7 +15,6 @@ import gabien.IPeripherals;
 import gabien.ITextEditingSession;
 import gabien.uslx.append.*;
 import gabien.ui.IPointer;
-import gabien.ui.Rect;
 
 /**
  * Created on 05/03/2020.

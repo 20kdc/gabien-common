@@ -148,6 +148,7 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
         }};
     }
 
+    @SuppressWarnings("unused")
     private void acquireImpl(Semaphore lA) {
         if (true) {
             // Always use this!!!

@@ -7,8 +7,6 @@
 
 package gabien.ui;
 
-import gabien.ui.UIPopupMenu.Entry;
-
 /**
  * Created on 13/08/17.
  */

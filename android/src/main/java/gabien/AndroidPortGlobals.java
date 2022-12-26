@@ -7,7 +7,6 @@
 
 package gabien;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.Context;

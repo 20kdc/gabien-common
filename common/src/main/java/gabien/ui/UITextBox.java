@@ -45,7 +45,6 @@ public class UITextBox extends UILabel {
             textCStr = text;
             textLastSeen = text;
         }
-        Size bounds = getSize();
         if (selected) {
             // ensure we have an editing session
             if (editingSession == null)

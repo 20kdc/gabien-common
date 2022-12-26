@@ -7,9 +7,6 @@
 
 package gabien.ui;
 
-import java.util.List;
-
-import gabien.IGrInDriver;
 import gabien.uslx.append.ArrayIterable;
 
 /**
@@ -17,6 +14,7 @@ import gabien.uslx.append.ArrayIterable;
  */
 public class UIPopupMenu extends UIElement.UIProxy {
     // Doesn't do anything right now.
+    @SuppressWarnings("unused")
     private boolean requestResize;
 
     /**

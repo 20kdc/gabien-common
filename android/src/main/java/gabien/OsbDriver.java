@@ -110,6 +110,7 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
         // Deprecated because of blahblahblahdensityblah.
         // Call the density? I AM THE DENSITY!... that makes no sense, I assume.
+        @SuppressWarnings("deprecation")
         BitmapDrawable bd = new BitmapDrawable((Bitmap) (((INativeImageHolder) cachedTile).getNative()));
         bd.setBounds(x, y, x + w, y + h);
         bd.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);

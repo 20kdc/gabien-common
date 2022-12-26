@@ -12,7 +12,6 @@ import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 
 import javax.swing.*;
-import javax.swing.text.JTextComponent;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -49,6 +48,7 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
 
     Random fuzzer = new Random();
 
+    @SuppressWarnings("serial")
     public GrInDriver(String name, WindowSpecs ws, IWindowGrBackend t) {
         super(t);
         sc = ws.scale;
@@ -343,8 +343,12 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         frame.setVisible(false);
     }
 
+    // This was a "feature" for mobile testing meant to emulate the unreliability of precision inputs on touch devices.
+    // Code is kept here in case it is for some reason required to resurrect it.
+    @SuppressWarnings("unused")
     private void fuzzXY() {
-        // Emulate difficulties positioning correctly with a touch interface
+        // Emulate difficulties positioning correctly with a touch interface.
+        // This would have presumably been called just after mouseX/mouseY were set.
         mouseX += fuzzer.nextInt(17) - 8;
         mouseY += fuzzer.nextInt(17) - 8;
     }

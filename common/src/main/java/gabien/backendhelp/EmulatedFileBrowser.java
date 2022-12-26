@@ -6,8 +6,6 @@
  */
 package gabien.backendhelp;
 
-import java.io.File;
-
 import gabien.GaBIEn;
 import gabien.IGaBIEnFileBrowser;
 import gabien.PriorityElevatorForUseByBackendHelp;

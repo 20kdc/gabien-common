@@ -15,7 +15,7 @@ import gabien.IPeripherals;
  * Now it's a superclass of UITextButton.
  * Unknown creation date.
  */
-public abstract class UIButton<ThisClass extends UIButton> extends UIBorderedElement {
+public abstract class UIButton<ThisClass extends UIButton<?>> extends UIBorderedElement {
     public Runnable onClick;
     public double pressedTime = 0;
     public boolean state = false;
@@ -25,6 +25,7 @@ public abstract class UIButton<ThisClass extends UIButton> extends UIBorderedEle
         super(0, bw);
     }
 
+    @SuppressWarnings("unchecked")
     public ThisClass togglable(boolean st) {
         state = st;
         toggle = true;

@@ -14,7 +14,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import gabien.IDesktopPeripherals;
 import gabien.ITextEditingSession;
 import gabien.ui.IPointer;
-import gabien.ui.Rect;
 import gabien.uslx.append.*;
 
 /**

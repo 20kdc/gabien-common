@@ -10,7 +10,6 @@ package gabien.ui;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.FontManager;
-import gabien.GaBIEn;
 import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.IPeripherals;

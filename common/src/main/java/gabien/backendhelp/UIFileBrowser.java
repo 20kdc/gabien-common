@@ -11,7 +11,6 @@ import gabien.GaBIEn;
 import gabien.ui.*;
 import gabien.uslx.append.*;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.LinkedList;
 

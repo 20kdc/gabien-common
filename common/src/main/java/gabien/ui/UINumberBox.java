@@ -7,7 +7,6 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
 import gabien.IPeripherals;
 import gabien.ITextEditingSession;
 import gabien.uslx.append.*;

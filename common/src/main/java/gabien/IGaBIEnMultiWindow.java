@@ -7,8 +7,6 @@
 
 package gabien;
 
-import gabien.uslx.append.*;
-
 /**
  * This represents a multi-window environment.
  * Created on 04/03/2020.

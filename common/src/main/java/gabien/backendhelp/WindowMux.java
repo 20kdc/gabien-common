@@ -7,7 +7,6 @@
 
 package gabien.backendhelp;
 
-import java.util.HashSet;
 import java.util.LinkedList;
 
 import gabien.GaBIEn;
@@ -18,7 +17,6 @@ import gabien.IGrInDriver;
 import gabien.IPeripherals;
 import gabien.PriorityElevatorForUseByBackendHelp;
 import gabien.WindowSpecs;
-import gabien.uslx.append.*;
 
 /**
  * This 'mux' provides the illusion of multi-window support using:
@@ -92,15 +90,17 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
     public class Window extends ProxyGrDriver<IGrDriver> implements IGrInDriver {
         public boolean running = true;
         public boolean bufferLossFlag = false;
-        public final ProxyPeripherals windowPeripherals;
+        public final ProxyPeripherals<IPeripherals> windowPeripherals;
         
+        @SuppressWarnings("unchecked")
         public Window(int w, int h) {
             super(ignorance);
             if (underlyingWindow.getPeripherals() instanceof IDesktopPeripherals) {
-                windowPeripherals = new ProxyDesktopPeripherals();
-                windowPeripherals.target = DeadDesktopPeripherals.INSTANCE;
+                ProxyDesktopPeripherals<IDesktopPeripherals> wp = new ProxyDesktopPeripherals<IDesktopPeripherals>();
+                wp.target = DeadDesktopPeripherals.INSTANCE;
+                windowPeripherals = (ProxyPeripherals<IPeripherals>) (ProxyDesktopPeripherals<?>) wp;
             } else {
-                windowPeripherals = new ProxyPeripherals();
+                windowPeripherals = new ProxyPeripherals<IPeripherals>();
                 windowPeripherals.target = DeadDesktopPeripherals.INSTANCE;
             }
         }

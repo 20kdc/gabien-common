@@ -12,16 +12,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
 import gabien.backendhelp.EmulatedFileBrowser;
-import gabien.backendhelp.UIFileBrowser;
 import gabien.backendhelp.WindowMux;
-import gabien.uslx.append.*;
 import gabien.uslx.vfs.impl.*;
-import gabien.ui.WindowCreatingUIElementConsumer;
 
 import java.io.*;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * The implementation of the runtime.

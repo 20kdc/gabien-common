@@ -7,8 +7,6 @@
 
 package gabien;
 
-import java.util.HashSet;
-
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
