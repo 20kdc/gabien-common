@@ -16,7 +16,6 @@ import gabien.text.NativeFont;
 import gabien.uslx.vfs.impl.*;
 
 import java.io.*;
-import java.util.HashMap;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -27,7 +26,6 @@ import org.eclipse.jdt.annotation.Nullable;
 public final class GaBIenImpl implements IGaBIEn {
     //In case you get confused.
     private long startup = System.currentTimeMillis();
-    public HashMap<String, IImage> ht = new HashMap<String, IImage>();
     private double lastdt = getTime();
     private RawAudioDriver rad;
 
@@ -64,11 +62,6 @@ public final class GaBIenImpl implements IGaBIEn {
     @Override
     public IImage createImage(int[] colours, int width, int height) {
         return new OsbDriver(width, height, colours);
-    }
-
-    @Override
-    public void hintFlushAllTheCaches() {
-        ht.clear();
     }
 
     @Override
@@ -111,43 +104,19 @@ public final class GaBIenImpl implements IGaBIEn {
         return new OsbDriver(w, h, alpha);
     }
 
-    private IImage getImageInternal(String a, boolean res, String id, boolean ck, int i) {
-        if (ht.containsKey(id))
-            return ht.get(id);
-        IImage r = GaBIEn.getErrorImage();
+    @Override
+    public IImage getImage(String a, boolean res) {
         try {
             Bitmap b = BitmapFactory.decodeStream(res ? getResource(a) : GaBIEn.getInFile(a));
             int w = b.getWidth();
             int h = b.getHeight();
             int[] data = new int[w * h];
             b.getPixels(data, 0, w, 0, 0, w, h);
-            if (ck)
-                for (int j = 0; j < data.length; j++)
-                    if ((data[j] & 0xFFFFFF) == i) {
-                        data[j] = 0;
-                    } else {
-                        data[j] |= 0xFF000000;
-                    }
-            r = new OsbDriver(w, h, data);
+            return new OsbDriver(w, h, data);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        ht.put(id, r);
-        return r;
-    }
-
-
-    @Override
-    public IImage getImage(String a, boolean res) {
-        return getImageInternal(a, res, (res ? 'R' : 'F') + "~" + a, false, -1);
-    }
-
-    @Override
-    public IImage getImageCK(String a, boolean res, int r, int g, int b) {
-        r &= 0xFF;
-        g &= 0xFF;
-        b &= 0xFF;
-        return getImageInternal(a, res, (res ? 'R' : 'F') + "X" + r + " " + g + " " + b + "~" + a, true, (r << 16) | (g << 8) | b);
+        return null;
     }
 
     public boolean singleWindowApp() {

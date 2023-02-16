@@ -19,7 +19,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -40,8 +39,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     // For testing only!
     public static boolean fontsAlwaysMeasure16;
-
-    private HashMap<String, IImage> loadedImages = new HashMap<String, IImage>();
 
     protected static ReentrantLock activeDriverLock = new ReentrantLock();
     protected static HashSet<GrInDriver> activeDrivers = new HashSet<GrInDriver>();
@@ -169,50 +166,14 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     @Override
     public IImage getImage(String a, boolean res) {
-        String ki = a + "_N_N_N" + (res ? 'R' : 'F');
-        if (loadedImages.containsKey(ki))
-            return loadedImages.get(ki);
         try {
             AWTImage img = new AWTImage();
             img.buf = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
             if (img.buf == null)
                 throw new NullPointerException();
-            loadedImages.put(ki, img);
             return img;
         } catch (Exception ex) {
-            System.err.println("Couldn't get:" + ki);
-            IImage img = GaBIEn.getErrorImage();
-            loadedImages.put(ki, img);
-            return img;
-        }
-    }
-    @Override
-    public IImage getImageCK(String a, boolean res, int tr, int tg, int tb) {
-        String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
-        if (loadedImages.containsKey(ki))
-            return loadedImages.get(ki);
-        try {
-            AWTImage img = new AWTImage();
-            BufferedImage tmp;
-            tmp = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
-            img.buf = new BufferedImage(tmp.getWidth(), tmp.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            for (int px = 0; px < tmp.getWidth(); px++) {
-                for (int py = 0; py < tmp.getHeight(); py++) {
-                    int c = tmp.getRGB(px, py);
-                    if ((c & 0xFFFFFF) != (tb | (tg << 8) | (tr << 16))) {
-                        img.buf.setRGB(px, py, c | 0xFF000000);
-                    } else {
-                        img.buf.setRGB(px, py, 0);
-                    }
-                }
-            }
-            loadedImages.put(ki, img);
-            return img;
-        } catch (Exception ex) {
-            System.err.println("Couldn't get:" + ki);
-            IImage img = GaBIEn.getErrorImage();
-            loadedImages.put(ki, img);
-            return img;
+            return null;
         }
     }
 
@@ -226,11 +187,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         ia.buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         ia.buf.setRGB(0, 0, width, height, colours, 0, width);
         return ia;
-    }
-
-    @Override
-    public void hintFlushAllTheCaches() {
-        loadedImages.clear();
     }
 
     public static String getDefaultFont() {

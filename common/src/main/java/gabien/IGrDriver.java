@@ -41,17 +41,6 @@ public interface IGrDriver extends IImage {
     // But it will work, and it means I avoid having to include Unifont.
 
     /**
-     * Draws text in the given colour and size.
-     * Uses FontManager.fontOverride to determine font.
-     * <i>Deprecated. Use the explicit font version and FontManager.fontOverride directly instead.</i>
-     * If you're using drawText at all, you probably knew what you were getting into. 󱥄󱥜󱥫󱤬󱥍󱥞󱤧󱥔.
-     */
-    @Deprecated
-    default void drawText(int x, int y, int r, int g, int b, int size, @NonNull String text) {
-        drawText(x, y, r, g, b, text.toCharArray(), 0, text.length(), GaBIEn.getNativeFontFallback(size, FontManager.fontOverride));
-    }
-
-    /**
      * Draws text in the given colour and native font.
      * This is a semi-internal API, being how a NativeFont gets into the driver, but isn't particularly dangerous.
      * HOWEVER, don't change the contents of the text character array!!!

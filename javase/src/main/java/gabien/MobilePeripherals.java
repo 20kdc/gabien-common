@@ -8,6 +8,7 @@
 package gabien;
 
 import gabien.uslx.append.*;
+import gabien.text.IFixedSizeFont;
 import gabien.ui.IPointer;
 
 import java.util.HashSet;
@@ -27,9 +28,11 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
     private int offsetX, offsetY, activePointer;
     private LinkedList<DummyPointer> dummies = new LinkedList<DummyPointer>();
     private DummyPointer mousePointer;
+    private IFixedSizeFont font;
 
     public MobilePeripherals(GrInDriver grInDriver) {
         parent = grInDriver;
+        font = GaBIEn.getNativeFontFallback(16, null);
     }
 
     public void mobilePeripheralsFinishFrame() {
@@ -80,9 +83,9 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
         }
         // This is called by GrInDriver because MobilePeripherals do special things.
         String status = "Pointer " + (activePointer + 1) + " of " + dummies.size();
-        int statusLen = GaBIEn.measureText(16, status);
+        int statusLen = font.measureLine(status);
         parent.clearRect(0, 0, 0, 0, 0, statusLen, 16);
-        parent.drawText(0, 0, 255, 255, 255, 16, status);
+        font.drawLine(parent, 0, 0, status, false);
     }
 
     @Override

@@ -46,20 +46,17 @@ public interface IGaBIEn {
     IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha);
 
     /**
-     * Get an image.
+     * Get an image. The GaBIEn version of this method is cached.
      * Notably, the image format supports ARGB.
      * The colour-keying is just because it's simpler to make assets that way.
      * 'res' should use GaBIEnImpl.getResource, otherwise GaBIEnImpl.getFile
+     * On error, this version of the function should return null.
      */
     IImage getImage(String a, boolean res);
-    // Get an image - and then cut out a given colour.
-    IImage getImageCK(String a, boolean res, int r, int g, int b);
 
     // Make an image from a buffer.
     // Note that the colours are 0xAARRGGBB.
     IImage createImage(int[] colours, int width, int height);
-
-    void hintFlushAllTheCaches();
 
     /**
      * Gets font overrides UILabel can use.
@@ -71,11 +68,13 @@ public interface IGaBIEn {
 
     /**
      * Returns a native font by size and name, unless it does not exist (in which case returns null).
+     * The GaBIEn version of this method is partially cached.
      */
     @Nullable NativeFont getNativeFont(int size, @NonNull String name);
 
     /**
      * Returns the default/fallback native font.
+     * The GaBIEn version of this method is partially cached.
      */
     @NonNull NativeFont getDefaultNativeFont(int size);
 

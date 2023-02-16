@@ -32,6 +32,7 @@ public class GaBIEn {
     private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
     private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
     private static NativeFontCache nativeFontCache = new NativeFontCache();
+    private static ImageCache imageCache = new ImageCache();
 
     // Additional resource load locations.
     public static String[] appPrefixes = new String[0];
@@ -126,34 +127,34 @@ public class GaBIEn {
 
     public static IImage getImageEx(String a, boolean fs, boolean res) {
         if (fs) {
-            IImage r = internal.getImage(a, false);
+            IImage r = imageCache.getImage(a, false);
             if (r != getErrorImage())
                 return r;
         }
         if (res) {
             for (String s : appPrefixes) {
-                IImage r = internal.getImage(s + a, false);
+                IImage r = imageCache.getImage(s + a, false);
                 if (r != getErrorImage())
                     return r;
             }
-            return internal.getImage(a, true);
+            return imageCache.getImage(a, true);
         }
         return getErrorImage();
     }
 
     public static IImage getImageCKEx(String a, boolean fs, boolean res, int r, int g, int b) {
         if (fs) {
-            IImage ri = internal.getImageCK(a, false, r, g, b);
+            IImage ri = imageCache.getImageCK(a, false, r, g, b);
             if (ri != getErrorImage())
                 return ri;
         }
         if (res) {
             for (String s : appPrefixes) {
-                IImage ri = internal.getImageCK(s + a, false, r, g, b);
+                IImage ri = imageCache.getImageCK(s + a, false, r, g, b);
                 if (ri != getErrorImage())
                     return ri;
             }
-            return internal.getImageCK(a, true, r, g, b);
+            return imageCache.getImageCK(a, true, r, g, b);
         }
         return getErrorImage();
     }
@@ -178,7 +179,7 @@ public class GaBIEn {
     }
 
     public static void hintFlushAllTheCaches() {
-        internal.hintFlushAllTheCaches();
+        imageCache.hintFlushAllTheCaches();
     }
 
     /**
@@ -340,5 +341,12 @@ public class GaBIEn {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
+     */
+    static void setupAssets() {
+        FontManager.setupFonts();
     }
 }

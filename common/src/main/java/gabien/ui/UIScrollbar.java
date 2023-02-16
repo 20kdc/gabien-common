@@ -13,6 +13,7 @@ import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.IPeripherals;
+import gabien.text.SimpleImageGridFont;
 
 /**
  * Replacement for UIVScrollbar in gabien-app-r48.
@@ -124,7 +125,8 @@ public class UIScrollbar extends UIElement {
     public void drawNPB(IGrDriver igd, double timer, Rect box, int bump) {
         boolean down = timer > 0;
         int borderId = down ? 1 : 0;
-        IImage font = FontManager.getInternalFontImageFor(8, UIBorderedElement.getBlackTextFlag(borderId));
+        SimpleImageGridFont fontF = (SimpleImageGridFont) FontManager.getInternalFontFor(8);
+        IImage font = UIBorderedElement.getBlackTextFlag(borderId) ? fontF.fontBlack : fontF.fontWhite;
         int iconSize = 7;
         int maxIconSize = Math.min(box.width, box.height) - (carriageBorder * 2);
         int iconSizeScale = maxIconSize / iconSize;

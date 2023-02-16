@@ -6,10 +6,57 @@
  */
 package gabien.text;
 
+import org.eclipse.jdt.annotation.NonNull;
+
+import gabien.GaBIEn;
+import gabien.IGrDriver;
+import gabien.IImage;
+
 /**
  * Implementation of a simple image-grid font.
  * This is intended to be high-performance blitting, so this does as little fancy stuff as possible.
  * Created 16th February 2023.
  */
-public class SimpleImageGridFont {
+public class SimpleImageGridFont implements IFixedSizeFont {
+    public final IImage fontWhite, fontBlack;
+    public final int charWidth, charHeight, charsPerRow, advance, size;
+
+    public SimpleImageGridFont(IImage base, int charWidth, int charHeight, int charsPerRow, int advance, int size) {
+        fontWhite = base;
+        int[] px = base.getPixels();
+        for (int i = 0; i < px.length; i++)
+            px[i] &= 0xFF000000;
+        fontBlack = GaBIEn.createImage(px, base.getWidth(), base.getHeight());
+        this.charWidth = charWidth;
+        this.charHeight = charHeight;
+        this.charsPerRow = charsPerRow;
+        this.advance = advance;
+        this.size = size;
+    }
+
+    @Override
+    public int getSize() {
+        return size;
+    }
+
+    @Override
+    public int measureLine(@NonNull char[] text, int index, int length) {
+        if (length == 0)
+            return 0;
+        return ((length - 1) * advance) + charWidth;
+    }
+
+    @Override
+    public void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
+        IImage font = textBlack ? fontBlack : fontWhite;
+        for (int p = 0; p < length; p++) {
+            int cc = text[index + p];
+            if (cc < 256) {
+                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+            } else {
+                igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+            }
+            x += advance;
+        }
+    }
 }

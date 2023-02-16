@@ -7,6 +7,8 @@
 
 package gabien;
 
+import gabien.text.IFixedSizeFont;
+import gabien.text.SimpleImageGridFont;
 import gabien.ui.Size;
 
 import java.util.WeakHashMap;
@@ -22,57 +24,36 @@ public class FontManager {
     public static boolean fontOverrideUE8;
     public static boolean fontsReady;
 
-    private static IImage internalFont6, internalFont6B;
-    private static IImage internalFont8, internalFont8B;
-    private static IImage internalFont16, internalFont16B;
+    private static SimpleImageGridFont internalFont6;
+    private static SimpleImageGridFont internalFont8;
+    private static SimpleImageGridFont internalFont16;
 
     private static ReentrantLock formatLock = new ReentrantLock();
     // Key format is a weird mess, check the relevant function
     private static WeakHashMap<String, String> formatData = new WeakHashMap<String, String>();
 
-    /**
-     * Returns an internal font sheet. 
-     * @param height The target font height (pixels per line).
-     * @param textBlack If the font should be inverted.
-     * @return A 128-character image covering ASCII (with some codepage 437)
-     */
-    public static IImage getInternalFontImageFor(int height, boolean textBlack) {
-        if (height >= 16) {
-            if (internalFont16 == null)
-                internalFont16 = GaBIEn.getImageCKEx("font2x.png", false, true, 0, 0, 0);
-            if (textBlack) {
-                if (internalFont16B == null)
-                    internalFont16B = processInvertText(internalFont16);
-                return internalFont16B;
-            }
-            return internalFont16;
-        } else if (height >= 8) {
-            if (internalFont8 == null)
-                internalFont8 = GaBIEn.getImageCKEx("font.png", false, true, 0, 0, 0);
-            if (textBlack) {
-                if (internalFont8B == null)
-                    internalFont8B = processInvertText(internalFont8);
-                return internalFont8B;
-            }
-            return internalFont8;
-        } else {
-            if (internalFont6 == null)
-                internalFont6 = GaBIEn.getImageCKEx("fonttiny.png", false, true, 0, 0, 0);
-            if (textBlack) {
-                if (internalFont6B == null)
-                    internalFont6B = processInvertText(internalFont6);
-                return internalFont6B;
-            }
-            return internalFont6;
-        }
+    static void setupFonts() {
+        IImage f16 = GaBIEn.getImageCKEx("font2x.png", false, true, 0, 0, 0);
+        IImage f8 = GaBIEn.getImageCKEx("font.png", false, true, 0, 0, 0);
+        IImage f6 = GaBIEn.getImageCKEx("fonttiny.png", false, true, 0, 0, 0);
+        internalFont16 = new SimpleImageGridFont(f16, 7, 14, 16, 8, 16);
+        internalFont8 = new SimpleImageGridFont(f8, 7, 14, 16, 8, 8);
+        internalFont6 = new SimpleImageGridFont(f6, 3, 14, 16, 4, 6);
     }
 
-    private static IImage processInvertText(IImage internalFont16) {
-        int[] px = internalFont16.getPixels();
-        for (int i = 0; i < px.length; i++) {
-            px[i] &= 0xFF000000;
+    /**
+     * Returns an internal font.
+     * @param height The target font height (pixels per line).
+     * @return An internal font with a 128-character image covering ASCII (with some codepage 437)
+     */
+    public static IFixedSizeFont getInternalFontFor(int height) {
+        if (height >= 16) {
+            return internalFont16;
+        } else if (height >= 8) {
+            return internalFont8;
+        } else {
+            return internalFont6;
         }
-        return GaBIEn.createImage(px, internalFont16.getWidth(), internalFont16.getHeight());
     }
 
     private static boolean useSystemFont(String text, int height) {
@@ -96,9 +77,14 @@ public class FontManager {
         return false;
     }
 
+    private static IFixedSizeFont getFontForText(String text, int height) {
+        if (useSystemFont(text, height))
+            return GaBIEn.getNativeFont(height, fontOverride, true);
+        return getInternalFontFor(height);
+    }
+
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
         int cc = textBlack ? 255 : 0;
-        int cf = textBlack ? 0 : 255;
         if (!noBackground) {
             int lIdx;
             String workingText = text + '\n';
@@ -109,37 +95,20 @@ public class FontManager {
                 toy += height;
             }
         }
-        if (useSystemFont(text, height)) {
-            int lIdx;
-            while ((lIdx = text.indexOf('\n')) != -1) {
-                igd.drawText(xptr, oy, cf, cf, cf, height, text.substring(0, lIdx));
-                text = text.substring(lIdx + 1);
+        IFixedSizeFont font = getFontForText(text, height);
+        char[] textArray = text.toCharArray();
+        int textStart = 0;
+        int textPtr = 0;
+        while (true) {
+            if (textPtr == textArray.length || textArray[textPtr] == '\n') {
+                // draw segment (or final segment)
+                font.drawLine(igd, xptr, oy, textArray, textStart, textPtr - textStart, textBlack);
                 oy += height;
+                if (textPtr == textArray.length)
+                    break;
+                textStart = textPtr + 1;
             }
-            igd.drawText(xptr, oy, cf, cf, cf, height, text);
-            return;
-        }
-        byte[] ascii = text.getBytes();
-        IImage font = getInternalFontImageFor(height, textBlack);
-        int hchSize = font.getWidth() / 16;
-        int vchSize = font.getHeight() / 8;
-        int oldXPtr = xptr;
-        for (int p = 0; p < ascii.length; p++) {
-            if (ascii[p] == 10) {
-                xptr = oldXPtr;
-                oy += height;
-            } else {
-                drawChar(igd, ascii[p], font, xptr, oy, hchSize, vchSize);
-                xptr += hchSize + 1;
-            }
-        }
-    }
-
-    private static void drawChar(IGrDriver igd, int cc, IImage font, int xptr, int yptr, int hchSize, int vchSize) {
-        if (cc < 256) {
-            igd.blitImage((cc & 0x0F) * hchSize, ((cc & 0xF0) >> 4) * vchSize, hchSize, vchSize, xptr, yptr, font);
-        } else {
-            igd.blitImage(0, 0, hchSize, vchSize, xptr, yptr, font);
+            textPtr++;
         }
     }
 
@@ -165,15 +134,7 @@ public class FontManager {
     }
 
     public static int getLineLength(String text, int height) {
-        if (useSystemFont(text, height))
-            return GaBIEn.measureText(height, text);
-        if (height < 8) {
-            // will use fonttiny in this case
-            return text.length() * 4;
-        }
-        if (text.length() > 0)
-            return (text.length() * 8) - 1;
-        return 0;
+        return getFontForText(text, height).measureLine(text);
     }
 
     public static String formatTextFor(String text, int textHeight, int width) {
