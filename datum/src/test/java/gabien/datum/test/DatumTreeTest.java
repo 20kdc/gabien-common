@@ -14,12 +14,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
-import gabien.datum.DatumSymbol;
-import gabien.datum.DatumTreeVisitor;
+import gabien.datum.*;
 
 /**
  * Test encoding/decoding datum trees.
- * Created 15th February 2022.
+ * Created 15th February 2023.
  */
 public class DatumTreeTest {
 
@@ -36,7 +35,7 @@ public class DatumTreeTest {
         );
         // Test that the tree was visited and that it faithfully reproduces contents
         AtomicBoolean signalWasVisited = new AtomicBoolean();
-        DatumTreeVisitor visitor = new DatumTreeVisitor() {
+        DatumDecodingVisitor visitor = new DatumDecodingVisitor() {
             @Override
             public void visitTree(Object obj) {
                 assertEquals(input, obj);
@@ -47,10 +46,10 @@ public class DatumTreeTest {
             public void visitEnd() {
             }
         };
-        visitor.visitTreeManually(input);
+        new DatumEncodingProxyVisitor(visitor).visitTree(input);
         assertTrue(signalWasVisited.get());
         // Test conversion of arrays
-        DatumTreeVisitor testOfCorrectFunctionVisitor = new DatumTreeVisitor() {
+        visitor = new DatumDecodingVisitor() {
             @Override
             public void visitTree(Object obj) {
                 assertEquals(Arrays.asList("A", "B", "C"), obj);
@@ -62,7 +61,7 @@ public class DatumTreeTest {
             }
         };
         signalWasVisited.set(false);
-        testOfCorrectFunctionVisitor.visitTreeManually(new String[] {"A", "B", "C"});
+        new DatumEncodingProxyVisitor(visitor).visitTree(new String[] {"A", "B", "C"});
         assertTrue(signalWasVisited.get());
     }
 

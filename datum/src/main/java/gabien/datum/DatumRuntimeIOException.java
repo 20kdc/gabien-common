@@ -10,7 +10,7 @@ import java.io.IOException;
 
 /**
  * Wraps an IOException as a RuntimeException in a catchable way.
- * Created 16th February 2022.
+ * Created 16th February 2023.
  */
 @SuppressWarnings("serial")
 public class DatumRuntimeIOException extends RuntimeException {

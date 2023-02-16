@@ -8,7 +8,7 @@ package gabien.datum;
 
 /**
  * Utilities to identify characters.
- * Created 15th February 2022.
+ * Created 15th February 2023.
  */
 public class DatumCharacters {
     public static boolean isNumericStart(char c) {

@@ -11,8 +11,9 @@ import java.io.Reader;
 
 /**
  * DatumTokenStream based on Reader.
+ * Created February 16th, 2023.
  */
-public class DatumReaderStream extends DatumTokenStream {
+public class DatumReaderTokenSource extends DatumTokenSource {
     private Reader reader;
     private String tokenContents;
     private DatumTokenType tokenType;
@@ -22,7 +23,7 @@ public class DatumReaderStream extends DatumTokenStream {
     public int lineNumber = 1;
     public int tokenLineNumber = 1;
 
-    public DatumReaderStream(Reader r) {
+    public DatumReaderTokenSource(Reader r) {
         reader = r;
     }
 
@@ -133,7 +134,8 @@ public class DatumReaderStream extends DatumTokenStream {
             tokenContents = sb.toString();
             return true;
         } else {
-            boolean numeric = DatumCharacters.isNumericStart(decChar);
+            boolean numeric = lastCharWasDirect && DatumCharacters.isNumericStart(decChar);
+            boolean specialID = lastCharWasDirect && (decChar == '#');
             StringBuilder sb = new StringBuilder();
             // ensure initial character exists!
             sb.append(decChar);
@@ -149,7 +151,11 @@ public class DatumReaderStream extends DatumTokenStream {
                 }
                 sb.append(decChar);
             }
-            tokenType = numeric ? DatumTokenType.Numeric : DatumTokenType.ID;
+            tokenType = DatumTokenType.ID;
+            if (numeric)
+                tokenType = DatumTokenType.Numeric;
+            if (specialID)
+                tokenType = DatumTokenType.SpecialID;
             tokenContents = sb.toString();
             return true;
         }

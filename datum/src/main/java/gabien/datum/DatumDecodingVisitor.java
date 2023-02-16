@@ -10,10 +10,10 @@ import java.util.LinkedList;
 
 /**
  * Turns a visitor on its head so that it outputs objects.
- * Created 15th February 2022.
+ * Created 15th February 2023.
  */
-public abstract class DatumTreeVisitor extends DatumVisitor {
-    public DatumTreeVisitor() {
+public abstract class DatumDecodingVisitor extends DatumVisitor {
+    public DatumDecodingVisitor() {
         
     }
 
@@ -35,6 +35,16 @@ public abstract class DatumTreeVisitor extends DatumVisitor {
     }
 
     @Override
+    public void visitSpecialUnknown(String s) {
+        throw new RuntimeException("Special ID can't be parsed: " + s);
+    }
+
+    @Override
+    public void visitBoolean(boolean value) {
+        visitTree(value);
+    }
+
+    @Override
     public void visitInt(long value, String raw) {
         visitTree(value);
     }
@@ -47,8 +57,8 @@ public abstract class DatumTreeVisitor extends DatumVisitor {
     @Override
     public DatumVisitor visitList() {
         final LinkedList<Object> buildingList = new LinkedList<>();
-        final DatumTreeVisitor me = this;
-        return new DatumTreeVisitor() {
+        final DatumDecodingVisitor me = this;
+        return new DatumDecodingVisitor() {
             @Override
             public void visitTree(Object obj) {
                 buildingList.add(obj);

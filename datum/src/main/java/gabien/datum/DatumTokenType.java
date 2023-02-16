@@ -8,11 +8,12 @@ package gabien.datum;
 
 /**
  * All the token types.
- * Created 16th February 2022.
+ * Created 16th February 2023.
  */
 public enum DatumTokenType {
     String,
     ID,
+    SpecialID,
     Numeric,
     Quote,
     ListStart,

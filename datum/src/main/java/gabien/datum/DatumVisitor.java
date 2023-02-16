@@ -6,12 +6,9 @@
  */
 package gabien.datum;
 
-import java.lang.reflect.Array;
-import java.util.List;
-
 /**
  * Mechanism for receiving Datums.
- * Created 15th February 2022.
+ * Created 15th February 2023.
  */
 public abstract class DatumVisitor {
     // Atoms
@@ -30,6 +27,16 @@ public abstract class DatumVisitor {
      * Called to visit an undecodable numeric value.
      */
     public abstract void visitNumericUnknown(String s);
+
+    /**
+     * Called to visit an undecodable special identifier.
+     */
+    public abstract void visitSpecialUnknown(String s);
+
+    /**
+     * Called to visit a boolean.
+     */
+    public abstract void visitBoolean(boolean value);
 
     /**
      * Called to visit an integer.
@@ -72,41 +79,8 @@ public abstract class DatumVisitor {
     // Utilties
 
     /**
-     * This is distinct from visitTree for testing reasons.
-     * Besides, it's unlikely a meaningful benefit could be gotten in real code from reusing the Object values.
-     * (That would require code passing Datums to other code via DatumVisitor, without going via a write/read cycle. Only testing does this.)
+     * Either DatumDecodingVisitor implements this, or DatumEncodingVisitor implements everything else.
+     * Which you choose depends on which API you want.
      */
-    @SuppressWarnings("unchecked")
-    public final void visitTreeManually(Object obj) {
-        if (obj instanceof String) {
-            visitString((String) obj);
-        } else if (obj instanceof DatumSymbol) {
-            visitId(((DatumSymbol) obj).id);
-        } else if (obj instanceof Byte) {
-            visitInt((byte) (Byte) obj, obj.toString());
-        } else if (obj instanceof Short) {
-            visitInt((short) (Short) obj, obj.toString());
-        } else if (obj instanceof Integer) {
-            visitInt((int) (Integer) obj, obj.toString());
-        } else if (obj instanceof Long) {
-            visitInt((long) (Long) obj, obj.toString());
-        } else if (obj instanceof Double) {
-            visitFloat((double) (Double) obj, obj.toString());
-        } else if (obj instanceof Float) {
-            visitFloat((float) (Float) obj, obj.toString());
-        } else if (obj instanceof List) {
-            DatumVisitor sub = visitList();
-            for (Object elm : (List<Object>) obj)
-                sub.visitTreeManually(elm);
-            sub.visitEnd();
-        } else if (obj.getClass().isArray()) {
-            DatumVisitor sub = visitList();
-            int len = Array.getLength(obj);
-            for (int i = 0; i < len; i++)
-                sub.visitTreeManually(Array.get(obj, i));
-            sub.visitEnd();
-        } else {
-            throw new RuntimeException("Cannot handle visiting datum " + obj);
-        }
-    }
+    public abstract void visitTree(Object obj);
 }

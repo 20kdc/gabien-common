@@ -11,9 +11,9 @@ import java.io.Writer;
 
 /**
  * Writes out a Datum (or a stream of them) to a Writer.
- * Created 15th February 2022.
+ * Created 15th February 2023.
  */
-public class DatumWriter extends DatumVisitor {
+public class DatumWriter extends DatumEncodingVisitor {
     protected final Writer base;
     protected boolean needSpacing = false;
 
@@ -60,6 +60,7 @@ public class DatumWriter extends DatumVisitor {
     }
 
     public void visitComment(String comment) {
+        emitSpacingIfNeeded();
         putChar(';');
         putStringContent(comment, '\n');
         putChar('\n');
@@ -76,13 +77,20 @@ public class DatumWriter extends DatumVisitor {
 
     @Override
     public void visitId(String s) {
-        if (s.length() == 0)
-            throw new RuntimeException("Cannot write an empty ID.");
         emitSpacingIfNeeded();
+        if (s.length() == 0) {
+            // Emit #{}# to work around this
+            putChar('#');
+            putChar('{');
+            putChar('}');
+            putChar('#');
+            needSpacing = true;
+            return;
+        }
         boolean isFirst = true;
         for (char c : s.toCharArray()) {
-            // stop numeric start from being first!
-            if (isFirst && DatumCharacters.isNumericStart(c)) {
+            // stop numeric or special start from being first!
+            if (isFirst && (DatumCharacters.isNumericStart(c) || c == '#')) {
                 putChar('\\');
                 putChar(c);
             } else {
@@ -96,14 +104,32 @@ public class DatumWriter extends DatumVisitor {
     @Override
     public void visitNumericUnknown(String s) {
         if (s.length() == 0)
-            throw new RuntimeException("Cannot write an empty numeric unknown.");
+            throw new RuntimeException("Cannot write an empty numeric.");
         if (!DatumCharacters.isNumericStart(s.charAt(0)))
-            throw new RuntimeException("Cannot write a numeric unknown with '" + s.charAt(0) + "' at the start.");
+            throw new RuntimeException("Cannot write a numeric with '" + s.charAt(0) + "' at the start.");
         emitSpacingIfNeeded();
         // Write directly as content
         for (char c : s.toCharArray())
             putCharContent(c);
         needSpacing = true;
+    }
+
+    @Override
+    public void visitSpecialUnknown(String s) {
+        if (s.length() == 0)
+            throw new RuntimeException("Cannot write an empty special identifier.");
+        if (s.charAt(0) != '#')
+            throw new RuntimeException("Cannot write a special identifier with '" + s.charAt(0) + "' at the start.");
+        emitSpacingIfNeeded();
+        // Write directly as content
+        for (char c : s.toCharArray())
+            putCharContent(c);
+        needSpacing = true;
+    }
+
+    @Override
+    public void visitBoolean(boolean value) {
+        visitSpecialUnknown(value ? "#t" : "#f");
     }
 
     @Override

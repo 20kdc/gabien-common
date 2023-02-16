@@ -2,9 +2,11 @@
 
 "Datum" (working name) is an S-expression format meant for quick implementation in various languages.
 
+It's intended to be reasonably readable by R6RS readers, but not a strict subset (see reasoning below).
+
 Datum decoding is described as a series of layers that starts with a byte stream. *However, if it is actually operating on a byte stream is left ambiguous.*
 
-Therefore, "characters" may here refer to *bytes*, *Unicode codepoints*, or *UTF-16 elements*, and the specification is designed such that it is behaviourally identical regardless of which of these is chosen as the underlying representation.
+Therefore, "characters" may here refer to *bytes*, *Unicode codepoints*, or *UTF-16 elements*, and the specification is designed such that it is behaviourally identical regardless of which of these is chosen as the underlying representation for both input and output.
 
 All references to numeric character values in this specification are unsigned. All references to specific characters are either as per ASCII or UTF-8.
 
@@ -21,6 +23,20 @@ The specification will never require UTF-8 to be decoded, but UTF-8 may need to 
 - GCC, Python and Java do consider the *private use areas* as invalid, for some unknown reason. (This rather defeats the purpose of the private use area.)
 
 - ICU soversioning is a complete disaster.
+
+## Data Model
+
+The following kinds of values exist:
+
+1. Symbols are arbitrary lists of characters (even empty lists).
+
+2. Strings are arbitrary lists of characters (even empty lists).
+
+3. The range and format of valid numbers is implementation-defined, with specific notes. What you're allowed to do here is restrained by Potential Identifier Differentiation, but the specific notes cover doubles and 64-bit integers.
+
+4. The valid Special Identifiers and their meanings are implementation-defined, with specific notes. What you're allowed to do here is restrained by Potential Identifier Differentiation, but the specific notes cover 64-bit integers.
+
+5. Lists can have any number of, or no, elements.
 
 ## Encoding
 
@@ -40,9 +56,11 @@ The backslash may be followed by any character, in which case the result is that
 
 This provides the fundamental escaping logic for the rest of Datum.
 
-All *indirect* (that is, not *direct*) characters should be treated as content-class, bypassing any checks on their value during tokenization. However, the specific characters are still carried through. That is, if a decoded character is 10 indirect (aka the result of `\n`), and that is the only character in the decoded stream, that is an *identifier* whose content is a single newline character.
+All *indirect* (that is, not *direct*) characters should be treated as content-class, and unless explicitly stated otherwise, is treated by *conditional logic* (but not, say, written into buffers) in this specification as being some arbitrary content-class character. That is, any check that requires the character to be of a different class does not pass, such as statements where a character "has an indirect value of 10", even if the direct value of that character is in fact 10. However, the specific characters are still carried through. That is, if a decoded character is 10 indirect (aka the result of `\n`), and that is the only character in the decoded stream, that is a *symbol* whose content is a single newline character.
 
-When the true value of a character should be used, it will be referred to as the *direct value*, and otherwise (when masked as content-class), the *indirect value*. How this works with the characters "written indirectly" above is that the value being written is the true value, and that's then masked as content-class for the indirect value.
+In actual implementations, the above is implemented by simply requiring a character to be direct when performing various checks.
+
+When the true value of a character should be used, it will be referred to as the *direct value*, and otherwise (when potentially masked), the *indirect value*. How this works with the characters "written indirectly" above is that the value being written is the true value, and that's then masked as content-class for the indirect value.
 
 While these don't have any meaningful effect on the specification, there are two things worth noting:
 
@@ -56,41 +74,37 @@ There are a number of character classes defined here, which are defined in terms
 
 - The characters from 0 through 32 inclusive, along with 127, are *whitespace-class*.
 
-- 59 `;`, and 34 `"`, are *special-class*.
+- 35 `#`, 59 `;`, and 34 `"`, are *special-class*.
 
 - 39 `'`, 40 `(`, and 41 `)`, are *alone-class*.
+
+- 48 `0` through 57 `9` inclusive, or 45 `-`, are *numeric-class*.
 
 - All other characters, *including all UTF-8 sequences and high codepoints*, are *content-class*.
 
 ## Tokenization
 
-To define tokenization, we must first define the four kinds of token:
+### Whitespace
 
-1. *Identifiers,* such as `open`, `language_tok` -- *potential identifiers* are simply contiguous lists of content-class characters
+First, we must define *whitespace*. Whitespace is one of two sequences outside of a string:
 
-2. Numbers, such as `123` -- a subset of potential identifiers described below
+1. Any whitespace-class character.
 
-3. Strings, such as `"Hello world"` -- double-quotes-delimited sequences of arbitrary characters
+2. The indirect value 59 `;` followed an arbitrary sequence of characters ending with the indirect value 10 (newline, and considered included in the sequence).
 
-4. The individual special tokens `'`, `(` and `)` -- the *quote*, *start-list* and *end-list* tokens
+Before reading a token, any whitespace is consumed.
 
-Next, we must define *whitespace*. Whitespace is one of two sequences outside of a string:
+### Token Types
 
-1. Any whitespace-class byte.
+There are three kinds of token at this stage:
 
-2. The indirect value 59 `;` terminated by 10 (newline, and included in the sequence).
+1. *Potential identifiers,* sequences of content-class, numeric-class and special-class characters. *The first indirect value of these is preserved, as it is used for differentiation of the type of token.* Examples: `12.3`, `#t`, `hello`, `symbol->string`, `-8`.
 
-The tokenization of Datum does not explicitly define the full set of *potential identifiers* that are considered *numbers*. However, some core principles must be followed:
+2. *Strings,* double-quote (indirect value 34 `"`)-delimited sequences of completely arbitrary characters. The only restriction is that in order to write characters 34 `"` or 92 `\`, they must be indirect, but this is never a problem as the value of the string is made up by the *direct values*.
 
-* All potential identifiers that begin with the indirect values of 48 `0` through 57 `9` inclusive or 45 `-` are *reserved number identifiers*.
+3. The individual alone-class (see that definition for the indirect values) tokens `'`, `(` and `)` -- the *quote*, *start-list* and *end-list* tokens.
 
-* Once the distinction has been made that a token is a reserved number identifier, if characters within are direct or indirect ceases to matter. (This is important as parsing of numbers is assumed to be handed off to code that does not care about the direct/indirect distinction.)
-
-* Any reserved number identifier that does not parse as a number must be considered distinct from a regular identifier and preserved as a specific kind of token for potential compatibility workaround code to pick up on. That code may provide an error -- in particular it's not recommended to try and implement these as actual literals in a data model.
-
-* Any reserved number identifier that does parse as a number can be appropriately forwarded as a *numeric token* (realistically, these would be *64-bit integer token* and *64-bit float token*). It is advised to keep the full textual content available, particularly in callback tokenizers where doing so is a zero-cost operation.
-
-In addition, it is generally advised (given the repository this is in) that whatever's given can be parsed by `Long.parseLong` or `Double.parseDouble`.
+### Chart
 
 A chart labelled roughly by indirect values (be aware that these names aren't 1:1, check with the above):
 
@@ -140,6 +154,70 @@ stateDiagram-v2
     }
 ```
 
+## Potential Identifier Differentiation
+
+### Basics
+
+*Potential identifiers* as described above do not make up the basic primitive types such as booleans, integers, and floats.
+
+As such, it falls to this part of the specification to explain how these are divided.
+
+Thus, tokenization is extended to five kinds of token:
+
+1. *Symbols,* such as `open`, `language_tok` -- the default handling of a *potential identifier* (see below).
+
+2. *Numbers,* such as `123` -- a subset of potential identifiers described below.
+
+3. *Special Identifiers,* such as `#t` and `#f` -- a subset of potential identifiers for reserved identifiers to be handled by the receiving parser.
+
+4. *Strings* (already defined).
+
+5. The *alone-class* tokens (already defined).
+
+### Differentiation
+
+A *potential identifier's* first character's *indirect value and class* completely defines the kind of potential identifier it is. No further transform is performed on the potential identifier's direct values -- that sequence is given as-is (though see the below sections for specific notes on this).
+
+The classification of potential identifiers into their various subtypes works as follows:
+
+* All potential identifiers that begin with the indirect values of 48 `0` through 57 `9` inclusive or 45 `-` are *reserved number identifiers*.
+
+* All potential identifiers that begin with the indirect value of 35 `#` are *special identifiers*.
+
+* Potential identifiers that don't fall into the above brackets are *symbols*.
+
+Once this differentiation has been performed, if characters within are direct or indirect ceases to matter -- all further processing operates on *direct values*. (This is important as parsing of numbers is assumed to be handed off to code that does not care about the direct/indirect distinction.)
+
+### Symbols
+
+There is nothing particularly special to note about symbols. They can be thought of as essentially strings with a special flag set. However, it *may* be of use to optimize them in some way for fast lookup (perhaps interning them).
+
+### Special Identifiers
+
+Special identifiers are situational. The receiving parser must define them or forward the task in some way. Above all else, though, their purpose is to represent arbitrary singleton values that can't be arbitrarily defined by the user, so creating a mechanism to do so defeats the point.
+
+However, the following special identifiers shall be considered *standardized* and should only be used for their intended purposes (though they need not necessarily be implemented):
+
+* `#{}#`: This is actually converted into the empty symbol. This mainly exists to remove some of the error cases from writers.
+
+* `#t` and `#T`: These express the boolean `true` value.
+
+* `#f` and `#F`: These express the boolean `false` value.
+
+### Numbers
+
+The tokenization of Datum does not explicitly define the full set of *reserved number identifiers* that are considered *numbers*. However, some core principles must be followed:
+
+* Any reserved number identifier that does not parse as a number must be considered a distinct kind of token, and preserved for potential compatibility workaround code to pick up on. That code may provide an error -- in particular it's not recommended to try and implement these as actual literals in a tree data model unless you really need to load _any_ valid file.
+
+* Any reserved number identifier that does parse as a number can be appropriately forwarded as a *numeric token* (realistically, these would be *64-bit integer token* and *64-bit float token*). It is advised to keep the full textual content available, particularly in callback tokenizers where doing so is a zero-cost operation.
+
+* Any contiguous sequence of the 10 ASCII decimal digits, which may or may not be preceded by `-`, that does not exceed the integer limits of the implementation, must be valid.
+
+* Using `,`  in a "standard" (floating-point or integer) number is not valid. An implementation may choose to attempt to handle this anyway, but probably shouldn't. Using it as part of a non-standard kind of number not *expected* to be generally readable (Numeric vectors, possibly rational numbers but those would do better to use `/`) is theoretically fine, though an implementation should give some idea of the format of what such a number is, and the implementer may still wish to consider using alternative methods of expressing the number.
+
+In addition, it is generally advised (given the repository this is in) that whatever number format is given follows the JSON specification, and can be parsed by Java `Long.parseLong` or `Double.parseDouble`.
+
 ## Grammar
 
 The grammar of Datum is very simple.
@@ -152,7 +230,7 @@ Most tokens are simply literal values of their respective kinds. There are two e
 
 1. The *start-list token* `(` begins a list, identical to the outer list except for one aspect -- it accepts and ends with the *end-list token*. The entire list is considered to be a value.
 
-2. The *quote token* `'` expects another value immediately afterwards (which may be, but doesn't have to be, a list). The transform is effectively: `'V` becomes `(quote V)`.
+2. The *quote token* `'` expects another value immediately afterwards (which may be, but doesn't have to be, a list). The transform is effectively: `'V` becomes `(quote V)`. Note that how this token is *used* is dependent on format (see the JSON Transformation below for an example of an arguably abnormal use of it that nonetheless improves the format).
 
 *Due to this mode of operation, streaming parsers for Datum are nearly identical to callback tokenizers, with the exception that streaming parsers may report an error if an end-list token is applied when it matches to no start-list token, and that streaming parsers have to deal with the quote token by synthesizing the list.*
 
@@ -166,4 +244,58 @@ An implementation may (but does not have to) make the following requirements, an
 
 3. That all strings and potential identifiers are valid UTF-8. (The first two points together guarantee this.)
 
-An implementation may also require a lack of null (0) characters at any point, but the document is still valid in this case.
+An implementation may also require a lack of null (0) characters at any point, but the document is still valid in this case. This requirement upsets the ability to represent partially-ASCII byte streams as Unicode codepoints 0 through 255, but implementations in languages that would concern themselves with null bytes do not have UTF-8 decoding as a certainty in a minimalist implementation, and therefore it is up to the implementer to determine the appropriate path. *This is worth noting especially because this affects file formats layered onto Datum.*
+
+## JSON Transformation
+
+The full JSON transformation shows methods to fit different data models to Datum.
+
+To transform JSON into Datum (and vice versa), the following rules should be followed:
+
+1. Each JSON value is a single Datum value. This preserves the property that a JSON stream becomes a Datum stream and vice versa.
+
+2. Booleans are `#f` and `#t`.
+
+3. Numbers are represented exactly as they are in JSON.
+
+4. Strings undergo a change in escaping, but due to the rules above this will never require _decoding UTF-8_ (as long as one is willing to allow that arbitrary UTF-8 directly into the output stream without directly escaping it).
+
+5. When reversing the transformation, if a symbol is used where not expected, it should be converted to a string.
+
+6. Null is translated into an empty list `()`.
+
+7. Arrays are translated directly into a list, i.e. `[1, 2, 3]` becomes `(1 2 3)`.
+
+This doesn't cover objects, as there's no reasonable *direct* translation.
+
+A full JSON translation adds an additional rule:
+
+Objects use the quote symbol to indicate the difference between them and lists, and use a list of key/value pairs (the pairs written without any framing). For example, `{"1a": 1, "b": "2"}` becomes `'("1a" 1 "b" "2")`.
+
+This is not ambiguous, as symbols at the start of a list should not appear outside of objects in this transformation (and this is only to help with typing anyway). It is slightly unusual (as this expands to `(quote ("1a" 1 b "2"))`), but is easier to type than other forms.
+
+Another way to represent this could have been, for instance, to have `(obj)` be the empty object, and `(obj "1a" 1 b 2)` be the example object given above. This wasn't chosen as using the quote character here made typing a lot easier.
+
+## KeyValues Transformation
+
+This will not be fully specified here, but exists more to illustrate a point about the use of the stream style.
+
+KeyValues uses key/value pairs, but handles arrays by simply giving elements in them the same, repeated key.
+
+This in mind, one can imagine the following KeyValues:
+
+```
+example {
+    a b
+}
+```
+
+becoming the following:
+
+```
+example (
+    a "b"
+)
+```
+
+There isn't really much more to say about this -- the translation only has the same problems as the JSON translation above.

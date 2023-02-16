@@ -10,9 +10,10 @@ import java.util.Stack;
 
 /**
  * Stream of read-in Datum tokens.
- * Created 16th February 2022.
+ * Also contains the logic that turns this into a parsed stream, so this is the parser too.
+ * Created February 16th, 2023.
  */
-public abstract class DatumTokenStream {
+public abstract class DatumTokenSource {
     /**
      * Reads a token.
      * Returns true if a token was read successfully (see contents, type)
@@ -50,6 +51,20 @@ public abstract class DatumTokenStream {
             switch (type()) {
             case ID:
                 visitor.visitId(contents());
+                break;
+            case SpecialID:
+            {
+                String c = contents();
+                if (c.equalsIgnoreCase("#t")) {
+                    visitor.visitBoolean(true);
+                } else if (c.equalsIgnoreCase("#f")) {
+                    visitor.visitBoolean(false);
+                } else if (c.equals("#{}#")) {
+                    visitor.visitId("");
+                } else {
+                    visitor.visitSpecialUnknown(c);
+                }
+            }
                 break;
             case String:
                 visitor.visitString(contents());

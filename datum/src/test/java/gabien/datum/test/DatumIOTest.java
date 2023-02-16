@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
 
-import gabien.datum.DatumReaderStream;
-import gabien.datum.DatumTreeVisitor;
+import gabien.datum.DatumReaderTokenSource;
+import gabien.datum.DatumDecodingVisitor;
 import gabien.datum.DatumWriter;
 
 /**
  * Reader/writer test.
- * Created 16th February 2022.
+ * Created 16th February 2023.
  */
 public class DatumIOTest {
     private Object genTestCase() {
@@ -30,15 +30,17 @@ public class DatumIOTest {
                     Arrays.asList(sym("moku"), sym("sina")),
                     sym("li"),
                     Arrays.asList(sym("pona")),
-                    Arrays.asList(sym("tawa"), sym("mi"))
+                    Arrays.asList(sym("tawa"), sym("mi")),
+                    true, false, sym("")
                 );
     }
     @Test
     public void testRead() {
         Object input = genTestCase();
-        DatumReaderStream drs = new DatumReaderStream(new StringReader("((moku sina) li (pona) (tawa mi))"));
+        String tcs = "((moku sina) li (pona) (tawa mi) #t #f #{}#)";
+        DatumReaderTokenSource drs = new DatumReaderTokenSource(new StringReader(tcs));
         AtomicBoolean signalWasVisited = new AtomicBoolean();
-        drs.visit(new DatumTreeVisitor() {
+        drs.visit(new DatumDecodingVisitor() {
             @Override
             public void visitEnd() {
             }
@@ -56,8 +58,8 @@ public class DatumIOTest {
         Object input = genTestCase();
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
-        dw.visitTreeManually(input);
-        assertEquals("((moku sina)li(pona)(tawa mi))", sw.toString());
+        dw.visitTree(input);
+        assertEquals("((moku sina)li(pona)(tawa mi)#t #f #{}#)", sw.toString());
     }
 
 }
