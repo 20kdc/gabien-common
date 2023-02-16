@@ -6,6 +6,8 @@
  */
 package gabien;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import android.graphics.Paint;
 import gabien.text.NativeFont;
 
@@ -30,7 +32,7 @@ public class NativeFontKinda extends NativeFont {
     }
 
     @Override
-    public int measureLine(char[] text, int index, int length) {
+    public int measureLine(@NonNull char[] text, int index, int length) {
         // *hmm*... something seems off here.
         Paint p = new Paint();
         p.setTextSize(size);

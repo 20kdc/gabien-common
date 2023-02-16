@@ -141,12 +141,12 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public void drawText(int x, int y, int r, int g, int b, @NonNull String text, @NonNull NativeFont font) {
+    public void drawText(int x, int y, int r, int g, int b, @NonNull char[] text, int index, int count, @NonNull NativeFont font) {
         globalPaint.setARGB(255, r, g, b);
         globalPaint.setAntiAlias(true);
         int size = ((NativeFontKinda) font).size;
         globalPaint.setTextSize(size);
-        canvas.drawText(text, x, y + ((size * 3) / 4), globalPaint);
+        canvas.drawText(text, index, count, x, y + ((size * 3) / 4), globalPaint);
         globalPaint.setAntiAlias(false);
         globalPaint.setARGB(255, 255, 255, 255);
     }
