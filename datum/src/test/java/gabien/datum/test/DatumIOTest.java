@@ -31,13 +31,13 @@ public class DatumIOTest {
                     sym("li"),
                     Arrays.asList(sym("pona")),
                     Arrays.asList(sym("tawa"), sym("mi")),
-                    true, false, sym("")
+                    true, false, sym(""), sym("#escapethis"), sym("1234")
                 );
     }
     @Test
     public void testRead() {
         Object input = genTestCase();
-        String tcs = "((moku sina) li (pona) (tawa mi) #t #f #{}#)";
+        String tcs = "((moku sina) li (pona) (tawa mi) #t #f #{}# \\#escapethis \\1234)";
         DatumReaderTokenSource drs = new DatumReaderTokenSource(new StringReader(tcs));
         AtomicBoolean signalWasVisited = new AtomicBoolean();
         drs.visit(new DatumDecodingVisitor() {
@@ -59,7 +59,7 @@ public class DatumIOTest {
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
         dw.visitTree(input);
-        assertEquals("((moku sina)li(pona)(tawa mi)#t #f #{}#)", sw.toString());
+        assertEquals("((moku sina)li(pona)(tawa mi)#t #f #{}# \\#escapethis \\1234)", sw.toString());
     }
 
 }

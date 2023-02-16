@@ -36,18 +36,6 @@ public class DatumWriter extends DatumEncodingVisitor {
         }
     }
 
-    /**
-     * It's not really sensible to try to write a general "write a character direct or indirect" function.
-     * (Mainly because writing "n" indirectly is painful.)
-     * Luckily, it's also never necessary.
-     * However, when a character must be of the content class is a case that often comes up, particularly re: identifiers...
-     */
-    protected void putCharContent(char c) {
-        if (!DatumCharacters.isContent(c))
-            putChar('\\');
-        putChar(c);
-    }
-
     private void putStringContent(String content, char delimiter) {
         for (char c : content.toCharArray()) {
             if (c == delimiter) {
@@ -62,7 +50,14 @@ public class DatumWriter extends DatumEncodingVisitor {
     public void visitComment(String comment) {
         emitSpacingIfNeeded();
         putChar(';');
-        putStringContent(comment, '\n');
+        putChar(' ');
+        for (char c : comment.toCharArray()) {
+            putChar(c);
+            if (c == '\n') {
+                putChar(';');
+                putChar(' ');
+            }
+        }
         putChar('\n');
         needSpacing = false;
     }
@@ -89,42 +84,46 @@ public class DatumWriter extends DatumEncodingVisitor {
         }
         boolean isFirst = true;
         for (char c : s.toCharArray()) {
-            // stop numeric or special start from being first!
-            if (isFirst && (DatumCharacters.isNumericStart(c) || c == '#')) {
-                putChar('\\');
-                putChar(c);
+            // only content-class can be in first character of a regular ID
+            DatumCharClass cc = DatumCharClass.identify(c);
+            boolean escape = false;
+            if (isFirst) {
+                escape = cc != DatumCharClass.Content;
             } else {
-                putCharContent(c);
-            }
+                escape = !cc.isValidPID;
+            } 
+            if (escape)
+                putChar('\\');
+            putChar(c);
             isFirst = false;
+        }
+        needSpacing = true;
+    }
+
+    private void visitUnknownPID(DatumCharClass dcc, String s) {
+        if (s.length() == 0)
+            throw new RuntimeException("Cannot write an empty " + dcc + ".");
+        if (DatumCharClass.identify(s.charAt(0)) != dcc)
+            throw new RuntimeException("Cannot write a " + dcc + " with '" + s.charAt(0) + "' at the start.");
+        emitSpacingIfNeeded();
+        // Write directly
+        for (char c : s.toCharArray()) {
+            DatumCharClass cc = DatumCharClass.identify(c);
+            if (!cc.isValidPID)
+                putChar('\\');
+            putChar(c);
         }
         needSpacing = true;
     }
 
     @Override
     public void visitNumericUnknown(String s) {
-        if (s.length() == 0)
-            throw new RuntimeException("Cannot write an empty numeric.");
-        if (!DatumCharacters.isNumericStart(s.charAt(0)))
-            throw new RuntimeException("Cannot write a numeric with '" + s.charAt(0) + "' at the start.");
-        emitSpacingIfNeeded();
-        // Write directly as content
-        for (char c : s.toCharArray())
-            putCharContent(c);
-        needSpacing = true;
+        visitUnknownPID(DatumCharClass.NumericStart, s);
     }
 
     @Override
     public void visitSpecialUnknown(String s) {
-        if (s.length() == 0)
-            throw new RuntimeException("Cannot write an empty special identifier.");
-        if (s.charAt(0) != '#')
-            throw new RuntimeException("Cannot write a special identifier with '" + s.charAt(0) + "' at the start.");
-        emitSpacingIfNeeded();
-        // Write directly as content
-        for (char c : s.toCharArray())
-            putCharContent(c);
-        needSpacing = true;
+        visitUnknownPID(DatumCharClass.SpecialID, s);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class DatumReaderTokenSource extends DatumTokenSource {
     private String tokenContents;
     private DatumTokenType tokenType;
     private int holdingCell = -1;
-    private boolean lastCharWasDirect;
+    private DatumCharClass lastCharClass;
 
     public int lineNumber = 1;
     public int tokenLineNumber = 1;
@@ -47,10 +47,11 @@ public class DatumReaderTokenSource extends DatumTokenSource {
         }
         int val = readerRead();
         if (val != '\\') {
-            lastCharWasDirect = true;
+            if (val != -1)
+                lastCharClass = DatumCharClass.identify((char) val);
             return val;
         }
-        lastCharWasDirect = false;
+        lastCharClass = DatumCharClass.Content;
         val = readerRead();
         if (val == -1)
             throw new RuntimeException("Line " + lineNumber + ": \\ without escape");
@@ -91,51 +92,44 @@ public class DatumReaderTokenSource extends DatumTokenSource {
             if (dec == -1)
                 return false;
             decChar = (char) dec;
-            // if not direct, it's content-class, break!
-            if (!lastCharWasDirect)
-                break;
             // special handling!
-            if (DatumCharacters.isWhitespace(decChar)) {
+            if (lastCharClass == DatumCharClass.Whitespace) {
                 continue;
-            } else if (decChar == ';') {
+            } else if (lastCharClass == DatumCharClass.LineComment) {
                 while (true) {
                     dec = decodeNextChar();
                     if (dec == -1)
                         return false;
-                    if (dec == 10 && lastCharWasDirect)
+                    if (lastCharClass == DatumCharClass.Newline)
                         break;
                 }
-            } 
+                continue;
+            }
             break;
         }
         tokenLineNumber = lineNumber;
         tokenContents = null;
         // not whitespace, what do we do?
-        if (DatumCharacters.isAlone(decChar) && lastCharWasDirect) {
-            if (decChar == '(')
-                tokenType = DatumTokenType.ListStart;
-            if (decChar == ')')
-                tokenType = DatumTokenType.ListEnd;
-            if (decChar == '\'')
-                tokenType = DatumTokenType.Quote;
+        if (lastCharClass.aloneToken != null) {
+            tokenType = lastCharClass.aloneToken;
             return true;
-        } else if (decChar == '"' && lastCharWasDirect) {
+        } else if (lastCharClass == DatumCharClass.String) {
             StringBuilder sb = new StringBuilder();
             while (true) {
                 int dec = decodeNextChar();
                 if (dec == -1)
                     throw new RuntimeException("Line " + lineNumber + ": interrupted string");
-                decChar = (char) dec;
-                if (decChar == '"' && lastCharWasDirect)
+                if (lastCharClass == DatumCharClass.String)
                     break;
+                decChar = (char) dec;
                 sb.append(decChar);
             }
             tokenType = DatumTokenType.String;
             tokenContents = sb.toString();
             return true;
         } else {
-            boolean numeric = lastCharWasDirect && DatumCharacters.isNumericStart(decChar);
-            boolean specialID = lastCharWasDirect && (decChar == '#');
+            boolean numeric = lastCharClass == DatumCharClass.NumericStart;
+            boolean specialID = lastCharClass == DatumCharClass.SpecialID;
             StringBuilder sb = new StringBuilder();
             // ensure initial character exists!
             sb.append(decChar);
@@ -143,12 +137,12 @@ public class DatumReaderTokenSource extends DatumTokenSource {
                 int dec = decodeNextChar();
                 if (dec == -1)
                     break;
-                decChar = (char) dec;
-                if (!(DatumCharacters.isContent(decChar) || !lastCharWasDirect)) {
-                    // put back lost character
+                if (!lastCharClass.isValidPID) {
+                    // put back lost character and leave
                     holdingCell = dec;
                     break;
                 }
+                decChar = (char) dec;
                 sb.append(decChar);
             }
             tokenType = DatumTokenType.ID;

@@ -40,7 +40,11 @@ The following kinds of values exist:
 
 ## Encoding
 
-The encoding component converts a stream of characters to a potentially different stream of characters, tagged with a flag known as *direct*.
+The encoding component converts a stream of characters to a potentially different stream of characters, tagged with *character classes*.
+
+Later stages use character classes to control behaviour.
+
+If, in this stage, a character is described as being written *indirectly,* then the class is always *content-class*. Otherwise, the class is determined by the Character Classes section.
 
 The backslash, 92 `\`, begins an escape sequence.
 
@@ -56,12 +60,6 @@ The backslash may be followed by any character, in which case the result is that
 
 This provides the fundamental escaping logic for the rest of Datum.
 
-All *indirect* (that is, not *direct*) characters should be treated as content-class, and unless explicitly stated otherwise, is treated by *conditional logic* (but not, say, written into buffers) in this specification as being some arbitrary content-class character. That is, any check that requires the character to be of a different class does not pass, such as statements where a character "has an indirect value of 10", even if the direct value of that character is in fact 10. However, the specific characters are still carried through. That is, if a decoded character is 10 indirect (aka the result of `\n`), and that is the only character in the decoded stream, that is a *symbol* whose content is a single newline character.
-
-In actual implementations, the above is implemented by simply requiring a character to be direct when performing various checks.
-
-When the true value of a character should be used, it will be referred to as the *direct value*, and otherwise (when potentially masked), the *indirect value*. How this works with the characters "written indirectly" above is that the value being written is the true value, and that's then masked as content-class for the indirect value.
-
 While these don't have any meaningful effect on the specification, there are two things worth noting:
 
 1. It is impossible for the backslash to be written as a direct character under this system.
@@ -70,17 +68,39 @@ While these don't have any meaningful effect on the specification, there are two
 
 ## Character Classes
 
-There are a number of character classes defined here, which are defined in terms of the *indirect values*.
+There are a number of character classes defined here, defined in terms of character values.
 
-- The characters from 0 through 32 inclusive, along with 127, are *whitespace-class*.
+All characters within a class act behaviourally identical to each other as far as later stages are concerned.
 
-- 35 `#`, 59 `;`, and 34 `"`, are *special-class*.
+- The characters from 0 through 32 inclusive, along with 127, but *not* 10, are *whitespace-class*.
 
-- 39 `'`, 40 `(`, and 41 `)`, are *alone-class*.
+- 10 is *newline-class*.
 
-- 48 `0` through 57 `9` inclusive, or 45 `-`, are *numeric-class*.
+- 59 `;` is *line-comment-class*.
 
-- All other characters, *including all UTF-8 sequences and high codepoints*, are *content-class*.
+- 34 `"` is *string-class*.
+
+- 39 `'` is *quote-class*.
+
+- 40 `(` is *list-start-class*.
+
+- 41 `)` is *list-end-class*.
+
+- 41 `#` is *special-identifier-class*.
+
+- 48 `0` through 57 `9` inclusive, or 45 `-`, are *numeric-start-class*.
+
+- All other characters, *including all characters (UTF-8, UTF-16, Unicode, or otherwise) above 127,* are *content-class*.
+
+There are also the following groups of classes, the contents of which may be differentiated by their actual class later:
+
+- The union of *content-class*, *numeric-start-class*, and *special-identifier-class* make up the *potential-identifier-group*.
+
+- The union of *whitespace-class* and *newline-class* make up the *non-printing-group*.
+
+- The union of *quote-class*, *list-start-class*, and *list-end-class* make up the *alone-group*.
+
+These groups only exist for ease of specification writing and their existence does not modify the character class process.
 
 ## Tokenization
 
@@ -88,9 +108,9 @@ There are a number of character classes defined here, which are defined in terms
 
 First, we must define *whitespace*. Whitespace is one of two sequences outside of a string:
 
-1. Any whitespace-class character.
+1. Any *non-printing-group* character.
 
-2. The indirect value 59 `;` followed an arbitrary sequence of characters ending with the indirect value 10 (newline, and considered included in the sequence).
+2. A *line-comment-class* character followed by an arbitrary sequence of characters ending with a *newline-class* character, which is considered included in the sequence.
 
 Before reading a token, any whitespace is consumed.
 
@@ -98,11 +118,15 @@ Before reading a token, any whitespace is consumed.
 
 There are three kinds of token at this stage:
 
-1. *Potential identifiers,* sequences of content-class, numeric-class and special-class characters. *The first indirect value of these is preserved, as it is used for differentiation of the type of token.* Examples: `12.3`, `#t`, `hello`, `symbol->string`, `-8`.
+1. *Potential identifiers,* sequences of *potential-identifier-group* characters. *The exact class of the first character is preserved for later differentiation.* Examples: `12.3`, `#t`, `hello`, `symbol->string`, `-8`.
 
-2. *Strings,* double-quote (indirect value 34 `"`)-delimited sequences of completely arbitrary characters. The only restriction is that in order to write characters 34 `"` or 92 `\`, they must be indirect, but this is never a problem as the value of the string is made up by the *direct values*.
+2. *Strings,* *string-class*-delimited sequences of completely arbitrary characters. The only restriction is that in order to write characters 34 `"` or 92 `\`, they must be escaped.
 
-3. The individual alone-class (see that definition for the indirect values) tokens `'`, `(` and `)` -- the *quote*, *start-list* and *end-list* tokens.
+3. Characters of the *alone-group* turn into specific token types for each of the group's classes.
+
+It's worth noting that after this part of tokenization, potential identifiers are the only token to keep any trace of character classes, which are removed in the next stage.
+
+Token types are used for similar purposes when necessary from this point forward.
 
 ### Chart
 
@@ -133,14 +157,14 @@ stateDiagram-v2
     [*] --> whitespace_skipping
     state potential_identifier {
         direction LR
-        [*] --> content_class
-        content_class --> content_class
-        content_class --> [*]
+        [*] --> potential_identifier_group
+        potential_identifier_group --> potential_identifier_group
+        potential_identifier_group --> [*]
     }
     whitespace_skipping --> potential_identifier
     potential_identifier --> [*]
-    whitespace_skipping --> alone_class
-    alone_class --> [*]
+    whitespace_skipping --> alone_group
+    alone_group --> [*]
     whitespace_skipping --> string
     string --> [*]
     state string {
@@ -170,23 +194,27 @@ Thus, tokenization is extended to five kinds of token:
 
 3. *Special Identifiers,* such as `#t` and `#f` -- a subset of potential identifiers for reserved identifiers to be handled by the receiving parser.
 
-4. *Strings* (already defined).
+4. The already-defined tokens, *strings* and the *alone-group* tokens.
 
-5. The *alone-class* tokens (already defined).
+Something to note is that the implementation of the differentiation is best placed within the tokenizer. These steps are divided here for ease of explanation.
 
 ### Differentiation
 
-A *potential identifier's* first character's *indirect value and class* completely defines the kind of potential identifier it is. No further transform is performed on the potential identifier's direct values -- that sequence is given as-is (though see the below sections for specific notes on this).
+A *potential identifier's* first character's class (as preserved from earlier) completely defines the kind of potential identifier it is. This step is the last point at which character classes are seen.
+
+Importantly, because it's preserved from earlier, escaping the first character guarantees as usual that the result will be *content-class*.
 
 The classification of potential identifiers into their various subtypes works as follows:
 
-* All potential identifiers that begin with the indirect values of 48 `0` through 57 `9` inclusive or 45 `-` are *reserved number identifiers*.
+* All potential identifiers that begin with a *numeric-start-class* character are *reserved number identifiers*.
 
-* All potential identifiers that begin with the indirect value of 35 `#` are *special identifiers*.
+* All potential identifiers that begin with a *special-identifier-class* character are *special identifiers*.
 
 * Potential identifiers that don't fall into the above brackets are *symbols*.
 
-Once this differentiation has been performed, if characters within are direct or indirect ceases to matter -- all further processing operates on *direct values*. (This is important as parsing of numbers is assumed to be handed off to code that does not care about the direct/indirect distinction.)
+Once this differentiation has been performed, *character classes no longer matter, only token types.*
+
+This is important for various reasons, the most obvious being that `0` through `9` can't be discriminated by the character class system.
 
 ### Symbols
 
