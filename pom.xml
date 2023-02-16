@@ -35,6 +35,7 @@
 
 	<modules>
 		<module>uslx</module>
+		<module>datum</module>
 		<module>media</module>
 		<module>common</module>
 		<module>javase</module>

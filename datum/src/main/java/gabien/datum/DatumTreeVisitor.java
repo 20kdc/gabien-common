@@ -1,0 +1,63 @@
+/*
+ * gabien-datum - Quick to implement S-expression format
+ * Written starting in 2023 by contributors (see CREDITS.txt)
+ * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+ * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
+ */
+package gabien.datum;
+
+import java.util.LinkedList;
+
+/**
+ * Turns a visitor on its head so that it outputs objects.
+ * Created 15th February 2022.
+ */
+public abstract class DatumTreeVisitor extends DatumVisitor {
+    public DatumTreeVisitor() {
+        
+    }
+
+    public abstract void visitTree(Object obj);
+
+    @Override
+    public void visitString(String s) {
+        visitTree(s);
+    }
+
+    @Override
+    public void visitId(String s) {
+        visitTree(new DatumSymbol(s));
+    }
+
+    @Override
+    public void visitNumericUnknown(String s) {
+        throw new RuntimeException("Numeric can't be parsed: " + s);
+    }
+
+    @Override
+    public void visitInt(long value, String raw) {
+        visitTree(value);
+    }
+
+    @Override
+    public void visitFloat(double value, String raw) {
+        visitTree(value);
+    }
+
+    @Override
+    public DatumVisitor visitList() {
+        final LinkedList<Object> buildingList = new LinkedList<>();
+        final DatumTreeVisitor me = this;
+        return new DatumTreeVisitor() {
+            @Override
+            public void visitTree(Object obj) {
+                buildingList.add(obj);
+            }
+
+            @Override
+            public void visitEnd() {
+                me.visitTree(buildingList);
+            }
+        };
+    }
+}

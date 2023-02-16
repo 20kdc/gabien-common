@@ -24,6 +24,13 @@
 !common/src/
 !common/src/**
 
+!datum
+!datum/
+!datum/specification.md
+!datum/src
+!datum/src/
+!datum/src/**
+
 !javase
 !javase/
 !javase/src
