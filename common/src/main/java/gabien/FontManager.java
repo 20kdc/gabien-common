@@ -36,9 +36,10 @@ public class FontManager {
         IImage f16 = GaBIEn.getImageCKEx("font2x.png", false, true, 0, 0, 0);
         IImage f8 = GaBIEn.getImageCKEx("font.png", false, true, 0, 0, 0);
         IImage f6 = GaBIEn.getImageCKEx("fonttiny.png", false, true, 0, 0, 0);
+        //                                            W  H   C   A  S
         internalFont16 = new SimpleImageGridFont(f16, 7, 14, 16, 8, 16);
-        internalFont8 = new SimpleImageGridFont(f8, 7, 14, 16, 8, 8);
-        internalFont6 = new SimpleImageGridFont(f6, 3, 14, 16, 4, 6);
+        internalFont8 =  new SimpleImageGridFont(f8,  7,  7, 16, 8,  8);
+        internalFont6 =  new SimpleImageGridFont(f6,  3,  5, 16, 4,  6);
     }
 
     /**

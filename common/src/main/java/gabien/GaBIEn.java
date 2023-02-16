@@ -183,14 +183,6 @@ public class GaBIEn {
     }
 
     /**
-     * Deprecated because this uses FontManager.fontOverride and that whole mess needs to be cleaned up piece by piece.
-     */
-    @Deprecated
-    public static int measureText(int size, String text) {
-        return getNativeFont(size, FontManager.fontOverride, true).measureLine(text);
-    }
-
-    /**
      * Returns the list of native font names.
      */
     public static String[] getFontOverrides() {
