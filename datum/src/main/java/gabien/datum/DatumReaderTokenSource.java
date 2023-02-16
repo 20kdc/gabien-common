@@ -93,7 +93,7 @@ public class DatumReaderTokenSource extends DatumTokenSource {
                 return false;
             decChar = (char) dec;
             // special handling!
-            if (lastCharClass == DatumCharClass.Whitespace) {
+            if (lastCharClass == DatumCharClass.Whitespace || lastCharClass == DatumCharClass.Newline) {
                 continue;
             } else if (lastCharClass == DatumCharClass.LineComment) {
                 while (true) {

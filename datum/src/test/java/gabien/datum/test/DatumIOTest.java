@@ -37,7 +37,15 @@ public class DatumIOTest {
     @Test
     public void testRead() {
         Object input = genTestCase();
-        String tcs = "((moku sina) li (pona) (tawa mi) #t #f #{}# \\#escapethis \\1234)";
+        String tcs = "(\n" +
+                "; Symbols & lists test\n" +
+                "(moku sina)\n" +
+                "li\n" +
+                "(pona)\n" +
+                "(tawa mi)\n" +
+                "; Exceptional cases\n" +
+                "#t #f #{}# \\#escapethis \\1234\n" +
+                ")";
         DatumReaderTokenSource drs = new DatumReaderTokenSource(new StringReader(tcs));
         AtomicBoolean signalWasVisited = new AtomicBoolean();
         drs.visit(new DatumDecodingVisitor() {
