@@ -64,7 +64,7 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public void drawText(int x, int y, int r, int g, int b, @NonNull String text, @Nullable NativeFont font) {
+    public void drawText(int x, int y, int r, int g, int b, @NonNull char[] text, int index, int count, @Nullable NativeFont font) {
 
     }
 

@@ -283,11 +283,11 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
-    public void drawText(final int x, final int y, final int r, final int g, final int b, final @NonNull String text, final @NonNull NativeFont font) {
+    public void drawText(final int x, final int y, final int r, final int g, final int b, final @NonNull char[] text, int index, int count, final @NonNull NativeFont font) {
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
-                target.drawText(x, y, r, g, b, text, font);
+                target.drawText(x, y, r, g, b, text, index, count, font);
             }
         });
     }

@@ -98,7 +98,7 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
     }
 
     @Override
-    public void drawText(int x, int y, int r, int cg, int b, @NonNull String text, @NonNull NativeFont font) {
+    public void drawText(int x, int y, int r, int cg, int b, @NonNull char[] text, int index, int count, @NonNull NativeFont font) {
         try {
             int textSize = 16;
             if (font instanceof AWTNativeFont) {
@@ -109,7 +109,7 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
             bufGraphics.setColor(new Color(r, cg, b));
             bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
-            bufGraphics.drawString(text, x, y + (textSize - (textSize / 4)));
+            bufGraphics.drawString(new String(text, index, count), x, y + (textSize - (textSize / 4)));
         } catch (Exception ex) {
         }
     }

@@ -12,6 +12,8 @@ import java.awt.Rectangle;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.text.NativeFont;
 
 /**
@@ -44,10 +46,10 @@ public class AWTNativeFont extends NativeFont {
                     return textSize;
                 }
                 @Override
-                public int measureLine(String text) {
+                public int measureLine(@NonNull char[] text, int index, int count) {
                     if (GaBIEnImpl.fontsAlwaysMeasure16)
                         return 16;
-                    return (text.length() * textSize) / 2;
+                    return (count * textSize) / 2;
                 }
             };
         }
@@ -60,10 +62,10 @@ public class AWTNativeFont extends NativeFont {
     }
 
     @Override
-    public int measureLine(String text) {
+    public int measureLine(@NonNull char[] text, int index, int count) {
         if (GaBIEnImpl.fontsAlwaysMeasure16)
             return 16;
-        Rectangle r = font.getStringBounds(text, new FontRenderContext(AffineTransform.getTranslateInstance(0, 0), true, false)).getBounds();
+        Rectangle r = font.getStringBounds(text, index, count, new FontRenderContext(AffineTransform.getTranslateInstance(0, 0), true, false)).getBounds();
         return r.width;
     }
     

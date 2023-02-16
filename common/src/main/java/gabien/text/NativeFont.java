@@ -6,10 +6,19 @@
  */
 package gabien.text;
 
+import org.eclipse.jdt.annotation.NonNull;
+
+import gabien.IGrDriver;
+
 /**
  * Native font base class.
  * Implement only in the gabien backend, as the backend renderer will expect this to be of some specific subclass.
  * Created 16th February 2023.
  */
 public abstract class NativeFont implements IFixedSizeFont {
+    @Override
+    public void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
+        int c = textBlack ? 0 : 255;
+        igd.drawText(x, y, c, c, c, text, index, length, this);
+    }
 }

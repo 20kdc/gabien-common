@@ -15,9 +15,13 @@ import gabien.text.NativeFont;
  */
 public class NativeFontKinda extends NativeFont {
     public final int size;
+    public final int space;
 
     public NativeFontKinda(int s) {
         size = s;
+        Paint p = new Paint();
+        p.setTextSize(size);
+        space = (int) p.measureText(" ");
     }
 
     @Override
@@ -26,10 +30,10 @@ public class NativeFontKinda extends NativeFont {
     }
 
     @Override
-    public int measureLine(String text) {
+    public int measureLine(char[] text, int index, int length) {
         // *hmm*... something seems off here.
         Paint p = new Paint();
         p.setTextSize(size);
-        return (int) p.measureText(text + " "); // about the " " : it gets it wrong somewhat, by about this amount
+        return (int) (p.measureText(text, index, length) + space); // about the " " : it gets it wrong somewhat, by about this amount
     }
 }

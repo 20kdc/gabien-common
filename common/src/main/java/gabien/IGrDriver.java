@@ -48,14 +48,15 @@ public interface IGrDriver extends IImage {
      */
     @Deprecated
     default void drawText(int x, int y, int r, int g, int b, int size, @NonNull String text) {
-        drawText(x, y, r, g, b, text, GaBIEn.getNativeFontFallback(size, FontManager.fontOverride));
+        drawText(x, y, r, g, b, text.toCharArray(), 0, text.length(), GaBIEn.getNativeFontFallback(size, FontManager.fontOverride));
     }
 
     /**
      * Draws text in the given colour and native font.
      * This is a semi-internal API, being how a NativeFont gets into the driver, but isn't particularly dangerous.
+     * HOWEVER, don't change the contents of the text character array!!!
      */
-    void drawText(int x, int y, int r, int g, int b, @NonNull String text, @NonNull NativeFont font);
+    void drawText(int x, int y, int r, int g, int b, @NonNull char[] text, int index, int count, @NonNull NativeFont font);
 
     void clearAll(int i, int i0, int i1);
 

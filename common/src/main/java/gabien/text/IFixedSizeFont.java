@@ -6,6 +6,10 @@
  */
 package gabien.text;
 
+import org.eclipse.jdt.annotation.NonNull;
+
+import gabien.IGrDriver;
+
 /**
  * Fixed-size font interface.
  * This can be, and is intentionally allowed to be, implemented both by userspace and by the gabien backend.
@@ -21,5 +25,29 @@ public interface IFixedSizeFont {
      * Measures the horizontal width of the given text.
      * The text shouldn't contain newlines.
      */
-    int measureLine(String text);
+    default int measureLine(@NonNull String text) {
+        return measureLine(text.toCharArray(), 0, text.length());
+    }
+
+    /**
+     * Measures the horizontal width of the given text.
+     * The text shouldn't contain newlines.
+     */
+    int measureLine(@NonNull char[] text, int index, int length);
+
+    /**
+     * Draws a single line in either white or black.
+     * The reason for the colour being handled this way presently involves some particularly legacy-ey APIs, and is thus still subject to change.
+     * The text shouldn't contain newlines.
+     */
+    default void drawLine(IGrDriver igd, int x, int y, @NonNull String text, boolean textBlack) {
+        drawLine(igd, x, y, text.toCharArray(), 0, text.length(), textBlack);
+    }
+
+    /**
+     * Draws a single line in either white or black.
+     * The reason for the colour being handled this way presently involves some particularly legacy-ey APIs, and is thus still subject to change.
+     * The text shouldn't contain newlines.
+     */
+    void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack);
 }

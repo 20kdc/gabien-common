@@ -72,8 +72,8 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public void drawText(int x, int y, int r, int g, int b, @NonNull String text, @NonNull NativeFont font) {
-        target.drawText(x, y, r, g, b, text, font);
+    public void drawText(int x, int y, int r, int g, int b, @NonNull char[] text, int index, int count, @NonNull NativeFont font) {
+        target.drawText(x, y, r, g, b, text, index, count, font);
     }
 
     @Override
