@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.text.NativeFont;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
@@ -17,6 +18,7 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 public class GaBIEn {
@@ -29,6 +31,7 @@ public class GaBIEn {
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
     private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
     private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
+    private static NativeFontCache nativeFontCache = new NativeFontCache();
 
     // Additional resource load locations.
     public static String[] appPrefixes = new String[0];
@@ -178,12 +181,42 @@ public class GaBIEn {
         internal.hintFlushAllTheCaches();
     }
 
-    public static int measureText(int i, String text) {
-        return internal.measureText(i, text);
+    /**
+     * Deprecated because this uses FontManager.fontOverride and that whole mess needs to be cleaned up piece by piece.
+     */
+    @Deprecated
+    public static int measureText(int size, String text) {
+        return getNativeFont(size, FontManager.fontOverride, true).measureLine(text);
     }
 
+    /**
+     * Returns the list of native font names.
+     */
     public static String[] getFontOverrides() {
         return internal.getFontOverrides();
+    }
+
+    /**
+     * Gets a native font by name. If the name is null, returns the default font.
+     * If not available, returns null.
+     */
+    public static @Nullable NativeFont getNativeFont(int size, @Nullable String name, boolean fallback) {
+        if (name == null)
+            return nativeFontCache.getDefaultNativeFont(size);
+        return nativeFontCache.getNativeFont(size, name);
+    }
+
+    /**
+     * Gets a native font by name. If the name is null, returns the default font.
+     * If not available, returns the default font.
+     */
+    public static @NonNull NativeFont getNativeFontFallback(int size, @Nullable String name) {
+        if (name == null)
+            return nativeFontCache.getDefaultNativeFont(size);
+        NativeFont nf = nativeFontCache.getNativeFont(size, name);
+        if (nf == null)
+            return nativeFontCache.getDefaultNativeFont(size);
+        return nf;
     }
 
     public static boolean fileOrDirExists(String s) {

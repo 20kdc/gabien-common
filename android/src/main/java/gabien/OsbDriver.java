@@ -11,8 +11,11 @@ import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
 import gabien.backendhelp.Blender;
 import gabien.backendhelp.INativeImageHolder;
+import gabien.text.NativeFont;
 
 import java.io.ByteArrayOutputStream;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 public class OsbDriver implements INativeImageHolder, IGrDriver {
     protected Bitmap bitmap;
@@ -138,11 +141,12 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public void drawText(int x, int y, int r, int g, int b, int i, String text) {
+    public void drawText(int x, int y, int r, int g, int b, @NonNull String text, @NonNull NativeFont font) {
         globalPaint.setARGB(255, r, g, b);
         globalPaint.setAntiAlias(true);
-        globalPaint.setTextSize(i);
-        canvas.drawText(text, x, y + ((i * 3) / 4), globalPaint);
+        int size = ((NativeFontKinda) font).size;
+        globalPaint.setTextSize(size);
+        canvas.drawText(text, x, y + ((size * 3) / 4), globalPaint);
         globalPaint.setAntiAlias(false);
         globalPaint.setARGB(255, 255, 255, 255);
     }

@@ -9,10 +9,13 @@ package gabien;
 
 import gabien.backendhelp.Blender;
 import gabien.backendhelp.INativeImageHolder;
+import gabien.text.NativeFont;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Created on 04/06/17.
@@ -20,8 +23,6 @@ import java.awt.image.BufferedImage;
 public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
     public Graphics2D bufGraphics;
     private final boolean alpha;
-    private Font lastFont;
-    private int lastFontSize;
 
     // keeps track of Graphics-side local translation
     private int translationX, translationY;
@@ -96,33 +97,15 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
         Blender.blendRotatedScaledImage(this, srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
     }
 
-    protected static Font getFont(int textSize) {
-        try {
-            String s = FontManager.fontOverride;
-            if (s == null)
-                s = Font.SANS_SERIF;
-            Font f = new Font(s, Font.PLAIN, textSize - (textSize / 8));
-            return f;
-        } catch (Exception ex) {
-        }
-        return null;
-    }
-
     @Override
-    public void drawText(int x, int y, int r, int cg, int b, int textSize, String text) {
+    public void drawText(int x, int y, int r, int cg, int b, @NonNull String text, @NonNull NativeFont font) {
         try {
-            Font f = lastFont;
-            if (f != null) {
-                if (lastFontSize != textSize) {
-                    lastFont = f = getFont(textSize);
-                    lastFontSize = textSize;
-                }
-            } else {
-                lastFont = f = getFont(textSize);
-                lastFontSize = textSize;
+            int textSize = 16;
+            if (font instanceof AWTNativeFont) {
+                AWTNativeFont nf = (AWTNativeFont) font;
+                bufGraphics.setFont(nf.font);
+                textSize = nf.size;
             }
-            if (f != null)
-                bufGraphics.setFont(f);
             bufGraphics.setColor(new Color(r, cg, b));
             bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.

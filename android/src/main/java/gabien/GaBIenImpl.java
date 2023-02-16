@@ -10,13 +10,16 @@ package gabien;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Paint;
 import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.backendhelp.WindowMux;
+import gabien.text.NativeFont;
 import gabien.uslx.vfs.impl.*;
 
 import java.io.*;
 import java.util.HashMap;
+
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * The implementation of the runtime.
@@ -69,12 +72,15 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public int measureText(int i, String text) {
-        // *hmm*... something seems off here.
-        // figure out what units this uses, do the usual awful hax
-        Paint p = new Paint();
-        p.setTextSize(i);
-        return (int) p.measureText(text + " "); // about the " " : it gets it wrong somewhat, by about this amount
+    @NonNull
+    public NativeFont getDefaultNativeFont(int size) {
+        return new NativeFontKinda(size);
+    }
+
+    @Override
+    @Nullable
+    public NativeFont getNativeFont(int size, @NonNull String name) {
+        return null;
     }
 
     @Override

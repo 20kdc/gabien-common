@@ -7,6 +7,10 @@
 
 package gabien;
 
+import org.eclipse.jdt.annotation.NonNull;
+
+import gabien.text.NativeFont;
+
 /**
  * Represents a buffer that can be drawn to.
  * Created on 04/06/17.
@@ -35,7 +39,23 @@ public interface IGrDriver extends IImage {
     // Now, this still isn't going to be consistent.
     // It probably never will be.
     // But it will work, and it means I avoid having to include Unifont.
-    void drawText(int x, int y, int r, int g, int b, int i, String text);
+
+    /**
+     * Draws text in the given colour and size.
+     * Uses FontManager.fontOverride to determine font.
+     * <i>Deprecated. Use the explicit font version and FontManager.fontOverride directly instead.</i>
+     * If you're using drawText at all, you probably knew what you were getting into. 󱥄󱥜󱥫󱤬󱥍󱥞󱤧󱥔.
+     */
+    @Deprecated
+    default void drawText(int x, int y, int r, int g, int b, int size, @NonNull String text) {
+        drawText(x, y, r, g, b, text, GaBIEn.getNativeFontFallback(size, FontManager.fontOverride));
+    }
+
+    /**
+     * Draws text in the given colour and native font.
+     * This is a semi-internal API, being how a NativeFont gets into the driver, but isn't particularly dangerous.
+     */
+    void drawText(int x, int y, int r, int g, int b, @NonNull String text, @NonNull NativeFont font);
 
     void clearAll(int i, int i0, int i1);
 

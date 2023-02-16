@@ -9,6 +9,11 @@ package gabien;
 
 import java.awt.image.BufferedImage;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.text.NativeFont;
+
 /**
  * Created on 6/20/17.
  */
@@ -59,7 +64,7 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public void drawText(int x, int y, int r, int g, int b, int i, String text) {
+    public void drawText(int x, int y, int r, int g, int b, @NonNull String text, @Nullable NativeFont font) {
 
     }
 

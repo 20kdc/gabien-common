@@ -9,10 +9,13 @@ package gabien.backendhelp;
 
 import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.text.NativeFont;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Backend assistance: Forwards commands to another thread.
@@ -280,11 +283,11 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
-    public void drawText(final int x, final int y, final int r, final int g, final int b, final int i, final String text) {
+    public void drawText(final int x, final int y, final int r, final int g, final int b, final @NonNull String text, final @NonNull NativeFont font) {
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
-                target.drawText(x, y, r, g, b, i, text);
+                target.drawText(x, y, r, g, b, text, font);
             }
         });
     }

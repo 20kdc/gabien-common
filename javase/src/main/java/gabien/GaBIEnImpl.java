@@ -7,13 +7,16 @@
 
 package gabien;
 
+import gabien.text.NativeFont;
 import gabien.uslx.append.*;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
+
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.HashMap;
@@ -34,6 +37,9 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     // This is due to practicality issues.
     // On desktop devices, this should work based on the external UI scale.
     protected static int uiGuessScaleTenths = 10;
+
+    // For testing only!
+    public static boolean fontsAlwaysMeasure16;
 
     private HashMap<String, IImage> loadedImages = new HashMap<String, IImage>();
 
@@ -227,19 +233,21 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         loadedImages.clear();
     }
 
-    @Override
-    public int measureText(int i, String text) {
-        Font f = OsbDriverCore.getFont(i);
-        if (f == null)
-            return text.length() * (i / 2);
-        Rectangle r = f.getStringBounds(text, new FontRenderContext(AffineTransform.getTranslateInstance(0, 0), true, false)).getBounds();
-        return r.width;
-    }
-
     public static String getDefaultFont() {
         return Font.SANS_SERIF;
     }
 
+    @Override
+    @NonNull
+    public NativeFont getDefaultNativeFont(int size) {
+        return AWTNativeFont.getFont(size, null);
+    }
+
+    @Override
+    @Nullable
+    public NativeFont getNativeFont(int size, @NonNull String name) {
+        return AWTNativeFont.getFont(size, name);
+    }
 
     @Override
     public String[] getFontOverrides() {

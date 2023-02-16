@@ -9,6 +9,11 @@ package gabien;
 
 import java.io.InputStream;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.text.NativeFont;
+
 /**
  * This instance should be the entry point to the program.
  * It should call the static method gabienapp.Application.gabienmain(),
@@ -56,8 +61,6 @@ public interface IGaBIEn {
 
     void hintFlushAllTheCaches();
 
-    int measureText(int i, String text);
-
     /**
      * Gets font overrides UILabel can use.
      * Note that IGrDriver is expected to honor UILabel font override if given.
@@ -65,6 +68,16 @@ public interface IGaBIEn {
      * Note that this implies at least one font will be listed.
      */
     String[] getFontOverrides();
+
+    /**
+     * Returns a native font by size and name, unless it does not exist (in which case returns null).
+     */
+    @Nullable NativeFont getNativeFont(int size, @NonNull String name);
+
+    /**
+     * Returns the default/fallback native font.
+     */
+    @NonNull NativeFont getDefaultNativeFont(int size);
 
     boolean tryStartTextEditor(String fpath);
 }

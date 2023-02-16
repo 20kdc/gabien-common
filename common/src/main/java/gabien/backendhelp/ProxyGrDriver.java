@@ -7,8 +7,11 @@
 
 package gabien.backendhelp;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.text.NativeFont;
 
 /**
  * Used to allow MT/non-MT implementations of a GrDriver.
@@ -69,8 +72,8 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public void drawText(int x, int y, int r, int g, int b, int i, String text) {
-        target.drawText(x, y, r, g, b, i, text);
+    public void drawText(int x, int y, int r, int g, int b, @NonNull String text, @NonNull NativeFont font) {
+        target.drawText(x, y, r, g, b, text, font);
     }
 
     @Override
