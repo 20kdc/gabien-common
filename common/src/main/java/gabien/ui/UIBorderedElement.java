@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.*;
+import gabien.ui.theming.EightPatch;
 
 /**
  * Responsible for borders, and the drawing thereof.
@@ -17,11 +18,17 @@ public abstract class UIBorderedElement extends UIElement {
     public static int borderTheme = 0;
     public static final int BORDER_THEMES = 4;
     public static final int BORDER_TYPES = 14;
+
     private static IImage cachedTheme = null;
     private static int[] cachedThemeInts;
 
     private static int lastCachedThemeTiles = -1;
     private static IImage[] cachedThemeTiles;
+
+    private static EightPatch[] borderW1 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
+    private static EightPatch[] borderW2 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
+    private static EightPatch[] borderW3 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
+    private static EightPatch[] borderW4 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
 
     public int borderType;
     private int borderWidth;
@@ -39,6 +46,40 @@ public abstract class UIBorderedElement extends UIElement {
         borderType = bt;
         borderWidth = bw;
         calcContentsRelativeInputBounds();
+    }
+
+    /**
+     * Internal use only please
+     */
+    public static void setupAssets() {
+        cachedTheme = GaBIEn.getImageEx("themes.png", false, true);
+        cachedThemeInts = cachedTheme.getPixels();
+        lastCachedThemeTiles = -1;
+        int index = 0;
+        for (int i = 0; i < BORDER_TYPES; i++) {
+            for (int j = 0; j < BORDER_THEMES; j++) {
+                int baseX = i * 12;
+                int baseY = j * 18;
+                Rect outerRegion, innerRegion;
+
+                outerRegion = new Rect(baseX, baseY, 3, 3);
+                innerRegion = new Rect(1, 1, 1, 1);
+                borderW1[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
+
+                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
+                innerRegion = new Rect(2, 2, 2, 2);
+                borderW2[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
+
+                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
+                innerRegion = new Rect(3, 3, 0, 0);
+                borderW3[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
+
+                outerRegion = new Rect(baseX, baseY + 6, 12, 12);
+                innerRegion = new Rect(4, 4, 4, 4);
+                borderW4[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
+                index++;
+            }
+        }
     }
 
     public static int getRecommendedBorderWidth(int textHeight) {
@@ -148,14 +189,9 @@ public abstract class UIBorderedElement extends UIElement {
         drawBorder(igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
     }
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
-        if (cachedTheme == null) {
-            cachedTheme = GaBIEn.getImageEx("themes.png", false, true);
-            cachedThemeInts = cachedTheme.getPixels();
-            lastCachedThemeTiles = -1;
-        }
-        int baseX;
-        int baseY;
-        int chunkSize, chunkSizeO;
+        // This variable dates back to when this class did its own rendering.
+        // This has been preserved.
+        int chunkSize;
         if (getTiledFlag(borderType)) {
             // Bite the bullet - user *wants* tiling
             if (lastCachedThemeTiles != borderTheme)
@@ -173,17 +209,14 @@ public abstract class UIBorderedElement extends UIElement {
             // Entire highres border space is reserved for tiling pattern.
             // Try to make the most of lowres? :(
             chunkSize = 3;
-            chunkSizeO = 0;
-            baseX = (borderType * 12) + 6;
-            baseY = borderTheme * 18;
             if (borderWidth != 0)
                 borderWidth = ensureBWV(Math.max(borderWidth, 3), chunkSize);
         } else {
             int eBorderWidth = borderWidth;
             if (borderWidth == 0)
                 eBorderWidth = Math.min(w, h);
-            baseX = borderType * 12;
-            baseY = borderTheme * 18;
+            int baseX = borderType * 12;
+            int baseY = borderTheme * 18;
             chunkSize = 1;
             if (eBorderWidth >= 2) {
                 baseX += 6;
@@ -197,55 +230,31 @@ public abstract class UIBorderedElement extends UIElement {
 
             borderWidth = ensureBWV(borderWidth, chunkSize);
 
-            chunkSizeO = chunkSize;
             if (getClearFlag(borderType)) {
                 igd.clearRect(0, 0, 0, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2));
             } else {
-                igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSizeO, chunkSizeO, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), cachedTheme);
+                igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSize, chunkSize, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), cachedTheme);
             }
         }
 
         if (borderWidth <= 0)
             return;
-
-        drawBorderCore(igd, baseX, baseY, chunkSize, chunkSizeO, borderWidth, x, y, w, h);
+        EightPatch borderAsset;
+        if (chunkSize == 1) {
+            borderAsset = borderW1[(borderType * BORDER_THEMES) + borderTheme];
+        } else if (chunkSize == 2) {
+            borderAsset = borderW2[(borderType * BORDER_THEMES) + borderTheme];
+        } else if (chunkSize == 3) {
+            borderAsset = borderW3[(borderType * BORDER_THEMES) + borderTheme];
+        } else {
+            borderAsset = borderW4[(borderType * BORDER_THEMES) + borderTheme];
+        }
+        borderAsset.draw(igd, borderWidth, borderWidth, borderWidth, borderWidth, x, y, w, h);
     }
 
     private static int ensureBWV(int borderWidth, int chunk) {
         if (borderWidth > chunk)
             return ((borderWidth + 2) / chunk) * chunk;
         return borderWidth;
-    }
-
-    private static void drawBorderCore(IGrDriver igd, int x0, int y0, int chunkSizeLR, int chunkSizeM, int borderWidth, int x, int y, int w, int h) {
-        IImage im = cachedTheme;
-
-        int x1 = x0 + chunkSizeLR;
-        int x2 = x1 + chunkSizeM;
-        int y1 = y0 + chunkSizeLR;
-        int y2 = y1 + chunkSizeM;
-
-        // Positions calculated, now adjust for M=0
-        if (chunkSizeM == 0) {
-            x1--;
-            y1--;
-            chunkSizeM = 2;
-        }
-
-        // edges
-
-        igd.blitScaledImage(x1, y0, chunkSizeM, chunkSizeLR, x + borderWidth, y, w - (borderWidth * 2), borderWidth, im);
-        igd.blitScaledImage(x1, y2, chunkSizeM, chunkSizeLR, x + borderWidth, y + (h - borderWidth), w - (borderWidth * 2), borderWidth, im);
-
-        igd.blitScaledImage(x0, y1, chunkSizeLR, chunkSizeM, x, y + borderWidth, borderWidth, h - (borderWidth * 2), im);
-        igd.blitScaledImage(x2, y1, chunkSizeLR, chunkSizeM, x + (w - borderWidth), y + borderWidth, borderWidth, h - (borderWidth * 2), im);
-
-        // corners
-
-        igd.blitScaledImage(x0, y0, chunkSizeLR, chunkSizeLR, x, y, borderWidth, borderWidth, im);
-        igd.blitScaledImage(x2, y0, chunkSizeLR, chunkSizeLR, x + (w - borderWidth), y, borderWidth, borderWidth, im);
-
-        igd.blitScaledImage(x0, y2, chunkSizeLR, chunkSizeLR, x, y + (h - borderWidth), borderWidth, borderWidth, im);
-        igd.blitScaledImage(x2, y2, chunkSizeLR, chunkSizeLR, x + (w - borderWidth), y + (h - borderWidth), borderWidth, borderWidth, im);
     }
 }

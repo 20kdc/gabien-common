@@ -8,6 +8,7 @@
 package gabien;
 
 import gabien.text.NativeFont;
+import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
@@ -340,5 +341,6 @@ public class GaBIEn {
      */
     static void setupAssets() {
         FontManager.setupFonts();
+        UIBorderedElement.setupAssets();
     }
 }

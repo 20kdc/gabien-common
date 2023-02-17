@@ -43,6 +43,7 @@ public final class GaBIenImpl implements IGaBIEn {
     	        return new File("/sdcard", fileName);
     	    }
     	};
+        GaBIEn.setupAssets();
     	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);

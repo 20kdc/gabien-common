@@ -64,11 +64,19 @@ public final class Rect extends Size {
         return null;
     }
 
+    /**
+     * Shrinks the rectangle by the given margin.
+     */
+    public Rect margin(int l, int u, int r, int d) {
+        return new Rect(x + l, y + u, width - (l + r), height - (u + d));
+    }
 
-    // Applies the same amount of X/Y position change as occurred between from and to.
-    // Also considers the amount of height-cropping involved -
-    // from's size is compared to this rectangle's size, and the width/height changes are scaled accordingly.
-    // Useful for cropping, as you can crop in screen-space then apply the transform in sprite-space.
+    /**
+     * Applies the same amount of X/Y position change as occurred between from and to.
+     * Also considers the amount of height-cropping involved -
+     * from's size is compared to this rectangle's size, and the width/height changes are scaled accordingly.
+     * Useful for cropping, as you can crop in screen-space then apply the transform in sprite-space.
+     */
     public Rect transformed(Rect from, Rect to) {
         // If width or height is zero, then it would divide by zero - and if that didn't lead to an exception (IIRC?)
         //  one or both of the parameters would be 0 (0 * infinity == 0),
