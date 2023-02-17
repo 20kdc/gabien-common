@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.*;
 import gabien.ui.theming.EightPatch;
+import gabien.ui.theming.ThemingCentral;
 
 /**
  * Responsible for borders, and the drawing thereof.
@@ -20,7 +21,6 @@ public abstract class UIBorderedElement extends UIElement {
     public static final int BORDER_TYPES = 14;
 
     private static IImage cachedTheme = null;
-    private static int[] cachedThemeInts;
 
     private static int lastCachedThemeTiles = -1;
     private static IImage[] cachedThemeTiles;
@@ -53,7 +53,6 @@ public abstract class UIBorderedElement extends UIElement {
      */
     public static void setupAssets() {
         cachedTheme = GaBIEn.getImageEx("themes.png", false, true);
-        cachedThemeInts = cachedTheme.getPixels();
         lastCachedThemeTiles = -1;
         int index = 0;
         for (int i = 0; i < BORDER_TYPES; i++) {
@@ -102,7 +101,7 @@ public abstract class UIBorderedElement extends UIElement {
     private void calcContentsRelativeInputBounds() {
         int bw = borderWidth;
         int bwy = bw;
-        if (getBorderFlag(borderType, 0))
+        if (getBorderFlag2(borderType, ThemingCentral.BF_MOVEDOWN))
             bwy *= 2;
         Size sz = getSize();
         contentsRelativeInputBounds = new Rect(-bw, -bwy, sz.width, sz.height);
@@ -121,8 +120,8 @@ public abstract class UIBorderedElement extends UIElement {
     @Override
     public final void render(IGrDriver igd) {
         Size s = getSize();
-        boolean black = getBorderFlag(borderType, 5);
-        if (getBorderFlag(borderType, 0)) {
+        boolean black = getBorderFlag2(borderType, ThemingCentral.BF_LIGHTBKG);
+        if (getBorderFlag2(borderType, ThemingCentral.BF_MOVEDOWN)) {
             int[] localST = igd.getLocalST();
             int oldTY = localST[1];
             localST[1] += getBorderWidth();
@@ -149,40 +148,27 @@ public abstract class UIBorderedElement extends UIElement {
     public abstract void updateContents(double deltaTime, boolean selected, IPeripherals peripherals);
 
     public static boolean getMoveDownFlag(int base) {
-        return getBorderFlag(base, 0);
+        return getBorderFlag2(base, ThemingCentral.BF_MOVEDOWN);
     }
 
     public static boolean getClearFlag(int base) {
-        return getBorderFlag(base, 1);
+        return getBorderFlag2(base, ThemingCentral.BF_CLEAR);
     }
 
     public static boolean getTiledFlag(int base) {
-        return getBorderFlag(base, 4);
+        return getBorderFlag2(base, ThemingCentral.BF_TILED);
     }
 
     public static boolean getBlackTextFlagWindowRoot() {
-        return getBorderFlag(5, 5);
+        return getBorderFlag2(5, ThemingCentral.BF_LIGHTBKG);
     }
 
     public static boolean getBlackTextFlag(int i) {
-        return getBorderFlag(i, 5);
+        return getBorderFlag2(i, ThemingCentral.BF_LIGHTBKG);
     }
 
-    // flag 0: use 'pressed' offset effect (WHERE SUPPORTED)
-    // flag 1: Contents are black, use a clear for speed. (Ignored if tiling!)
-    // flag 4: hi-res section is tiled, mid-res becomes 3-pixel border w/ added weirdness
-    // flag 5: text, etc. should be black
-    private static boolean getBorderFlag(int borderType, int flag) {
-        if (cachedTheme == null)
-            return false;
-        int x = flag % 3;
-        int y = flag / 3;
-        int idx = (borderType * 12) + 3 + x + (cachedTheme.getWidth() * (3 + y + (borderTheme * 18)));
-        if (idx < 0)
-            return false;
-        if (idx >= cachedThemeInts.length)
-            return false;
-        return cachedThemeInts[idx] == -1;
+    private static boolean getBorderFlag2(int borderType, int flag) {
+        return (ThemingCentral.borderFlags[(borderType * BORDER_THEMES) + borderTheme] & flag) != 0;
     }
 
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, Rect where) {

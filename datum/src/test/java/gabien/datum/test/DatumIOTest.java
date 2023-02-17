@@ -7,7 +7,7 @@
 package gabien.datum.test;
 
 import static org.junit.Assert.*;
-import static gabien.datum.DatumSymbol.sym;
+import static gabien.datum.DatumTreeUtils.sym;
 
 import java.io.StringReader;
 import java.io.StringWriter;

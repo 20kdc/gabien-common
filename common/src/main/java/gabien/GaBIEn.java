@@ -9,13 +9,16 @@ package gabien;
 
 import gabien.text.NativeFont;
 import gabien.ui.UIBorderedElement;
+import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -64,6 +67,16 @@ public class GaBIEn {
                 return inp;
         }
         return internal.getResource(resource);
+    }
+
+    /**
+     * Wrapper over getResource for text.
+     */
+    public static InputStreamReader getTextResource(String resource) {
+        InputStream inp = getResource(resource);
+        if (inp == null)
+            return null;
+        return new InputStreamReader(inp, StandardCharsets.UTF_8);
     }
 
     public static InputStream getInFile(String resource) {
@@ -342,5 +355,6 @@ public class GaBIEn {
     static void setupAssets() {
         FontManager.setupFonts();
         UIBorderedElement.setupAssets();
+        ThemingCentral.setupAssets();
     }
 }

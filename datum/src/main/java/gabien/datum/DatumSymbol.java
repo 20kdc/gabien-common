@@ -38,11 +38,4 @@ public final class DatumSymbol implements Comparable<DatumSymbol> {
     public int compareTo(DatumSymbol var1) {
         return id.compareTo(var1.id);
     }
-
-    /**
-     * Statically importable function for converting strings to symbols.
-     */
-    public static DatumSymbol sym(String s) {
-        return new DatumSymbol(s);
-    }
 }

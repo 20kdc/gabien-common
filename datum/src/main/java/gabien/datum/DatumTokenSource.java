@@ -83,21 +83,21 @@ public abstract class DatumTokenSource {
                 // Conversion...
             {
                 String c = contents();
-                double d = 0d;
                 long l = 0L;
                 try {
-                    d = Double.valueOf(c);
+                    l = Long.valueOf(c);
                 } catch (NumberFormatException nfe1) {
+                    double d = 0d;
                     try {
-                        l = Long.valueOf(c);
+                        d = Double.valueOf(c);
                     } catch (NumberFormatException nfe2) {
                         visitor.visitNumericUnknown(c);
                         break;
                     }
-                    visitor.visitInt(l, c);
+                    visitor.visitFloat(d, c);
                     break;
                 }
-                visitor.visitFloat(d, c);
+                visitor.visitInt(l, c);
                 break;
             }
             case Quote:
