@@ -82,14 +82,13 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
 
     @Override
     public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i) {
-        AffineTransform workTransform = new AffineTransform();
-        workTransform.translate(x + (acw / 2.0d), y + (ach / 2.0d));
-        workTransform.rotate((-angle / 360.0d) * (Math.PI * 2.0d));
-        workTransform.translate(-(acw / 2.0d), -(ach / 2.0d));
-        bufGraphics.setTransform(workTransform);
+        AffineTransform oldTransform = bufGraphics.getTransform();
+        bufGraphics.translate(x + (acw / 2.0d), y + (ach / 2.0d));
+        bufGraphics.rotate((-angle / 360.0d) * (Math.PI * 2.0d));
+        bufGraphics.translate(-(acw / 2.0d), -(ach / 2.0d));
         INativeImageHolder nih = (INativeImageHolder) i;
         bufGraphics.drawImage((BufferedImage) nih.getNative(), 0, 0, acw, ach, srcx, srcy, (srcx + srcw), (srcy + srch), null);
-        bufGraphics.setTransform(new AffineTransform());
+        bufGraphics.setTransform(oldTransform);
     }
 
     @Override
