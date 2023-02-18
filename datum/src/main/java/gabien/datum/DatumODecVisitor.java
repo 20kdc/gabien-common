@@ -6,7 +6,7 @@
  */
 package gabien.datum;
 
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * All lists passed to this are expected to begin with a symbol.
@@ -15,10 +15,10 @@ import java.util.HashMap;
  * Created 17th February 2023.
  */
 public abstract class DatumODecVisitor<T> extends DatumDecodingVisitor {
-    public final HashMap<String, Handler<T>> handlers;
-    public final T context;
+    public Map<String, Handler<T>> handlers;
+    public T context;
 
-    public DatumODecVisitor(HashMap<String, Handler<T>> handlers, T context) {
+    public DatumODecVisitor(Map<String, Handler<T>> handlers, T context) {
         this.handlers = handlers;
         this.context = context;
     }
@@ -49,8 +49,10 @@ public abstract class DatumODecVisitor<T> extends DatumDecodingVisitor {
     public interface Handler<T> {
         /**
          * Given a parent visitor, returns a visitor to handle the remainder of the list.
-         * Once the remainder of the list is handled, the parent visitor's visitTree method should be called.
-         * However, this is not a requirement, as the value may also be supplied via the context.
+         * At some point, the parent visitor's visitTree method should be called.
+         * Ideally, this would be done after all changes to the object are finished.
+         * But depending on application requirements that isn't required.
+         * Calling visitTree at all is not a requirement, as the value may also be sent back via the context.
          */
         DatumVisitor handle(String key, DatumODecVisitor<T> parent, T context);
     }

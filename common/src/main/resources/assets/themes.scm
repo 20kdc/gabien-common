@@ -6,7 +6,7 @@
 ; This would be a theme configuration file, but right now it's not much of one.
 ; Still, the border flags are saner now.
 ; Border flags are: moveDown, clear, tiled, lightBkg
-(id 0
+t0 (theme
 	btn ()
 	btnP (moveDown)
 	label ()
@@ -23,7 +23,7 @@
 	r48Overlay ()
 )
 
-(id 1
+t1 (theme
 	btn (tiled)
 	btnP (tiled moveDown)
 	label (tiled)
@@ -40,7 +40,7 @@
 	r48Overlay ()
 )
 
-(id 2
+t2 (theme
 	btn (tiled lightBkg)
 	btnP (tiled moveDown lightBkg)
 	label (tiled lightBkg)
@@ -57,7 +57,7 @@
 	r48Overlay ()
 )
 
-(id 3
+t3 (theme
 	btn ()
 	btnP ()
 	label ()
@@ -73,3 +73,4 @@
 	i12 ()
 	r48Overlay ()
 )
+

@@ -6,21 +6,15 @@
  */
 package gabien.datum;
 
-import java.util.HashMap;
-
 /**
  * This is expected to be used to visit the contents of a list for key/value pairs.
  * Created 17th February 2023.
  */
-public class DatumKVDVisitor<T> extends DatumEncodingProxyVisitor {
-    public final HashMap<String, Handler<T>> handlers;
-    public final T context;
+public abstract class DatumKVDVisitor extends DatumEncodingProxyVisitor {
     protected boolean readingKey = true;
 
-    public DatumKVDVisitor(HashMap<String, Handler<T>> handlers, T context) {
+    public DatumKVDVisitor() {
         super(DatumInvalidVisitor.INSTANCE);
-        this.handlers = handlers;
-        this.context = context;
     }
 
     @Override
@@ -36,18 +30,9 @@ public class DatumKVDVisitor<T> extends DatumEncodingProxyVisitor {
             super.visitId(s);
             return;
         }
-        Handler<T> h = handlers.get(s);
-        if (h == null)
-            throw new RuntimeException("No handler for: " + s);
-        target = h.handle(s, context);
+        target = handle(s);
         readingKey = false;
     }
 
-    public interface Handler<T> {
-        /**
-         * Given the key and the context, returns a visitor to handle the next value.
-         * This visitor will be conveniently and automatically terminated.
-         */
-        DatumVisitor handle(String key, T context);
-    }
+    public abstract DatumVisitor handle(String key);
 }

@@ -7,17 +7,9 @@
 package gabien.ui.theming;
 
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.List;
 
 import gabien.GaBIEn;
-import gabien.datum.DatumDecodingVisitor;
-import gabien.datum.DatumEncodingProxyVisitor;
-import gabien.datum.DatumKVDVisitor;
-import gabien.datum.DatumODecVisitor;
-import gabien.datum.DatumReaderTokenSource;
-
-import static gabien.datum.DatumTreeUtils.*;
+import gabien.datum.*;
 
 /**
  * This is holding all the stuff that's being pulled out of UIBorderedElement.
@@ -34,99 +26,22 @@ public class ThemingCentral {
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
     public static final Theme[] themes = new Theme[4];
-    public static final String[] borderTypeNames = new String[] {
-        "btn",
-        "btnP",
-        "label",
-        "textBox",
-        // 4
-        "textBoxF",
-        "window",
-        "sbTray",
-        "sbNub",
-        // 8
-        "tabA",
-        "tabB",
-        "tabSel",
-        "i11",
-        // 12
-        "i12",
-        "r48Overlay"
-    };
+
     public static void setupAssets() {
         try {
+            ThemingResCtx resCtx = new ThemingResCtx();
+
+            // Read in resources
             InputStreamReader themesISR = GaBIEn.getTextResource("themes.scm");
-            HashMap<String, DatumODecVisitor.Handler<Object>> handlers = new HashMap<>();
-            HashMap<String, DatumKVDVisitor.Handler<Theme>> handlersThemeKV = new HashMap<>();
-            handlers.put("id", (k, parent, c) -> {
-                Theme theme = new Theme();
-                return new DatumEncodingProxyVisitor(null) {
-                    @Override
-                    public void visitEnd() {
-                        super.visitEnd();
-                        parent.visitTree(theme);
-                    }
-                    @Override
-                    public void visitInt(long value, String raw) {
-                        if (target != null) {
-                            super.visitInt(value, raw);
-                            return;
-                        }
-                        theme.id = (int) value;
-                        target = new DatumKVDVisitor<>(handlersThemeKV, theme);
-                    }
-                };
+            new DatumReaderTokenSource(themesISR).visit(new DatumKVDVisitor() {
+                @Override
+                public DatumVisitor handle(String key) {
+                    return new DatumODec1Visitor<ThemingResCtx, String>(ThemingResCtx.handlers, resCtx, resCtx, key);
+                }
             });
-            for (int i = 0; i < borderTypeNames.length; i++) {
-                final int borderType = i;
-                handlersThemeKV.put(borderTypeNames[i], (k, theme) -> {
-                    return new DatumDecodingVisitor() {
-
-                        @Override
-                        public void visitEnd() {
-                        }
-
-                        @Override
-                        public void visitTree(Object obj) {
-                            if (obj instanceof List) {
-                                int res = 0;
-                                for (Object flg : asList(obj)) {
-                                    if (isSym(flg, "moveDown")) {
-                                        res |= BF_MOVEDOWN;
-                                    } else if (isSym(flg, "clear")) {
-                                        res |= BF_CLEAR;
-                                    } else if (isSym(flg, "tiled")) {
-                                        res |= BF_TILED;
-                                    } else if (isSym(flg, "lightBkg")) {
-                                        res |= BF_LIGHTBKG;
-                                    } else {
-                                        throw new RuntimeException("Unrecognized flag " + flg);
-                                    }
-                                }
-                                theme.borderFlags[borderType] = res;
-                            } else {
-                                throw new RuntimeException("Unrecognized element in themes.scm: " + obj);
-                            }
-                        }
-                    };
-                });
-            }
-            DatumODecVisitor<Object> visitor = new DatumODecVisitor<Object>(handlers, null) {
-                @Override
-                public void visitTree(Object obj) {
-                    if (obj instanceof Theme) {
-                        Theme t = (Theme) obj;
-                        themes[t.id] = t;
-                    } else {
-                        throw new RuntimeException("Unrecognized element in themes.scm: " + obj);
-                    }
-                }
-                @Override
-                public void visitEnd() {
-                    // nothing to do here
-                }
-            };
-            new DatumReaderTokenSource(themesISR).visit(visitor);
+            // Grab resources
+            for (int i = 0; i < 4; i++)
+                themes[i] = (Theme) resCtx.resources.get("t" + i);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
