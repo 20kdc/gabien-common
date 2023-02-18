@@ -168,7 +168,7 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     private static boolean getBorderFlag2(int borderType, int flag) {
-        return (ThemingCentral.borderFlags[(borderType * BORDER_THEMES) + borderTheme] & flag) != 0;
+        return (ThemingCentral.themes[borderTheme].borderFlags[borderType] & flag) != 0;
     }
 
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, Rect where) {
@@ -182,8 +182,10 @@ public abstract class UIBorderedElement extends UIElement {
             // Bite the bullet - user *wants* tiling
             if (lastCachedThemeTiles != borderTheme)
                 cachedThemeTiles = null;
-            if (cachedThemeTiles == null)
+            if (cachedThemeTiles == null) {
                 cachedThemeTiles = new IImage[BORDER_TYPES];
+                lastCachedThemeTiles = borderTheme;
+            }
             if (cachedThemeTiles[borderType] == null) {
                 // Extract tile
                 IGrDriver osb = GaBIEn.makeOffscreenBuffer(12, 12, true);

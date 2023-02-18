@@ -6,6 +6,8 @@
  */
 package gabien.datum;
 
+import java.util.List;
+
 /**
  * Created 17th February 2023
  */
@@ -34,5 +36,10 @@ public class DatumTreeUtils {
 
     public static float asFloat(Object o) {
         return ((Number) o).floatValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<Object> asList(Object o) {
+        return (List<Object>) o;
     }
 }
