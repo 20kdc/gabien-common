@@ -232,6 +232,8 @@ However, the following special identifiers shall be considered *standardized* an
 
 * `#f` and `#F`: These express the boolean `false` value.
 
+* `#nil` or any case variation: This represents `null` or so forth. This may or may not be an alias for `()` depending on context.
+
 ### Numbers
 
 The tokenization of Datum does not explicitly define the full set of *reserved number identifiers* that are considered *numbers*. However, some core principles must be followed:
@@ -290,7 +292,7 @@ To transform JSON into Datum (and vice versa), the following rules should be fol
 
 5. When reversing the transformation, if a symbol is used where not expected, it should be converted to a string.
 
-6. Null is translated into an empty list `()`.
+6. Null is translated into `#nil`.
 
 7. Arrays are translated directly into a list, i.e. `[1, 2, 3]` becomes `(1 2 3)`.
 

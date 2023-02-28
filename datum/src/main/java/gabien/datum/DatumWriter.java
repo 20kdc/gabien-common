@@ -7,6 +7,7 @@
 package gabien.datum;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 
 /**
@@ -19,6 +20,13 @@ public class DatumWriter extends DatumEncodingVisitor {
 
     public DatumWriter(Writer base) {
         this.base = base;
+    }
+
+    public static String objectToString(Object obj) {
+        StringWriter sw = new StringWriter();
+        DatumWriter dw = new DatumWriter(sw);
+        dw.visitTree(obj);
+        return sw.toString();
     }
 
     protected void putChar(char c) {
@@ -129,6 +137,11 @@ public class DatumWriter extends DatumEncodingVisitor {
     @Override
     public void visitBoolean(boolean value) {
         visitSpecialUnknown(value ? "#t" : "#f");
+    }
+
+    @Override
+    public void visitNull() {
+        visitSpecialUnknown("#nil");
     }
 
     @Override

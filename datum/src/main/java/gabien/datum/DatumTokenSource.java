@@ -61,6 +61,8 @@ public abstract class DatumTokenSource {
                     visitor.visitBoolean(false);
                 } else if (c.equals("#{}#")) {
                     visitor.visitId("");
+                } else if (c.equalsIgnoreCase("#nil")) {
+                    visitor.visitNull();
                 } else {
                     visitor.visitSpecialUnknown(c);
                 }

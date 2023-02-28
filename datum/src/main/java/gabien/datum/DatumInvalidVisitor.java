@@ -42,6 +42,11 @@ public class DatumInvalidVisitor extends DatumEncodingVisitor {
     }
 
     @Override
+    public void visitNull() {
+        throw new RuntimeException("Did not expect null here");
+    }
+
+    @Override
     public void visitInt(long value, String raw) {
         throw new RuntimeException("Did not expect int " + raw + " here");
     }

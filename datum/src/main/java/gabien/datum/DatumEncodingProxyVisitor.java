@@ -60,6 +60,12 @@ public class DatumEncodingProxyVisitor extends DatumEncodingVisitor {
     }
 
     @Override
+    public void visitNull() {
+        target.visitNull();
+        onVisitedValue();
+    }
+
+    @Override
     public void visitInt(long value, String raw) {
         target.visitInt(value, raw);
         onVisitedValue();

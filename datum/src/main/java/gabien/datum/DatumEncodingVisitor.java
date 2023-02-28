@@ -21,7 +21,9 @@ public abstract class DatumEncodingVisitor extends DatumVisitor {
     @Override
     @SuppressWarnings("unchecked")
     public void visitTree(Object obj) {
-        if (obj instanceof String) {
+        if (obj == null) {
+            visitNull();
+        } else if (obj instanceof String) {
             visitString((String) obj);
         } else if (obj instanceof DatumSymbol) {
             visitId(((DatumSymbol) obj).id);

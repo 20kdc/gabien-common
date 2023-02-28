@@ -39,6 +39,11 @@ public abstract class DatumVisitor {
     public abstract void visitBoolean(boolean value);
 
     /**
+     * Called to visit null.
+     */
+    public abstract void visitNull();
+
+    /**
      * Called to visit an integer.
      */
     public abstract void visitInt(long value, String raw);

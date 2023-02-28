@@ -45,6 +45,11 @@ public abstract class DatumDecodingVisitor extends DatumVisitor {
     }
 
     @Override
+    public void visitNull() {
+        visitTree(null);        
+    }
+
+    @Override
     public void visitInt(long value, String raw) {
         visitTree(value);
     }

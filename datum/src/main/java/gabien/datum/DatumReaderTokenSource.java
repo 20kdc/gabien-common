@@ -8,6 +8,7 @@ package gabien.datum;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 
 /**
  * DatumTokenStream based on Reader.
@@ -25,6 +26,10 @@ public class DatumReaderTokenSource extends DatumTokenSource {
 
     public DatumReaderTokenSource(Reader r) {
         reader = r;
+    }
+
+    public DatumReaderTokenSource(String s) {
+        reader = new StringReader(s);
     }
 
     private int readerRead() {
