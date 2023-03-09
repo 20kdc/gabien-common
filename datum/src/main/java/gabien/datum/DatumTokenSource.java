@@ -41,12 +41,14 @@ public abstract class DatumTokenSource {
      */
     public final boolean visitValue(DatumVisitor visitor) {
         Stack<DatumVisitor> storedListVisitors = new Stack<>();
+        Stack<String> storedListStarts = new Stack<>();
+        String listStart = null;
         while (true) {
             // First token of the value.
             if (!read()) {
                 if (storedListVisitors.isEmpty())
                     return false;
-                throw new RuntimeException(position() + ": EOF during list");
+                throw new RuntimeException(listStart + ": EOF during list started here");
             }
             switch (type()) {
             case ID:
@@ -73,13 +75,16 @@ public abstract class DatumTokenSource {
                 break;
             case ListStart:
                 storedListVisitors.push(visitor);
+                storedListStarts.push(listStart);
                 visitor = visitor.visitList();
+                listStart = position();
                 break;
             case ListEnd:
                 if (storedListVisitors.isEmpty())
                     throw new RuntimeException(position() + ": List end with no list");
                 visitor.visitEnd();
                 visitor = storedListVisitors.pop();
+                listStart = storedListStarts.pop();
                 break;
             case Numeric:
                 // Conversion...
