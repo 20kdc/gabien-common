@@ -13,9 +13,9 @@ import java.util.Map;
  * Created 18th February 2023.
  */
 public class DatumKVDHVisitor<T, GT> extends DatumKVDVisitor {
-    public final Map<String, Handler<T, GT>> handlers;
-    public final T context;
-    public final GT globalContext;
+    private final Map<String, Handler<T, GT>> handlers;
+    private final T context;
+    private final GT globalContext;
 
     public DatumKVDHVisitor(Map<String, Handler<T, GT>> handlers, T context, GT globalContext) {
         this.handlers = handlers;
