@@ -12,6 +12,10 @@ import java.util.List;
  * Created 17th February 2023
  */
 public class DatumTreeUtils {
+    public static DatumDecToLambdaVisitor decVisitor(DatumDecToLambdaVisitor.Handler h) {
+        return new DatumDecToLambdaVisitor(h);
+    }
+
     public static DatumSymbol sym(String s) {
         return new DatumSymbol(s);
     }
