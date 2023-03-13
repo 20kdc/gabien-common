@@ -23,12 +23,12 @@ public class DatumODec1Visitor<HT, RT> extends DatumODecVisitor<HT> {
     }
 
     @Override
-    public void visitTree(Object obj) {
+    public void visitTree(Object obj, DatumSrcLoc srcLoc) {
         returner.accept(obj, returnerContext);
     }
 
     @Override
-    public void visitEnd() {
+    public void visitEnd(DatumSrcLoc srcLoc) {
     }
 
     public interface Returner<T> {

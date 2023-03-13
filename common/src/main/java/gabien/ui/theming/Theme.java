@@ -14,6 +14,7 @@ import java.util.List;
 
 import gabien.datum.DatumDecodingVisitor;
 import gabien.datum.DatumKVDHVisitor;
+import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumODecVisitor.Handler;
 import gabien.ui.UIBorderedElement;
 
@@ -48,8 +49,8 @@ public class Theme {
         Theme theme = new Theme();
         return new DatumKVDHVisitor<Theme, ThemingResCtx>(Theme.handlersThemeKV, theme, resCtx) {
             @Override
-            public void visitEnd() {
-                parent.visitTree(theme);
+            public void visitEnd(DatumSrcLoc srcLoc) {
+                parent.visitTree(theme, srcLoc);
             }
         };
     };
@@ -59,13 +60,12 @@ public class Theme {
             final int borderType = i;
             handlersThemeKV.put(borderTypeNames[i], (k, theme, resCtx) -> {
                 return new DatumDecodingVisitor() {
-
                     @Override
-                    public void visitEnd() {
+                    public void visitEnd(DatumSrcLoc srcLoc) {
                     }
 
                     @Override
-                    public void visitTree(Object obj) {
+                    public void visitTree(Object obj, DatumSrcLoc srcLoc) {
                         if (obj instanceof List) {
                             int res = 0;
                             for (Object flg : asList(obj)) {

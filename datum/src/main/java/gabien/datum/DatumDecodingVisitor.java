@@ -17,61 +17,62 @@ public abstract class DatumDecodingVisitor extends DatumVisitor {
         
     }
 
-    public abstract void visitTree(Object obj);
+    @Override
+    public abstract void visitTree(Object obj, DatumSrcLoc srcLoc);
 
     @Override
-    public void visitString(String s) {
-        visitTree(s);
+    public void visitString(String s, DatumSrcLoc srcLoc) {
+        visitTree(s, srcLoc);
     }
 
     @Override
-    public void visitId(String s) {
-        visitTree(new DatumSymbol(s));
+    public void visitId(String s, DatumSrcLoc srcLoc) {
+        visitTree(new DatumSymbol(s), srcLoc);
     }
 
     @Override
-    public void visitNumericUnknown(String s) {
+    public void visitNumericUnknown(String s, DatumSrcLoc srcLoc) {
         throw new RuntimeException("Numeric can't be parsed: " + s);
     }
 
     @Override
-    public void visitSpecialUnknown(String s) {
+    public void visitSpecialUnknown(String s, DatumSrcLoc srcLoc) {
         throw new RuntimeException("Special ID can't be parsed: " + s);
     }
 
     @Override
-    public void visitBoolean(boolean value) {
-        visitTree(value);
+    public void visitBoolean(boolean value, DatumSrcLoc srcLoc) {
+        visitTree(value, srcLoc);
     }
 
     @Override
-    public void visitNull() {
-        visitTree(null);        
+    public void visitNull(DatumSrcLoc srcLoc) {
+        visitTree(null, srcLoc);
     }
 
     @Override
-    public void visitInt(long value, String raw) {
-        visitTree(value);
+    public void visitInt(long value, String raw, DatumSrcLoc srcLoc) {
+        visitTree(value, srcLoc);
     }
 
     @Override
-    public void visitFloat(double value, String raw) {
-        visitTree(value);
+    public void visitFloat(double value, String raw, DatumSrcLoc srcLoc) {
+        visitTree(value, srcLoc);
     }
 
     @Override
-    public DatumVisitor visitList() {
+    public DatumVisitor visitList(DatumSrcLoc srcLoc) {
         final LinkedList<Object> buildingList = new LinkedList<>();
         final DatumDecodingVisitor me = this;
         return new DatumDecodingVisitor() {
             @Override
-            public void visitTree(Object obj) {
+            public void visitTree(Object obj, DatumSrcLoc srcLoc) {
                 buildingList.add(obj);
             }
 
             @Override
-            public void visitEnd() {
-                me.visitTree(buildingList);
+            public void visitEnd(DatumSrcLoc srcLoc) {
+                me.visitTree(buildingList, srcLoc);
             }
         };
     }

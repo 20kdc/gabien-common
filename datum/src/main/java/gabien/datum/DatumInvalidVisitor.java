@@ -17,51 +17,51 @@ public class DatumInvalidVisitor extends DatumEncodingVisitor {
     }
 
     @Override
-    public void visitString(String s) {
+    public void visitString(String s, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect string " + s + " here");
     }
 
     @Override
-    public void visitId(String s) {
+    public void visitId(String s, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect ID " + s + " here");
     }
 
     @Override
-    public void visitNumericUnknown(String s) {
+    public void visitNumericUnknown(String s, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect numeric " + s + " here");
     }
 
     @Override
-    public void visitSpecialUnknown(String s) {
+    public void visitSpecialUnknown(String s, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect special ID " + s + " here");
     }
 
     @Override
-    public void visitBoolean(boolean value) {
+    public void visitBoolean(boolean value, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect boolean " + value + " here");
     }
 
     @Override
-    public void visitNull() {
+    public void visitNull(DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect null here");
     }
 
     @Override
-    public void visitInt(long value, String raw) {
+    public void visitInt(long value, String raw, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect int " + raw + " here");
     }
 
     @Override
-    public void visitFloat(double value, String raw) {
+    public void visitFloat(double value, String raw, DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect float " + raw + " here");
     }
 
     @Override
-    public DatumVisitor visitList() {
+    public DatumVisitor visitList(DatumSrcLoc loc) {
         throw new RuntimeException("Did not expect list here");
     }
 
     @Override
-    public void visitEnd() {
+    public void visitEnd(DatumSrcLoc loc) {
     }
 }

@@ -16,55 +16,55 @@ public abstract class DatumVisitor {
     /**
      * Called to visit a string.
      */
-    public abstract void visitString(String s);
+    public abstract void visitString(String s, DatumSrcLoc loc);
 
     /**
      * Called to visit an identifier.
      */
-    public abstract void visitId(String s);
+    public abstract void visitId(String s, DatumSrcLoc loc);
 
     /**
      * Called to visit an undecodable numeric value.
      */
-    public abstract void visitNumericUnknown(String s);
+    public abstract void visitNumericUnknown(String s, DatumSrcLoc loc);
 
     /**
      * Called to visit an undecodable special identifier.
      */
-    public abstract void visitSpecialUnknown(String s);
+    public abstract void visitSpecialUnknown(String s, DatumSrcLoc loc);
 
     /**
      * Called to visit a boolean.
      */
-    public abstract void visitBoolean(boolean value);
+    public abstract void visitBoolean(boolean value, DatumSrcLoc loc);
 
     /**
      * Called to visit null.
      */
-    public abstract void visitNull();
+    public abstract void visitNull(DatumSrcLoc loc);
 
     /**
      * Called to visit an integer.
      */
-    public abstract void visitInt(long value, String raw);
+    public abstract void visitInt(long value, String raw, DatumSrcLoc loc);
 
     /**
      * Called to visit an integer.
      */
-    public final void visitInt(long value) {
-        visitInt(value, Long.toString(value));
+    public final void visitInt(long value, DatumSrcLoc loc) {
+        visitInt(value, Long.toString(value), loc);
     }
 
     /**
      * Called to visit a float.
      */
-    public abstract void visitFloat(double value, String raw);
+    public abstract void visitFloat(double value, String raw, DatumSrcLoc loc);
 
     /**
      * Called to visit a float.
      */
-    public final void visitFloat(double value) {
-        visitFloat(value, Double.toString(value));
+    public final void visitFloat(double value, DatumSrcLoc loc) {
+        visitFloat(value, Double.toString(value), loc);
     }
 
     // List start/end
@@ -73,13 +73,13 @@ public abstract class DatumVisitor {
      * Called when entering a list.
      * The DatumVisitor returned will visit the entire list, then visitEnd will be called on it.
      */
-    public abstract DatumVisitor visitList();
+    public abstract DatumVisitor visitList(DatumSrcLoc loc);
 
     /**
      * Called on the list DatumVisitor when leaving a list.
      * (Notably, this won't get called at root level.)
      */
-    public abstract void visitEnd();
+    public abstract void visitEnd(DatumSrcLoc loc);
 
     // Utilties
 
@@ -87,5 +87,5 @@ public abstract class DatumVisitor {
      * Either DatumDecodingVisitor implements this, or DatumEncodingVisitor implements everything else.
      * Which you choose depends on which API you want.
      */
-    public abstract void visitTree(Object obj);
+    public abstract void visitTree(Object obj, DatumSrcLoc loc);
 }

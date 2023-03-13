@@ -24,13 +24,13 @@ public abstract class DatumODecVisitor<T> extends DatumDecodingVisitor {
     }
 
     @Override
-    public DatumVisitor visitList() {
+    public DatumVisitor visitList(DatumSrcLoc srcLoc) {
         return new DatumEncodingProxyVisitor(DatumInvalidVisitor.INSTANCE) {
             boolean done = false;
             @Override
-            public void visitId(String s) {
+            public void visitId(String s, DatumSrcLoc srcLoc) {
                 if (done) {
-                    super.visitId(s);
+                    super.visitId(s, srcLoc);
                 } else {
                     Handler<T> h = handlers.get(s);
                     if (h == null)

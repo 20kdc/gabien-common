@@ -33,7 +33,7 @@ public class ThemingCentral {
 
             // Read in resources
             InputStreamReader themesISR = GaBIEn.getTextResource("themes.scm");
-            new DatumReaderTokenSource(themesISR).visit(new DatumKVDVisitor() {
+            new DatumReaderTokenSource("themes.scm", themesISR).visit(new DatumKVDVisitor() {
                 @Override
                 public DatumVisitor handle(String key) {
                     return new DatumODec1Visitor<ThemingResCtx, String>(ThemingResCtx.handlers, resCtx, resCtx, key);

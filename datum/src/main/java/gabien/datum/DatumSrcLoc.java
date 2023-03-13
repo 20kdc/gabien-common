@@ -7,25 +7,19 @@
 package gabien.datum;
 
 /**
- * Expects a list (for forwarding to DatumKVDVisitor) and nothing else.
- * Created 10th March 2023.
+ * Had to make one of these eventually.
+ * Created 13th March 2023.
  */
-public class DatumExpectListVisitor extends DatumInvalidVisitor {
-    public final Handler handler;
-
-    public DatumExpectListVisitor(Handler handler) {
-        this.handler = handler;
+public final class DatumSrcLoc {
+    public static final DatumSrcLoc NONE = new DatumSrcLoc("NONE", 0);
+    public final String filename;
+    public final int lineNumber;
+    public DatumSrcLoc(String fn, int ln) {
+        filename = fn;
+        lineNumber = ln;
     }
-
     @Override
-    public DatumVisitor visitList(DatumSrcLoc srcLoc) {
-        return handler.handle();
-    }
-
-    public interface Handler {
-        /**
-         * Creates a handler
-         */
-        DatumVisitor handle();
+    public String toString() {
+        return filename + ":" + lineNumber;
     }
 }

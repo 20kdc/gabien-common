@@ -9,7 +9,6 @@ package gabien.datum.test;
 import static org.junit.Assert.*;
 import static gabien.datum.DatumTreeUtils.sym;
 
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import gabien.datum.DatumReaderTokenSource;
+import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumDecodingVisitor;
 import gabien.datum.DatumWriter;
 
@@ -46,15 +46,15 @@ public class DatumIOTest {
                 "; Exceptional cases\n" +
                 "#t #f #{}# \\#escapethis \\1234\n" +
                 ")";
-        DatumReaderTokenSource drs = new DatumReaderTokenSource(new StringReader(tcs));
+        DatumReaderTokenSource drs = new DatumReaderTokenSource("string", tcs);
         AtomicBoolean signalWasVisited = new AtomicBoolean();
         drs.visit(new DatumDecodingVisitor() {
             @Override
-            public void visitEnd() {
+            public void visitEnd(DatumSrcLoc srcLoc) {
             }
             
             @Override
-            public void visitTree(Object obj) {
+            public void visitTree(Object obj, DatumSrcLoc srcLoc) {
                 assertEquals(input, obj);
                 signalWasVisited.set(true);
             }
@@ -66,7 +66,7 @@ public class DatumIOTest {
         Object input = genTestCase();
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
-        dw.visitTree(input);
+        dw.visitTree(input, DatumSrcLoc.NONE);
         assertEquals("((moku sina)li(pona)(tawa mi)#t #f #{}# \\#escapethis \\1234)", sw.toString());
     }
 

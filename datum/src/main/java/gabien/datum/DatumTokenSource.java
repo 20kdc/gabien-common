@@ -32,6 +32,12 @@ public abstract class DatumTokenSource {
     public abstract String position();
 
     /**
+     * A computer-readable representation of the position within the token stream (for less severe errors).
+     * Maybe this should be refactored at some later point.
+     */
+    public abstract DatumSrcLoc srcLoc();
+
+    /**
      * Type of last read token.
      */
     public abstract DatumTokenType type();
@@ -52,37 +58,37 @@ public abstract class DatumTokenSource {
             }
             switch (type()) {
             case ID:
-                visitor.visitId(contents());
+                visitor.visitId(contents(), srcLoc());
                 break;
             case SpecialID:
             {
                 String c = contents();
                 if (c.equalsIgnoreCase("#t")) {
-                    visitor.visitBoolean(true);
+                    visitor.visitBoolean(true, srcLoc());
                 } else if (c.equalsIgnoreCase("#f")) {
-                    visitor.visitBoolean(false);
+                    visitor.visitBoolean(false, srcLoc());
                 } else if (c.equals("#{}#")) {
-                    visitor.visitId("");
+                    visitor.visitId("", srcLoc());
                 } else if (c.equalsIgnoreCase("#nil")) {
-                    visitor.visitNull();
+                    visitor.visitNull(srcLoc());
                 } else {
-                    visitor.visitSpecialUnknown(c);
+                    visitor.visitSpecialUnknown(c, srcLoc());
                 }
             }
                 break;
             case String:
-                visitor.visitString(contents());
+                visitor.visitString(contents(), srcLoc());
                 break;
             case ListStart:
                 storedListVisitors.push(visitor);
                 storedListStarts.push(listStart);
-                visitor = visitor.visitList();
+                visitor = visitor.visitList(srcLoc());
                 listStart = position();
                 break;
             case ListEnd:
                 if (storedListVisitors.isEmpty())
                     throw new RuntimeException(position() + ": List end with no list");
-                visitor.visitEnd();
+                visitor.visitEnd(srcLoc());
                 visitor = storedListVisitors.pop();
                 listStart = storedListStarts.pop();
                 break;
@@ -98,23 +104,23 @@ public abstract class DatumTokenSource {
                     try {
                         d = Double.valueOf(c);
                     } catch (NumberFormatException nfe2) {
-                        visitor.visitNumericUnknown(c);
+                        visitor.visitNumericUnknown(c, srcLoc());
                         break;
                     }
-                    visitor.visitFloat(d, c);
+                    visitor.visitFloat(d, c, srcLoc());
                     break;
                 }
-                visitor.visitInt(l, c);
+                visitor.visitInt(l, c, srcLoc());
                 break;
             }
             case Quote:
             {
-                DatumVisitor dv = visitor.visitList();
-                dv.visitId("quote");
+                DatumVisitor dv = visitor.visitList(srcLoc());
+                dv.visitId("quote", srcLoc());
                 // This works better because it doesn't allow quote followed by list-end
                 if (!visitValue(dv))
                     throw new RuntimeException(position() + ": Hit quote, but did not get a value");
-                dv.visitEnd();
+                dv.visitEnd(srcLoc());
             }
                 break;
             }

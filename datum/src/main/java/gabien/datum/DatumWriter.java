@@ -25,7 +25,7 @@ public class DatumWriter extends DatumEncodingVisitor {
     public static String objectToString(Object obj) {
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
-        dw.visitTree(obj);
+        dw.visitTree(obj, DatumSrcLoc.NONE);
         return sw.toString();
     }
 
@@ -71,7 +71,7 @@ public class DatumWriter extends DatumEncodingVisitor {
     }
 
     @Override
-    public void visitString(String s) {
+    public void visitString(String s, DatumSrcLoc srcLoc) {
         putChar('"');
         putStringContent(s, '"');
         putChar('"');
@@ -79,7 +79,7 @@ public class DatumWriter extends DatumEncodingVisitor {
     }
 
     @Override
-    public void visitId(String s) {
+    public void visitId(String s, DatumSrcLoc srcLoc) {
         emitSpacingIfNeeded();
         if (s.length() == 0) {
             // Emit #{}# to work around this
@@ -125,44 +125,44 @@ public class DatumWriter extends DatumEncodingVisitor {
     }
 
     @Override
-    public void visitNumericUnknown(String s) {
+    public void visitNumericUnknown(String s, DatumSrcLoc srcLoc) {
         visitUnknownPID(DatumCharClass.NumericStart, s);
     }
 
     @Override
-    public void visitSpecialUnknown(String s) {
+    public void visitSpecialUnknown(String s, DatumSrcLoc srcLoc) {
         visitUnknownPID(DatumCharClass.SpecialID, s);
     }
 
     @Override
-    public void visitBoolean(boolean value) {
-        visitSpecialUnknown(value ? "#t" : "#f");
+    public void visitBoolean(boolean value, DatumSrcLoc srcLoc) {
+        visitSpecialUnknown(value ? "#t" : "#f", srcLoc);
     }
 
     @Override
-    public void visitNull() {
-        visitSpecialUnknown("#nil");
+    public void visitNull(DatumSrcLoc srcLoc) {
+        visitSpecialUnknown("#nil", srcLoc);
     }
 
     @Override
-    public void visitInt(long value, String raw) {
-        visitNumericUnknown(raw);
+    public void visitInt(long value, String raw, DatumSrcLoc srcLoc) {
+        visitNumericUnknown(raw, srcLoc);
     }
 
     @Override
-    public void visitFloat(double value, String raw) {
-        visitNumericUnknown(raw);
+    public void visitFloat(double value, String raw, DatumSrcLoc srcLoc) {
+        visitNumericUnknown(raw, srcLoc);
     }
 
     @Override
-    public DatumVisitor visitList() {
+    public DatumVisitor visitList(DatumSrcLoc srcLoc) {
         putChar('(');
         needSpacing = false;
         return this;
     }
 
     @Override
-    public void visitEnd() {
+    public void visitEnd(DatumSrcLoc srcLoc) {
         putChar(')');
         needSpacing = false;
     }

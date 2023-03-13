@@ -24,11 +24,18 @@ public class DatumReaderTokenSource extends DatumTokenSource {
     public int lineNumber = 1;
     public int tokenLineNumber = 1;
 
-    public DatumReaderTokenSource(Reader r) {
+    public final String fileName;
+
+    private DatumSrcLoc lastSrcLoc = null;
+    private int lastSrcLocLineNumber = -1;
+
+    public DatumReaderTokenSource(String fn, Reader r) {
+        fileName = fn;
         reader = r;
     }
 
-    public DatumReaderTokenSource(String s) {
+    public DatumReaderTokenSource(String fn, String s) {
+        fileName = fn;
         reader = new StringReader(s);
     }
 
@@ -164,10 +171,19 @@ public class DatumReaderTokenSource extends DatumTokenSource {
     public String position() {
         if (tokenType != null) {
             if (tokenContents != null)
-                return "L" + tokenLineNumber + ":" + tokenType + "[" + tokenContents + "]";
-            return "L" + tokenLineNumber + ":" + tokenType;
+                return fileName + "L" + tokenLineNumber + ":" + tokenType + "[" + tokenContents + "]";
+            return fileName + "L" + tokenLineNumber + ":" + tokenType;
         }
-        return "L" + tokenLineNumber;
+        return fileName + "L" + tokenLineNumber;
+    }
+
+    @Override
+    public DatumSrcLoc srcLoc() {
+        if (lastSrcLoc == null || lastSrcLocLineNumber != tokenLineNumber) {
+            lastSrcLoc = new DatumSrcLoc(fileName, tokenLineNumber);
+            lastSrcLocLineNumber = tokenLineNumber;
+        }
+        return lastSrcLoc;
     }
 
     @Override

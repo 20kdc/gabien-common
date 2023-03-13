@@ -20,42 +20,42 @@ public abstract class DatumEncodingVisitor extends DatumVisitor {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void visitTree(Object obj) {
+    public void visitTree(Object obj, DatumSrcLoc loc) {
         if (obj == null) {
-            visitNull();
+            visitNull(loc);
         } else if (obj instanceof String) {
-            visitString((String) obj);
+            visitString((String) obj, loc);
         } else if (obj instanceof DatumSymbol) {
-            visitId(((DatumSymbol) obj).id);
+            visitId(((DatumSymbol) obj).id, loc);
         } else if (obj instanceof Number) {
             if (obj instanceof Byte) {
-                visitInt((byte) (Byte) obj, obj.toString());
+                visitInt((byte) (Byte) obj, obj.toString(), loc);
             } else if (obj instanceof Short) {
-                visitInt((short) (Short) obj, obj.toString());
+                visitInt((short) (Short) obj, obj.toString(), loc);
             } else if (obj instanceof Integer) {
-                visitInt((int) (Integer) obj, obj.toString());
+                visitInt((int) (Integer) obj, obj.toString(), loc);
             } else if (obj instanceof Long) {
-                visitInt((long) (Long) obj, obj.toString());
+                visitInt((long) (Long) obj, obj.toString(), loc);
             } else if (obj instanceof Double) {
-                visitFloat((double) (Double) obj, obj.toString());
+                visitFloat((double) (Double) obj, obj.toString(), loc);
             } else if (obj instanceof Float) {
-                visitFloat((float) (Float) obj, obj.toString());
+                visitFloat((float) (Float) obj, obj.toString(), loc);
             } else {
                 throw new RuntimeException("Cannot handle visiting number " + obj);
             }
         } else if (obj instanceof Boolean) {
-            visitBoolean((Boolean) obj);
+            visitBoolean((Boolean) obj, loc);
         } else if (obj instanceof List) {
-            DatumVisitor sub = visitList();
+            DatumVisitor sub = visitList(loc);
             for (Object elm : (List<Object>) obj)
-                sub.visitTree(elm);
-            sub.visitEnd();
+                sub.visitTree(elm, loc);
+            sub.visitEnd(loc);
         } else if (obj.getClass().isArray()) {
-            DatumVisitor sub = visitList();
+            DatumVisitor sub = visitList(loc);
             int len = Array.getLength(obj);
             for (int i = 0; i < len; i++)
-                sub.visitTree(Array.get(obj, i));
-            sub.visitEnd();
+                sub.visitTree(Array.get(obj, i), loc);
+            sub.visitEnd(loc);
         } else {
             throw new RuntimeException("Cannot handle visiting datum " + obj);
         }

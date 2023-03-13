@@ -30,68 +30,68 @@ public class DatumEncodingProxyVisitor extends DatumEncodingVisitor {
     }
 
     @Override
-    public void visitString(String s) {
-        target.visitString(s);
+    public void visitString(String s, DatumSrcLoc loc) {
+        target.visitString(s, loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitId(String s) {
-        target.visitId(s);
+    public void visitId(String s, DatumSrcLoc loc) {
+        target.visitId(s, loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitNumericUnknown(String s) {
-        target.visitNumericUnknown(s);
+    public void visitNumericUnknown(String s, DatumSrcLoc loc) {
+        target.visitNumericUnknown(s, loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitSpecialUnknown(String s) {
-        target.visitSpecialUnknown(s);
+    public void visitSpecialUnknown(String s, DatumSrcLoc loc) {
+        target.visitSpecialUnknown(s, loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitBoolean(boolean value) {
-        target.visitBoolean(value);
+    public void visitBoolean(boolean value, DatumSrcLoc loc) {
+        target.visitBoolean(value, loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitNull() {
-        target.visitNull();
+    public void visitNull(DatumSrcLoc loc) {
+        target.visitNull(loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitInt(long value, String raw) {
-        target.visitInt(value, raw);
+    public void visitInt(long value, String raw, DatumSrcLoc loc) {
+        target.visitInt(value, raw, loc);
         onVisitedValue();
     }
 
     @Override
-    public void visitFloat(double value, String raw) {
-        target.visitFloat(value, raw);
+    public void visitFloat(double value, String raw, DatumSrcLoc loc) {
+        target.visitFloat(value, raw, loc);
         onVisitedValue();
     }
 
     @Override
-    public DatumVisitor visitList() {
+    public DatumVisitor visitList(DatumSrcLoc loc) {
         final DatumEncodingProxyVisitor me = this;
         // Make a visitor that hooks the target list visitor so that we know when the list ends.
-        return new DatumEncodingProxyVisitor(target.visitList()) {
+        return new DatumEncodingProxyVisitor(target.visitList(loc)) {
             @Override
-            public void visitEnd() {
-                super.visitEnd();
+            public void visitEnd(DatumSrcLoc loc) {
+                super.visitEnd(loc);
                 me.onVisitedValue();
             }
         };
     }
 
     @Override
-    public void visitEnd() {
-        target.visitEnd();
+    public void visitEnd(DatumSrcLoc loc) {
+        target.visitEnd(loc);
     }
 }

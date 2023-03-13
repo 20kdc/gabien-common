@@ -25,9 +25,9 @@ public abstract class DatumKVDVisitor extends DatumEncodingProxyVisitor {
     }
 
     @Override
-    public void visitId(String s) {
+    public void visitId(String s, DatumSrcLoc srcLoc) {
         if (!readingKey) {
-            super.visitId(s);
+            super.visitId(s, srcLoc);
             return;
         }
         target = handle(s);
