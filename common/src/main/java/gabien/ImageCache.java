@@ -20,10 +20,8 @@ final class ImageCache {
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
         IImage img = GaBIEn.internal.getImage(a, res);
-        if (img == null) {
-            System.err.println("Couldn't get:" + ki);
+        if (img == null)
             img = GaBIEn.getErrorImage();
-        }
         loadedImages.put(ki, img);
         return img;
     }
@@ -34,7 +32,6 @@ final class ImageCache {
             return loadedImages.get(ki);
         IImage img = GaBIEn.internal.getImage(a, res);
         if (img == null) {
-            System.err.println("Couldn't get:" + ki);
             img = GaBIEn.getErrorImage();
             loadedImages.put(ki, img);
             return img;

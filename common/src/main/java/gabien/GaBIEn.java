@@ -140,37 +140,47 @@ public class GaBIEn {
     }
 
     public static IImage getImageEx(String a, boolean fs, boolean res) {
+        IImage err = getErrorImage();
         if (fs) {
             IImage r = imageCache.getImage(a, false);
-            if (r != getErrorImage())
+            if (r != err)
                 return r;
         }
         if (res) {
             for (String s : appPrefixes) {
                 IImage r = imageCache.getImage(s + a, false);
-                if (r != getErrorImage())
+                if (r != err)
                     return r;
             }
-            return imageCache.getImage(a, true);
+            IImage r = imageCache.getImage(a, true);
+            if (r == err)
+                System.err.println("GaBIEn: Couldn't get: " + a + " (" + fs + ", " + res + ")");
+            return r;
         }
-        return getErrorImage();
+        System.err.println("GaBIEn: Couldn't get: " + a + " (" + fs + ", " + res + ")");
+        return err;
     }
 
     public static IImage getImageCKEx(String a, boolean fs, boolean res, int r, int g, int b) {
+        IImage err = getErrorImage();
         if (fs) {
             IImage ri = imageCache.getImageCK(a, false, r, g, b);
-            if (ri != getErrorImage())
+            if (ri != err)
                 return ri;
         }
         if (res) {
             for (String s : appPrefixes) {
                 IImage ri = imageCache.getImageCK(s + a, false, r, g, b);
-                if (ri != getErrorImage())
+                if (ri != err)
                     return ri;
             }
-            return imageCache.getImageCK(a, true, r, g, b);
+            IImage ri = imageCache.getImageCK(a, true, r, g, b);
+            if (ri == err)
+                System.err.println("GaBIEn: Couldn't get: " + a + " (" + fs + ", " + res + ")");
+            return ri;
         }
-        return getErrorImage();
+        System.err.println("GaBIEn: Couldn't get: " + a + " (" + fs + ", " + res + ")");
+        return err;
     }
 
     public static IImage getErrorImage() {
