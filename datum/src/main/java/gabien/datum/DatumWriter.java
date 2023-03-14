@@ -8,17 +8,16 @@ package gabien.datum;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.Writer;
 
 /**
  * Writes out a Datum (or a stream of them) to a Writer.
  * Created 15th February 2023.
  */
 public class DatumWriter extends DatumEncodingVisitor {
-    protected final Writer base;
+    protected final Appendable base;
     protected boolean needSpacing = false;
 
-    public DatumWriter(Writer base) {
+    public DatumWriter(Appendable base) {
         this.base = base;
     }
 
@@ -49,6 +48,15 @@ public class DatumWriter extends DatumEncodingVisitor {
             if (c == delimiter) {
                 putChar('\\');
                 putChar(c);
+            } else if (c == '\r') {
+                putChar('\\');
+                putChar('r');
+            } else if (c == '\n') {
+                putChar('\\');
+                putChar('n');
+            } else if (c == '\t') {
+                putChar('\\');
+                putChar('t');
             } else {
                 putChar(c);
             }

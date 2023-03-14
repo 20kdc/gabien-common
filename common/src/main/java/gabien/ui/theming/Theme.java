@@ -6,7 +6,7 @@
  */
 package gabien.ui.theming;
 
-import static gabien.datum.DatumTreeUtils.asList;
+import static gabien.datum.DatumTreeUtils.cList;
 import static gabien.datum.DatumTreeUtils.isSym;
 
 import java.util.HashMap;
@@ -68,7 +68,7 @@ public class Theme {
                     public void visitTree(Object obj, DatumSrcLoc srcLoc) {
                         if (obj instanceof List) {
                             int res = 0;
-                            for (Object flg : asList(obj)) {
+                            for (Object flg : cList(obj)) {
                                 if (isSym(flg, "moveDown")) {
                                     res |= ThemingCentral.BF_MOVEDOWN;
                                 } else if (isSym(flg, "clear")) {

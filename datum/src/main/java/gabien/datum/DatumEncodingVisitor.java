@@ -29,17 +29,17 @@ public abstract class DatumEncodingVisitor extends DatumVisitor {
             visitId(((DatumSymbol) obj).id, loc);
         } else if (obj instanceof Number) {
             if (obj instanceof Byte) {
-                visitInt((byte) (Byte) obj, obj.toString(), loc);
+                visitInt((byte) (Byte) obj, loc);
             } else if (obj instanceof Short) {
-                visitInt((short) (Short) obj, obj.toString(), loc);
+                visitInt((short) (Short) obj, loc);
             } else if (obj instanceof Integer) {
-                visitInt((int) (Integer) obj, obj.toString(), loc);
+                visitInt((int) (Integer) obj, loc);
             } else if (obj instanceof Long) {
-                visitInt((long) (Long) obj, obj.toString(), loc);
+                visitInt((long) (Long) obj, loc);
             } else if (obj instanceof Double) {
-                visitFloat((double) (Double) obj, obj.toString(), loc);
+                visitFloat((double) (Double) obj, loc);
             } else if (obj instanceof Float) {
-                visitFloat((float) (Float) obj, obj.toString(), loc);
+                visitFloat((float) (Float) obj, loc);
             } else {
                 throw new RuntimeException("Cannot handle visiting number " + obj);
             }

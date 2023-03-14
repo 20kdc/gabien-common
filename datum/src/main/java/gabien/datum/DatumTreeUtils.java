@@ -11,7 +11,11 @@ import java.util.List;
 /**
  * Created 17th February 2023
  */
-public class DatumTreeUtils {
+public final class DatumTreeUtils {
+    private DatumTreeUtils() {
+        
+    }
+
     public static DatumDecToLambdaVisitor decVisitor(DatumDecToLambdaVisitor.Handler h) {
         return new DatumDecToLambdaVisitor(h);
     }
@@ -26,24 +30,27 @@ public class DatumTreeUtils {
         return false;
     }
 
-    public static int asInt(Object o) {
+    public static int cInt(Object o) {
         return ((Number) o).intValue();
     }
 
-    public static long asLong(Object o) {
+    public static long cLong(Object o) {
         return ((Number) o).longValue();
     }
 
-    public static double asDouble(Object o) {
+    public static double cDouble(Object o) {
         return ((Number) o).doubleValue();
     }
 
-    public static float asFloat(Object o) {
+    public static float cFloat(Object o) {
         return ((Number) o).floatValue();
     }
 
+    /**
+     * Best not to confuse this with Arrays.asList.
+     */
     @SuppressWarnings("unchecked")
-    public static List<Object> asList(Object o) {
+    public static List<Object> cList(Object o) {
         return (List<Object>) o;
     }
 }

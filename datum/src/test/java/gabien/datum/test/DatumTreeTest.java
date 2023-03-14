@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 
 import gabien.datum.*;
+import static gabien.datum.DatumTreeUtils.*;
 
 /**
  * Test encoding/decoding datum trees.
@@ -65,4 +66,27 @@ public class DatumTreeTest {
         assertTrue(signalWasVisited.get());
     }
 
+    @SuppressWarnings("unlikely-arg-type")
+    @Test
+    public void testSymbolOps() {
+        assertEquals(-1, sym("A").compareTo(sym("B")));
+        assertEquals("A".hashCode(), sym("A").hashCode());
+        assertTrue(sym("A").equals(sym("A")));
+        assertFalse(sym("A").equals(sym("B")));
+        // this is part of API
+        assertEquals("A", sym("A").toString());
+        assertFalse(sym("A").equals(123));
+        assertTrue(isSym(sym("A"), "A"));
+        assertFalse(isSym(sym("A"), "B"));
+        assertFalse(isSym("A", "A"));
+    }
+
+    @Test
+    public void testCastOps() {
+        assertEquals((Object) 0, cInt(0d));
+        assertEquals((Object) 0L, cLong(0d));
+        assertEquals((Object) 0f, cFloat(0d));
+        assertEquals((Object) 0d, cDouble(0d));
+        assertEquals(Arrays.asList(1L, 2L, 3L), cList(Arrays.asList(1L, 2L, 3L)));
+    }
 }

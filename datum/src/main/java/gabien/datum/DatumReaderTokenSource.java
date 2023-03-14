@@ -35,8 +35,7 @@ public class DatumReaderTokenSource extends DatumTokenSource {
     }
 
     public DatumReaderTokenSource(String fn, String s) {
-        fileName = fn;
-        reader = new StringReader(s);
+        this(fn, new StringReader(s));
     }
 
     private int readerRead() {
@@ -66,7 +65,7 @@ public class DatumReaderTokenSource extends DatumTokenSource {
         lastCharClass = DatumCharClass.Content;
         val = readerRead();
         if (val == -1)
-            throw new RuntimeException("Line " + lineNumber + ": \\ without escape");
+            throw new RuntimeException(position() + ": \\ without escape");
         if (val == 'r')
             return '\r';
         if (val == 'n')
@@ -78,14 +77,14 @@ public class DatumReaderTokenSource extends DatumTokenSource {
             while (true) {
                 int dig = readerRead();
                 if (dig == -1)
-                    throw new RuntimeException("Line " + lineNumber + ": Interrupted hex escape");
+                    throw new RuntimeException(position() + ": Interrupted hex escape");
                 if (dig == ';')
                     break;
                 res <<= 4;
                 try {
                     res |= Integer.parseInt(Character.toString((char) dig), 16);
                 } catch (NumberFormatException nfe) {
-                    throw new RuntimeException("Line " + lineNumber + ": Bad hex escape");
+                    throw new RuntimeException(position() + ": Bad hex escape");
                 }
             }
             char[] data = Character.toChars(res);
@@ -130,7 +129,7 @@ public class DatumReaderTokenSource extends DatumTokenSource {
             while (true) {
                 int dec = decodeNextChar();
                 if (dec == -1)
-                    throw new RuntimeException("Line " + lineNumber + ": interrupted string");
+                    throw new RuntimeException(position() + ": interrupted string");
                 if (lastCharClass == DatumCharClass.String)
                     break;
                 decChar = (char) dec;
