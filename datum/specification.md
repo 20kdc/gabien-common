@@ -238,6 +238,8 @@ However, the following special identifiers shall be considered *standardized* an
 
 The tokenization of Datum does not explicitly define the full set of *reserved number identifiers* that are considered *numbers*. However, some core principles must be followed:
 
+* The reserved number identifier "-" alone is reclassified as a regular symbol.
+
 * Any reserved number identifier that does not parse as a number must be considered a distinct kind of token, and preserved for potential compatibility workaround code to pick up on. That code may provide an error -- in particular it's not recommended to try and implement these as actual literals in a tree data model unless you really need to load _any_ valid file.
 
 * Any reserved number identifier that does parse as a number can be appropriately forwarded as a *numeric token* (realistically, these would be *64-bit integer token* and *64-bit float token*). It is advised to keep the full textual content available, particularly in callback tokenizers where doing so is a zero-cost operation.

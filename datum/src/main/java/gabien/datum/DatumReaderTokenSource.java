@@ -156,12 +156,12 @@ public class DatumReaderTokenSource extends DatumTokenSource {
                 decChar = (char) dec;
                 sb.append(decChar);
             }
+            tokenContents = sb.toString();
             tokenType = DatumTokenType.ID;
-            if (numeric)
+            if (numeric && !tokenContents.equals("-"))
                 tokenType = DatumTokenType.Numeric;
             if (specialID)
                 tokenType = DatumTokenType.SpecialID;
-            tokenContents = sb.toString();
             return true;
         }
     }
