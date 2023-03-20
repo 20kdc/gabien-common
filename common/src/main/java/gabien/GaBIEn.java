@@ -215,12 +215,15 @@ public class GaBIEn {
 
     /**
      * Gets a native font by name. If the name is null, returns the default font.
-     * If not available, returns null.
+     * If not available, returns null, unless fallback is set.
      */
     public static @Nullable NativeFont getNativeFont(int size, @Nullable String name, boolean fallback) {
         if (name == null)
             return nativeFontCache.getDefaultNativeFont(size);
-        return nativeFontCache.getNativeFont(size, name);
+        NativeFont tmp = nativeFontCache.getNativeFont(size, name);
+        if (tmp == null && fallback)
+            return nativeFontCache.getDefaultNativeFont(size);
+        return tmp;
     }
 
     /**
