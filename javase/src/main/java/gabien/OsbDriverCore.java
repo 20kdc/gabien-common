@@ -120,8 +120,8 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
     }
 
     @Override
-    public void clearRect(int i, int i0, int i1, int x, int y, int w, int h) {
-        bufGraphics.setColor(new Color(i, i0, i1));
+    public void clearRectAlpha(int i, int i0, int i1, int a, int x, int y, int w, int h) {
+        bufGraphics.setColor(new Color(i, i0, i1, a));
         bufGraphics.fillRect(x, y, w, h);
     }
 

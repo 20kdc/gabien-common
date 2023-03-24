@@ -74,7 +74,7 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public void clearRect(int r, int g, int b, int x, int y, int width, int height) {
+    public void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height) {
 
     }
 

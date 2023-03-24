@@ -157,8 +157,8 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public void clearRect(int r, int g, int b, int x, int y, int width, int height) {
-        globalPaint.setARGB(255, r, g, b);
+    public void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height) {
+        globalPaint.setARGB(a, r, g, b);
         canvas.drawRect(new Rect(x, y, x + width, y + height), globalPaint);
         globalPaint.setARGB(255, 255, 255, 255);
     }

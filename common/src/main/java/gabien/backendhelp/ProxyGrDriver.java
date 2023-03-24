@@ -82,8 +82,8 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public void clearRect(int r, int g, int b, int x, int y, int width, int height) {
-        target.clearRect(r, g, b, x, y, width, height);
+    public void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height) {
+        target.clearRectAlpha(r, g, b, a, x, y, width, height);
     }
 
     @Override

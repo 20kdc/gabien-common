@@ -49,7 +49,11 @@ public interface IGrDriver extends IImage {
 
     void clearAll(int i, int i0, int i1);
 
-    void clearRect(int r, int g, int b, int x, int y, int width, int height);
+    default void clearRect(int r, int g, int b, int x, int y, int width, int height) {
+        clearRectAlpha(r, g, b, 255, x, y, width, height);
+    }
+
+    void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height);
 
     // Stop all drawing operations. Makes an OsbDriver unusable.
     void shutdown();

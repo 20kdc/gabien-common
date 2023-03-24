@@ -303,11 +303,11 @@ public class ThreadForwardingGrDriver<T extends IGrDriver> implements IGrDriver,
     }
 
     @Override
-    public void clearRect(final int r, final int g, final int b, final int x, final int y, final int width, final int height) {
+    public void clearRectAlpha(final int r, final int g, final int b, final int a, final int x, final int y, final int width, final int height) {
         cmdSubmitCore(new Runnable() {
             @Override
             public void run() {
-                target.clearRect(r, g, b, x, y, width, height);
+                target.clearRectAlpha(r, g, b, a, x, y, width, height);
             }
         });
     }
