@@ -42,7 +42,7 @@
 !android/res/drawable
 !android/res/drawable/hi.txt
 !android/res/values
-!android/res/values/**
+!android/res/values/styles.xml
 !android/src
 !android/src/**
 !android/*.lua
