@@ -48,6 +48,16 @@
 !android/*.lua
 !android/*.sh
 
+!una
+!una/
+!una/gencall.lua
+!una/README.md
+!una/una.c
+!una/jnifns.c
+!una/UNA.java
+!una/UNATest.java
+!una/b
+
 !example-toolchains.xml
 
 !unzip-desktop-jars.sh

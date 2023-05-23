@@ -1,0 +1,8 @@
+#!/bin/sh
+lua gencall.lua
+javac UNA.java
+javac UNACall.java
+javac UNATest.java
+zig cc -O4 -flto -shared una.c unacall.c -o una.so -Wno-attributes
+strip una.so
+
