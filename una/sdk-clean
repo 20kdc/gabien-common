@@ -1,6 +1,7 @@
 #!/bin/sh
-# tested using Zig 0.11.0-dev.2892+fd6200eda
+# cleaning script / initial variables
+LIBUNA="lib-se/gabien/una/lib"
 rm -rf $LIBUNA lib-android
 mvn clean
-rm src/main/java/gabien/una/UNAC.java c/unacall.c
+rm -f src/main/java/gabien/una/UNAC.java c/unacall.c
 

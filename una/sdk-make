@@ -1,7 +1,6 @@
 #!/bin/sh
 # tested using Zig 0.11.0-dev.2892+fd6200eda
-LIBUNA="lib-se/gabien/una/lib"
-rm -rf $LIBUNA lib-android
+. ./sdk-clean
 mkdir -p $LIBUNA
 lua gencall.lua
 COMMONFLAGS="-Wno-attributes -O4 -shared"

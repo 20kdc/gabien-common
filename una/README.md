@@ -1,5 +1,7 @@
 # Unsafe Native Access (UNA)
 
+# Under construction, specifications subject to change
+
 Unlicense-licensed library to access native functions from Java.
 
 Because this project involves a stack of complicated tooling, this project is treated as a separate library with binary releases of it that can be treated "external" to gabien.
