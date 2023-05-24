@@ -5,6 +5,8 @@
 
 -- tawa kama pona tan jan ale --
 
+local libvariant = require("libvariant")
+
 local initialDisclaimer = [[
 /*
  * gabien-common - Cross-platform game and UI framework
@@ -66,19 +68,11 @@ for argCount = 0, 6 do
  end
  c:write("int64_t code, int32_t variant) {\n")
  c:write("    switch (variant) {\n")
- local variantCount = #types
- for i = 1, argCount do
-  variantCount = variantCount * #types
- end
+ local variantCount = lv.variantCount(argCount)
  for variant = 0, variantCount - 1 do
   c:write("    case " .. tostring(variant) .. ":\n")
   c:write("        return X" .. tostring(argCount) .. "(")
-  local workingV = variant
-  local decomp = {}
-  for i = 1, argCount + 1 do
-   table.insert(decomp, 1, (workingV % #types) + 1)
-   workingV = workingV // #types
-  end
+  local decomp = libvariant.decompile(argCount, variant)
   -- pop return type first
   c:write(types[table.remove(decomp, 1)])
   -- main args
