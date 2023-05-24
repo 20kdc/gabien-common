@@ -304,4 +304,23 @@ public class UNA {
     public static native String newStringUTF(long address);
     public static native ByteBuffer newDirectByteBuffer(long address, long length);
     public static native long getDirectByteBufferAddress(ByteBuffer obj);
+
+    /* Invoke */
+    public static native long c0(int variant, long code);
+    public static native long c1(long a0, int variant, long code);
+    public static native long c2(long a0, long a1, int variant, long code);
+    public static native long c3(long a0, long a1, long a2, int variant, long code);
+    public static native long c4(long a0, long a1, long a2, long a3, int variant, long code);
+    public static native long c5(long a0, long a1, long a2, long a3, long a4, int variant, long code);
+    public static native long c6(long a0, long a1, long a2, long a3, long a4, long a5, int variant, long code);
+
+    /* Invoke - Special */
+    // glReadPixels
+    public static native long LcIIIIIIP(int a0, int a1, int a2, int a3, int a4, int a5, long a6, long code);
+    // glCompressedTexImage2D
+    public static native long LcIIIIIIIP(int a0, int a1, int a2, int a3, int a4, int a5, int a6, long a7, long code);
+    // glTexImage2D, glTexSubImage2D, glCompressedTexSubImage2D
+    public static native long LcIIIIIIIIP(int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, long code);
+    // glCopyTexImage2D, glCopyTexSubImage2D
+    public static native long LcIIIIIIII(int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, long code);
 }

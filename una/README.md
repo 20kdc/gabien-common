@@ -28,28 +28,40 @@ However, it's still open-source.
   + Bindings for useful JNI functionality
   + The actual invoke interface
 
-## Invoke Core
+## Invocation
 
-UNA invocation is a bit of an awkward process, owing to the limitations.
+UNA invocation is a bit of an awkward process, owing to limiting the code to what can be considered reasonably standard C.
 
-It supports up to 8 arguments.
+It supports a return type and up to 6 arguments.
 
-UNA has two types:
+UNA has three types:
 
-+ `int32_t` aka `I`
-+ `float` aka `F`
++ `int32_t` (`I` or 0)
++ `int64_t` (`L` or 1)
++ `float` (`F` or 2)
+
+These types are represented as 64-bit words (the lower 32-bits thereof for the shorter ones).
+These types are fit into an integer which describes "variants" of a function.
+
+Variants are packed using `v = (v * typeCount) | t;` to add each type.
 
 Note `void` is not a type, even for returns, as an undefined word return is always perfectly safe in every ABI known to the writer.
 
-UNA calls are made using functions such as `long UNAC.WcWW(long a0, long a1, long code)`.
+UNA calls are made using functions such as `long UNA.c2(long a0, long a1, int variant, long code)`.
 
-This function takes two word arguments, along with the code pointer, and executes it, returning an int result.
+This function takes two arguments, along with the variant and code pointer, and executes it, returning the result.
 
 ## Invoke Limitations
 
-+ It's not possible to use doubles. (This would add too many combinations to allow for 8 parameters.)
-+ On 32-bit platforms, `long` must be manually broken into two using code such as `param, param >> 32`
++ It's not possible to use doubles. (This would add too many combinations.)
++ Variants need to be chosen at runtime to ensure that pointers are properly changed. 
 + Calling conventions other than the system default aren't supported. This includes stdcall.
 
-These usually have a workaround in the form of dynamic code generation.
+These usually have a workaround in the form of dynamic code generation, but that's system-specific.
+
+## Special Invokes
+
+There are some important functions from popular APIs (specifically OpenGL) which do not fit within the limits of the above.
+
+As such, ways to invoke them are provided. See `UNA.LcIIIIIIIIP` for an example.
 

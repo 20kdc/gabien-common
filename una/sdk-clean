@@ -3,5 +3,5 @@
 LIBUNA="lib-se/gabien/una/lib"
 rm -rf $LIBUNA lib-android
 mvn clean
-rm -f src/main/java/gabien/una/UNAC.java c/unacall.c
+rm -f c/unacall.c
 

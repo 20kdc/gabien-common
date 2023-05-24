@@ -13,6 +13,8 @@
 
 #define UNA(x) Java_gabien_una_UNA_ ## x
 #define JNIFN(idx) ((*((void***) env))[idx])
+#define C_PTR(l) ((void *) (intptr_t) (l))
+#define J_PTR(l) ((int64_t) (intptr_t) (l))
 
 #define JNI_NewStringUTF ((void * (*)(void *, void *)) JNIFN(167))
 
@@ -47,7 +49,7 @@ void * UNA(getArchOS)(void * env, void * self) {
 }
 
 int64_t UNA(getTestStringRaw)(void * env, void * self) {
-    return (int64_t) (intptr_t) "This is a test string to be retrieved.";
+    return J_PTR("This is a test string to be retrieved.");
 }
 
 // DL
@@ -58,25 +60,25 @@ int dlclose(void * module);
 
 int64_t UNA(dlOpen)(void * env, void * self, int64_t str) {
 #ifdef WIN32
-    return (int64_t) (intptr_t) LoadLibraryA((const char *) (intptr_t) str);
+    return J_PTR(LoadLibraryA(C_PTR(str)));
 #else
-    return (int64_t) (intptr_t) dlopen((const char *) (intptr_t) str, 0);
+    return J_PTR(dlopen(C_PTR(str), 0));
 #endif
 }
 
 int64_t UNA(dlSym)(void * env, void * self, int64_t module, int64_t str) {
 #ifdef WIN32
-    return (int64_t) (intptr_t) GetProcAddress((void *) (intptr_t) module, (const char *) (intptr_t) str);
+    return J_PTR(GetProcAddress(C_PTR(module), C_PTR(str)));
 #else
-    return (int64_t) (intptr_t) dlsym((void *) (intptr_t) module, (const char *) (intptr_t) str);
+    return J_PTR(dlsym(C_PTR(module), C_PTR(str)));
 #endif
 }
 
 void UNA(dlClose)(void * env, void * self, int64_t module) {
 #ifdef WIN32
-    FreeLibrary((void *) (intptr_t) module);
+    FreeLibrary(C_PTR(module));
 #else
-    dlclose((void *) (intptr_t) module);
+    dlclose(C_PTR(module));
 #endif
 }
 
@@ -88,19 +90,19 @@ void * memcpy(void * dst, const void * src, size_t len);
 int memcmp(const void * a, const void * b, size_t len);
 
 int64_t UNA(strlen)(void * env, void * self, int64_t str) {
-    return strlen((const char *) (intptr_t) str);
+    return strlen(C_PTR(str));
 }
 
 int64_t UNA(strdup)(void * env, void * self, int64_t str) {
-    return (int64_t) (intptr_t) strdup((const char *) (intptr_t) str);
+    return J_PTR(strdup(C_PTR(str)));
 }
 
 int64_t UNA(memcpy)(void * env, void * self, int64_t dst, int64_t src, int64_t len) {
-    return (int64_t) (intptr_t) memcpy((char *) (intptr_t) dst, (const char *) (intptr_t) src, (size_t) len);
+    return J_PTR(memcpy(C_PTR(dst), C_PTR(src), (size_t) len));
 }
 
 int32_t UNA(memcmp)(void * env, void * self, int64_t a, int64_t b, int64_t len) {
-    return (int32_t) memcmp((const char *) (intptr_t) a, (const char *) (intptr_t) b, (size_t) len);
+    return (int32_t) memcmp(C_PTR(a), C_PTR(b), (size_t) len);
 }
 
 // libc - malloc
@@ -110,15 +112,15 @@ void free(void * mem);
 void * realloc(void * mem, size_t sz);
 
 int64_t UNA(malloc)(void * env, void * self, int64_t sz) {
-    return (int64_t) (intptr_t) malloc((size_t) sz);
+    return J_PTR(malloc((size_t) sz));
 }
 
 void UNA(free)(void * env, void * self, int64_t address) {
-    free((void *) (intptr_t) address);
+    free(C_PTR(address));
 }
 
 int64_t UNA(realloc)(void * env, void * self, int64_t address, int64_t size) {
-    return (int64_t) (intptr_t) realloc((void *) (intptr_t) address, (size_t) size);
+    return J_PTR(realloc(C_PTR(address), (size_t) size));
 }
 
 // JIT
@@ -137,17 +139,17 @@ int64_t UNA(getPageSize)(void * env, void * self) {
 
 int64_t UNA(rwxAlloc)(void * env, void * self, int64_t size) {
 #ifdef WIN32
-    return (int64_t) (intptr_t) VirtualAlloc(NULL, (size_t) size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    return J_PTR(VirtualAlloc(NULL, (size_t) size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
 #else
-    return (int64_t) (intptr_t) mmap(NULL, (size_t) size, 7, 0x22, -1, 0);
+    return J_PTR(mmap(NULL, (size_t) size, 7, 0x22, -1, 0));
 #endif
 }
 
 void UNA(rwxFree)(void * env, void * self, int64_t address, int64_t size) {
 #ifdef WIN32
-    VirtualFree((void *) (intptr_t) address, 0, MEM_RELEASE);
+    VirtualFree(C_PTR(address), 0, MEM_RELEASE);
 #else
-    munmap((void *) (intptr_t) address, (size_t) size);
+    munmap(C_PTR(address), (size_t) size);
 #endif
 }
 
@@ -214,6 +216,28 @@ void * UNA(newDirectByteBuffer)(void * env, void * self, int64_t address, int64_
 
 int64_t UNA(getDirectByteBufferAddress)(void * env, void * self, void * obj) {
     void * (*getDirectByteBufferAddress)(void *, void *) = JNIFN(230);
-    return (int64_t) (intptr_t) getDirectByteBufferAddress(env, obj);
+    return J_PTR(getDirectByteBufferAddress(env, obj));
+}
+
+// Invoke - Special
+
+int64_t UNA(LcIIIIIIP)(void * env, void * self, int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5, int64_t a6, int64_t code) {
+    int64_t (*fn)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, void *) = C_PTR(code);
+    return fn(a0, a1, a2, a3, a4, a5, C_PTR(a6));
+}
+
+int64_t UNA(LcIIIIIIIP)(void * env, void * self, int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5, int32_t a6, int64_t a7, int64_t code) {
+    int64_t (*fn)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, void *) = C_PTR(code);
+    return fn(a0, a1, a2, a3, a4, a5, a6, C_PTR(a7));
+}
+
+int64_t UNA(LcIIIIIIIIP)(void * env, void * self, int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5, int32_t a6, int32_t a7, int64_t a8, int64_t code) {
+    int64_t (*fn)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, void *) = C_PTR(code);
+    return fn(a0, a1, a2, a3, a4, a5, a6, a7, C_PTR(a8));
+}
+
+int64_t UNA(LcIIIIIIII)(void * env, void * self, int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5, int32_t a6, int32_t a7, int64_t code) {
+    int64_t (*fn)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = C_PTR(code);
+    return fn(a0, a1, a2, a3, a4, a5, a6, a7);
 }
 
