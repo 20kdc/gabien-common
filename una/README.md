@@ -66,7 +66,7 @@ There are two "meta" types supported by the encoder:
 
 These types are fit into an integer which describes "variants" of a function (for types).
 
-Variants are packed using `v = (v * typeCount) | t;` to add each type.
+Variants are packed using `v = (v * typeCount) | t;` to add each type from left to right.
 
 Note `void` is not a type, even for returns, as an undefined word return is always perfectly safe in every ABI known to the writer.
 

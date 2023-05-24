@@ -29,8 +29,6 @@ local types = {
  "float"
 }
 
-local retTypes = types
-
 -- The big scary generator
 local function macroArgs(argCount)
  c:write("(rt")
@@ -68,7 +66,7 @@ for argCount = 0, 6 do
  end
  c:write("int64_t code, int32_t variant) {\n")
  c:write("    switch (variant) {\n")
- local variantCount = #retTypes
+ local variantCount = #types
  for i = 1, argCount do
   variantCount = variantCount * #types
  end
@@ -76,13 +74,16 @@ for argCount = 0, 6 do
   c:write("    case " .. tostring(variant) .. ":\n")
   c:write("        return X" .. tostring(argCount) .. "(")
   local workingV = variant
+  local decomp = {}
+  for i = 1, argCount + 1 do
+   table.insert(decomp, 1, (workingV % #types) + 1)
+   workingV = workingV // #types
+  end
   -- pop return type first
-  c:write(retTypes[(workingV % #retTypes) + 1])
-  workingV = workingV // #retTypes
+  c:write(types[table.remove(decomp, 1)])
   -- main args
   for j = 1, argCount do
-   local t = types[(workingV % #types) + 1]
-   workingV = workingV // #types
+   local t = types[table.remove(decomp, 1)]
    c:write(", " .. t)
   end
   c:write(");\n")
