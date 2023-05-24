@@ -13,6 +13,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 
 /**
  * Maybe the start of something new.
@@ -102,37 +104,163 @@ public class UNA {
         }
         return false;
     }
-    /* Library */
 
-    /* Natives - Baseline */
-    public static native long getPurpose();
+    /* Baseline wrappers and so forth */
+
+    public static long checkedMalloc(long length) {
+        if (length <= 0)
+            throw new RuntimeException("Invalid length of malloc");
+        long res = malloc(length);
+        if (res == 0)
+            throw new RuntimeException("Out of memory / malloc failed");
+        return res;
+    }
+
+    public static long strdup(String str) {
+        return strdup(str, StandardCharsets.UTF_8);
+    }
+
+    public static long strdup(String str, Charset cs) {
+        byte[] bytes = str.getBytes(cs);
+        long res = checkedMalloc(bytes.length + 1);
+        setAB(res, bytes.length, bytes, 0);
+        setB(res + bytes.length, (byte) 0);
+        return res;
+    }
+
+    public static long dlOpen(String str) {
+        long tmp = strdup(str);
+        long res = dlOpen(tmp);
+        free(tmp);
+        return res;
+    }
+
+    public static long dlSym(long module, String str) {
+        long tmp = strdup(str);
+        long res = dlSym(module, tmp);
+        free(tmp);
+        return res;
+    }
+
+    public static String getArchOSStr() {
+        return getString(getArchOS());
+    }
+
+    public static String getString(long address) {
+        return getString(address, StandardCharsets.UTF_8);
+    }
+
+    public static String getString(long address, Charset cs) {
+        return new String(getAB(address, (int) strlen(address)), cs);
+    }
+
+    /* Bulk Allocating Peek */
+
+    public static boolean[] getAZ(long addr, int length) {
+        boolean[] data2 = new boolean[length];
+        getAZ(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static byte[] getAB(long addr, int length) {
+        byte[] data2 = new byte[length];
+        getAB(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static char[] getAC(long addr, int length) {
+        char[] data2 = new char[length];
+        getAC(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static short[] getAS(long addr, int length) {
+        short[] data2 = new short[length];
+        getAS(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static int[] getAI(long addr, int length) {
+        int[] data2 = new int[length];
+        getAI(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static long[] getAJ(long addr, int length) {
+        long[] data2 = new long[length];
+        getAJ(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static float[] getAF(long addr, int length) {
+        float[] data2 = new float[length];
+        getAF(addr, length, data2, 0);
+        return data2;
+    }
+
+    public static double[] getAD(long addr, int length) {
+        double[] data2 = new double[length];
+        getAD(addr, length, data2, 0);
+        return data2;
+    }
+
+    /* Natives */
+
+    /* Natives - Core */
+    public static native long getArchOS();
     public static native long getSizeofPtr();
-    public static native long lookupBootstrap(long str);
 
-    /* Natives - libc */
+    /* Natives - DL */
+    public static native long dlOpen(long str);
+    public static native long dlSym(long module, long str);
+    public static native void dlClose(long module);
+
+    /* Natives - libc - string */
     public static native long strlen(long str);
+    public static native long strdup(long str);
+    public static native long memcpy(long dst, long src, long len);
+    public static native int memcmp(long a, long b, long len);
+
+    /* Natives - libc - malloc */
     public static native long malloc(long sz);
     public static native void free(long address);
     public static native long realloc(long address, long sz);
 
-    /* Natives - JNIEnv - Get/Set (Opposite polarity to JNIEnv functions) */
-    public static native void getBooleanArrayRegion(boolean[] array, long index, long length, long address);
-    public static native void getByteArrayRegion(byte[] array, long index, long length, long address);
-    public static native void getCharArrayRegion(char[] array, long index, long length, long address);
-    public static native void getShortArrayRegion(short[] array, long index, long length, long address);
-    public static native void getIntArrayRegion(int[] array, long index, long length, long address);
-    public static native void getLongArrayRegion(long[] array, long index, long length, long address);
-    public static native void getFloatArrayRegion(float[] array, long index, long length, long address);
-    public static native void getDoubleArrayRegion(double[] array, long index, long length, long address);
+    /* Natives - Peek/Poke */
+    public static native byte getB(long addr);
+    public static native short getS(long addr);
+    public static native int getI(long addr);
+    public static native long getJ(long addr);
+    public static native float getF(long addr);
+    public static native double getD(long addr);
+    public static native long getPtr(long addr);
 
-    public static native void setBooleanArrayRegion(boolean[] array, long index, long length, long address);
-    public static native void setByteArrayRegion(byte[] array, long index, long length, long address);
-    public static native void setCharArrayRegion(char[] array, long index, long length, long address);
-    public static native void setShortArrayRegion(short[] array, long index, long length, long address);
-    public static native void setIntArrayRegion(int[] array, long index, long length, long address);
-    public static native void setLongArrayRegion(long[] array, long index, long length, long address);
-    public static native void setFloatArrayRegion(float[] array, long index, long length, long address);
-    public static native void setDoubleArrayRegion(double[] array, long index, long length, long address);
+    public static native void setB(long addr, byte data);
+    public static native void setS(long addr, short data);
+    public static native void setI(long addr, int data);
+    public static native void setJ(long addr, long data);
+    public static native void setF(long addr, float data);
+    public static native void setD(long addr, double data);
+    public static native void setPtr(long addr, long data);
+
+    /* Natives - JNIEnv - Get/Set (Opposite polarity to JNIEnv functions) */
+    public static native void getAZ(long addr, long length, boolean[] array, long index);
+    public static native void getAB(long addr, long length, byte[] array, long index);
+    public static native void getAC(long addr, long length, char[] array, long index);
+    public static native void getAS(long addr, long length, short[] array, long index);
+    public static native void getAI(long addr, long length, int[] array, long index);
+    public static native void getAJ(long addr, long length, long[] array, long index);
+    public static native void getAF(long addr, long length, float[] array, long index);
+    public static native void getAD(long addr, long length, double[] array, long index);
+
+    public static native void setAZ(long addr, long length, boolean[] array, long index);
+    public static native void setAB(long addr, long length, byte[] array, long index);
+    public static native void setAC(long addr, long length, char[] array, long index);
+    public static native void setAS(long addr, long length, short[] array, long index);
+    public static native void setAI(long addr, long length, int[] array, long index);
+    public static native void setAJ(long addr, long length, long[] array, long index);
+    public static native void setAF(long addr, long length, float[] array, long index);
+    public static native void setAD(long addr, long length, double[] array, long index);
 
     /* Natives - JNIEnv */
     public static native ByteBuffer newDirectByteBuffer(long address, long length);

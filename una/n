@@ -4,24 +4,26 @@ LIBUNA="lib-se/gabien/una/lib"
 rm -rf $LIBUNA lib-android
 mkdir -p $LIBUNA
 lua gencall.lua
-TARGETS="x86-windows-gnu x86_64-windows-gnu"
+COMMONFLAGS="-Wno-attributes -O4 -shared"
+TARGETS="x86-windows-gnu x86_64-windows-gnu x86-linux-gnu"
 TARGETS_NLTO="x86_64-macos aarch64-macos"
-TARGETS_NSL="x86-linux-gnu x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu aarch64-linux-android arm-linux-android x86-linux-android x86_64-linux-android"
+TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu aarch64-linux-android arm-linux-android x86_64-linux-android"
 SOURCES="c/una.c c/unacall.c"
 for TARGET in $TARGETS ; do
  echo $TARGET
- zig cc -target $TARGET -O4 -flto -shared $SOURCES -o $LIBUNA/una.$TARGET -Wno-attributes
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS
 done
 # LTO not yet supported
 for TARGET in $TARGETS_NLTO ; do
  echo $TARGET
- zig cc -target $TARGET -O4 -shared $SOURCES -o $LIBUNA/una.$TARGET -Wno-attributes
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS
 done
 # on most of the Linuxy targets, use "fake libc" (this particularly works well with the Androids)
 for TARGET in $TARGETS_NSL ; do
  echo $TARGET
- zig cc -target $TARGET -O4 -flto -shared $SOURCES -o $LIBUNA/una.$TARGET -Wno-attributes -nostdlib
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS -nostdlib
 done
+# ideally, would do 32-bit Android, but weird Zig errors stopped me
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
 # ideally, would do the BSDs, but no libc and can't override
 rm $LIBUNA/una.lib
@@ -29,12 +31,10 @@ rm $LIBUNA/una.pdb
 # strip anything we can
 strip $LIBUNA/*
 # migrate Android files
-mkdir -p lib-android/x86
-mv $LIBUNA/una.x86-linux-android lib-android/x86/libgabien-una.so
-mkdir -p lib-android/x86_64
-mv $LIBUNA/una.x86_64-linux-android lib-android/x86_64/libgabien-una.so
-mkdir -p lib-android/armeabi-v7a
-mv $LIBUNA/una.arm-linux-android lib-android/armeabi-v7a/libgabien-una.so
-mkdir -p lib-android/aarch64-v8a
-mv $LIBUNA/una.aarch64-linux-android lib-android/aarch64-v8a/libgabien-una.so
+mkdir -p lib-android/lib/x86_64
+mv $LIBUNA/una.x86_64-linux-android lib-android/lib/x86_64/libgabien-una.so
+mkdir -p lib-android/lib/armeabi-v7a
+mv $LIBUNA/una.arm-linux-android lib-android/lib/armeabi-v7a/libgabien-una.so
+mkdir -p lib-android/lib/aarch64-v8a
+mv $LIBUNA/una.aarch64-linux-android lib-android/lib/aarch64-v8a/libgabien-una.so
 

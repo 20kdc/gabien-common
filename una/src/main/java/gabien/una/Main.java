@@ -15,8 +15,9 @@ public class Main {
         System.out.println("UNA Self-Test");
         UNA.defaultLoader();
         System.out.println("Size of pointers: " + UNA.getSizeofPtr());
+        System.out.println("Architecture/OS: " + UNA.getArchOSStr());
 
-        long purpose = UNA.getPurpose();
+        long purpose = UNA.getArchOS();
         long strlen = UNA.strlen(purpose);
 
         ByteBuffer obj = UNA.newDirectByteBuffer(purpose, strlen);
@@ -25,7 +26,7 @@ public class Main {
         System.out.println("UTF-8 ByteBuffer retrieval test: " + new String(data, StandardCharsets.UTF_8));
 
         byte[] data2 = new byte[(int) strlen];
-        UNA.getByteArrayRegion(data2, 0, strlen, purpose);
+        UNA.getAB(purpose, strlen, data2, 0);
         System.out.println("UTF-8 GetRegion retrieval test: " + new String(data2, StandardCharsets.UTF_8));
 
         //System.out.println("dlsym: " + UNA.lookupBootstrap("dlsym"));

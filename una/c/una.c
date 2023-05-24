@@ -11,40 +11,76 @@
 #include <windows.h>
 #endif
 
-// libc stuff
-
-void * malloc(size_t sz);
-void free(void * mem);
-void * realloc(void * mem, size_t sz);
-size_t strlen(const char * mem);
-void * dlsym(void * module, const char * symbol);
-
-// Baseline
-
 #define UNA(x) Java_gabien_una_UNA_## x
+
+// Core
 
 int64_t UNA(getSizeofPtr)(void * env, void * self) {
     return (int64_t) sizeof(void *);
 }
 
-// Serves as part of UNATest
-int64_t UNA(getPurpose)(void * env, void * self) {
-    return (int64_t) "󱥩󱤖󱥔󱥧󱤑󱤄";
+int64_t UNA(getArchOS)(void * env, void * self) {
+    return (int64_t) UNA_ARCHOS;
 }
 
-int64_t UNA(lookupBootstrap)(void * env, void * self, int64_t str) {
+// DL
+
+void * dlopen(const char * fn, int flags);
+void * dlsym(void * module, const char * symbol);
+int dlclose(void * module);
+
+int64_t UNA(dlOpen)(void * env, void * self, int64_t str) {
 #ifdef WIN32
-    return (int64_t) (intptr_t) GetProcAddress(GetModuleHandleA("kernel32"), (const char *) (intptr_t) str);
+    return (int64_t) (intptr_t) LoadLibraryA((const char *) (intptr_t) str);
 #else
-    return (int64_t) (intptr_t) dlsym(NULL, (const char *) (intptr_t) str);
+    return (int64_t) (intptr_t) dlopen((const char *) (intptr_t) str, 0);
 #endif
 }
 
-// libc
+int64_t UNA(dlSym)(void * env, void * self, int64_t module, int64_t str) {
+#ifdef WIN32
+    return (int64_t) (intptr_t) GetProcAddress((void *) (intptr_t) module, (const char *) (intptr_t) str);
+#else
+    return (int64_t) (intptr_t) dlsym((void *) (intptr_t) module, (const char *) (intptr_t) str);
+#endif
+}
+
+void UNA(dlClose)(void * env, void * self, int64_t module) {
+#ifdef WIN32
+    FreeLibrary((void *) (intptr_t) module);
+#else
+    dlclose((void *) (intptr_t) module);
+#endif
+}
+
+// libc - string
+
+size_t strlen(const char * mem);
+char * strdup(const char * mem);
+void * memcpy(void * dst, const void * src, size_t len);
+int memcmp(const void * a, const void * b, size_t len);
 
 int64_t UNA(strlen)(void * env, void * self, int64_t str) {
     return strlen((const char *) (intptr_t) str);
 }
+
+int64_t UNA(strdup)(void * env, void * self, int64_t str) {
+    return (int64_t) (intptr_t) strdup((const char *) (intptr_t) str);
+}
+
+int64_t UNA(memcpy)(void * env, void * self, int64_t dst, int64_t src, int64_t len) {
+    return (int64_t) (intptr_t) memcpy((char *) (intptr_t) dst, (const char *) (intptr_t) src, (size_t) len);
+}
+
+int32_t UNA(memcmp)(void * env, void * self, int64_t a, int64_t b, int64_t len) {
+    return (int32_t) memcmp((const char *) (intptr_t) a, (const char *) (intptr_t) b, (size_t) len);
+}
+
+// libc - malloc
+
+void * malloc(size_t sz);
+void free(void * mem);
+void * realloc(void * mem, size_t sz);
 
 int64_t UNA(malloc)(void * env, void * self, int64_t sz) {
     return (int64_t) (intptr_t) malloc((size_t) sz);
@@ -58,15 +94,27 @@ int64_t UNA(realloc)(void * env, void * self, int64_t address, int64_t size) {
     return (int64_t) (intptr_t) realloc((void *) (intptr_t) address, (size_t) size);
 }
 
+// Peek/Poke
+
+#define PEEKPOKE(char, type, typej) typej UNA(get ## char)(void * env, void * self, int64_t address) {\
+    return *((typej *) (intptr_t) address);\
+}\
+void UNA(set ## char)(void * env, void * self, int64_t address, typej value) {\
+    *((type *) (intptr_t) address) = (type) value;\
+}
+
+PEEKPOKE(B, int8_t, int8_t)
+PEEKPOKE(S, int16_t, int16_t)
+PEEKPOKE(I, int32_t, int32_t)
+PEEKPOKE(J, int64_t, int64_t)
+PEEKPOKE(F, float, float)
+PEEKPOKE(D, double, double)
+PEEKPOKE(Ptr, void *, int64_t)
+
 // JNIEnv - base
 // see jnifns.c to get indices
 
 #define JNIFN(idx) ((*((void***) env))[idx])
-
-#define JNIGR(n, idx) void UNA(n)(void * env, void * self, void * array, int64_t index, int64_t length, int64_t address) {\
-    void * (*fn)(void *, void *, size_t, size_t, void *) = JNIFN(idx);\
-    fn(env, array, (size_t) index, (size_t) length, (void *) (intptr_t) address);\
-}
 
 // JNIEnv - set/get
 
@@ -75,23 +123,28 @@ int64_t UNA(realloc)(void * env, void * self, int64_t address, int64_t size) {
  * THIS IS ON PURPOSE!!! From Java's perspective these do the opposite.
  */
 
-JNIGR(setBooleanArrayRegion, 199)
-JNIGR(setByteArrayRegion, 200)
-JNIGR(setCharArrayRegion, 201)
-JNIGR(setShortArrayRegion, 202)
-JNIGR(setIntArrayRegion, 203)
-JNIGR(setLongArrayRegion, 204)
-JNIGR(setFloatArrayRegion, 205)
-JNIGR(setDoubleArrayRegion, 206)
+#define JNIGR(n, idx) void UNA(n)(void * env, void * self, int64_t address, int64_t length, void * array, int64_t index) {\
+    void * (*fn)(void *, void *, size_t, size_t, void *) = JNIFN(idx);\
+    fn(env, array, (size_t) index, (size_t) length, (void *) (intptr_t) address);\
+}
 
-JNIGR(getBooleanArrayRegion, 207)
-JNIGR(getByteArrayRegion, 208)
-JNIGR(getCharArrayRegion, 209)
-JNIGR(getShortArrayRegion, 210)
-JNIGR(getIntArrayRegion, 211)
-JNIGR(getLongArrayRegion, 212)
-JNIGR(getFloatArrayRegion, 213)
-JNIGR(getDoubleArrayRegion, 214)
+JNIGR(setAZ, 199)
+JNIGR(setAB, 200)
+JNIGR(setAC, 201)
+JNIGR(setAS, 202)
+JNIGR(setAI, 203)
+JNIGR(setAJ, 204)
+JNIGR(setAF, 205)
+JNIGR(setAD, 206)
+
+JNIGR(getAZ, 207)
+JNIGR(getAB, 208)
+JNIGR(getAC, 209)
+JNIGR(getAS, 210)
+JNIGR(getAI, 211)
+JNIGR(getAJ, 212)
+JNIGR(getAF, 213)
+JNIGR(getAD, 214)
 
 // JNIEnv - other
 
