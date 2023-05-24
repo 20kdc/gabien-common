@@ -13,11 +13,11 @@ import java.nio.charset.StandardCharsets;
 public class Main {
     public static void main(String[] args) {
         System.out.println("UNA Self-Test");
-        UNA.defaultLoader();
+        System.out.println("Loaded? " + UNA.defaultLoader());
+        System.out.println("Architecture/OS: " + UNA.getArchOS());
         System.out.println("Size of pointers: " + UNA.getSizeofPtr());
-        System.out.println("Architecture/OS: " + UNA.getArchOSStr());
 
-        long purpose = UNA.getArchOS();
+        long purpose = UNA.getTestStringRaw();
         long strlen = UNA.strlen(purpose);
 
         ByteBuffer obj = UNA.newDirectByteBuffer(purpose, strlen);

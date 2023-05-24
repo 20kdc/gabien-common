@@ -24,45 +24,36 @@ c:write([[
 ]])
 j:write(initialDisclaimer)
 
-local conventions = {"c", "s"}
-local conventionsC = {"", "__attribute__((stdcall))"}
-local types = {"V", "I", "L", "P"}
-local typesJ = {"void ", "int ", "long ", "long "}
-local typesCJ = {"void ", "int32_t ", "int64_t ", "int64_t "}
-local typesCN = {"void", "int32_t", "int64_t", "intptr_t"}
+local types = {"I", "L", "F", "D"}
+local typesJ = {"int ", "long ", "float ", "double "}
+local typesCJ = {"int32_t ", "int64_t ", "float ", "double "}
+local typesCN = {"int32_t", "int64_t", "float", "double"}
 
-local function gen(ccv, args)
- local signature = conventions[ccv]
+local function gen(ret, args)
+ local signature = "c" .. types[ret]
  local argsHaveEnded = false
  local invalid = false
- local argsCJ = "void * env, void * self, int64_t code"
+ local argsCJ = "void * env, void * self"
  local argsCN = ""
  local argsCC = ""
- local argsJ = "long code"
+ local argsJ = ""
  local n = 0
  for _, v in ipairs(args) do
-  local isVoid = types[v] == "V"
-  if isVoid then
-   argsHaveEnded = true
-  elseif argsHaveEnded then
-   invalid = true
-  else
-   signature = signature .. types[v]
-   argsCJ = argsCJ .. ", " .. typesCJ[v] .. "a" .. tostring(n)
-   if n ~= 0 then
-    argsCN = argsCN .. ", "
-    argsCC = argsCC .. ", "
-   end
-   argsCN = argsCN .. typesCN[v]
-   argsCC = argsCC .. "(" .. typesCN[v] .. ") a" .. tostring(n)
-   argsJ = argsJ .. ", " .. typesJ[v] .. "a" .. tostring(n)
+  signature = signature .. types[v]
+  if n ~= 0 then
+   argsCN = argsCN .. ", "
+   argsCC = argsCC .. ", "
   end
+  argsCJ = argsCJ .. ", " .. typesCJ[v] .. "a" .. tostring(n)
+  argsCN = argsCN .. typesCN[v]
+  argsCC = argsCC .. "(" .. typesCN[v] .. ") a" .. tostring(n)
+  argsJ = argsJ .. typesJ[v] .. "a" .. tostring(n) .. ", "
   n = n + 1
  end
  if not invalid then
-  j:write("    public static native long " .. signature .. "(" .. argsJ .. ");\n")
-  c:write("int64_t Java_gabien_una_UNAC_" .. signature .. "(" .. argsCJ .. ") {\n")
-  c:write("    return ((int64_t (" .. conventionsC[ccv] .. "*)(" .. argsCN .. ")) (intptr_t) code)(" .. argsCC .. ");\n")
+  j:write("    public static native " .. typesJ[ret] .. signature .. "(" .. argsJ .. "long code);\n")
+  c:write("int64_t Java_gabien_una_UNAC_" .. signature .. "(" .. argsCJ .. ", int64_t code) {\n")
+  c:write("    return ((int64_t (*)(" .. argsCN .. ")) (intptr_t) code)(" .. argsCC .. ");\n")
   c:write("}\n")
  end
 end
@@ -71,23 +62,39 @@ j:write("\n")
 j:write("package gabien.una;\n")
 j:write("\n")
 j:write("/**\n")
-j:write(" * UNA function call natives. 0-6 arguments with no shenanigans for maximum performance.\n")
+j:write(" * UNA function call natives. No shenanigans for maximum performance.\n")
 j:write(" */\n")
 j:write("public class UNAC {\n")
-for ccv = 1, #conventions do
- for a0 = 1, #types do
-  for a1 = 1, #types do
-   for a2 = 1, #types do
-    for a3 = 1, #types do
-     for a4 = 1, #types do
-      for a5 = 1, #types do
-       gen(ccv, {a0, a1, a2, a3, a4, a5})
-      end
-     end
-    end
+-- cdecl
+for argCount = 0, 4 do
+ local args = {}
+ for i = 1, argCount do
+  table.insert(args, 1)
+ end
+ -- outer loop
+ while true do
+  for ret = 1, #types do
+   gen(ret, args)
+  end
+  -- increment loop
+  local incPtr = argCount
+  while incPtr > 0 do
+   args[incPtr] = args[incPtr] + 1
+   if args[incPtr] > #types then
+    -- carry
+    args[incPtr] = 1
+    incPtr = incPtr - 1
+   else
+    -- done
+    break
    end
+  end
+  if incPtr == 0 then
+   -- escaped, we're done
+   break
   end
  end
 end
+-- done!
 j:write("}\n")
 

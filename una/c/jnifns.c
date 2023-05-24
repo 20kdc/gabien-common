@@ -4,6 +4,8 @@
 #define FN(i,s) printf("#define JNI_%s %li\n", s, offsetof(struct JNINativeInterface_, i) / sizeof(void*));
 
 void main() {
+    FN(NewStringUTF,"NewStringUTF")
+
     FN(GetBooleanArrayRegion,"GetBooleanArrayRegion")
     FN(GetByteArrayRegion,"GetByteArrayRegion")
     FN(GetCharArrayRegion,"GetCharArrayRegion")

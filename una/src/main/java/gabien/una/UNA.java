@@ -142,10 +142,6 @@ public class UNA {
         return res;
     }
 
-    public static String getArchOSStr() {
-        return getString(getArchOS());
-    }
-
     public static String getString(long address) {
         return getString(address, StandardCharsets.UTF_8);
     }
@@ -207,7 +203,10 @@ public class UNA {
     /* Natives */
 
     /* Natives - Core */
-    public static native long getArchOS();
+    public static native String getArchOS();
+    public static native long getTestStringRaw();
+    public static final long SYSFLAG_W32 = 1;
+    public static native long getSysFlags();
     public static native long getSizeofPtr();
 
     /* Natives - DL */
@@ -225,6 +224,11 @@ public class UNA {
     public static native long malloc(long sz);
     public static native void free(long address);
     public static native long realloc(long address, long sz);
+
+    /* JIT */
+    public static native long getPageSize();
+    public static native long rwxAlloc(long sz);
+    public static native void rwxFree(long address, long sz);
 
     /* Natives - Peek/Poke */
     public static native byte getB(long addr);
@@ -263,6 +267,7 @@ public class UNA {
     public static native void setAD(long addr, long length, double[] array, long index);
 
     /* Natives - JNIEnv */
+    public static native String newStringUTF(long address);
     public static native ByteBuffer newDirectByteBuffer(long address, long length);
     public static native long getDirectByteBufferAddress(ByteBuffer obj);
 }

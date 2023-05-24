@@ -1,8 +1,0 @@
-#!/bin/sh
-mvn package
-cp target/gabien-una-0.666-SNAPSHOT.jar una-none.jar
-cp una-none.jar una-se.jar
-cd lib-se
-zip -r ../una-se.jar gabien
-cd ..
-

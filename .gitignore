@@ -68,8 +68,8 @@
 !una/src/main/java/gabien/una/
 !una/src/main/java/gabien/una/UNA.java
 !una/src/main/java/gabien/una/Main.java
-!una/b
-!una/n
+!una/sdk-make
+!una/sdk-clean
 !una/pom.xml
 
 !example-toolchains.xml

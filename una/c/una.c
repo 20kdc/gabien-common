@@ -11,7 +11,10 @@
 #include <windows.h>
 #endif
 
-#define UNA(x) Java_gabien_una_UNA_## x
+#define UNA(x) Java_gabien_una_UNA_ ## x
+#define JNIFN(idx) ((*((void***) env))[idx])
+
+#define JNI_NewStringUTF ((void * (*)(void *, void *)) JNIFN(167))
 
 // Core
 
@@ -19,8 +22,24 @@ int64_t UNA(getSizeofPtr)(void * env, void * self) {
     return (int64_t) sizeof(void *);
 }
 
-int64_t UNA(getArchOS)(void * env, void * self) {
-    return (int64_t) UNA_ARCHOS;
+// This is "Windows" as opposed to "everything else".
+// This is because Windows is the only OS that does a lot of stupid things.
+#define SYSFLAG_W32 1
+
+int64_t UNA(getSysFlags)(void * env, void * self) {
+    int64_t flags = 0;
+#ifdef WIN32
+    flags |= SYSFLAG_W32;
+#endif
+    return flags;
+}
+
+void * UNA(getArchOS)(void * env, void * self) {
+    return JNI_NewStringUTF(env, UNA_ARCHOS);
+}
+
+int64_t UNA(getTestStringRaw)(void * env, void * self) {
+    return (int64_t) (intptr_t) "This is a test string to be retrieved.";
 }
 
 // DL
@@ -94,6 +113,36 @@ int64_t UNA(realloc)(void * env, void * self, int64_t address, int64_t size) {
     return (int64_t) (intptr_t) realloc((void *) (intptr_t) address, (size_t) size);
 }
 
+// JIT
+
+int getpagesize();
+void * mmap(void *, size_t, int, int, int, size_t);
+int munmap(void *, size_t);
+
+int64_t UNA(getPageSize)(void * env, void * self) {
+#ifdef WIN32
+    return 0x1000;
+#else
+    return getpagesize();
+#endif
+}
+
+int64_t UNA(rwxAlloc)(void * env, void * self, int64_t size) {
+#ifdef WIN32
+    return (int64_t) (intptr_t) VirtualAlloc(NULL, (size_t) size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#else
+    return (int64_t) (intptr_t) mmap(NULL, (size_t) size, 7, 0x22, -1, 0);
+#endif
+}
+
+void UNA(rwxFree)(void * env, void * self, int64_t address, int64_t size) {
+#ifdef WIN32
+    VirtualFree((void *) (intptr_t) address, 0, MEM_RELEASE);
+#else
+    munmap((void *) (intptr_t) address, (size_t) size);
+#endif
+}
+
 // Peek/Poke
 
 #define PEEKPOKE(char, type, typej) typej UNA(get ## char)(void * env, void * self, int64_t address) {\
@@ -113,8 +162,6 @@ PEEKPOKE(Ptr, void *, int64_t)
 
 // JNIEnv - base
 // see jnifns.c to get indices
-
-#define JNIFN(idx) ((*((void***) env))[idx])
 
 // JNIEnv - set/get
 
@@ -147,6 +194,10 @@ JNIGR(getAF, 213)
 JNIGR(getAD, 214)
 
 // JNIEnv - other
+
+void * UNA(newStringUTF)(void * env, void * self, int64_t address) {
+    return JNI_NewStringUTF(env, (void *) (intptr_t) address);
+}
 
 void * UNA(newDirectByteBuffer)(void * env, void * self, int64_t address, int64_t length) {
     void * (*newDirectByteBuffer)(void *, void *, int64_t) = JNIFN(229);
