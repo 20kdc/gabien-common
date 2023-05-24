@@ -52,12 +52,25 @@
 !una/
 !una/gencall.lua
 !una/README.md
-!una/una.c
-!una/jnifns.c
-!una/UNA.java
-!una/UNATest.java
+!una/c
+!una/c/
+!una/c/una.c
+!una/c/jnifns.c
+!una/src
+!una/src/
+!una/src/main
+!una/src/main/
+!una/src/main/java
+!una/src/main/java/
+!una/src/main/java/gabien
+!una/src/main/java/gabien/
+!una/src/main/java/gabien/una
+!una/src/main/java/gabien/una/
+!una/src/main/java/gabien/una/UNA.java
+!una/src/main/java/gabien/una/Main.java
 !una/b
 !una/n
+!una/pom.xml
 
 !example-toolchains.xml
 

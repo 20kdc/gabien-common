@@ -21,7 +21,7 @@ void * dlsym(void * module, const char * symbol);
 
 // Baseline
 
-#define UNA(x) Java_UNA_## x
+#define UNA(x) Java_gabien_una_UNA_## x
 
 int64_t UNA(getSizeofPtr)(void * env, void * self) {
     return (int64_t) sizeof(void *);
