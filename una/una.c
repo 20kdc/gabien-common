@@ -7,12 +7,17 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
 #ifdef WIN32
 #include <windows.h>
-#else
-#include <dlfcn.h>
 #endif
+
+// libc stuff
+
+void * malloc(size_t sz);
+void free(void * mem);
+void * realloc(void * mem, size_t sz);
+size_t strlen(const char * mem);
+void * dlsym(void * module, const char * symbol);
 
 // Baseline
 
@@ -29,14 +34,28 @@ int64_t UNA(getPurpose)(void * env, void * self) {
 
 int64_t UNA(lookupBootstrap)(void * env, void * self, int64_t str) {
 #ifdef WIN32
-    return GetProcAddress(GetModuleHandleA("kernel32"), (const char *) (intptr_t) str);
+    return (int64_t) (intptr_t) GetProcAddress(GetModuleHandleA("kernel32"), (const char *) (intptr_t) str);
 #else
     return (int64_t) (intptr_t) dlsym(NULL, (const char *) (intptr_t) str);
 #endif
 }
 
+// libc
+
 int64_t UNA(strlen)(void * env, void * self, int64_t str) {
     return strlen((const char *) (intptr_t) str);
+}
+
+int64_t UNA(malloc)(void * env, void * self, int64_t sz) {
+    return (int64_t) (intptr_t) malloc((size_t) sz);
+}
+
+void UNA(free)(void * env, void * self, int64_t address) {
+    free((void *) (intptr_t) address);
+}
+
+int64_t UNA(realloc)(void * env, void * self, int64_t address, int64_t size) {
+    return (int64_t) (intptr_t) realloc((void *) (intptr_t) address, (size_t) size);
 }
 
 // JNIEnv - base
