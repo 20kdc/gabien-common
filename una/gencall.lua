@@ -62,11 +62,11 @@ for argCount = 0, 6 do
  end
  c:write(")))\n")
  -- continue
- c:write("int64_t Java_gabien_una_UNA_c" .. tostring(argCount) .. "(")
+ c:write("int64_t Java_gabien_una_UNA_c" .. tostring(argCount) .. "(void * env, void * self, ")
  for i = 0, argCount - 1 do
   c:write("int64_t a" .. tostring(i) .. ", ")
  end
- c:write("int32_t variant, int64_t code) {\n")
+ c:write("int64_t code, int32_t variant) {\n")
  c:write("    switch (variant) {\n")
  local variantCount = #retTypes
  for i = 1, argCount do

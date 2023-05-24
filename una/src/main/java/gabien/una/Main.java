@@ -33,6 +33,28 @@ public class Main {
         UNA.getAB(purpose, strlen, data2, 0);
         System.out.println("UTF-8 GetRegion retrieval test: " + new String(data2, StandardCharsets.UTF_8));
 
-        //System.out.println("dlsym: " + UNA.lookupBootstrap("dlsym"));
+        System.out.println("Trying to find EGL...");
+        long eglFound = UNA.dlOpen("libEGL.so.1");
+        System.out.println("EGL: " + eglFound);
+        if (eglFound != 0) {
+            // First function lookup, so make a big deal of it
+            long egd = UNA.dlSym(eglFound, "eglGetDisplay");
+            int egdV = UNA.encodeV('P', "P");
+            System.out.println("eglGetDisplay: " + egd + "(" + egdV + ")");
+            // Run it, get display
+            long dsp = UNA.c1(0, egd, egdV);
+            System.out.println("Display: " + dsp);
+            // Allocate 1MB of memory for various uses
+            long exmem = UNA.checkedMalloc(1024 * 1024);
+            // init EGL
+            egd = UNA.dlSym(eglFound, "eglInitialize");
+            egdV = UNA.encodeV('I', "PPP");
+            System.out.println("eglInitialize: " + egd + "(" + egdV + ")");
+            System.out.println(" = " + UNA.c3(dsp, exmem, exmem + 4, egd, egdV));
+            System.out.println("EGL Version: " + UNA.getI(exmem) + "." + UNA.getI(exmem + 4));
+            //
+            egd = UNA.dlSym(eglFound, "eglGetConfigs");
+            egdV = UNA.encodeV('I', "PPIP");
+        }
     }
 }

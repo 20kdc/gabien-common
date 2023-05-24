@@ -4,4 +4,5 @@ LIBUNA="lib-se/gabien/una/lib"
 rm -rf $LIBUNA lib-android
 mvn clean
 rm -f c/unacall.c
+rm -f una-none.jar una-se.jar
 

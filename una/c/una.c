@@ -62,7 +62,7 @@ int64_t UNA(dlOpen)(void * env, void * self, int64_t str) {
 #ifdef WIN32
     return J_PTR(LoadLibraryA(C_PTR(str)));
 #else
-    return J_PTR(dlopen(C_PTR(str), 0));
+    return J_PTR(dlopen(C_PTR(str), 2));
 #endif
 }
 
@@ -182,7 +182,7 @@ PEEKPOKE(Ptr, void *, int64_t)
 
 #define JNIGR(n, idx) void UNA(n)(void * env, void * self, int64_t address, int64_t length, void * array, int64_t index) {\
     void * (*fn)(void *, void *, size_t, size_t, void *) = JNIFN(idx);\
-    fn(env, array, (size_t) index, (size_t) length, (void *) (intptr_t) address);\
+    fn(env, array, (size_t) index, (size_t) length, C_PTR(address));\
 }
 
 JNIGR(setAZ, 199)

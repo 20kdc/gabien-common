@@ -118,7 +118,7 @@ public class UNA {
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
     }
 
-    /* Endianness */
+    /* Endianness, invocation setup */
 
     /* Get first int of long */
     public static int l0(long val) {
@@ -135,6 +135,31 @@ public class UNA {
         if (isBigEndian)
             return ((a & 0xFFFFFFFFL) << 32) | (b & 0xFFFFFFFFL);
         return ((b & 0xFFFFFFFFL) << 32) | (a & 0xFFFFFFFFL);
+    }
+
+    public static int encodeV(char ret, String args) {
+        int variant = encodeV(ret);
+        for (char ch : args.toCharArray()) {
+            variant *= 3;
+            variant += encodeV(ch);
+        }
+        return variant;
+    }
+
+    private static int encodeV(char ch) {
+        if (ch == 'I')
+            return 0;
+        if (ch == 'L')
+            return 1;
+        if (ch == 'F')
+            return 2;
+        // alias V (void) to i32
+        if (ch == 'V')
+            return 0;
+        // P (pointer) is really why variants exist
+        if (ch == 'P')
+            return is32Bit ? 0 : 1;
+        throw new RuntimeException("Unknown variant-char " + ch);
     }
 
     /* Baseline wrappers and so forth */
@@ -157,6 +182,7 @@ public class UNA {
         long res = checkedMalloc(bytes.length + 1);
         setAB(res, bytes.length, bytes, 0);
         setB(res + bytes.length, (byte) 0);
+        // System.out.println("strdup: " + UNA.newStringUTF(res));
         return res;
     }
 
@@ -306,13 +332,13 @@ public class UNA {
     public static native long getDirectByteBufferAddress(ByteBuffer obj);
 
     /* Invoke */
-    public static native long c0(int variant, long code);
-    public static native long c1(long a0, int variant, long code);
-    public static native long c2(long a0, long a1, int variant, long code);
-    public static native long c3(long a0, long a1, long a2, int variant, long code);
-    public static native long c4(long a0, long a1, long a2, long a3, int variant, long code);
-    public static native long c5(long a0, long a1, long a2, long a3, long a4, int variant, long code);
-    public static native long c6(long a0, long a1, long a2, long a3, long a4, long a5, int variant, long code);
+    public static native long c0(long code, int variant);
+    public static native long c1(long a0, long code, int variant);
+    public static native long c2(long a0, long a1, long code, int variant);
+    public static native long c3(long a0, long a1, long a2, long code, int variant);
+    public static native long c4(long a0, long a1, long a2, long a3, long code, int variant);
+    public static native long c5(long a0, long a1, long a2, long a3, long a4, long code, int variant);
+    public static native long c6(long a0, long a1, long a2, long a3, long a4, long a5, long code, int variant);
 
     /* Invoke - Special */
     // glReadPixels

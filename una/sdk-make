@@ -38,11 +38,5 @@ mkdir -p lib-android/lib/armeabi-v7a
 mv $LIBUNA/una.arm-linux-android lib-android/lib/armeabi-v7a/libgabien-una.so
 mkdir -p lib-android/lib/aarch64-v8a
 mv $LIBUNA/una.aarch64-linux-android lib-android/lib/aarch64-v8a/libgabien-una.so
-
-mvn package
-cp target/gabien-una-0.666-SNAPSHOT.jar una-none.jar
-cp una-none.jar una-se.jar
-cd lib-se
-zip -r ../una-se.jar gabien
-cd ..
+./sdk-make-java
 

@@ -28,28 +28,53 @@ However, it's still open-source.
   + Bindings for useful JNI functionality
   + The actual invoke interface
 
+## Peek/Poke
+
+The peek/poke API works in terms of Java types, due to the bulk operations being wrappers around JNI operations.
+
+As such, the types are:
+
++ Boolean `Z`
++ Byte `B`
++ Short `S`
++ Int `I`
++ Long `J`
++ Float `F`
++ Double `D`
++ Pointer `Ptr` (not supported by bulk operations; Java-side, uses long, but C-side uses host word size)
+
+There are `get` and `set` functions for all of the types except Boolean.
+
+For all types except Pointer, there are bulk get/set functions, prefixed with `A`.
+
 ## Invocation
 
 UNA invocation is a bit of an awkward process, owing to limiting the code to what can be considered reasonably standard C.
 
 It supports a return type and up to 6 arguments.
 
-UNA has three types:
+Invocation has three types:
 
 + `int32_t` (`I` or 0)
 + `int64_t` (`L` or 1)
 + `float` (`F` or 2)
 
-These types are represented as 64-bit words (the lower 32-bits thereof for the shorter ones).
-These types are fit into an integer which describes "variants" of a function.
+There are two "meta" types supported by the encoder:
+
++ `int32_t` (`V`) (void)
++ `void *` (`P`) (Pointer: `I` or `L` depending on hardware)
+
+These types are fit into an integer which describes "variants" of a function (for types).
 
 Variants are packed using `v = (v * typeCount) | t;` to add each type.
 
 Note `void` is not a type, even for returns, as an undefined word return is always perfectly safe in every ABI known to the writer.
 
-UNA calls are made using functions such as `long UNA.c2(long a0, long a1, int variant, long code)`.
+UNA calls are made using functions such as `long UNA.c2(long a0, long a1, long code, int variant)`.
 
-This function takes two arguments, along with the variant and code pointer, and executes it, returning the result.
+This function takes two arguments, along with the code pointer and variant, and executes it, returning the result.
+
+**There is no API guarantee that variant numbers will remain consistent. Always use `UNA.encodeV`.**
 
 ## Invoke Limitations
 
