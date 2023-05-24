@@ -28,26 +28,27 @@ However, it's still open-source.
   + Bindings for useful JNI functionality
   + The actual invoke interface
 
-## General Invoke Design
+## Invoke Core
 
-UNA invocation typically uses the default calling convention of the target, and supports up to 8 arguments.
+UNA invocation is a bit of an awkward process, owing to the limitations.
 
-UNA has five types:
+It supports up to 8 arguments.
 
-+ i32 aka `I`
-+ i64 aka `L`
-+ f32 aka `F`
-+ f64 aka `D`
-+ Pointer aka `P`
+UNA has two types:
 
-Note `void` is not a type, even for returns, as an undefined `i32` return is always perfectly safe in every ABI known to the writer.
++ `int32_t` aka `I`
++ `float` aka `F`
 
-UNA calls are made using functions such as `int UNAC.cIII(int a0, int a1, long code)`.
+Note `void` is not a type, even for returns, as an undefined word return is always perfectly safe in every ABI known to the writer.
 
-This function takes two int arguments, along with the code pointer, and executes it, returning an int result.
+UNA calls are made using functions such as `long UNAC.WcWW(long a0, long a1, long code)`.
 
-## Limitations
+This function takes two word arguments, along with the code pointer, and executes it, returning an int result.
 
+## Invoke Limitations
+
++ It's not possible to use doubles. (This would add too many combinations to allow for 8 parameters.)
++ On 32-bit platforms, `long` must be manually broken into two using code such as `param, param >> 32`
 + Calling conventions other than the system default aren't supported. This includes stdcall.
 
 These usually have a workaround in the form of dynamic code generation.

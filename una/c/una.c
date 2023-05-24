@@ -22,15 +22,23 @@ int64_t UNA(getSizeofPtr)(void * env, void * self) {
     return (int64_t) sizeof(void *);
 }
 
+static int64_t endianCheck = 1;
+
 // This is "Windows" as opposed to "everything else".
 // This is because Windows is the only OS that does a lot of stupid things.
 #define SYSFLAG_W32 1
+#define SYSFLAG_BE 2
+#define SYSFLAG_32 4
 
 int64_t UNA(getSysFlags)(void * env, void * self) {
     int64_t flags = 0;
 #ifdef WIN32
     flags |= SYSFLAG_W32;
 #endif
+    if ((*(int32_t*)&endianCheck) != 1)
+        flags |= SYSFLAG_BE;
+    if (sizeof(void *) == 4)
+        flags |= SYSFLAG_32;
     return flags;
 }
 

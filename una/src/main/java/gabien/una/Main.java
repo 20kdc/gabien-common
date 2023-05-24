@@ -14,9 +14,13 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("UNA Self-Test");
         System.out.println("Loaded? " + UNA.defaultLoader());
+        UNA.setupSysFlags();
+        System.out.println("isWin32: " + UNA.isWin32);
+        System.out.println("isBigEndian: " + UNA.isBigEndian);
+        System.out.println("is32Bit: " + UNA.is32Bit);
+
         System.out.println("Architecture/OS: " + UNA.getArchOS());
         System.out.println("Size of pointers: " + UNA.getSizeofPtr());
-
         long purpose = UNA.getTestStringRaw();
         long strlen = UNA.strlen(purpose);
 

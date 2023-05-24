@@ -105,6 +105,38 @@ public class UNA {
         return false;
     }
 
+    /* Sysflags */
+    public static long sysFlags;
+    public static boolean isWin32;
+    public static boolean isBigEndian;
+    public static boolean is32Bit;
+
+    public static void setupSysFlags() {
+        sysFlags = getSysFlags();
+        isWin32 = (sysFlags & SYSFLAG_W32) != 0;
+        isBigEndian = (sysFlags & SYSFLAG_BE) != 0;
+        is32Bit = (sysFlags & SYSFLAG_32) != 0;
+    }
+
+    /* Endianness */
+
+    /* Get first int of long */
+    public static int l0(long val) {
+        return (int) (isBigEndian ? (val >> 32) : val);
+    }
+
+    /* Get second int of long */
+    public static int l1(long val) {
+        return (int) (isBigEndian ? val : (val >> 32));
+    }
+
+    /* Reform long from parts */
+    public static long lr(long a, long b) {
+        if (isBigEndian)
+            return ((a & 0xFFFFFFFFL) << 32) | (b & 0xFFFFFFFFL);
+        return ((b & 0xFFFFFFFFL) << 32) | (a & 0xFFFFFFFFL);
+    }
+
     /* Baseline wrappers and so forth */
 
     public static long checkedMalloc(long length) {
@@ -206,6 +238,8 @@ public class UNA {
     public static native String getArchOS();
     public static native long getTestStringRaw();
     public static final long SYSFLAG_W32 = 1;
+    public static final long SYSFLAG_BE = 2;
+    public static final long SYSFLAG_32 = 4;
     public static native long getSysFlags();
     public static native long getSizeofPtr();
 

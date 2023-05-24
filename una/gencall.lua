@@ -24,13 +24,13 @@ c:write([[
 ]])
 j:write(initialDisclaimer)
 
-local types = {"I", "L", "F", "D"}
-local typesJ = {"int ", "long ", "float ", "double "}
-local typesCJ = {"int32_t ", "int64_t ", "float ", "double "}
-local typesCN = {"int32_t", "int64_t", "float", "double"}
+local types = {"I", "F"}
+local typesJ = {"int ", "float "}
+local typesCJ = {"int32_t ", "float "}
+local typesCN = {"int32_t", "float"}
 
 local function gen(ret, args)
- local signature = "c" .. types[ret]
+ local signature = types[ret] .. "c"
  local argsHaveEnded = false
  local invalid = false
  local argsCJ = "void * env, void * self"
@@ -62,11 +62,11 @@ j:write("\n")
 j:write("package gabien.una;\n")
 j:write("\n")
 j:write("/**\n")
-j:write(" * UNA function call natives. No shenanigans for maximum performance.\n")
+j:write(" * UNA function call natives.\n")
 j:write(" */\n")
 j:write("public class UNAC {\n")
 -- cdecl
-for argCount = 0, 4 do
+for argCount = 0, 8 do
  local args = {}
  for i = 1, argCount do
   table.insert(args, 1)
