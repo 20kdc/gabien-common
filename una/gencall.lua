@@ -61,7 +61,7 @@ for argCount = 0, 6 do
  end
  c:write(")))\n")
  -- continue
- c:write("int64_t UNA(c" .. tostring(argCount) .. ")(void * env, void * self, ")
+ c:write("int64_t UNAI(c" .. tostring(argCount) .. ")(void * env, void * self, ")
  for i = 0, argCount - 1 do
   c:write("int64_t a" .. tostring(i) .. ", ")
  end

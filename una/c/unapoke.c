@@ -9,10 +9,10 @@
 
 // Peek/Poke
 
-#define PEEKPOKE(char, type, typej) typej UNA(get ## char)(void * env, void * self, int64_t address) {\
+#define PEEKPOKE(char, type, typej) typej UNAP(peek ## char)(void * env, void * self, int64_t address) {\
     return *((typej *) (intptr_t) address);\
 }\
-void UNA(set ## char)(void * env, void * self, int64_t address, typej value) {\
+void UNAP(poke ## char)(void * env, void * self, int64_t address, typej value) {\
     *((type *) (intptr_t) address) = (type) value;\
 }
 
@@ -33,26 +33,26 @@ PEEKPOKE(Ptr, void *, int64_t)
  * THIS IS ON PURPOSE!!! From Java's perspective these do the opposite.
  */
 
-#define JNIGR(n, idx) void UNA(n)(void * env, void * self, int64_t address, int64_t length, void * array, int64_t index) {\
+#define JNIGR(n, idx) void UNAP(n)(void * env, void * self, int64_t address, int64_t length, void * array, int64_t index) {\
     void * (*fn)(void *, void *, size_t, size_t, void *) = JNIFN(idx);\
     fn(env, array, (size_t) index, (size_t) length, C_PTR(address));\
 }
 
-JNIGR(setAZ, 199)
-JNIGR(setAB, 200)
-JNIGR(setAC, 201)
-JNIGR(setAS, 202)
-JNIGR(setAI, 203)
-JNIGR(setAJ, 204)
-JNIGR(setAF, 205)
-JNIGR(setAD, 206)
+JNIGR(pokeAZ, 199)
+JNIGR(pokeAB, 200)
+JNIGR(pokeAC, 201)
+JNIGR(pokeAS, 202)
+JNIGR(pokeAI, 203)
+JNIGR(pokeAJ, 204)
+JNIGR(pokeAF, 205)
+JNIGR(pokeAD, 206)
 
-JNIGR(getAZ, 207)
-JNIGR(getAB, 208)
-JNIGR(getAC, 209)
-JNIGR(getAS, 210)
-JNIGR(getAI, 211)
-JNIGR(getAJ, 212)
-JNIGR(getAF, 213)
-JNIGR(getAD, 214)
+JNIGR(peekAZ, 207)
+JNIGR(peekAB, 208)
+JNIGR(peekAC, 209)
+JNIGR(peekAS, 210)
+JNIGR(peekAI, 211)
+JNIGR(peekAJ, 212)
+JNIGR(peekAF, 213)
+JNIGR(peekAD, 214)
 

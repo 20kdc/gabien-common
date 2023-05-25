@@ -13,7 +13,7 @@ void * dlopen(const char * fn, int flags);
 void * dlsym(void * module, const char * symbol);
 int dlclose(void * module);
 
-int64_t UNA(dlOpen)(void * env, void * self, int64_t str) {
+int64_t UNAC(dlopen)(void * env, void * self, int64_t str) {
 #ifdef WIN32
     return J_PTR(LoadLibraryA(C_PTR(str)));
 #else
@@ -21,7 +21,7 @@ int64_t UNA(dlOpen)(void * env, void * self, int64_t str) {
 #endif
 }
 
-int64_t UNA(dlSym)(void * env, void * self, int64_t module, int64_t str) {
+int64_t UNAC(dlsym)(void * env, void * self, int64_t module, int64_t str) {
 #ifdef WIN32
     return J_PTR(GetProcAddress(C_PTR(module), C_PTR(str)));
 #else
@@ -29,7 +29,7 @@ int64_t UNA(dlSym)(void * env, void * self, int64_t module, int64_t str) {
 #endif
 }
 
-void UNA(dlClose)(void * env, void * self, int64_t module) {
+void UNAC(dlclose)(void * env, void * self, int64_t module) {
 #ifdef WIN32
     FreeLibrary(C_PTR(module));
 #else
@@ -44,19 +44,19 @@ char * strdup(const char * mem);
 void * memcpy(void * dst, const void * src, size_t len);
 int memcmp(const void * a, const void * b, size_t len);
 
-int64_t UNA(strlen)(void * env, void * self, int64_t str) {
+int64_t UNAC(strlen)(void * env, void * self, int64_t str) {
     return strlen(C_PTR(str));
 }
 
-int64_t UNA(strdup)(void * env, void * self, int64_t str) {
+int64_t UNAC(strdup)(void * env, void * self, int64_t str) {
     return J_PTR(strdup(C_PTR(str)));
 }
 
-int64_t UNA(memcpy)(void * env, void * self, int64_t dst, int64_t src, int64_t len) {
+int64_t UNAC(memcpy)(void * env, void * self, int64_t dst, int64_t src, int64_t len) {
     return J_PTR(memcpy(C_PTR(dst), C_PTR(src), (size_t) len));
 }
 
-int32_t UNA(memcmp)(void * env, void * self, int64_t a, int64_t b, int64_t len) {
+int32_t UNAC(memcmp)(void * env, void * self, int64_t a, int64_t b, int64_t len) {
     return (int32_t) memcmp(C_PTR(a), C_PTR(b), (size_t) len);
 }
 
@@ -65,26 +65,21 @@ int32_t UNA(memcmp)(void * env, void * self, int64_t a, int64_t b, int64_t len) 
 void * malloc(size_t sz);
 void free(void * mem);
 void * realloc(void * mem, size_t sz);
+int getpagesize();
 
-int64_t UNA(malloc)(void * env, void * self, int64_t sz) {
+int64_t UNAC(malloc)(void * env, void * self, int64_t sz) {
     return J_PTR(malloc((size_t) sz));
 }
 
-void UNA(free)(void * env, void * self, int64_t address) {
+void UNAC(free)(void * env, void * self, int64_t address) {
     free(C_PTR(address));
 }
 
-int64_t UNA(realloc)(void * env, void * self, int64_t address, int64_t size) {
+int64_t UNAC(realloc)(void * env, void * self, int64_t address, int64_t size) {
     return J_PTR(realloc(C_PTR(address), (size_t) size));
 }
 
-// JIT
-
-int getpagesize();
-void * mmap(void *, size_t, int, int, int, size_t);
-int munmap(void *, size_t);
-
-int64_t UNA(getPageSize)(void * env, void * self) {
+int64_t UNAC(getpagesize)(void * env, void * self) {
 #ifdef WIN32
     return 0x1000;
 #else
@@ -92,7 +87,11 @@ int64_t UNA(getPageSize)(void * env, void * self) {
 #endif
 }
 
-int64_t UNA(rwxAlloc)(void * env, void * self, int64_t size) {
+// JIT
+void * mmap(void *, size_t, int, int, int, size_t);
+int munmap(void *, size_t);
+
+int64_t UNAC(rwxAlloc)(void * env, void * self, int64_t size) {
 #ifdef WIN32
     return J_PTR(VirtualAlloc(NULL, (size_t) size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
 #else
@@ -100,7 +99,7 @@ int64_t UNA(rwxAlloc)(void * env, void * self, int64_t size) {
 #endif
 }
 
-void UNA(rwxFree)(void * env, void * self, int64_t address, int64_t size) {
+void UNAC(rwxFree)(void * env, void * self, int64_t address, int64_t size) {
 #ifdef WIN32
     VirtualFree(C_PTR(address), 0, MEM_RELEASE);
 #else

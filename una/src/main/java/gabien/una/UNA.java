@@ -26,219 +26,19 @@ public class UNA {
     public static boolean isWin32;
     public static boolean isBigEndian;
     public static boolean is32Bit;
+    private static boolean setup;
 
-    public static void setupSysFlags() {
+    public static void checkSetup() {
+        if (!setup)
+            throw new RuntimeException("UNA.setup must be called, ideally just after the native library is loaded.");
+    }
+
+    public static void setup() {
+        setup = true;
         sysFlags = getSysFlags();
         isWin32 = (sysFlags & SYSFLAG_W32) != 0;
         isBigEndian = (sysFlags & SYSFLAG_BE) != 0;
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
-    }
-
-    /* Invocation Setup */
-
-    public static int encodeV(char ret, String args) {
-        int variant = encodeV(ret);
-        for (char ch : args.toCharArray()) {
-            variant *= 3;
-            variant += encodeV(ch);
-        }
-        return variant;
-    }
-
-    private static int encodeV(char ch) {
-        if (ch == 'I')
-            return 0;
-        if (ch == 'L')
-            return 1;
-        if (ch == 'F')
-            return 2;
-        // alias V (void) to i32
-        if (ch == 'V')
-            return 0;
-        // P (pointer) is really why variants exist
-        if (ch == 'P')
-            return is32Bit ? 0 : 1;
-        throw new RuntimeException("Unknown variant-char " + ch);
-    }
-
-    /* Baseline wrappers and so forth */
-
-    public static long checkedMalloc(long length) {
-        if (length <= 0)
-            throw new RuntimeException("Invalid length of malloc");
-        long res = malloc(length);
-        if (res == 0)
-            throw new RuntimeException("Out of memory / malloc failed");
-        return res;
-    }
-
-    public static long memdup(long mem, long len) {
-        long m2 = checkedMalloc(len);
-        memcpy(m2, mem, len);
-        return m2;
-    }
-
-    public static long strdup(String str) {
-        return strdup(str, StandardCharsets.UTF_8);
-    }
-
-    public static long strdup(String str, Charset cs) {
-        byte[] bytes = str.getBytes(cs);
-        return memdup(bytes, 0, bytes.length, true);
-    }
-
-    public static long dlOpen(String str) {
-        long tmp = strdup(str);
-        long res = dlOpen(tmp);
-        free(tmp);
-        return res;
-    }
-
-    public static long dlSym(long module, String str) {
-        long tmp = strdup(str);
-        long res = dlSym(module, tmp);
-        free(tmp);
-        return res;
-    }
-
-    public static String getString(long address) {
-        return getString(address, StandardCharsets.UTF_8);
-    }
-
-    public static String getString(long address, Charset cs) {
-        return new String(getAB(address, (int) strlen(address)), cs);
-    }
-
-    /* Bulk Allocating Peek */
-
-    public static boolean[] getAZ(long addr, int length) {
-        boolean[] data2 = new boolean[length];
-        getAZ(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static byte[] getAB(long addr, int length) {
-        byte[] data2 = new byte[length];
-        getAB(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static char[] getAC(long addr, int length) {
-        char[] data2 = new char[length];
-        getAC(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static short[] getAS(long addr, int length) {
-        short[] data2 = new short[length];
-        getAS(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static int[] getAI(long addr, int length) {
-        int[] data2 = new int[length];
-        getAI(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static long[] getAJ(long addr, int length) {
-        long[] data2 = new long[length];
-        getAJ(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static float[] getAF(long addr, int length) {
-        float[] data2 = new float[length];
-        getAF(addr, length, data2, 0);
-        return data2;
-    }
-
-    public static double[] getAD(long addr, int length) {
-        double[] data2 = new double[length];
-        getAD(addr, length, data2, 0);
-        return data2;
-    }
-
-    /* Bulk Allocating From Arrays */
-
-    public static long memdup(boolean[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(boolean[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(boolean[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 1);
-        setAZ(addr, len, data2, base);
-        if (nt)
-            setZ(addr + (len * 1), false);
-        return addr;
-    }
-
-    public static long memdup(byte[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(byte[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(byte[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 1);
-        setAB(addr, len, data2, base);
-        if (nt)
-            setB(addr + (len * 1), (byte) 0);
-        return addr;
-    }
-
-    public static long memdup(char[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(char[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(char[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 2);
-        setAC(addr, len, data2, base);
-        if (nt)
-            setC(addr + (len * 2), (char) 0);
-        return addr;
-    }
-
-    public static long memdup(short[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(short[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(short[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 2);
-        setAS(addr, len, data2, base);
-        if (nt)
-            setS(addr + (len * 2), (short) 0);
-        return addr;
-    }
-
-    public static long memdup(int[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(int[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(int[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 4);
-        setAI(addr, len, data2, base);
-        if (nt)
-            setI(addr + (len * 4), 0);
-        return addr;
-    }
-
-    public static long memdup(long[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(long[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(long[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 8);
-        setAJ(addr, len, data2, base);
-        if (nt)
-            setJ(addr + (len * 8), 0);
-        return addr;
-    }
-
-    public static long memdup(float[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(float[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(float[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 4);
-        setAF(addr, len, data2, base);
-        if (nt)
-            setI(addr + (len * 4), 0);
-        return addr;
-    }
-
-    public static long memdup(double[] data2) { return memdup(data2, 0, data2.length, false); }
-    public static long memdup(double[] data2, int base, int len) { return memdup(data2, base, len, false); }
-    public static long memdup(double[] data2, int base, int len, boolean nt) {
-        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 8);
-        setAD(addr, len, data2, base);
-        if (nt)
-            setJ(addr + (len * 8), 0);
-        return addr;
     }
 
     /* Natives */
@@ -246,93 +46,16 @@ public class UNA {
     /* Natives - Core */
     public static native String getArchOS();
     public static native long getTestStringRaw();
+
     public static final long SYSFLAG_W32 = 1;
     public static final long SYSFLAG_BE = 2;
     public static final long SYSFLAG_32 = 4;
     public static native long getSysFlags();
+
     public static native long getSizeofPtr();
-
-    /* Natives - DL */
-    public static native long dlOpen(long str);
-    public static native long dlSym(long module, long str);
-    public static native void dlClose(long module);
-
-    /* Natives - libc - string */
-    public static native long strlen(long str);
-    public static native long strdup(long str);
-    public static native long memcpy(long dst, long src, long len);
-    public static native int memcmp(long a, long b, long len);
-
-    /* Natives - libc - malloc */
-    public static native long malloc(long sz);
-    public static native void free(long address);
-    public static native long realloc(long address, long sz);
-
-    /* JIT */
-    public static native long getPageSize();
-    public static native long rwxAlloc(long sz);
-    public static native void rwxFree(long address, long sz);
-
-    /* Natives - Peek/Poke */
-    public static native boolean getZ(long addr);
-    public static native byte getB(long addr);
-    public static native short getS(long addr);
-    public static native int getI(long addr);
-    public static native long getJ(long addr);
-    public static native float getF(long addr);
-    public static native double getD(long addr);
-    public static native long getPtr(long addr);
-
-    public static native void setZ(long addr, boolean data);
-    public static native void setB(long addr, byte data);
-    public static native void setC(long addr, char data);
-    public static native void setS(long addr, short data);
-    public static native void setI(long addr, int data);
-    public static native void setJ(long addr, long data);
-    public static native void setF(long addr, float data);
-    public static native void setD(long addr, double data);
-    public static native void setPtr(long addr, long data);
-
-    /* Natives - JNIEnv - Get/Set (Opposite polarity to JNIEnv functions) */
-    public static native void getAZ(long addr, long length, boolean[] array, long index);
-    public static native void getAB(long addr, long length, byte[] array, long index);
-    public static native void getAC(long addr, long length, char[] array, long index);
-    public static native void getAS(long addr, long length, short[] array, long index);
-    public static native void getAI(long addr, long length, int[] array, long index);
-    public static native void getAJ(long addr, long length, long[] array, long index);
-    public static native void getAF(long addr, long length, float[] array, long index);
-    public static native void getAD(long addr, long length, double[] array, long index);
-
-    public static native void setAZ(long addr, long length, boolean[] array, long index);
-    public static native void setAB(long addr, long length, byte[] array, long index);
-    public static native void setAC(long addr, long length, char[] array, long index);
-    public static native void setAS(long addr, long length, short[] array, long index);
-    public static native void setAI(long addr, long length, int[] array, long index);
-    public static native void setAJ(long addr, long length, long[] array, long index);
-    public static native void setAF(long addr, long length, float[] array, long index);
-    public static native void setAD(long addr, long length, double[] array, long index);
 
     /* Natives - JNIEnv */
     public static native String newStringUTF(long address);
     public static native ByteBuffer newDirectByteBuffer(long address, long length);
     public static native long getDirectByteBufferAddress(ByteBuffer obj);
-
-    /* Invoke */
-    public static native long c0(long code, int variant);
-    public static native long c1(long a0, long code, int variant);
-    public static native long c2(long a0, long a1, long code, int variant);
-    public static native long c3(long a0, long a1, long a2, long code, int variant);
-    public static native long c4(long a0, long a1, long a2, long a3, long code, int variant);
-    public static native long c5(long a0, long a1, long a2, long a3, long a4, long code, int variant);
-    public static native long c6(long a0, long a1, long a2, long a3, long a4, long a5, long code, int variant);
-
-    /* Invoke - Special */
-    // glReadPixels
-    public static native long LcIIIIIIP(int a0, int a1, int a2, int a3, int a4, int a5, long a6, long code);
-    // glCompressedTexImage2D
-    public static native long LcIIIIIIIP(int a0, int a1, int a2, int a3, int a4, int a5, int a6, long a7, long code);
-    // glTexImage2D, glTexSubImage2D, glCompressedTexSubImage2D
-    public static native long LcIIIIIIIIP(int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, long code);
-    // glCopyTexImage2D, glCopyTexSubImage2D
-    public static native long LcIIIIIIII(int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, long code);
 }

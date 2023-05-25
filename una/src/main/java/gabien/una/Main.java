@@ -9,12 +9,13 @@ package gabien.una;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import static gabien.una.UNAPoke.*;
 
 public class Main {
     public static void main(String[] args) {
         System.out.println("UNA Self-Test");
         System.out.println("Loaded? " + UNALoader.defaultLoader());
-        UNA.setupSysFlags();
+        UNA.setup();
         System.out.println("isWin32: " + UNA.isWin32);
         System.out.println("isBigEndian: " + UNA.isBigEndian);
         System.out.println("is32Bit: " + UNA.is32Bit);
@@ -22,7 +23,7 @@ public class Main {
         System.out.println("Architecture/OS: " + UNA.getArchOS());
         System.out.println("Size of pointers: " + UNA.getSizeofPtr());
         long purpose = UNA.getTestStringRaw();
-        long strlen = UNA.strlen(purpose);
+        long strlen = UNAC.strlen(purpose);
 
         ByteBuffer obj = UNA.newDirectByteBuffer(purpose, strlen);
         byte[] data = new byte[(int) strlen];
@@ -30,31 +31,31 @@ public class Main {
         System.out.println("UTF-8 ByteBuffer retrieval test: " + new String(data, StandardCharsets.UTF_8));
 
         byte[] data2 = new byte[(int) strlen];
-        UNA.getAB(purpose, strlen, data2, 0);
+        peekAB(purpose, strlen, data2, 0);
         System.out.println("UTF-8 GetRegion retrieval test: " + new String(data2, StandardCharsets.UTF_8));
 
         System.out.println("Trying to find EGL...");
-        long eglFound = UNA.dlOpen("libEGL.so.1");
+        long eglFound = UNAC.dlopen("libEGL.so.1");
         System.out.println("EGL: " + eglFound);
         if (eglFound != 0) {
             // First function lookup, so make a big deal of it
-            long egd = UNA.dlSym(eglFound, "eglGetDisplay");
-            int egdV = UNA.encodeV('P', "P");
+            long egd = UNAC.dlsym(eglFound, "eglGetDisplay");
+            int egdV = UNAInvoke.getVariant('P', "P");
             System.out.println("eglGetDisplay: " + egd + "(" + egdV + ")");
             // Run it, get display
-            long dsp = UNA.c1(0, egd, egdV);
+            long dsp = UNAInvoke.c1(0, egd, egdV);
             System.out.println("Display: " + dsp);
             // Allocate 1MB of memory for various uses
-            long exmem = UNA.checkedMalloc(1024 * 1024);
+            long exmem = UNAC.mallocChk(1024 * 1024);
             // init EGL
-            egd = UNA.dlSym(eglFound, "eglInitialize");
-            egdV = UNA.encodeV('I', "PPP");
+            egd = UNAC.dlsym(eglFound, "eglInitialize");
+            egdV = UNAInvoke.getVariant('I', "PPP");
             System.out.println("eglInitialize: " + egd + "(" + egdV + ")");
-            System.out.println(" = " + UNA.c3(dsp, exmem, exmem + 4, egd, egdV));
-            System.out.println("EGL Version: " + UNA.getI(exmem) + "." + UNA.getI(exmem + 4));
+            System.out.println(" = " + UNAInvoke.c3(dsp, exmem, exmem + 4, egd, egdV));
+            System.out.println("EGL Version: " + peekI(exmem) + "." + peekI(exmem + 4));
             //
-            egd = UNA.dlSym(eglFound, "eglGetConfigs");
-            egdV = UNA.encodeV('I', "PPIP");
+            egd = UNAC.dlsym(eglFound, "eglGetConfigs");
+            egdV = UNAInvoke.getVariant('I', "PPIP");
         }
     }
 }

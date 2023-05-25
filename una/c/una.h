@@ -14,6 +14,10 @@
 #endif
 
 #define UNA(x) Java_gabien_una_UNA_ ## x
+#define UNAI(x) Java_gabien_una_UNAInvoke_ ## x
+#define UNAP(x) Java_gabien_una_UNAPoke_ ## x
+#define UNAC(x) Java_gabien_una_UNAC_ ## x
+
 #define C_PTR(l) ((void *) (intptr_t) (l))
 #define J_PTR(l) ((int64_t) (intptr_t) (l))
 
