@@ -21,90 +21,6 @@ import java.nio.charset.Charset;
  * Created 23rd May, 2023.
  */
 public class UNA {
-    /* Loader */
-    public static boolean defaultLoader() {
-        // all supported CPUs
-        String[] cpu = {
-            "x86_64",
-            "aarch64",
-            "arm",
-            "riscv64",
-            // OpenJDK will complain about disabling stack guard if this is loaded early
-            "x86"
-        };
-        String[] os = {
-            "linux-gnu",
-            "windows-gnu",
-            "macos",
-            // this shouldn't really get extracted due to how the packaging works
-            "android"
-        };
-        // for Android
-        try {
-            System.loadLibrary("gabien-una");
-            return true;
-        } catch (Throwable ex) {
-        }
-        // try for anything obvious
-        for (String o : os)
-            for (String c : cpu)
-                if (defaultLoaderConfig(o + "-" + c))
-                    return true;
-        // get desperate
-        String osArch = System.getProperty("os.arch");
-        if (osArch.equalsIgnoreCase("amd64"))
-            osArch = "x86_64";
-        else if (osArch.equalsIgnoreCase("i686"))
-            osArch = "x86";
-        else if (osArch.contains("arm64"))
-            osArch = "aarch64";
-        else if (osArch.contains("arm"))
-            osArch = "arm";
-        for (String c : cpu)
-            if (defaultLoaderConfigTmpfile(c + "-" + osArch))
-                return true;
-        // get REALLY desperate
-        for (String o : os)
-            for (String c : cpu)
-                if (defaultLoaderConfigTmpfile(c + "-" + o))
-                    return true;
-        return false;
-    }
-    private static boolean defaultLoaderConfig(String config) {
-        try {
-            System.loadLibrary("gabien-una-" + config);
-            return true;
-        } catch (Throwable ex) {
-        }
-        String fn = "una." + config;
-        try {
-            System.load(new File(fn).getAbsolutePath());
-            return true;
-        } catch (Throwable ex) {
-        }
-        return false;
-    }
-    private static boolean defaultLoaderConfigTmpfile(String config) {
-        String fn = "una." + config;
-        String fnf = "lib/" + fn;
-        try {
-            // This can fail on Android, but that shouldn't run this anyway
-            File tmp;
-            try (InputStream inp = UNA.class.getResourceAsStream(fnf)) {
-                if (inp == null)
-                    return false;
-                tmp = File.createTempFile(fnf, null);
-                tmp.deleteOnExit();
-                Files.copy(inp, tmp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-            System.load(tmp.getAbsolutePath());
-            return true;
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }
-        return false;
-    }
-
     /* Sysflags */
     public static long sysFlags;
     public static boolean isWin32;
@@ -118,24 +34,7 @@ public class UNA {
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
     }
 
-    /* Endianness, invocation setup */
-
-    /* Get first int of long */
-    public static int l0(long val) {
-        return (int) (isBigEndian ? (val >> 32) : val);
-    }
-
-    /* Get second int of long */
-    public static int l1(long val) {
-        return (int) (isBigEndian ? val : (val >> 32));
-    }
-
-    /* Reform long from parts */
-    public static long lr(long a, long b) {
-        if (isBigEndian)
-            return ((a & 0xFFFFFFFFL) << 32) | (b & 0xFFFFFFFFL);
-        return ((b & 0xFFFFFFFFL) << 32) | (a & 0xFFFFFFFFL);
-    }
+    /* Invocation Setup */
 
     public static int encodeV(char ret, String args) {
         int variant = encodeV(ret);
@@ -173,17 +72,19 @@ public class UNA {
         return res;
     }
 
+    public static long memdup(long mem, long len) {
+        long m2 = checkedMalloc(len);
+        memcpy(m2, mem, len);
+        return m2;
+    }
+
     public static long strdup(String str) {
         return strdup(str, StandardCharsets.UTF_8);
     }
 
     public static long strdup(String str, Charset cs) {
         byte[] bytes = str.getBytes(cs);
-        long res = checkedMalloc(bytes.length + 1);
-        setAB(res, bytes.length, bytes, 0);
-        setB(res + bytes.length, (byte) 0);
-        // System.out.println("strdup: " + UNA.newStringUTF(res));
-        return res;
+        return memdup(bytes, 0, bytes.length, true);
     }
 
     public static long dlOpen(String str) {
@@ -258,6 +159,88 @@ public class UNA {
         return data2;
     }
 
+    /* Bulk Allocating From Arrays */
+
+    public static long memdup(boolean[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(boolean[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(boolean[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 1);
+        setAZ(addr, len, data2, base);
+        if (nt)
+            setZ(addr + (len * 1), false);
+        return addr;
+    }
+
+    public static long memdup(byte[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(byte[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(byte[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 1);
+        setAB(addr, len, data2, base);
+        if (nt)
+            setB(addr + (len * 1), (byte) 0);
+        return addr;
+    }
+
+    public static long memdup(char[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(char[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(char[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 2);
+        setAC(addr, len, data2, base);
+        if (nt)
+            setC(addr + (len * 2), (char) 0);
+        return addr;
+    }
+
+    public static long memdup(short[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(short[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(short[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 2);
+        setAS(addr, len, data2, base);
+        if (nt)
+            setS(addr + (len * 2), (short) 0);
+        return addr;
+    }
+
+    public static long memdup(int[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(int[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(int[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 4);
+        setAI(addr, len, data2, base);
+        if (nt)
+            setI(addr + (len * 4), 0);
+        return addr;
+    }
+
+    public static long memdup(long[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(long[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(long[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 8);
+        setAJ(addr, len, data2, base);
+        if (nt)
+            setJ(addr + (len * 8), 0);
+        return addr;
+    }
+
+    public static long memdup(float[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(float[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(float[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 4);
+        setAF(addr, len, data2, base);
+        if (nt)
+            setI(addr + (len * 4), 0);
+        return addr;
+    }
+
+    public static long memdup(double[] data2) { return memdup(data2, 0, data2.length, false); }
+    public static long memdup(double[] data2, int base, int len) { return memdup(data2, base, len, false); }
+    public static long memdup(double[] data2, int base, int len, boolean nt) {
+        long addr = checkedMalloc((len + (nt ? 1 : 0)) * 8);
+        setAD(addr, len, data2, base);
+        if (nt)
+            setJ(addr + (len * 8), 0);
+        return addr;
+    }
+
     /* Natives */
 
     /* Natives - Core */
@@ -291,6 +274,7 @@ public class UNA {
     public static native void rwxFree(long address, long sz);
 
     /* Natives - Peek/Poke */
+    public static native boolean getZ(long addr);
     public static native byte getB(long addr);
     public static native short getS(long addr);
     public static native int getI(long addr);
@@ -299,7 +283,9 @@ public class UNA {
     public static native double getD(long addr);
     public static native long getPtr(long addr);
 
+    public static native void setZ(long addr, boolean data);
     public static native void setB(long addr, byte data);
+    public static native void setC(long addr, char data);
     public static native void setS(long addr, short data);
     public static native void setI(long addr, int data);
     public static native void setJ(long addr, long data);

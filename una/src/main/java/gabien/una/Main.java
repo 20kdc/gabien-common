@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 public class Main {
     public static void main(String[] args) {
         System.out.println("UNA Self-Test");
-        System.out.println("Loaded? " + UNA.defaultLoader());
+        System.out.println("Loaded? " + UNALoader.defaultLoader());
         UNA.setupSysFlags();
         System.out.println("isWin32: " + UNA.isWin32);
         System.out.println("isBigEndian: " + UNA.isBigEndian);

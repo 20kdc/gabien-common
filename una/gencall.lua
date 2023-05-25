@@ -5,7 +5,7 @@
 
 -- tawa kama pona tan jan ale --
 
-local libvariant = require("libvariant")
+local lv = require("libvariant")
 
 local initialDisclaimer = [[
 /*
@@ -20,8 +20,7 @@ local c = io.open("c/unacall.c", "w")
 
 c:write(initialDisclaimer)
 c:write([[
-#include <stdint.h>
-#include <stddef.h>
+#include "una.h"
 ]])
 
 -- Types
@@ -62,7 +61,7 @@ for argCount = 0, 6 do
  end
  c:write(")))\n")
  -- continue
- c:write("int64_t Java_gabien_una_UNA_c" .. tostring(argCount) .. "(void * env, void * self, ")
+ c:write("int64_t UNA(c" .. tostring(argCount) .. ")(void * env, void * self, ")
  for i = 0, argCount - 1 do
   c:write("int64_t a" .. tostring(i) .. ", ")
  end
@@ -72,7 +71,7 @@ for argCount = 0, 6 do
  for variant = 0, variantCount - 1 do
   c:write("    case " .. tostring(variant) .. ":\n")
   c:write("        return X" .. tostring(argCount) .. "(")
-  local decomp = libvariant.decompile(argCount, variant)
+  local decomp = lv.decompile(argCount, variant)
   -- pop return type first
   c:write(types[table.remove(decomp, 1)])
   -- main args
