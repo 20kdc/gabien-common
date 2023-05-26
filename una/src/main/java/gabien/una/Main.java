@@ -37,6 +37,7 @@ public class Main {
         System.out.println("Trying to find EGL...");
         long eglFound = UNAC.dlopen("libEGL.so.1");
         System.out.println("EGL: " + eglFound);
+        /*
         if (eglFound != 0) {
             // First function lookup, so make a big deal of it
             long egd = UNAC.dlsym(eglFound, "eglGetDisplay");
@@ -56,6 +57,6 @@ public class Main {
             //
             egd = UNAC.dlsym(eglFound, "eglGetConfigs");
             egdV = UNAInvoke.getVariant('I', "PPIP");
-        }
+        }*/
     }
 }

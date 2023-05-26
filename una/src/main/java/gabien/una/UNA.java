@@ -7,14 +7,7 @@
 
 package gabien.una;
 
-import java.io.File;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.charset.StandardCharsets;
-import java.nio.charset.Charset;
 
 /**
  * Maybe the start of something new.
@@ -39,6 +32,7 @@ public class UNA {
         isWin32 = (sysFlags & SYSFLAG_W32) != 0;
         isBigEndian = (sysFlags & SYSFLAG_BE) != 0;
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
+        System.out.println(UNAInvoke.countFloatRegisters());
     }
 
     /* Natives */
@@ -53,6 +47,13 @@ public class UNA {
     public static native long getSysFlags();
 
     public static native long getSizeofPtr();
+
+    /**
+     * Returns a C function designed to test the floating-point ABI.
+     * The function has 8 floating-point args and 16 integer args, in that order.
+     * The order actually used by UNA is the opposite way around.
+     */
+    public static native long getZeroCounter(int idx);
 
     /* Natives - JNIEnv */
     public static native String newStringUTF(long address);

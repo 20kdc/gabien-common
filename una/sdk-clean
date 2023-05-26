@@ -1,7 +1,8 @@
 #!/bin/sh
 # cleaning script / initial variables
-LIBUNA="lib-se/gabien/una/lib"
-rm -rf $LIBUNA lib-android
+LIBUNA="src/main/resources/gabien/una/lib"
+LIBUNAND="src/main/resources/lib"
+rm -rf src/main/resources
 mvn clean
 rm -f c/unacall.c
 rm -f una-none.jar una-se.jar

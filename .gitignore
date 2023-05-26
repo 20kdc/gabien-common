@@ -51,7 +51,6 @@
 !una
 !una/
 !una/gencall.lua
-!una/libvariant.lua
 !una/README.md
 !una/c
 !una/c/
@@ -62,10 +61,15 @@
 !una/c/unalibc.c
 !una/c/jnifns.c
 !una/src
-!una/src/**
+!una/src/
+!una/src/main
+!una/src/main/
+!una/src/main/java
+!una/src/main/java/**
 !una/sdk-make
 !una/sdk-make-java
 !una/sdk-clean
+!una/sdk-install
 !una/pom.xml
 
 !example-toolchains.xml

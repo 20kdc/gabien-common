@@ -5,8 +5,6 @@
 
 -- tawa kama pona tan jan ale --
 
-local lv = require("libvariant")
-
 local initialDisclaimer = [[
 /*
  * gabien-common - Cross-platform game and UI framework
@@ -21,70 +19,141 @@ local c = io.open("c/unacall.c", "w")
 c:write(initialDisclaimer)
 c:write([[
 #include "una.h"
+
+int64_t UNAI(call)(void * env, void * self,
+    /* Integer registers */
+    int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7,
+    int64_t a8, int64_t a9, int64_t aA, int64_t aB, int64_t aC, int64_t aD, int64_t aE, int64_t aF,
+    /* FP registers */
+    int64_t f0, int64_t f1, int64_t f2, int64_t f3, int64_t f4, int64_t f5, int64_t f6, int64_t f7,
+    /* Control registers */
+    int64_t code, int32_t variant
+) {
+    switch (variant) {
 ]])
 
--- Types
-local types = {
- "int32_t",
- "int64_t",
- "float"
+local function writeRT(r)
+ if r == 0 then
+  c:write("         int32_t\n")
+ elseif r == 1 then
+  c:write("         int64_t\n")
+ elseif r == 2 then
+  c:write("         float\n")
+ elseif r == 3 then
+  c:write("         double\n")
+ else
+  error("huh?")
+ end
+end
+local function writeRTC(r)
+ if r == 0 then
+  c:write("         return rv;\n")
+ elseif r == 1 then
+  c:write("         return rv;\n")
+ elseif r == 2 then
+  c:write("         return *((int32_t *) &rv);\n")
+ elseif r == 3 then
+  c:write("         return *((int64_t *) &rv);\n")
+ else
+  error("huh?")
+ end
+end
+local function runFlags(i, on, off)
+ local flag = 0x80
+ for fidx = 0, 7 do
+  if (i & flag) ~= 0 then
+   c:write(on(fidx))
+  else
+   c:write(off(fidx))
+  end
+  flag = flag >> 1
+ end
+end
+
+local function writeVariant(i, r, vid)
+ c:write("    case " .. tostring(vid) ..  ": {\n")
+ writeRT(r)
+ c:write("        (*fn)(\n")
+ c:write("         void*, void*, void*, void*, void*, void*, void*, void*,\n")
+ c:write("         void*, void*, void*, void*, void*, void*, void*, void*\n")
+ runFlags(i,
+  function (idx) return "         ,double\n" end,
+  function (idx) return "         ,float\n" end
+ )
+ c:write("        ) = C_PTR(code);\n")
+ writeRT(r)
+ c:write("        rv = fn(\n")
+ c:write("         C_PTR(a0), C_PTR(a1), C_PTR(a2), C_PTR(a3), C_PTR(a4), C_PTR(a5), C_PTR(a6), C_PTR(a7),\n")
+ c:write("         C_PTR(a8), C_PTR(a9), C_PTR(aA), C_PTR(aB), C_PTR(aC), C_PTR(aD), C_PTR(aE), C_PTR(aF)\n")
+ runFlags(i,
+  function (idx) return "         ,*((double *) &f" .. tostring(idx) .. ")\n" end,
+  function (idx) return "         ,*((float *) &f" .. tostring(idx) .. ")\n" end
+ )
+ c:write("        );\n")
+ writeRTC(r)
+ c:write("    }\n")
+end
+
+local vid = 0
+for i = 0, 0xFF do
+ for r = 0, 3 do
+  writeVariant(i, r, vid)
+  vid = vid + 1
+ end
+end
+
+c:write([[
+    }
+    return 0;
 }
 
--- The big scary generator
-local function macroArgs(argCount)
- c:write("(rt")
- for i = 0, argCount - 1 do
-  c:write(", t" .. tostring(i))
+#define L0(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF)
+#define L1(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0
+#define L2(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1
+#define L3(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2
+#define L4(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3
+#define L5(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4
+#define L6(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5
+#define L7(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6
+#define L8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7
+#define L9(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8
+#define L10(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9
+#define L11(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA
+#define L12(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB
+#define L13(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC
+#define L14(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD
+#define L15(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE
+#define L16(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF) a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF
+#ifdef WIN32
+int64_t UNAI(stdcall)(void * env, void * self,
+    int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5, int32_t a6, int32_t a7,
+    int32_t a8, int32_t a9, int32_t aA, int32_t aB, int32_t aC, int32_t aD, int32_t aE, int32_t aF,
+    int32_t code, int32_t variant) {
+    switch (variant) {
+]])
+vid = 0
+for ac = 0, 16 do
+ for r = 0, 3 do
+  c:write("    case " .. tostring(vid) .. ": {\n")
+  writeRT(r)
+  c:write("        (__attribute__((stdcall)) *fn)(L" .. tostring(ac) .. "(\n")
+  c:write("         int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t,\n")
+  c:write("         int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t\n")
+  c:write("        )) = C_PTR(code);\n")
+  writeRT(r)
+  c:write("        rv = fn(L" .. tostring(ac) .. "(\n")
+  c:write("         a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF\n")
+  c:write("        ));\n")
+  writeRTC(r)
+  c:write("    }\n")
+  vid = vid + 1
  end
- c:write(")")
 end
+c:write("    }\n")
+c:write("    return 0;\n")
+c:write("}\n")
+c:write("#endif\n")
 
-for argCount = 0, 6 do
- -- macro
- c:write("#define F" .. tostring(argCount))
- macroArgs(argCount)
- c:write(" ((rt (*)(")
- for i = 0, argCount - 1 do
-  if i ~= 0 then c:write(", ") end
-  c:write("t" .. tostring(i))
- end
- c:write(")) code)\n")
-
- c:write("#define X" .. tostring(argCount))
- macroArgs(argCount)
- c:write(" ((int64_t) (F" .. tostring(argCount))
- macroArgs(argCount)
- c:write("(")
- for i = 0, argCount - 1 do
-  if i ~= 0 then c:write(", ") end
-  c:write("(t" .. tostring(i) .. ") a" .. tostring(i))
- end
- c:write(")))\n")
- -- continue
- c:write("int64_t UNAI(c" .. tostring(argCount) .. ")(void * env, void * self, ")
- for i = 0, argCount - 1 do
-  c:write("int64_t a" .. tostring(i) .. ", ")
- end
- c:write("int64_t code, int32_t variant) {\n")
- c:write("    switch (variant) {\n")
- local variantCount = lv.variantCount(argCount)
- for variant = 0, variantCount - 1 do
-  c:write("    case " .. tostring(variant) .. ":\n")
-  c:write("        return X" .. tostring(argCount) .. "(")
-  local decomp = lv.decompile(argCount, variant)
-  -- pop return type first
-  c:write(types[table.remove(decomp, 1)])
-  -- main args
-  for j = 1, argCount do
-   local t = types[table.remove(decomp, 1)]
-   c:write(", " .. t)
-  end
-  c:write(");\n")
- end
- c:write("    }\n")
- c:write("    return 0;\n")
- c:write("}\n")
-end
 -- done!
 c:close()
 
