@@ -13,7 +13,10 @@ import java.nio.ByteBuffer;
  * Maybe the start of something new.
  * Created 23rd May, 2023.
  */
-public class UNA {
+public abstract class UNA {
+    private UNA() {
+    }
+
     /* Sysflags */
     public static long sysFlags;
     public static boolean isWin32;

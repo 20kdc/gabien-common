@@ -16,7 +16,10 @@ import static gabien.una.UNAC.*;
  * Peek/poke functions.
  * Created 25th May, 2023.
  */
-public class UNAPoke {
+public abstract class UNAPoke {
+    private UNAPoke() {
+    }
+
     public static String peekString(long address) {
         return peekString(address, StandardCharsets.UTF_8);
     }

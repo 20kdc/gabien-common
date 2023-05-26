@@ -10,6 +10,7 @@
 // riscv64-unknown-elf-gcc -S theory.c
 // riscv64-unknown-elf-gcc -S theory.c
 // zig cc -target aarch64-linux-android -S theory.c
+// zig cc -target riscv32-linux-gnu -S theory.c
 // zig cc -target x86_64-windows-gnu -S theory.c
 
 typedef long long int64_t;
@@ -36,5 +37,18 @@ void cIntManyLongs(int a, int64_t b, int64_t c, int64_t d, int64_t e, int64_t f,
 
 void exampleOfIntManyLongs() {
     cIntManyLongs(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
+}
+
+// This attempts to catch a particularly dodgy case.
+void rv32TrySplit(int a, int b, int c, int d, int e, int f, int g, float h, float i, float j, float k, float m, float n, float o, float p, double q);
+
+void exampleRV32TrySplit() {
+    rv32TrySplit(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16.789);
+}
+
+void cWeirdVA(int a, ...);
+
+void exampleVA() {
+    cWeirdVA(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
 }
 

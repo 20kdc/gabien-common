@@ -16,7 +16,10 @@ import java.nio.file.StandardCopyOption;
  * Default loader for UNA.
  * Created 25th May, 2023.
  */
-public class UNALoader {
+public abstract class UNALoader {
+    private UNALoader() {
+    }
+
     /* Loader */
     public static boolean defaultLoader() {
         // all supported CPUs

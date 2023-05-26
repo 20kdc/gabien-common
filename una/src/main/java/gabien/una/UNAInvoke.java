@@ -13,6 +13,10 @@ package gabien.una;
  * Created 25th May, 2023.
  */
 class UNAInvoke implements IUNAProto {
+    public static final int BASE_A = 0;
+    public static final int SIZE_A = 16;
+    public static final int BASE_F = 16;
+    // effective size of F-file is ABI-defined
     private final Mode mode;
     private final boolean doubleRet, ret32;
     private final int argCount; 
@@ -86,7 +90,7 @@ class UNAInvoke implements IUNAProto {
                 );
         }
         if (ret32)
-            rv &= 0xFFFFFFFF;
+            return (int) rv;
         return rv;
     }
 

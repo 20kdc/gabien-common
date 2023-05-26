@@ -14,7 +14,10 @@ import java.nio.charset.Charset;
  * UNA C library wrappers.
  * Created 25th May, 2023.
  */
-public class UNAC {
+public abstract class UNAC {
+    private UNAC() {
+    }
+    
     /* Baseline wrappers and so forth */
 
     public static long mallocChk(long length) {

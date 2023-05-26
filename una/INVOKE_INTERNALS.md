@@ -38,7 +38,7 @@ To my knowledge, all *common and default* C ABIs follow the above rules, and als
    This seems unusual, but is better understood as that they are in memory left to right.
 4. The stack and integer registers are measured in machine words (i.e. `void *`).
    FP registers are always measured in values (if the value is float or double does not alter FP register allocation).
-   (This *has been tested* to apply on x86\_64, and can be seen to apply for AArch64 by reading `ARM Cortex-A Series Programmer's Guide for ARMv8-A / Floating-point register organization in AArch64`. This is also described to apply for RV32/RV64 with the `D` extension, which is part of `G` and thus expected.)
+   This *has been tested* to apply on x86\_64, and can be seen to apply for AArch64 by reading `ARM Cortex-A Series Programmer's Guide for ARMv8-A / Floating-point register organization in AArch64`. This is also described to apply for RV32/RV64 with the `D` extension, which is part of `G` and thus expected.
 5. The misalignment of stack values longer than a word does not matter.
    The misalignment of stack values shorter than a word never happens because of the previous rule.
 6. All calls with the same amount of arguments of the same sizes, but in different orders, use the same allocations of registers and stack.
@@ -49,14 +49,23 @@ A good look into this is the file `c/theory.c`.
 Note, however, there is one critical difference: The amount of registers and how they are used varies.
 
 * Linux-RV64 will use GP registers as "extra" floats. AArch64 and x86\_64 won't.
+  * Notably, because of this, floats can end up on the stack "earlier than they should" on AArch64 and x86\_64.
+    (This little detail means that `UNAABI.synthesize` must be aware of GP versus the stack; it can't treat them as interchangable.)
+  * It's important to note that it _can_ and _will_ split a double between the GP and the stack.
 * RV64 has 8 GP argument registers. Windows-x86\_64 has only 4, while Linux-x86\_64 has 6.
 * Some ABIs simply do not use registers, i.e. the default ABIs on 32-bit x86 systems.
 
-Due to this, and possible variance in future ABIs, it's not possible for the super-ABI to consist solely of absolutes.
+Due to this, and possible variance in future ABIs, it's not possible for the super-ABI to be an absolute.
 
-Instead, the super-ABI is simply a set of rules that allow for the creation of portable C code to create an interface able to prod the *real* ABI.
+Instead, the super-ABI is simply a set of rules that constrain ABIs in a way that simplifies the creation of UNA's invoke API.
 
-The results of the testing of that interface on a machine profiles the ABI to enough precision to be able to make calls.
+The result is that from the perspective of UNA, an ABI can be distilled into the following set of parameters:
+
+* Size of the machine word.
+* Endianness.
+* Number of GP registers.
+* Number of FP registers.
+* FP migration behavior (RV64 behaviour vs. the rest)
 
 ## Invocation Itself
 
