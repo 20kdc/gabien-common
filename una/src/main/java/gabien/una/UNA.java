@@ -32,7 +32,6 @@ public class UNA {
         isWin32 = (sysFlags & SYSFLAG_W32) != 0;
         isBigEndian = (sysFlags & SYSFLAG_BE) != 0;
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
-        System.out.println(UNAInvoke.countFloatRegisters());
     }
 
     /* Natives */
@@ -49,11 +48,11 @@ public class UNA {
     public static native long getSizeofPtr();
 
     /**
-     * Returns a C function designed to test the floating-point ABI.
-     * The function has 8 floating-point args and 16 integer args, in that order.
-     * The order actually used by UNA is the opposite way around.
+     * Returns a C function designed to test things.
+     * The function's arguments are int32_t followed by float, repeated 8 times for a total of 16 arguments.
+     * The function returns an int32_t, specifically 1 if and only if the arguments count from 1 to 16.
      */
-    public static native long getZeroCounter(int idx);
+    public static native long getSanityTester();
 
     /* Natives - JNIEnv */
     public static native String newStringUTF(long address);

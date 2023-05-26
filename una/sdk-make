@@ -2,7 +2,6 @@
 # tested using Zig 0.11.0-dev.2892+fd6200eda
 . ./sdk-clean
 mkdir -p $LIBUNA
-lua gencall.lua
 COMMONFLAGS="-Wno-attributes -O4 -shared"
 TARGETS="x86-windows-gnu x86_64-windows-gnu x86-linux-gnu"
 TARGETS_NLTO="x86_64-macos aarch64-macos"

@@ -12,16 +12,21 @@ package gabien.una;
  * The invoke pattern is a small VM for loading values.
  * Created 25th May, 2023.
  */
-public class UNAInvoke {
-    private final int variant;
+class UNAInvoke implements IUNAProto {
+    private final Mode mode;
+    private final boolean doubleRet, ret32;
+    private final int argCount; 
     private final Command[] commands;
 
-    public UNAInvoke(Convention cv, VType ret, VType[] args) {
-        UNA.checkSetup();
-        variant = 0;
-        commands = new Command[0];
+    public UNAInvoke(Mode m, boolean dr, boolean r32, int ac, Command[] cmds) {
+        mode = m;
+        doubleRet = dr;
+        ret32 = r32;
+        argCount = ac;
+        commands = cmds;
     }
 
+    @Override
     public final long call(
             long code,
             long i0, long i1, long i2, long i3, long i4, long i5, long i6, long i7,
@@ -59,46 +64,56 @@ public class UNAInvoke {
             case 22: f6 = loadRegister; break; case 23: f7 = loadRegister; break;
             }
         }
-        return call(
-                a0, a1, a2, a3, a4, a5, a6, a7,
-                a8, a9, aA, aB, aC, aD, aE, aF,
-                f0, f1, f2, f3, f4, f5, f6, f7,
-                code, variant
-        );
-    }
-
-    /**
-     * Returns the amount of floating-point registers in the ABI.
-     * Note that if the answer is 8, then the amount may be higher.
-     */
-    public static int countFloatRegisters() {
-        for (int i = 0; i < 24; i++) {
-            System.out.println(zcTest(i));
+        long rv = 0;
+        switch (mode) {
+        case x86_cdecl: rv = call_x86_cdecl(
+                (int) a0, (int) a1, (int) a2, (int) a3, (int) a4, (int) a5, (int) a6, (int) a7,
+                (int) a8, (int) a9, (int) aA, (int) aB, (int) aC, (int) aD, (int) aE, (int) aF,
+                (int) code
+                );
+        case x86_stdcall: rv = call_x86_stdcall(
+                (int) a0, (int) a1, (int) a2, (int) a3, (int) a4, (int) a5, (int) a6, (int) a7,
+                (int) a8, (int) a9, (int) aA, (int) aB, (int) aC, (int) aD, (int) aE, (int) aF,
+                (int) code, argCount
+                );
+        case x86_64_windows: rv = call_x86_64_windows(
+                a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF,
+                code, doubleRet, f0, f1, f2, f3
+                );
+        case x86_64_unix: rv = call_x86_64_unix(
+                a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF,
+                code, doubleRet, f0, f1, f2, f3, f4, f5, f6, f7
+                );
         }
-        return 24;
-    }
-    private static int zcTest(int idx) {
-        return (int) call(
-                0, 1, 2, 3, 4, 5, 6, 7,
-                8, 9, 10, 11, 12, 13, 14, 15,
-                16, 17, 18, 19, 20, 21, 22, 23,
-                UNA.getZeroCounter(idx), 0
-        );
+        if (ret32)
+            rv &= 0xFFFFFFFF;
+        return rv;
     }
 
     /* Invoke */
-    private static native long call(
+    public static native long call_x86_cdecl(
+            int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+            int a8, int a9, int aA, int aB, int aC, int aD, int aE, int aF,
+            int code);
+
+    public static native long call_x86_stdcall(
+            int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+            int a8, int a9, int aA, int aB, int aC, int aD, int aE, int aF,
+            int code, int ac);
+
+    private static native long call_x86_64_windows(
             long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7,
             long a8, long a9, long aA, long aB, long aC, long aD, long aE, long aF,
-            long f0, long f1, long f2, long f3, long f4, long f5, long f6, long f7,
-            long code, int variant);
+            long code, boolean doubleRet,
+            long f0, long f1, long f2, long f3);
 
-    private static native long stdcall(
+    private static native long call_x86_64_unix(
             long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7,
             long a8, long a9, long aA, long aB, long aC, long aD, long aE, long aF,
-            long code, int variant);
+            long code, boolean doubleRet,
+            long f0, long f1, long f2, long f3, long f4, long f5, long f6, long f7);
 
-    private static final class Command {
+    public static final class Command {
         public final int sourceReg;
         public final boolean pullDown;
         public final int destReg;
@@ -109,16 +124,10 @@ public class UNAInvoke {
         }
     }
 
-    public static enum VType {
-        I32,
-        I64,
-        F32,
-        F64,
-        Pointer
-    }
-
-    public static enum Convention {
-        Default,
-        Stdcall
+    public static enum Mode {
+        x86_cdecl,
+        x86_stdcall,
+        x86_64_windows,
+        x86_64_unix,
     }
 }

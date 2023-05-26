@@ -16,8 +16,8 @@ However, it's still open-source.
 
 + Fast(ish): UNA avoids any memory allocation during native calls after an initial setup.
   Unfortunately some other kinds of marshalling and so forth can't be avoided due to ABI issues.
-+ Portable: UNA relies on code generation, compiler optimizations, and ABI knowledge over assembly tricks.
-  Porting UNA to a new platform should be as simple as having a working C compiler.
++ Portable(ish): UNA does not rely on any assembly. However, the invocation component is architecture/ABI-specific,
+  and so requires some poking to customize for a specific target. See `INVOKE_INTERNALS.md` if you're curious.
 + Small: UNA is not a platform abstraction library, nor does it try to make native access safe.
   `strdup` can just return 0. This is something you have to live with in C, and here too.
   UNA should contain:

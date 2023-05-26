@@ -4,11 +4,12 @@
 
 The theory of operation of UNA's invocation mechanism is based on a sort of "unified ABI theory".
 
-This theory proposes that all C ABIs (except `stdcall` because it's not strictly C-complaint) can be folded into one super-ABI which is parameterized to the machine.
+This theory proposes that all commonly used C ABIs (except `stdcall` because it's not strictly C-complaint) can be folded into one super-ABI which is parameterized to the machine.
 
-Further, this theory proposes that a C compiler can, without inline assembly, generate code which can make any call up to N arguments (chosen at compile time), so long as it is correctly supplied with ABI-specific parameters.
+Further, this theory proposes that:
 
-And finally, this theory proposes a way to automatically classify these ABI-specific parameters.
++ A single function can be written in reasonably portable C to make a dynamic call across this super-ABI for any series of integer arguments up to a given compile-time chosen limit, with linear size and time complexity, without encoding the specifics of any one ABI.
++ For any given ABI of the super-ABI, a single function can be written without using assembly to make a dynamic call for any series of integer or floating-point arguments up to a given compile-time chosen limit, with linear size and time complexity, but this needs to encode the specifics of that ABI.
 
 ### Unified ABI Theory
 
@@ -16,14 +17,16 @@ The Unified ABI theory is as thus:
 
 To my knowledge, all reasonable C ABIs must ensure:
 
-1. Any list of arguments given by the caller may be truncated by the callee and still operate perfectly.
+1. Any list of arguments given by the caller may be truncated on the right side by the callee and still operate perfectly.
    (This is required for var-arg support in the presence of deprecated, but still present features such as implicit declaration.)
    (This is violated by stdcall, of course.)
-2. The ABI must operate on consistent, measurable rules between different functions.
+2. This implies that allocation of arguments must be from left to right.
+   Later arguments never affect the allocation of earlier arguments.
+3. The ABI must operate on consistent, measurable rules between different functions.
    The same argument list and return value must result in the same ABI.
    (Inlining and deleting a static function is not observable and thus doesn't count.)
 
-To my knowledge, all *real and default* C ABIs follow the above rules, and also these:
+To my knowledge, all *common and default* C ABIs follow the above rules, and also these:
 
 1. A call's data can be absolutely split into the Integer Registers, the FP Registers, and the Stack.
    Some of these components do not always exist, but no further components exist in portable code.
@@ -39,7 +42,7 @@ To my knowledge, all *real and default* C ABIs follow the above rules, and also 
 5. The misalignment of stack values longer than a word does not matter.
    The misalignment of stack values shorter than a word never happens because of the previous rule.
 6. All calls with the same amount of arguments of the same sizes, but in different orders, use the same allocations of registers and stack.
-   However, they will be accordingly reordered.
+   However, they will be accordingly reordered and shifted between different places.
 
 A good look into this is the file `c/theory.c`.
 
