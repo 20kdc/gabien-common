@@ -51,8 +51,9 @@ class UNAInvoke implements IUNAProto {
             case 12: loadRegister = iC; break; case 13: loadRegister = iD; break;
             case 14: loadRegister = iE; break; case 15: loadRegister = iF; break;
             }
-            if (cmd.pullDown)
-                loadRegister = loadRegister >> 32;
+            loadRegister = loadRegister >> cmd.shiftDown;
+            loadRegister &= cmd.mask;
+            loadRegister = loadRegister << cmd.shiftUp;
             switch (cmd.destReg) {
             case 0: a0 = loadRegister; break; case 1: a1 = loadRegister; break;
             case 2: a2 = loadRegister; break; case 3: a3 = loadRegister; break;
@@ -119,11 +120,15 @@ class UNAInvoke implements IUNAProto {
 
     public static final class Command {
         public final int sourceReg;
-        public final boolean pullDown;
+        public final int shiftDown;
+        public final long mask;
+        public final int shiftUp;
         public final int destReg;
-        public Command(int src, boolean pd, int dst) {
+        public Command(int src, int shiftDown, long mask, int shiftUp, int dst) {
             sourceReg = src;
-            pullDown = pd;
+            this.shiftDown = shiftDown;
+            this.mask = mask;
+            this.shiftUp = shiftUp;
             destReg = dst;
         }
     }

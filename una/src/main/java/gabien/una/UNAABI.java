@@ -57,7 +57,7 @@ public final class UNAABI {
             if (arg.isFP) {
                 if (nextFP != fpEnd) {
                     // Allocated to FP file
-                    llc.add(new UNAInvoke.Command(i, false, nextFP++));
+                    llc.add(new UNAInvoke.Command(i, 0, -1L, 0, nextFP++));
                     continue;
                 }
                 canGPAlloc = fpMigratesToGP;
@@ -69,13 +69,13 @@ public final class UNAABI {
                 // GP
                 if (canGPAlloc)
                     if (nextGP != gpEnd) {
-                        llc.add(new UNAInvoke.Command(i, pullDown, nextGP++));
+                        llc.add(new UNAInvoke.Command(i, pullDown ? 32 : 0, -1L, 0, nextGP++));
                         continue;
                     }
                 // well, that failed! what about stack?
                 if (nextStack == stackEnd)
                     throw new RuntimeException("The provided arguments exceeded the capacity of UNA's invoking function.");
-                llc.add(new UNAInvoke.Command(i, pullDown, nextStack++));
+                llc.add(new UNAInvoke.Command(i, 0, -1L, 0, nextStack++));
             }
         }
         // Finish up
