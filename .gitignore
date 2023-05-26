@@ -52,6 +52,7 @@
 !una/
 !una/gencall.lua
 !una/README.md
+!una/INVOKE_INTERNALS.md
 !una/c
 !una/c/
 !una/c/una.c
@@ -60,6 +61,7 @@
 !una/c/unapoke.c
 !una/c/unalibc.c
 !una/c/jnifns.c
+!una/c/theory.c
 !una/src
 !una/src/
 !una/src/main
