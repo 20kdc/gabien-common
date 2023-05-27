@@ -12,10 +12,10 @@ package gabien.una;
  * Created 26th May, 2023.
  */
 public abstract class UNAABIFinder {
-    private static final UNAABI X86_STDCALL = new UNAABI(UNAInvoke.Mode.x86_stdcall, UNASysTypeInfo.si32, true, false, 0, 0, false);
-    private static final UNAABI X86_CDECL = new UNAABI(UNAInvoke.Mode.x86_cdecl, UNASysTypeInfo.si32, true, false, 0, 0, false);
-    private static final UNAABI X86_64_MS = new UNAABI(UNAInvoke.Mode.x86_64_windows, UNASysTypeInfo.si64, false, false, 4, 4, false);
-    private static final UNAABI X86_64_UNIX = new UNAABI(UNAInvoke.Mode.x86_64_unix, UNASysTypeInfo.si64, false, false, 6, 8, false);
+    private static final UNAABI X86_STDCALL = new UNAABIThreefold(UNAInvoke.Mode.x86_stdcall, UNASysTypeInfo.si32, true, false, 0, 0, false);
+    private static final UNAABI X86_CDECL = new UNAABIThreefold(UNAInvoke.Mode.x86_cdecl, UNASysTypeInfo.si32, true, false, 0, 0, false);
+    private static final UNAABI X86_64_MS = new UNAABIThreefold(UNAInvoke.Mode.x86_64_windows, UNASysTypeInfo.si64, false, false, 4, 4, false);
+    private static final UNAABI X86_64_UNIX = new UNAABIThreefold(UNAInvoke.Mode.x86_64_unix, UNASysTypeInfo.si64, false, false, 6, 8, false);
 
     private UNAABIFinder() {
     }
