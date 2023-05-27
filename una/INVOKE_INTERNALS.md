@@ -57,11 +57,13 @@ First, the amount of registers and how they are used varies.
 * RV64 has 8 GP argument registers. Windows-x86\_64 has only 4, while Linux-x86\_64 has 6.
 * Some ABIs simply do not use registers, i.e. the default ABIs on 32-bit x86 systems.
 * Windows 64-bit considers integer args and FP args as both consuming slots from each other.
+  Essentially, a double consumes one GP register and one FP register. Consuming the GP is pretty pointless, but it's done.
 
 Secondly, Apple's AArch64 ABI exists.
 
 * For every other ABI fitting the "common and default" category, the stack is measured in machine words. Not Apple's.
-* For every other ABI fitting the "common and default" category, var-args are not treated specially. Apple immediately shunts them to stack.
+* For every other ABI fitting the "common and default" category, var-args are not treated particularly specially (sometimes with counter registers).
+  Apple immediately shunts them to stack.
 
 With all of this mess, the super-ABI is simply a set of rules that constrain ABIs in a way that simplifies the creation of UNA's invoke API.
 
@@ -71,7 +73,7 @@ The result is that from the perspective of UNA, an ABI can be distilled into the
 * Endianness.
 * Number of GP registers.
 * Number of FP registers.
-* FP migration behavior. (RV64 behaviour vs. the rest)
+* FP migration behavior. (FPs-then-stack, FPs-then-GPs-then-stack, and "shadow GP allocation" as used by Windows 64-bit)
 * Stack slot granularity. (For Apple, this is 1 byte; for other platforms this is the machine word size.)
 * If var-args are immediately shunted to stack. (For Apple, this is yes; everything else doesn't.)
 

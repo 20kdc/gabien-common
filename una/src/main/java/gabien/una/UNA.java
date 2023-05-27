@@ -23,6 +23,7 @@ public abstract class UNA {
     public static boolean isBigEndian;
     public static boolean is32Bit;
     public static UNASysTypeInfo typeInfo;
+    public static UNAABI defaultABI;
     private static boolean setup;
 
     /**
@@ -43,6 +44,20 @@ public abstract class UNA {
         isBigEndian = (sysFlags & SYSFLAG_BE) != 0;
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
         typeInfo = is32Bit ? UNASysTypeInfo.si32 : UNASysTypeInfo.si64;
+        defaultABI = UNAABIFinder.getABI(UNAABIFinder.Convention.Default);
+        IUNAFnType p = defaultABI.of("i(ifififififififif)");
+        int res = (int) p.call(getSanityTester(),
+            1, Float.floatToRawIntBits(2),
+            3, Float.floatToRawIntBits(4),
+            5, Float.floatToRawIntBits(6),
+            7, Float.floatToRawIntBits(8),
+            9, Float.floatToRawIntBits(10),
+            11, Float.floatToRawIntBits(12),
+            13, Float.floatToRawIntBits(14),
+            15, Float.floatToRawIntBits(16)
+        );
+        if (res == 0)
+            throw new RuntimeException("Sanity test failed, so the calling convention implementation is broken. Information: " + p);
     }
 
     /* Natives */

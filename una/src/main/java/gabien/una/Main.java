@@ -104,8 +104,8 @@ public class Main {
         long owFound = UNAC.dlopen("opengl32.dll");
         System.out.println("opengl32.dll: " + owFound);
         if (u3Found != 0 && g3Found != 0 && owFound != 0) {
-            ToLongFunction<String> u3 = UNAC.dlsymLambda(u3Found);
-            ToLongFunction<String> g3 = UNAC.dlsymLambda(g3Found);
+            // ToLongFunction<String> u3 = UNAC.dlsymLambda(u3Found);
+            // ToLongFunction<String> g3 = UNAC.dlsymLambda(g3Found);
             ToLongFunction<String> ow = UNAC.dlsymLambda(owFound);
             long hdc = UNA.wCreateInvisibleGLWindowHDC();
             int pixFmt = UNA.wChooseAndSetSanePixelFormatHDC(hdc);

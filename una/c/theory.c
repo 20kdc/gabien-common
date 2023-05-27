@@ -64,3 +64,9 @@ void example8664_4() {
     float4(1, 2, 3, 4, 5, 6, 7, 8, 9);
 }
 
+void san(int a, double b, int c, double d, int e);
+
+void example8664_san() {
+    san(1, 2, 3, 4, 5);
+}
+

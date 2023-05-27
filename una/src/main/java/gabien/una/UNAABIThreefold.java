@@ -20,9 +20,9 @@ public final class UNAABIThreefold extends UNAABI {
     private final int gpStart, gpEnd;
     private final int fpStart, fpEnd;
     private final int stackStart, stackEnd;
-    private final boolean fpMigratesToGP;
+    private final FPHandling fpMode;
 
-    UNAABIThreefold(UNAInvoke.Mode b, UNASysTypeInfo ti, boolean b32, boolean be, int gpc, int fpc, boolean fpm) {
+    UNAABIThreefold(UNAInvoke.Mode b, UNASysTypeInfo ti, boolean b32, boolean be, int gpc, int fpc, FPHandling fpm) {
         super(ti);
         base = b;
         is32 = b32;
@@ -37,7 +37,9 @@ public final class UNAABIThreefold extends UNAABI {
         fpStart = UNAInvoke.BASE_F;
         fpEnd = UNAInvoke.BASE_F + fpc;
 
-        fpMigratesToGP = fpm;
+        fpMode = fpm;
+        if (fpMode == FPHandling.FPGPShadow && gpc != fpc)
+            throw new RuntimeException("FP/GP shadow doesn't work unless GPC == FPC");
     }
 
     /**
@@ -60,9 +62,13 @@ public final class UNAABIThreefold extends UNAABI {
                 if (nextFP != fpEnd) {
                     // Allocated to FP file
                     llc.add(new UNAInvoke.Command(inputIdx, 0, -1L, 0, nextFP++));
+                    if (fpMode == FPHandling.FPGPShadow) {
+                        // see Varargs section, but TLDR: have to *copy* to GPs, not just leave them empty
+                        llc.add(new UNAInvoke.Command(inputIdx, 0, -1L, 0, nextGP++));
+                    }
                     continue;
                 }
-                canGPAlloc = fpMigratesToGP;
+                canGPAlloc = fpMode == FPHandling.FPThenGP;
             }
             boolean arg2W = get2Word(arg);
             int words = arg2W ? 2 : 1;
@@ -72,6 +78,8 @@ public final class UNAABIThreefold extends UNAABI {
                 if (canGPAlloc)
                     if (nextGP != gpEnd) {
                         llc.add(new UNAInvoke.Command(inputIdx, pullDown ? 32 : 0, -1L, 0, nextGP++));
+                        if (fpMode == FPHandling.FPGPShadow)
+                            nextFP++;
                         continue;
                     }
                 // well, that failed! what about stack?
@@ -85,5 +93,18 @@ public final class UNAABIThreefold extends UNAABI {
     }
     public boolean get2Word(UNAType ut) {
         return ut.bytes > 4 && is32;
+    }
+
+    /**
+     * Handling of floating-point values.
+     */
+    enum FPHandling {
+        // tries FP registers (most calling conventions; FPC=0 here disables the functionality)
+        FP,
+        // tries FP registers, then GP registers (RV64)
+        FPThenGP,
+        // GP creates empty FP shadow alloc, FP creates GP copy (not empty)
+        // only use when FPC == GPC, this is to deal with x86_64-w
+        FPGPShadow
     }
 }

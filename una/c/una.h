@@ -21,10 +21,15 @@
 #define C_PTR(l) ((void *) (intptr_t) (l))
 #define J_PTR(l) ((int64_t) (intptr_t) (l))
 
+#define L_TO_D(f0) (*((double *) (&f0)))
+#define F_TO_L(f0) (*((int32_t *) (&f0)))
+#define D_TO_L(f0) (*((int64_t *) (&f0)))
+
 // see jnifns.c to get indices
 #define JNIFN(idx) ((*((void***) env))[idx])
 
 // JNI functions that get reused get listed here.
 #define JNI_NewStringUTF ((void * (*)(void *, void *)) JNIFN(167))
 
+int printf(const char * str, ...);
 
