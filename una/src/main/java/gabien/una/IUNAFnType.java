@@ -10,7 +10,7 @@ package gabien.una;
  * Interface for a function.
  * Created 26th May, 2023
  */
-public interface IUNAProto {
+public interface IUNAFnType {
     public default long call(
             long code
     ) {

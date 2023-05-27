@@ -12,22 +12,42 @@ package gabien.una;
  * The invoke pattern is a small VM for loading values.
  * Created 25th May, 2023.
  */
-class UNAInvoke implements IUNAProto {
+class UNAInvoke implements IUNAFnType {
     public static final int BASE_A = 0;
     public static final int SIZE_A = 16;
     public static final int BASE_F = 16;
     // effective size of F-file is ABI-defined
     private final Mode mode;
-    private final boolean doubleRet, ret32;
+    private final UNAType ret;
     private final UNAType[] args;
     private final Command[] commands;
 
-    public UNAInvoke(Mode m, boolean dr, boolean r32, UNAType[] args, Command[] cmds) {
+    public UNAInvoke(Mode m, UNAType ret, UNAType[] args, Command[] cmds) {
         mode = m;
-        doubleRet = dr;
-        ret32 = r32;
+        this.ret = ret;
         this.args = args;
         commands = cmds;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("inv{m=");
+        sb.append(mode);
+        sb.append(",r=");
+        sb.append(ret);
+        sb.append(",c=[");
+        for (UNAType a : args) {
+            sb.append(a);
+            sb.append(',');
+        }
+        sb.append("],c=[");
+        for (Command c : commands) {
+            sb.append(c);
+            sb.append(',');
+        }
+        sb.append("]}");
+        return sb.toString();
     }
 
     @Override
@@ -105,48 +125,46 @@ class UNAInvoke implements IUNAProto {
         }
         long rv = 0;
         switch (mode) {
-        case x86_cdecl: rv = call_x86_cdecl(
+        case x86_cdecl: rv = c86c(
                 (int) a0, (int) a1, (int) a2, (int) a3, (int) a4, (int) a5, (int) a6, (int) a7,
                 (int) a8, (int) a9, (int) aA, (int) aB, (int) aC, (int) aD, (int) aE, (int) aF,
                 (int) code
                 );
-        case x86_stdcall: rv = call_x86_stdcall(
+        case x86_stdcall: rv = c86s(
                 (int) a0, (int) a1, (int) a2, (int) a3, (int) a4, (int) a5, (int) a6, (int) a7,
                 (int) a8, (int) a9, (int) aA, (int) aB, (int) aC, (int) aD, (int) aE, (int) aF,
                 (int) code, args.length
                 );
-        case x86_64_windows: rv = call_x86_64_windows(
+        case x86_64_windows: rv = c8664w(
                 a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF,
-                code, doubleRet, f0, f1, f2, f3
+                code, ret.isFP, f0, f1, f2, f3
                 );
-        case x86_64_unix: rv = call_x86_64_unix(
+        case x86_64_unix: rv = c8664u(
                 a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF,
-                code, doubleRet, f0, f1, f2, f3, f4, f5, f6, f7
+                code, ret.isFP, f0, f1, f2, f3, f4, f5, f6, f7
                 );
         }
-        if (ret32)
-            return (int) rv;
-        return rv;
+        return ret.signExtend(rv);
     }
 
     /* Invoke */
-    public static native long call_x86_cdecl(
+    public static native long c86c(
             int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
             int a8, int a9, int aA, int aB, int aC, int aD, int aE, int aF,
             int code);
 
-    public static native long call_x86_stdcall(
+    public static native long c86s(
             int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
             int a8, int a9, int aA, int aB, int aC, int aD, int aE, int aF,
             int code, int ac);
 
-    private static native long call_x86_64_windows(
+    private static native long c8664w(
             long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7,
             long a8, long a9, long aA, long aB, long aC, long aD, long aE, long aF,
             long code, boolean doubleRet,
             long f0, long f1, long f2, long f3);
 
-    private static native long call_x86_64_unix(
+    private static native long c8664u(
             long a0, long a1, long a2, long a3, long a4, long a5, long a6, long a7,
             long a8, long a9, long aA, long aB, long aC, long aD, long aE, long aF,
             long code, boolean doubleRet,
@@ -164,6 +182,10 @@ class UNAInvoke implements IUNAProto {
             this.mask = mask;
             this.shiftUp = shiftUp;
             destReg = dst;
+        }
+        @Override
+        public String toString() {
+            return "s" + sourceReg + "d" + destReg;
         }
     }
 

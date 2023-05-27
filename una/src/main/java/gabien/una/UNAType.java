@@ -12,25 +12,28 @@ package gabien.una;
  * Created 27th May, 2023.
  */
 public enum UNAType {
-    U8(1, false, false),
-    I8(1, false, true),
-    U16(2, false, false),
-    I16(2, false, true),
-    U32(4, false, false),
-    I32(4, false, true),
-    U64(8, false, false),
-    I64(8, false, true),
-    F32(4, true, false),
-    F64(8, true, false);
+    I8('b', 1, false, true),
+    U8('B', 1, false, false),
+    I16('s', 2, false, true),
+    U16('S', 2, false, false),
+    I32('i', 4, false, true),
+    U32('I', 4, false, false),
+    I64('l', 8, false, true),
+    U64('L', 8, false, false),
+    F32('f', 4, true, false),
+    F64('d', 8, true, false);
+    // see charType in UNAProto for metatypes
 
+    public final char protoChar;
     public final int bytes;
     public final boolean isFP;
     public final boolean signed;
     public final long mask, signBit;
 
-    UNAType(int b, boolean isFP, boolean signed) {
+    UNAType(char c, int b, boolean isFP, boolean signed) {
+        protoChar = c;
         bytes = b;
-        mask = ~(-1L << (b * 8));
+        mask = b == 8 ? -1 : ~(-1L << (b * 8));
         signBit = 1 << ((b * 8) - 1);
         this.isFP = isFP;
         this.signed = signed;

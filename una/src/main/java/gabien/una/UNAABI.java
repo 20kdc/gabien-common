@@ -16,6 +16,7 @@ import java.util.LinkedList;
  */
 public final class UNAABI {
     private final UNAInvoke.Mode base;
+    private final UNASysTypeInfo typeInfo;
     private final boolean is32;
     private final int pullDownWordIndex;
     private final int gpStart, gpEnd;
@@ -23,8 +24,9 @@ public final class UNAABI {
     private final int stackStart, stackEnd;
     private final boolean fpMigratesToGP;
 
-    UNAABI(UNAInvoke.Mode b, boolean b32, boolean be, int gpc, int fpc, boolean fpm) {
+    UNAABI(UNAInvoke.Mode b, UNASysTypeInfo ti, boolean b32, boolean be, int gpc, int fpc, boolean fpm) {
         base = b;
+        typeInfo = ti;
         is32 = b32;
         pullDownWordIndex = be ? 0 : 1;
 
@@ -43,16 +45,23 @@ public final class UNAABI {
     /**
      * Emulates the compiler's argument GP/FP allocator to produce an invoker.
      */
-    public IUNAProto synthesize(UNAType ret, UNAType[] args) {
+    public IUNAFnType of(String sig) {
+        return of(typeInfo.sig(sig));
+    }
+
+    /**
+     * Emulates the compiler's argument GP/FP allocator to produce an invoker.
+     */
+    public IUNAFnType of(UNAProto proto) {
         LinkedList<UNAInvoke.Command> llc = new LinkedList<>();
         // Allocators
         int nextGP = gpStart;
         int nextFP = fpStart;
         int nextStack = stackStart;
         // Main arg loop
-        for (int i = 0; i < args.length; i++) {
+        for (int i = 0; i < proto.args.length; i++) {
             int inputIdx = i;
-            UNAType arg = args[i];
+            UNAType arg = proto.args[i];
             boolean canGPAlloc = true;
             // FP
             if (arg.isFP) {
@@ -80,12 +89,9 @@ public final class UNAABI {
             }
         }
         // Finish up
-        return new UNAInvoke(base, ret.isFP, getIs32(ret), args, llc.toArray(new UNAInvoke.Command[0]));
+        return new UNAInvoke(base, proto.ret, proto.args, llc.toArray(new UNAInvoke.Command[0]));
     }
     public boolean get2Word(UNAType ut) {
         return ut.bytes > 4 && is32;
-    }
-    public boolean getIs32(UNAType ut) {
-        return ut.bytes <= 4;
     }
 }

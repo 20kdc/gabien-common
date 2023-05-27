@@ -9,6 +9,9 @@ package gabien.una;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
+import gabien.una.UNAABIFinder.Convention;
+
 import static gabien.una.UNAPoke.*;
 
 public class Main {
@@ -34,29 +37,31 @@ public class Main {
         peekAB(purpose, strlen, data2, 0);
         System.out.println("UTF-8 GetRegion retrieval test: " + new String(data2, StandardCharsets.UTF_8));
 
+        System.out.println("Finding ABI...");
+        UNAABI khronos = UNAABIFinder.getABI(Convention.StdcallOnWindows);
+
         System.out.println("Trying to find EGL...");
         long eglFound = UNAC.dlopen("libEGL.so.1");
         System.out.println("EGL: " + eglFound);
-        /*
         if (eglFound != 0) {
             // First function lookup, so make a big deal of it
             long egd = UNAC.dlsym(eglFound, "eglGetDisplay");
-            int egdV = UNAInvoke.getVariant('P', "P");
+            IUNAFnType egdV = khronos.of("p(p)");
             System.out.println("eglGetDisplay: " + egd + "(" + egdV + ")");
             // Run it, get display
-            long dsp = UNAInvoke.c1(0, egd, egdV);
+            long dsp = egdV.call(egd, 0);
             System.out.println("Display: " + dsp);
             // Allocate 1MB of memory for various uses
             long exmem = UNAC.mallocChk(1024 * 1024);
             // init EGL
             egd = UNAC.dlsym(eglFound, "eglInitialize");
-            egdV = UNAInvoke.getVariant('I', "PPP");
+            egdV = khronos.of("i(ppp)");
             System.out.println("eglInitialize: " + egd + "(" + egdV + ")");
-            System.out.println(" = " + UNAInvoke.c3(dsp, exmem, exmem + 4, egd, egdV));
+            System.out.println(" = " + egdV.call(egd, dsp, exmem, exmem + 4));
             System.out.println("EGL Version: " + peekI(exmem) + "." + peekI(exmem + 4));
             //
             egd = UNAC.dlsym(eglFound, "eglGetConfigs");
-            egdV = UNAInvoke.getVariant('I', "PPIP");
-        }*/
+            egdV = khronos.of("i(ppip)");
+        }
     }
 }
