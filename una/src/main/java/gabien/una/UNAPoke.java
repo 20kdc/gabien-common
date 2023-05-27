@@ -160,6 +160,16 @@ public abstract class UNAPoke {
         return addr;
     }
 
+    /* Bulk Array Poke */
+    public static void pokeAZ(long addr, boolean... array) { pokeAZ(addr, array.length, array, 0); }
+    public static void pokeAB(long addr, byte... array) { pokeAB(addr, array.length, array, 0); }
+    public static void pokeAC(long addr, char... array) { pokeAC(addr, array.length, array, 0); }
+    public static void pokeAS(long addr, short... array) { pokeAS(addr, array.length, array, 0); }
+    public static void pokeAI(long addr, int... array) { pokeAI(addr, array.length, array, 0); }
+    public static void pokeAJ(long addr, long... array) { pokeAJ(addr, array.length, array, 0); }
+    public static void pokeAF(long addr, float... array) { pokeAF(addr, array.length, array, 0); }
+    public static void pokeAD(long addr, double... array) { pokeAD(addr, array.length, array, 0); }
+
     /* Natives - Peek/Poke */
     public static native boolean peekZ(long addr);
     public static native byte peekB(long addr);

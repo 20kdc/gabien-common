@@ -41,6 +41,7 @@ void UNAC(dlclose)(void * env, void * self, int64_t module) {
 
 size_t strlen(const char * mem);
 char * strdup(const char * mem);
+int strcmp(const char * a, const char * b);
 void * memcpy(void * dst, const void * src, size_t len);
 int memcmp(const void * a, const void * b, size_t len);
 
@@ -50,6 +51,10 @@ int64_t UNAC(strlen)(void * env, void * self, int64_t str) {
 
 int64_t UNAC(strdup)(void * env, void * self, int64_t str) {
     return J_PTR(strdup(C_PTR(str)));
+}
+
+int32_t UNAC(strcmp)(void * env, void * self, int64_t a, int64_t b) {
+    return (int32_t) strcmp(C_PTR(a), C_PTR(b));
 }
 
 int64_t UNAC(memcpy)(void * env, void * self, int64_t dst, int64_t src, int64_t len) {
