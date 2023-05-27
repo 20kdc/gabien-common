@@ -56,6 +56,7 @@ First, the amount of registers and how they are used varies.
   * It's important to note that it _can_ and _will_ split a double between the GP and the stack.
 * RV64 has 8 GP argument registers. Windows-x86\_64 has only 4, while Linux-x86\_64 has 6.
 * Some ABIs simply do not use registers, i.e. the default ABIs on 32-bit x86 systems.
+* Windows 64-bit considers integer args and FP args as both consuming slots from each other.
 
 Secondly, Apple's AArch64 ABI exists.
 

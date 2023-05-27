@@ -65,6 +65,31 @@ public abstract class UNA {
      */
     public static native long getSanityTester();
 
+    /* Natives - Misc */
+
+    /**
+     * The value in errno is recorded after every UNA invoke. This returns it.
+     */
+    public static native int getErrno();
+
+    /**
+     * The result of GetLastError is recorded after every UNA invoke. This returns it.
+     * This function only has meaning on Windows, but always exists.
+     */
+    public static native int wGetLastError();
+
+    /**
+     * Runs through the Windows procedure to create a window for GL use.
+     * This function only exists on Windows and exists to skip an awful lot of pain.
+     */
+    public static native long wCreateInvisibleGLWindowHDC();
+
+    /**
+     * Sets a sane pixel format on a DC and returns the number for future use.
+     * This function only exists on Windows and exists to skip an awful lot of pain.
+     */
+    public static native int wChooseAndSetSanePixelFormatHDC(long hdc);
+
     /* Natives - JNIEnv */
     public static native String newStringUTF(long address);
     public static native ByteBuffer newDirectByteBuffer(long address, long length);

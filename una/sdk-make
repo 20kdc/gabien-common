@@ -3,13 +3,18 @@
 . ./sdk-clean
 mkdir -p $LIBUNA
 COMMONFLAGS="-Wno-attributes -O4 -shared"
-TARGETS="x86-windows-gnu x86_64-windows-gnu x86-linux-gnu"
+TARGETS="x86-linux-gnu"
+TARGETS_W="x86-windows-gnu x86_64-windows-gnu"
 TARGETS_NLTO="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu aarch64-linux-android arm-linux-android x86_64-linux-android"
 SOURCES="c/una.c c/unacall.c c/unajni.c c/unalibc.c c/unapoke.c"
 for TARGET in $TARGETS ; do
  echo $TARGET
  zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS
+done
+for TARGET in $TARGETS_W ; do
+ echo $TARGET
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS -lgdi32
 done
 # LTO not yet supported
 for TARGET in $TARGETS_NLTO ; do

@@ -52,3 +52,9 @@ void exampleVA() {
     cWeirdVA(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13);
 }
 
+void float4(double a, double b, double c, double d, int e, int f, int g, int h, int i);
+
+void example8664() {
+    float4(1, 2, 3, 4, 5, 6, 7, 8, 9);
+}
+

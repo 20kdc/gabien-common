@@ -27,23 +27,34 @@ public enum UNAType {
     public final char protoChar;
     public final int bytes;
     public final boolean isFP;
-    public final boolean signed;
-    public final long mask, signBit;
+    public final boolean signed, doExtension;
+    public final long mask, invMask, signBit;
 
     UNAType(char c, int b, boolean isFP, boolean signed) {
         protoChar = c;
         bytes = b;
-        mask = b == 8 ? -1 : ~(-1L << (b * 8));
-        signBit = 1 << ((b * 8) - 1);
+        if (b == 8) {
+            mask = -1;
+            invMask = 0;
+            signBit = 0x8000000000000000L;
+            doExtension = false;
+        } else {
+            invMask = -1L << (b * 8);
+            mask = ~invMask;
+            signBit = 1 << ((b * 8) - 1);
+            doExtension = true;
+        }
         this.isFP = isFP;
         this.signed = signed;
     }
 
     public long signExtend(long v) {
-        v &= mask;
-        if (signed)
-            if ((v & signBit) != 0)
-                v |= ~mask;
+        if (doExtension) {
+            v &= mask;
+            if (signed)
+                if ((v & signBit) != 0)
+                    v |= invMask;
+        }
         return v;
     }
 }

@@ -81,3 +81,41 @@ int64_t UNA(getSanityTester)(void * env, void * self) {
     return J_PTR(sanityTester);
 }
 
+// just because
+
+#ifdef WIN32
+void printf(const char * str, ...);
+int64_t UNA(wCreateInvisibleGLWindowHDC)(void * env, void * self) {
+    WNDCLASS wc = {
+        .lpfnWndProc = DefWindowProcA,
+        .hInstance = GetModuleHandleA(NULL),
+        .hbrBackground = (HBRUSH) (COLOR_BACKGROUND),
+        .lpszClassName = "gabien_una_gl_window",
+        .style = CS_OWNDC
+    };
+    RegisterClass(&wc);
+    HWND hwnd = CreateWindowA("gabien_una_gl_window", "una", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 256, 256, 0, 0, GetModuleHandleA(NULL), 0);
+    HDC hdc = GetDC(hwnd);
+    printf("hwnd %lli\n", (long long) hwnd);
+    printf("hdc %lli\n", (long long) hdc);
+    return J_PTR(hdc);
+}
+int32_t UNA(wChooseAndSetSanePixelFormatHDC)(void * env, void * self, int64_t hdcl) {
+    HDC hdc = (HDC) C_PTR(hdcl);
+    PIXELFORMATDESCRIPTOR pfd = {
+        .nSize = sizeof(PIXELFORMATDESCRIPTOR),
+        .nVersion = 1,
+        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL,
+        .iPixelType = PFD_TYPE_RGBA,
+        .cColorBits = 32,
+        .cDepthBits = 24,
+        .cStencilBits = 8,
+        .iLayerType = PFD_MAIN_PLANE
+    };
+    int pixFmt = ChoosePixelFormat(hdc, &pfd);
+    SetPixelFormat(hdc, pixFmt, &pfd);
+    printf("hdc %lli\n", (long long) hdc);
+    return (int32_t) pixFmt;
+}
+#endif
+
