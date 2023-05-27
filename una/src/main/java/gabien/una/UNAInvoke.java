@@ -19,14 +19,14 @@ class UNAInvoke implements IUNAProto {
     // effective size of F-file is ABI-defined
     private final Mode mode;
     private final boolean doubleRet, ret32;
-    private final int argCount; 
+    private final UNAType[] args;
     private final Command[] commands;
 
-    public UNAInvoke(Mode m, boolean dr, boolean r32, int ac, Command[] cmds) {
+    public UNAInvoke(Mode m, boolean dr, boolean r32, UNAType[] args, Command[] cmds) {
         mode = m;
         doubleRet = dr;
         ret32 = r32;
-        argCount = ac;
+        this.args = args;
         commands = cmds;
     }
 
@@ -36,6 +36,40 @@ class UNAInvoke implements IUNAProto {
             long i0, long i1, long i2, long i3, long i4, long i5, long i6, long i7,
             long i8, long i9, long iA, long iB, long iC, long iD, long iE, long iF
     ) {
+        // Sign-extend args
+        if (args.length >= 1)
+            i0 = args[0].signExtend(i0);
+        if (args.length >= 2)
+            i1 = args[1].signExtend(i1);
+        if (args.length >= 3)
+            i2 = args[2].signExtend(i2);
+        if (args.length >= 4)
+            i3 = args[3].signExtend(i3);
+        if (args.length >= 5)
+            i4 = args[4].signExtend(i4);
+        if (args.length >= 6)
+            i5 = args[5].signExtend(i5);
+        if (args.length >= 7)
+            i6 = args[6].signExtend(i6);
+        if (args.length >= 8)
+            i7 = args[7].signExtend(i7);
+        if (args.length >= 9)
+            i8 = args[8].signExtend(i8);
+        if (args.length >= 10)
+            i9 = args[9].signExtend(i9);
+        if (args.length >= 11)
+            iA = args[10].signExtend(iA);
+        if (args.length >= 12)
+            iB = args[11].signExtend(iB);
+        if (args.length >= 13)
+            iC = args[12].signExtend(iC);
+        if (args.length >= 14)
+            iD = args[13].signExtend(iD);
+        if (args.length >= 15)
+            iE = args[14].signExtend(iE);
+        if (args.length >= 16)
+            iF = args[15].signExtend(iF);
+        // Actually run the scary VM
         long a0 = 0, a1 = 0, a2 = 0, a3 = 0, a4 = 0, a5 = 0, a6 = 0, a7 = 0;
         long a8 = 0, a9 = 0, aA = 0, aB = 0, aC = 0, aD = 0, aE = 0, aF = 0;
         long f0 = 0, f1 = 0, f2 = 0, f3 = 0, f4 = 0, f5 = 0, f6 = 0, f7 = 0;
@@ -55,18 +89,18 @@ class UNAInvoke implements IUNAProto {
             loadRegister &= cmd.mask;
             loadRegister = loadRegister << cmd.shiftUp;
             switch (cmd.destReg) {
-            case 0: a0 = loadRegister; break; case 1: a1 = loadRegister; break;
-            case 2: a2 = loadRegister; break; case 3: a3 = loadRegister; break;
-            case 4: a4 = loadRegister; break; case 5: a5 = loadRegister; break;
-            case 6: a6 = loadRegister; break; case 7: a7 = loadRegister; break;
-            case 8: a8 = loadRegister; break; case 9: a9 = loadRegister; break;
-            case 10: aA = loadRegister; break; case 11: aB = loadRegister; break;
-            case 12: aC = loadRegister; break; case 13: aD = loadRegister; break;
-            case 14: aE = loadRegister; break; case 15: aF = loadRegister; break;
-            case 16: f0 = loadRegister; break; case 17: f1 = loadRegister; break;
-            case 18: f2 = loadRegister; break; case 19: f3 = loadRegister; break;
-            case 20: f4 = loadRegister; break; case 21: f5 = loadRegister; break;
-            case 22: f6 = loadRegister; break; case 23: f7 = loadRegister; break;
+            case 0: a0 |= loadRegister; break; case 1: a1 |= loadRegister; break;
+            case 2: a2 |= loadRegister; break; case 3: a3 |= loadRegister; break;
+            case 4: a4 |= loadRegister; break; case 5: a5 |= loadRegister; break;
+            case 6: a6 |= loadRegister; break; case 7: a7 |= loadRegister; break;
+            case 8: a8 |= loadRegister; break; case 9: a9 |= loadRegister; break;
+            case 10: aA |= loadRegister; break; case 11: aB |= loadRegister; break;
+            case 12: aC |= loadRegister; break; case 13: aD |= loadRegister; break;
+            case 14: aE |= loadRegister; break; case 15: aF |= loadRegister; break;
+            case 16: f0 |= loadRegister; break; case 17: f1 |= loadRegister; break;
+            case 18: f2 |= loadRegister; break; case 19: f3 |= loadRegister; break;
+            case 20: f4 |= loadRegister; break; case 21: f5 |= loadRegister; break;
+            case 22: f6 |= loadRegister; break; case 23: f7 |= loadRegister; break;
             }
         }
         long rv = 0;
@@ -79,7 +113,7 @@ class UNAInvoke implements IUNAProto {
         case x86_stdcall: rv = call_x86_stdcall(
                 (int) a0, (int) a1, (int) a2, (int) a3, (int) a4, (int) a5, (int) a6, (int) a7,
                 (int) a8, (int) a9, (int) aA, (int) aB, (int) aC, (int) aD, (int) aE, (int) aF,
-                (int) code, argCount
+                (int) code, args.length
                 );
         case x86_64_windows: rv = call_x86_64_windows(
                 a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aA, aB, aC, aD, aE, aF,

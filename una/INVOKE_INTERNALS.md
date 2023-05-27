@@ -36,17 +36,19 @@ To my knowledge, all *common and default* C ABIs follow the above rules, and als
    It has, however, remained a constant in all ABIs under discussion.
 3. On stack, arguments are "pushed right to left".
    This seems unusual, but is better understood as that they are in memory left to right.
-4. The stack and integer registers are measured in machine words (i.e. `void *`).
+4. Integer registers are measured in machine words (i.e. `void *`).
    FP registers are always measured in values (if the value is float or double does not alter FP register allocation).
    This *has been tested* to apply on x86\_64, and can be seen to apply for AArch64 by reading `ARM Cortex-A Series Programmer's Guide for ARMv8-A / Floating-point register organization in AArch64`. This is also described to apply for RV32/RV64 with the `D` extension, which is part of `G` and thus expected.
 5. The misalignment of stack values longer than a word does not matter.
-   The misalignment of stack values shorter than a word never happens because of the previous rule.
+   The misalignment of stack values shorter than a word is avoided.
 6. All calls with the same amount of arguments of the same sizes, but in different orders, use the same allocations of registers and stack.
    However, they will be accordingly reordered and shifted between different places.
 
 A good look into this is the file `c/theory.c`.
 
-Note, however, there is one critical difference: The amount of registers and how they are used varies.
+Note, however, there are two critical differences.
+
+First, the amount of registers and how they are used varies.
 
 * Linux-RV64 will use GP registers as "extra" floats. AArch64 and x86\_64 won't.
   * Notably, because of this, floats can end up on the stack "earlier than they should" on AArch64 and x86\_64.
@@ -55,9 +57,12 @@ Note, however, there is one critical difference: The amount of registers and how
 * RV64 has 8 GP argument registers. Windows-x86\_64 has only 4, while Linux-x86\_64 has 6.
 * Some ABIs simply do not use registers, i.e. the default ABIs on 32-bit x86 systems.
 
-Due to this, and possible variance in future ABIs, it's not possible for the super-ABI to be an absolute.
+Secondly, Apple's AArch64 ABI exists.
 
-Instead, the super-ABI is simply a set of rules that constrain ABIs in a way that simplifies the creation of UNA's invoke API.
+* For every other ABI fitting the "common and default" category, the stack is measured in machine words. Not Apple's.
+* For every other ABI fitting the "common and default" category, var-args are not treated specially. Apple immediately shunts them to stack.
+
+With all of this mess, the super-ABI is simply a set of rules that constrain ABIs in a way that simplifies the creation of UNA's invoke API.
 
 The result is that from the perspective of UNA, an ABI can be distilled into the following set of parameters:
 
@@ -65,7 +70,9 @@ The result is that from the perspective of UNA, an ABI can be distilled into the
 * Endianness.
 * Number of GP registers.
 * Number of FP registers.
-* FP migration behavior (RV64 behaviour vs. the rest)
+* FP migration behavior. (RV64 behaviour vs. the rest)
+* Stack slot granularity. (For Apple, this is 1 byte; for other platforms this is the machine word size.)
+* If var-args are immediately shunted to stack. (For Apple, this is yes; everything else doesn't.)
 
 ## Invocation Itself
 

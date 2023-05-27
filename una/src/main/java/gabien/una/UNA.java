@@ -22,6 +22,7 @@ public abstract class UNA {
     public static boolean isWin32;
     public static boolean isBigEndian;
     public static boolean is32Bit;
+    public static UNAType pointer;
     private static boolean setup;
 
     public static void checkSetup() {
@@ -35,6 +36,33 @@ public abstract class UNA {
         isWin32 = (sysFlags & SYSFLAG_W32) != 0;
         isBigEndian = (sysFlags & SYSFLAG_BE) != 0;
         is32Bit = (sysFlags & SYSFLAG_32) != 0;
+        pointer = is32Bit ? UNAType.I32 : UNAType.I64;
+    }
+
+    public static UNAType charType(char chr) {
+        if (chr == 'b')
+            return UNAType.I8;
+        if (chr == 'B')
+            return UNAType.U8;
+        if (chr == 's')
+            return UNAType.I16;
+        if (chr == 'S')
+            return UNAType.U16;
+        if (chr == 'i')
+            return UNAType.I32;
+        if (chr == 'I')
+            return UNAType.U32;
+        if (chr == 'l')
+            return UNAType.I64;
+        if (chr == 'L')
+            return UNAType.U64;
+        if (chr == 'f')
+            return UNAType.F32;
+        if (chr == 'd')
+            return UNAType.F64;
+        if (chr == 'p' || chr == 'v')
+            return pointer;
+        throw new RuntimeException("Unknown UNAType specifier " + chr);
     }
 
     /* Natives */
