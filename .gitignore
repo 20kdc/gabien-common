@@ -56,6 +56,10 @@
 !una/c
 !una/c/
 !una/c/badgpu.h
+!una/c/badgpu_internal.h
+!una/c/badgpu.c
+!una/c/badgpu_wsi.c
+!una/c/badgputest.c
 !una/c/una.c
 !una/c/una.h
 !una/c/unajni.c

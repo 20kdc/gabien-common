@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.01
+ * API Specification Version: 0.02
  */
 
 #ifndef BADGPU_H_
@@ -129,6 +129,10 @@
 
 /*
  * Types
+ *
+ * The big types in BadGPU are object handles.
+ * These all have a unified API for creation and destruction.
+ * (See badgpuRef/badgpuUnref.)
  */
 
 // Generic object handle.
@@ -139,11 +143,11 @@ typedef BADGPUObject BADGPUDSBuffer;
 
 typedef unsigned char BADGPUBool;
 
-typedef struct {
+typedef struct BADGPUVector {
     float x, y, z, w;
 } BADGPUVector;
 
-typedef struct {
+typedef struct BADGPUVertex {
     BADGPUVector x, y, z, w;
     uint8_t cR, cG, cB, cA;
     float tU, tV;
@@ -155,7 +159,7 @@ typedef struct {
  * Each basis vector is multiplied by the corresponding input vector float.
  * The multiplied vectors are then added together.
  */
-typedef struct {
+typedef struct BADGPUMatrix {
     BADGPUVector x, y, z, w;
 } BADGPUMatrix;
 
@@ -176,10 +180,17 @@ typedef enum BADGPUNewInstanceFlags {
  *  texture data being provided to, say, badgpuNewTexture.
  */
 typedef enum BADGPUTextureFlags {
+    // If minifying the texture uses linear filtering.
     BADGPUTextureFlags_MinLinear = 1,
+    // If magnifying the texture uses linear filtering.
     BADGPUTextureFlags_MagLinear = 2,
+    // If mipmapping is used.
     BADGPUTextureFlags_Mipmap = 4,
+    // If the texture has an alpha channel (otherwise, it's always 1).
+    // Notably, this changes the form of data provided to badgpuNewTexture.
     BADGPUTextureFlags_Alpha = 8,
+    // If accesses beyond the edges of the texture repeat (rather than clamping)
+    BADGPUTextureFlags_Wrapping = 16,
     BADGPUTextureFlags_Force32 = 0x7FFFFFFF
 } BADGPUTextureFlags;
 
@@ -331,7 +342,9 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
  * Creates a new BADGPU instance.
  * This will allocate resources such as an EGLDisplay or HWND, so the instance
  *  should be unreferenced when done with.
- * On failure, an error is returned as a constant C string.
+ * On failure, NULL is returned, and if the error pointer is provided, a
+ *  constant C string pointer is placed there.
+ * (On success, the error pointer is not updated.)
  * This constant C string, being a constant, is thread-safe, and cannot be
  *  invalidated.
  * The flags are BADGPUNewInstanceFlags.
@@ -341,16 +354,17 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error);
 
 /*
- * Texture/Buffer Management
+ * Texture/2D Buffer Management
  */
 
 /*
  * Creates a texture, with possible initial data.
  * The flags are BADGPUNewTextureFlags.
  * Mipmaps are automatically created if the texture is mipmapped.
- * Data is supplied as a flat array of bytes.
+ * Data can be supplied as a flat array of bytes.
  * This array of bytes is made either of 3-byte RGB groups,
  *  or 4-byte RGBA groups, depending on if the alpha flag is set.
+ * If NULL is passed as the data, then the texture contents are undefined.
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     uint32_t flags, uint16_t width, uint16_t height, const uint8_t * data);
