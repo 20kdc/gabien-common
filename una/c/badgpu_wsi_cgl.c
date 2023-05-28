@@ -32,29 +32,29 @@ BADGPUWSICtx badgpu_newWsiCtx(char ** error) {
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
     ctx->glLibrary = dlOpen("/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib", 2);
     if (!ctx->glLibrary)
-        return badgpu_newWsiCtxError(error, "Could not open EGL");
+        return badgpu_newWsiCtxError(error, "Could not open CGL");
     ctx->CGLChoosePixelFormat = dlsym(ctx->glLibrary, "CGLChoosePixelFormat");
     ctx->CGLCreateContext = dlsym(ctx->glLibrary, "CGLCreateContext");
     ctx->CGLSetCurrentContext = dlsym(ctx->glLibrary, "CGLSetCurrentContext");
     ctx->CGLDestroyContext = dlsym(ctx->glLibrary, "CGLDestroyContext");
     ctx->CGLDestroyPixelFormat = dlsym(ctx->glLibrary, "CGLDestroyPixelFormat");
-    void * config;
     int32_t attribs[] = {
         0
     };
-    int32_t configCount;
-    if (!ctx->eglChooseConfig(ctx->dsp, attribs, &config, 1, &configCount))
-        return badgpu_newWsiCtxError(error, "Failed to choose EGL config");
-    if (!configCount)
-        return badgpu_newWsiCtxError(error, "No EGL configs");
+    int32_t ignoreMe;
+    if (ctx->CGLChoosePixelFormat(attribs, &ctx->pixFmt, &ignoreMe))
+        return badgpu_newWsiCtxError(error, "Failed to choose CGL config");
+    if (!ctx->pixFmt)
+        return badgpu_newWsiCtxError(error, "No CGL configs");
     int32_t attribs2[] = {
         0
     };
-    ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribs2);
+    if (ctx->CGLCreateContext(ctx->pixFmt, NULL, &ctx->ctx))
+        return badgpu_newWsiCtxError(error, "Failed to create CGL context");
     if (!ctx->ctx)
-        return badgpu_newWsiCtxError(error, "Failed to create EGL context");
-    if (!ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx))
-        return badgpu_newWsiCtxError(error, "Failed initial eglMakeCurrent");
+        return badgpu_newWsiCtxError(error, "Failed to create CGL context");
+    if (ctx->CGLSetCurrentContext(ctx->ctx))
+        return badgpu_newWsiCtxError(error, "Failed initial CGLSetCurrentContext");
     return ctx;
 }
 
