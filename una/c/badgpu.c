@@ -29,6 +29,12 @@
 #define GL_LUMINANCE 0x1909
 #define GL_LUMINANCE_ALPHA 0x190A
 
+#define GL_SCISSOR_TEST 0x0C11
+
+#define GL_DEPTH_BUFFER_BIT 0x00000100
+#define GL_STENCIL_BUFFER_BIT 0x00000400
+#define GL_COLOR_BUFFER_BIT 0x00004000
+
 // Types
 
 struct BADGPUObject {
@@ -49,7 +55,13 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glGenTextures)(int32_t, uint32_t *);
     void (KHRABI *glDeleteTextures)(int32_t, uint32_t *);
     void (KHRABI *glStencilMask)(int32_t);
+    void (KHRABI *glColorMask)(unsigned char, unsigned char, unsigned char, unsigned char);
+    void (KHRABI *glDepthMask)(unsigned char);
     void (KHRABI *glScissor)(int32_t, int32_t, int32_t, int32_t);
+    void (KHRABI *glClearColor)(float, float, float, float);
+    void (KHRABI *glClearDepthf)(float);
+    void (KHRABI *glClearStencil)(int32_t);
+    void (KHRABI *glClear)(int32_t);
     void (KHRABI *glReadPixels)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, void *);
     void (KHRABI *glBindTexture)(int32_t, uint32_t);
     void (KHRABI *glTexImage2D)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, const void *);
@@ -62,6 +74,7 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glBindFramebuffer)(int32_t, uint32_t);
     void (KHRABI *glFramebufferRenderbuffer)(int32_t, int32_t, int32_t, uint32_t);
     void (KHRABI *glFramebufferTexture2D)(int32_t, int32_t, int32_t, uint32_t, int32_t);
+    void (KHRABI *glGenerateMipmap)(int32_t);
 } BADGPUInstancePriv;
 #define BG_INSTANCE(x) ((BADGPUInstancePriv *) (x))
 
@@ -146,7 +159,13 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
     bi->glGenTextures = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenTextures");
     bi->glDeleteTextures = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteTextures");
     bi->glStencilMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilMask");
+    bi->glColorMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColorMask");
+    bi->glDepthMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthMask");
     bi->glScissor = badgpu_wsiCtxGetProcAddress(bi->ctx, "glScissor");
+    bi->glClearColor = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearColor");
+    bi->glClearDepthf = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearDepthf");
+    bi->glClearStencil = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearStencil");
+    bi->glClear = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClear");
     bi->glReadPixels = badgpu_wsiCtxGetProcAddress(bi->ctx, "glReadPixels");
     bi->glBindTexture = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindTexture");
     bi->glTexImage2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexImage2D");
@@ -159,6 +178,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
         bi->glBindFramebuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindFramebufferEXT");
         bi->glFramebufferRenderbuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferRenderbufferEXT");
         bi->glFramebufferTexture2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferTexture2DEXT");
+        bi->glGenerateMipmap = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenerateMipmapEXT");
     } else {
         bi->glGenFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenFramebuffersOES");
         bi->glDeleteFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteFramebuffersOES");
@@ -168,6 +188,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
         bi->glBindFramebuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindFramebufferOES");
         bi->glFramebufferRenderbuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferRenderbufferOES");
         bi->glFramebufferTexture2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferTexture2DOES");
+        bi->glGenerateMipmap = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenerateMipmapOES");
     }
     bi->glGenFramebuffers(1, &bi->fbo);
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
@@ -188,13 +209,13 @@ static int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInsta
         return 1;
     badgpu_wsiCtxMakeCurrent((*bi)->ctx);
     (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
-    badgpuChk(*bi, "fbSetup1");
+    // badgpuChk(*bi, "fbSetup1");
     if (sTex) {
         (*bi)->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
     } else {
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
     }
-    badgpuChk(*bi, "fbSetup2");
+    // badgpuChk(*bi, "fbSetup2");
     if (sDS) {
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
@@ -202,7 +223,7 @@ static int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInsta
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
     }
-    badgpuChk(*bi, "fbSetup3");
+    badgpuChk(*bi, "fbSetup");
     return 0;
 }
 
@@ -243,6 +264,8 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
     bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, ifmt, GL_UNSIGNED_BYTE, data);
 
+    // TODO: Parameterize the texture
+
     badgpuChk(bi, "badgpuNewTexture");
     return (BADGPUTexture) tex;
 }
@@ -278,6 +301,9 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
 BADGPU_EXPORT void badgpuGenerateMipmap(BADGPUTexture texture) {
     BADGPUTexturePriv * tex = BG_TEXTURE(texture);
     badgpu_wsiCtxMakeCurrent(tex->i->ctx);
+    tex->i->glBindTexture(GL_TEXTURE_2D, tex->tex);
+    tex->i->glGenerateMipmap(GL_TEXTURE_2D);
+    badgpuChk(tex->i, "badgpuGenerateMipmap");
 }
 
 BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
@@ -297,18 +323,45 @@ static int drawingCmdSetup(
 ) {
     if (fbSetup(sTexture, sDSBuffer, bi))
         return 1;
-    (*bi)->glStencilMask(sStencilMask);
-    (*bi)->glScissor(sScX, sScY, sScWidth, sScHeight);
+    (*bi)->glStencilMask(sFlags & BADGPUSessionFlags_StencilAll);
+    (*bi)->glColorMask(
+        sFlags & BADGPUSessionFlags_MaskR ? 1 : 0,
+        sFlags & BADGPUSessionFlags_MaskG ? 1 : 0,
+        sFlags & BADGPUSessionFlags_MaskB ? 1 : 0,
+        sFlags & BADGPUSessionFlags_MaskA ? 1 : 0
+    );
+    (*bi)->glDepthMask(sFlags & BADGPUSessionFlags_MaskDepth ? 1 : 0);
+    if (sFlags & BADGPUSessionFlags_Scissor) {
+        (*bi)->glEnable(GL_SCISSOR_TEST);
+        (*bi)->glScissor(sScX, sScY, sScWidth, sScHeight);
+    } else {
+        (*bi)->glDisable(GL_SCISSOR_TEST);
+    }
     return 0;
 }
 
 BADGPU_EXPORT void badgpuDrawClear(
     BADGPU_SESSIONFLAGS,
-    float cR, float cG, float cB, float cA, float depth, uint8_t stencil
+    uint8_t cR, uint8_t cG, uint8_t cB, uint8_t cA, float depth, uint8_t stencil
 ) {
     BADGPUInstancePriv * bi;
     if (drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
         return;
+    int32_t cFlags = 0;
+    if (sFlags & BADGPUSessionFlags_MaskRGBA) {
+        bi->glClearColor(cR / 255.0f, cG / 255.0f, cB / 255.0f, cA / 255.0f);
+        cFlags |= GL_COLOR_BUFFER_BIT;
+    }
+    if (sFlags & BADGPUSessionFlags_MaskDepth) {
+        bi->glClearDepthf(depth);
+        cFlags |= GL_DEPTH_BUFFER_BIT;
+    }
+    if (sFlags & BADGPUSessionFlags_StencilAll) {
+        bi->glClearStencil(stencil);
+        cFlags |= GL_STENCIL_BUFFER_BIT;
+    }
+    if (cFlags)
+        bi->glClear(cFlags);
 }
 
 BADGPU_EXPORT void badgpuDrawGeom(
@@ -341,5 +394,6 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPUInstancePriv * bi;
     if (drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
         return;
+    // TODO: Everything
 }
 

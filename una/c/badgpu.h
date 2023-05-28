@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.03
+ * API Specification Version: 0.04
  */
 
 #ifndef BADGPU_H_
@@ -210,17 +210,29 @@ typedef enum BADGPUTextureFormat {
  */
 typedef enum BADGPUSessionFlags {
     // Masks
-    BADGPUSessionFlags_ColourR = 1,
-    BADGPUSessionFlags_ColorR = 1,
-    BADGPUSessionFlags_ColourG = 2,
-    BADGPUSessionFlags_ColorG = 2,
-    BADGPUSessionFlags_ColourB = 4,
-    BADGPUSessionFlags_ColorB = 4,
-    BADGPUSessionFlags_ColourA = 8,
-    BADGPUSessionFlags_ColorA = 8,
-    BADGPUSessionFlags_Depth = 16,
+    // Importantly, these are needed to enable any meaningful rendering!
+    // Stencil. These flags are deliberately at the bottom.
+    // This allows ORing in an 8-bit stencil mask directly,
+    //  and retrieving as such.
+    BADGPUSessionFlags_StencilAll = 0x00FF,
+    BADGPUSessionFlags_Stencil0 = 0x0001,
+    BADGPUSessionFlags_Stencil1 = 0x0002,
+    BADGPUSessionFlags_Stencil2 = 0x0004,
+    BADGPUSessionFlags_Stencil3 = 0x0008,
+    BADGPUSessionFlags_Stencil4 = 0x0010,
+    BADGPUSessionFlags_Stencil5 = 0x0020,
+    BADGPUSessionFlags_Stencil6 = 0x0040,
+    BADGPUSessionFlags_Stencil7 = 0x0080,
+    BADGPUSessionFlags_MaskR = 0x0100,
+    BADGPUSessionFlags_MaskG = 0x0200,
+    BADGPUSessionFlags_MaskB = 0x0400,
+    BADGPUSessionFlags_MaskA = 0x0800,
+    BADGPUSessionFlags_MaskDepth = 0x1000,
+    BADGPUSessionFlags_MaskRGBA = 0x0F00,
+    BADGPUSessionFlags_MaskRGBAD = 0x1F00,
+    BADGPUSessionFlags_MaskAll = 0x1FFF,
     // Scissor enable
-    BADGPUSessionFlags_Scissor = 32,
+    BADGPUSessionFlags_Scissor = 0x2000,
     BADGPUSessionFlags_Force32 = 0x7FFFFFFF
 } BADGPUSessionFlags;
 
@@ -418,22 +430,25 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
  * (Rationale: These parameters are all those documented as common between
  *  clear and drawing commands. See ES 2.0: 4.2.3 Clearing the Buffers,
  *  same place in ES 1.1)
+ *
+ * It is important to keep in mind that the default state of the masks is
+ *  NOT to render things. Normal operation might use MaskAll or MaskRGBAD.
  */
 
 #define BADGPU_SESSIONFLAGS \
     BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, \
-    uint32_t sFlags, uint8_t sStencilMask, \
+    uint32_t sFlags, \
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight
 
 /*
  * Performs a clear.
- * The flags provided are BADGPUDrawFlags.
+ * The session flag masks control the clear.
  * If flags are enabled for a buffer, that buffer must be present.
  * However, otherwise, buffers may not be present.
  */
 BADGPU_EXPORT void badgpuDrawClear(
     BADGPU_SESSIONFLAGS,
-    float cR, float cG, float cB, float cA, float depth, uint8_t stencil
+    uint8_t cR, uint8_t cG, uint8_t cB, uint8_t cA, float depth, uint8_t stencil
 );
 
 /*

@@ -24,6 +24,10 @@ int main() {
     // Make a texture to render to!
     BADGPUTexture tex = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, T_WIDTH, T_HEIGHT, NULL);
 
+    // Render to it!
+    badgpuDrawClear(tex, NULL, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+    255, 0, 255, 255, 0, 0);
+
     // Save the output.
     writeQOIFromTex(tex, T_WIDTH, T_HEIGHT);
 

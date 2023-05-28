@@ -40,12 +40,12 @@ int printf(const char * fmt, ...);
 
 #define BADGPU_SESSIONFLAGS \
     BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, \
-    uint32_t sFlags, uint8_t sStencilMask, \
+    uint32_t sFlags, \
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight
 
 #define BADGPU_SESSIONFLAGS_PASSTHROUGH \
     sTexture, sDSBuffer, \
-    sFlags, sStencilMask, \
+    sFlags, \
     sScX, sScY, sScWidth, sScHeight
 
 typedef struct BADGPUWSICtx * BADGPUWSICtx;
