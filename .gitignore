@@ -55,6 +55,7 @@
 !una/INVOKE_INTERNALS.md
 !una/c
 !una/c/
+!una/c/badgpu.h
 !una/c/una.c
 !una/c/una.h
 !una/c/unajni.c
