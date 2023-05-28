@@ -32,15 +32,30 @@ void * memset(void * mem, int c, size_t len);
 void * dlopen(const char * fn, int flags);
 void * dlsym(void * mod, const char * symbol);
 int dlclose(void * mod);
+int printf(const char * fmt, ...);
 #endif
+
+// Separate declaration of these so they don't end up in API.
+// Keep in sync with badgpu.h!
+
+#define BADGPU_SESSIONFLAGS \
+    BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, \
+    uint32_t sFlags, uint8_t sStencilMask, \
+    int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight
+
+#define BADGPU_SESSIONFLAGS_PASSTHROUGH \
+    sTexture, sDSBuffer, \
+    sFlags, sStencilMask, \
+    sScX, sScY, sScWidth, sScHeight
 
 typedef struct BADGPUWSICtx * BADGPUWSICtx;
 
 // Creates a new WSICtx and automatically makes it current.
-BADGPUWSICtx badgpu_newWsiCtx(char ** error);
+BADGPUWSICtx badgpu_newWsiCtx(char ** error, int * expectDesktopExtensions);
 void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
 // Warning: Must be made current first!
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
+// Attempting to destroy a context generally clears the current context.
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
 
 #endif

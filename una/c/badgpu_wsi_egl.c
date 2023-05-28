@@ -28,7 +28,8 @@ static BADGPUWSICtx badgpu_newWsiCtxError(char ** error, const char * err) {
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(char ** error) {
+BADGPUWSICtx badgpu_newWsiCtx(char ** error, int * expectDesktopExtensions) {
+    *expectDesktopExtensions = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -43,6 +44,7 @@ BADGPUWSICtx badgpu_newWsiCtx(char ** error) {
     ctx->eglCreateContext = dlsym(ctx->eglLibrary, "eglCreateContext");
     ctx->eglGetProcAddress = dlsym(ctx->eglLibrary, "eglGetProcAddress");
     ctx->eglMakeCurrent = dlsym(ctx->eglLibrary, "eglMakeCurrent");
+    ctx->eglDestroyContext = dlsym(ctx->eglLibrary, "eglDestroyContext");
     ctx->eglTerminate = dlsym(ctx->eglLibrary, "eglTerminate");
     ctx->dsp = ctx->eglGetDisplay(NULL);
     if (!ctx->dsp)
@@ -80,8 +82,10 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (!ctx)
         return;
-    if (ctx->ctx)
+    if (ctx->ctx) {
+        ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, NULL);
         ctx->eglDestroyContext(ctx->dsp, ctx->ctx);
+    }
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
     if (ctx->eglLibrary)

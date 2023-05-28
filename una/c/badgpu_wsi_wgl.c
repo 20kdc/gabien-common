@@ -20,7 +20,8 @@ static BADGPUWSICtx badgpu_newWsiCtxError(char ** error, const char * err) {
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(char ** error) {
+BADGPUWSICtx badgpu_newWsiCtx(char ** error, int * expectDesktopExtensions) {
+    *expectDesktopExtensions = 1;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -66,6 +67,7 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
+    wglMakeCurrent(NULL, NULL);
     if (!ctx)
         return;
     if (ctx->ctx)

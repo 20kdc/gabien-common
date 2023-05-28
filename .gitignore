@@ -62,6 +62,7 @@
 !una/c/badgpu_wsi_wgl.c
 !una/c/badgpu_wsi_cgl.c
 !una/c/badgputest.c
+!una/c/make-bgt
 !una/c/una.c
 !una/c/una.h
 !una/c/unajni.c

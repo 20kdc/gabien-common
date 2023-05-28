@@ -10,11 +10,25 @@
 
 void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h);
 
+#define T_WIDTH 320
+#define T_HEIGHT 200
+
 int main() {
     char * error;
     BADGPUInstance bi = badgpuNewInstance(BADGPUNewInstanceFlags_Debug, &error);
     if (!bi) {
         puts(error);
+        return 1;
+    }
+
+    // Make a texture to render to!
+    BADGPUTexture tex = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, T_WIDTH, T_HEIGHT, NULL);
+
+    // Save the output.
+    writeQOIFromTex(tex, T_WIDTH, T_HEIGHT);
+
+    if (!badgpuUnref(tex)) {
+        puts("hanging references: BADGPUTexture");
         return 1;
     }
     if (!badgpuUnref(bi)) {
@@ -24,7 +38,6 @@ int main() {
     return 0;
 }
 
-#if 0
 void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba);
 
 void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h) {
@@ -39,27 +52,29 @@ void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h) {
 // (Hilariously, despite this, it also actually has a reasonable approach to
 //  the whole sRGB/linear light debate. What a world.)
 void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba) {
-    putchar('q');
-    putchar('o');
-    putchar('i');
-    putchar('f');
-    putchar(w >> 24);
-    putchar(w >> 16);
-    putchar(w >> 8);
-    putchar(w);
-    putchar(h >> 24);
-    putchar(h >> 16);
-    putchar(h >> 8);
-    putchar(h);
-    putchar(4);
-    putchar(0);
+    FILE * f = fopen("tmp.qoi", "wb");
+    putc('q', f);
+    putc('o', f);
+    putc('i', f);
+    putc('f', f);
+    putc(w >> 24, f);
+    putc(w >> 16, f);
+    putc(w >> 8, f);
+    putc(w, f);
+    putc(h >> 24, f);
+    putc(h >> 16, f);
+    putc(h >> 8, f);
+    putc(h, f);
+    putc(4, f);
+    putc(0, f);
     size_t total = ((size_t) w) * ((size_t) h);
     while (total > 0) {
-        putchar(255);
-        putchar(*(rgba++));
-        putchar(*(rgba++));
-        putchar(*(rgba++));
-        putchar(*(rgba++));
+        putc(255, f);
+        putc(*(rgba++), f);
+        putc(*(rgba++), f);
+        putc(*(rgba++), f);
+        putc(*(rgba++), f);
+        total--;
     }
     // Fun fact: As far as I can tell, this ending being the way it is, is
     //  the only justification for why the specification insists that you can't
@@ -67,13 +82,14 @@ void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba) {
     // It's also kind of pointless because one would assume you'd actually be
     //  decoding the stream if you were reading through for this in the
     //  first place, but whatever.
-    putchar(0);
-    putchar(0);
-    putchar(0);
-    putchar(0);
-    putchar(0);
-    putchar(0);
-    putchar(0);
-    putchar(1);
+    putc(0, f);
+    putc(0, f);
+    putc(0, f);
+    putc(0, f);
+    putc(0, f);
+    putc(0, f);
+    putc(0, f);
+    putc(1, f);
+    fclose(f);
 }
-#endif
+

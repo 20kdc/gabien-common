@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.02
+ * API Specification Version: 0.03
  */
 
 #ifndef BADGPU_H_
@@ -186,13 +186,24 @@ typedef enum BADGPUTextureFlags {
     BADGPUTextureFlags_MagLinear = 2,
     // If mipmapping is used.
     BADGPUTextureFlags_Mipmap = 4,
-    // If the texture has an alpha channel (otherwise, it's always 1).
-    // Notably, this changes the form of data provided to badgpuNewTexture.
-    BADGPUTextureFlags_Alpha = 8,
     // If accesses beyond the edges of the texture repeat (rather than clamping)
     BADGPUTextureFlags_Wrapping = 16,
     BADGPUTextureFlags_Force32 = 0x7FFFFFFF
 } BADGPUTextureFlags;
+
+typedef enum BADGPUTextureFormat {
+    // A -> 111A
+    BADGPUTextureFormat_Alpha = 1,
+    // L -> LLL1
+    BADGPUTextureFormat_Luma = 2,
+    // LA -> LLLA
+    BADGPUTextureFormat_LumaAlpha = 3,
+    // RGB -> RGB1
+    BADGPUTextureFormat_RGB = 4,
+    // RGBA -> RGBA
+    BADGPUTextureFormat_RGBA = 5,
+    BADGPUTextureFormat_Force32 = 0x7FFFFFFF
+} BADGPUTextureFormat;
 
 /*
  * Session Flags
@@ -320,8 +331,9 @@ typedef enum BADGPUBlendWeight {
 
 /*
  * References a BadGPU object.
+ * Returns what it was given.
  */
-BADGPU_EXPORT void badgpuRef(BADGPUObject obj);
+BADGPU_EXPORT BADGPUObject badgpuRef(BADGPUObject obj);
 
 /*
  * Unreferences a BadGPU object.
@@ -362,12 +374,13 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error);
  * The flags are BADGPUNewTextureFlags.
  * Mipmaps are automatically created if the texture is mipmapped.
  * Data can be supplied as a flat array of bytes.
- * This array of bytes is made either of 3-byte RGB groups,
- *  or 4-byte RGBA groups, depending on if the alpha flag is set.
+ * The size and layout of each pixel in the array of bytes is specified by
+ *  the format.
  * If NULL is passed as the data, then the texture contents are undefined.
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, uint16_t width, uint16_t height, const uint8_t * data);
+    uint32_t flags, BADGPUTextureFormat format,
+    uint16_t width, uint16_t height, const uint8_t * data);
 
 /*
  * Creates a depth/stencil buffer.
@@ -410,7 +423,7 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
 #define BADGPU_SESSIONFLAGS \
     BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, \
     uint32_t sFlags, uint8_t sStencilMask, \
-    int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
+    int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight
 
 /*
  * Performs a clear.
@@ -419,7 +432,7 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
  * However, otherwise, buffers may not be present.
  */
 BADGPU_EXPORT void badgpuDrawClear(
-    BADGPU_SESSIONFLAGS
+    BADGPU_SESSIONFLAGS,
     float cR, float cG, float cB, float cA, float depth, uint8_t stencil
 );
 
@@ -450,7 +463,7 @@ BADGPU_EXPORT void badgpuDrawClear(
  *  situations with the stencil test.
  */
 BADGPU_EXPORT void badgpuDrawGeom(
-    BADGPU_SESSIONFLAGS
+    BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
     const BADGPUVertex * vertex, BADGPUPrimitiveType pType,
@@ -476,5 +489,8 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
 );
+
+#undef BADGPU_SESSIONFLAGS
+
 #endif
 
