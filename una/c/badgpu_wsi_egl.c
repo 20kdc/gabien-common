@@ -9,11 +9,6 @@
 
 // WSICTX
 struct BADGPUWSICtx {
-#ifdef WIN32
-    HWND window;
-    HDC hdc;
-    HGLRC ctx;
-#else
     void * eglLibrary;
     void * dsp;
     void * ctx;
@@ -25,7 +20,6 @@ struct BADGPUWSICtx {
     unsigned int (KHRABI *eglMakeCurrent)(void *, void *, void *, void *);
     unsigned int (KHRABI *eglDestroyContext)(void *, void *);
     unsigned int (KHRABI *eglTerminate)(void *);
-#endif
 };
 
 static BADGPUWSICtx badgpu_newWsiCtxError(char ** error, const char * err) {
@@ -39,38 +33,6 @@ BADGPUWSICtx badgpu_newWsiCtx(char ** error) {
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
-#ifdef WIN32
-    WNDCLASS wc = {
-        .lpfnWndProc = DefWindowProcA,
-        .hInstance = GetModuleHandleA(NULL),
-        .hbrBackground = (HBRUSH) (COLOR_BACKGROUND),
-        .lpszClassName = "gabien_una_gl_window",
-        .style = CS_OWNDC
-    };
-    RegisterClass(&wc);
-    ctx->hwnd = CreateWindowA("gabien_una_gl_window", "una", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 256, 256, 0, 0, GetModuleHandleA(NULL), 0);
-    if (!ctx->hwnd)
-        return badgpu_newWsiCtxError(error, "Could not create working window");
-    ctx->hdc = GetDC(ctx->hwnd);
-    PIXELFORMATDESCRIPTOR pfd = {
-        .nSize = sizeof(PIXELFORMATDESCRIPTOR),
-        .nVersion = 1,
-        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL,
-        .iPixelType = PFD_TYPE_RGBA,
-        .cColorBits = 32,
-        .cDepthBits = 24,
-        .cStencilBits = 8,
-        .iLayerType = PFD_MAIN_PLANE
-    };
-    int pixFmt = ChoosePixelFormat(ctx->hdc, &pfd);
-    SetPixelFormat(ctx->hdc, pixFmt, &pfd);
-    ctx->ctx = wglCreateContext(ctx->hdc);
-    if (!ctx->ctx)
-        return badgpu_newWsiCtxError(error, "Could not create GL context");
-    // Done, now make it current!
-    wglMakeCurrent(ctx->hdc, ctx->ctx);
-    return ctx;
-#else
     // Can't guarantee a link to EGL, so we have to do it the *hard* way
     ctx->eglLibrary = dlopen("libEGL.so.1", 2);
     if (!ctx->eglLibrary)
@@ -105,41 +67,25 @@ BADGPUWSICtx badgpu_newWsiCtx(char ** error) {
     if (!ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx))
         return badgpu_newWsiCtxError(error, "Failed initial eglMakeCurrent");
     return ctx;
-#endif
 }
 
 void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
-#ifdef WIN32
-    wglMakeCurrent(ctx->hdc, ctx->ctx);
-#else
     ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx);
-#endif
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
-#ifdef WIN32
-    return wglGetProcAddress(proc);
-#else
     return ctx->eglGetProcAddress(proc);
-#endif
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (!ctx)
         return;
-#ifdef WIN32
-    if (ctx->ctx)
-        wglDeleteContext(ctx->ctx);
-    if (ctx->hwnd)
-        DestroyWindow(ctx->window);
-#else
     if (ctx->ctx)
         ctx->eglDestroyContext(ctx->dsp, ctx->ctx);
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
     if (ctx->eglLibrary)
         dlclose(ctx->eglLibrary);
-#endif
     free(ctx);
 }
 
