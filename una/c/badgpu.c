@@ -17,11 +17,22 @@
 #define GL_FRAMEBUFFER 0x8D40
 #define GL_RENDERBUFFER 0x8D41
 #define GL_DEPTH24_STENCIL8 0x88F0
-#define GL_UNSIGNED_BYTE 0x1401
 #define GL_COLOR_ATTACHMENT0 0x8CE0
 #define GL_DEPTH_ATTACHMENT 0x8D00
 #define GL_STENCIL_ATTACHMENT 0x8D20
 #define GL_TEXTURE_2D 0x0DE1
+
+#define GL_UNSIGNED_BYTE 0x1401
+#define GL_UNSIGNED_SHORT 0x1403
+#define GL_FLOAT 0x1406
+
+#define GL_POINTS 0x0000
+#define GL_LINES 0x0001
+#define GL_TRIANGLES 0x0004
+
+#define GL_VERTEX_ARRAY 0x8074
+#define GL_COLOR_ARRAY 0x8076
+#define GL_TEXTURE_COORD_ARRAY 0x8078
 
 #define GL_ALPHA 0x1906
 #define GL_RGB 0x1907
@@ -29,11 +40,40 @@
 #define GL_LUMINANCE 0x1909
 #define GL_LUMINANCE_ALPHA 0x190A
 
+#define GL_ALPHA_TEST 0x0BC0
+#define GL_STENCIL_TEST 0x0B90
+#define GL_DEPTH_TEST 0x0B71
 #define GL_SCISSOR_TEST 0x0C11
+#define GL_CULL_FACE 0x0B44
+
+#define GL_FRONT 0x0404
+#define GL_BACK 0x0405
 
 #define GL_DEPTH_BUFFER_BIT 0x00000100
 #define GL_STENCIL_BUFFER_BIT 0x00000400
 #define GL_COLOR_BUFFER_BIT 0x00004000
+
+#define GL_NEAREST 0x2600
+#define GL_LINEAR 0x2601
+#define GL_NEAREST_MIPMAP_NEAREST 0x2700
+#define GL_LINEAR_MIPMAP_LINEAR 0x2703
+#define GL_REPEAT 0x2901
+#define GL_CLAMP_TO_EDGE 0x812F
+#define GL_TEXTURE_MAG_FILTER 0x2800
+#define GL_TEXTURE_MIN_FILTER 0x2801
+#define GL_TEXTURE_WRAP_S 0x2802
+#define GL_TEXTURE_WRAP_T 0x2803
+
+#define GL_MODELVIEW 0x1700
+#define GL_PROJECTION 0x1701
+#define GL_TEXTURE 0x1702
+
+#define GL_POLYGON_OFFSET_FILL 0x8037
+
+#define GL_BLEND 0x0BE2
+
+#define GL_CW 0x0900
+#define GL_CCW 0x0901
 
 // Types
 
@@ -58,13 +98,35 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glColorMask)(unsigned char, unsigned char, unsigned char, unsigned char);
     void (KHRABI *glDepthMask)(unsigned char);
     void (KHRABI *glScissor)(int32_t, int32_t, int32_t, int32_t);
+    void (KHRABI *glViewport)(int32_t, int32_t, int32_t, int32_t);
     void (KHRABI *glClearColor)(float, float, float, float);
     void (KHRABI *glClearDepthf)(float);
+    void (KHRABI *glDepthRangef)(float, float);
+    void (KHRABI *glPolygonOffset)(float, float);
+    void (KHRABI *glPointSize)(float);
+    void (KHRABI *glLineWidth)(float);
     void (KHRABI *glClearStencil)(int32_t);
     void (KHRABI *glClear)(int32_t);
     void (KHRABI *glReadPixels)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, void *);
     void (KHRABI *glBindTexture)(int32_t, uint32_t);
     void (KHRABI *glTexImage2D)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, const void *);
+    void (KHRABI *glTexParameteri)(int32_t, int32_t, int32_t);
+    void (KHRABI *glDrawArrays)(int32_t, int32_t, int32_t);
+    void (KHRABI *glDrawElements)(int32_t, int32_t, int32_t, const void *);
+    void (KHRABI *glVertexPointer)(int32_t, int32_t, int32_t, const void *);
+    void (KHRABI *glColorPointer)(int32_t, int32_t, int32_t, const void *);
+    void (KHRABI *glTexCoordPointer)(int32_t, int32_t, int32_t, const void *);
+    void (KHRABI *glMatrixMode)(int32_t);
+    void (KHRABI *glLoadMatrixf)(const float *);
+    void (KHRABI *glLoadIdentity)();
+    void (KHRABI *glAlphaFunc)(int32_t, float);
+    void (KHRABI *glFrontFace)(int32_t);
+    void (KHRABI *glCullFace)(int32_t);
+    void (KHRABI *glDepthFunc)(int32_t);
+    void (KHRABI *glStencilFunc)(int32_t, int32_t, int32_t);
+    void (KHRABI *glStencilOp)(int32_t, int32_t, int32_t);
+    void (KHRABI *glBlendFuncSeparate)(int32_t, int32_t, int32_t, int32_t);
+    void (KHRABI *glBlendEquationSeparate)(int32_t, int32_t);
     // Desktop/Non-Desktop variable area
     void (KHRABI *glGenFramebuffers)(int32_t, uint32_t *);
     void (KHRABI *glDeleteFramebuffers)(int32_t, uint32_t *);
@@ -162,13 +224,35 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
     bi->glColorMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColorMask");
     bi->glDepthMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthMask");
     bi->glScissor = badgpu_wsiCtxGetProcAddress(bi->ctx, "glScissor");
+    bi->glViewport = badgpu_wsiCtxGetProcAddress(bi->ctx, "glViewport");
     bi->glClearColor = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearColor");
     bi->glClearDepthf = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearDepthf");
+    bi->glDepthRangef = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthRangef");
+    bi->glPolygonOffset = badgpu_wsiCtxGetProcAddress(bi->ctx, "glPolygonOffset");
+    bi->glPointSize = badgpu_wsiCtxGetProcAddress(bi->ctx, "glPointSize");
+    bi->glLineWidth = badgpu_wsiCtxGetProcAddress(bi->ctx, "glLineWidth");
     bi->glClearStencil = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearStencil");
     bi->glClear = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClear");
     bi->glReadPixels = badgpu_wsiCtxGetProcAddress(bi->ctx, "glReadPixels");
     bi->glBindTexture = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindTexture");
     bi->glTexImage2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexImage2D");
+    bi->glTexParameteri = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexParameteri");
+    bi->glDrawArrays = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDrawArrays");
+    bi->glDrawElements = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDrawElements");
+    bi->glVertexPointer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glVertexPointer");
+    bi->glColorPointer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColorPointer");
+    bi->glTexCoordPointer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexCoordPointer");
+    bi->glMatrixMode = badgpu_wsiCtxGetProcAddress(bi->ctx, "glMatrixMode");
+    bi->glLoadMatrixf = badgpu_wsiCtxGetProcAddress(bi->ctx, "glLoadMatrixf");
+    bi->glLoadIdentity = badgpu_wsiCtxGetProcAddress(bi->ctx, "glLoadIdentity");
+    bi->glAlphaFunc = badgpu_wsiCtxGetProcAddress(bi->ctx, "glAlphaFunc");
+    bi->glFrontFace = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFrontFace");
+    bi->glCullFace = badgpu_wsiCtxGetProcAddress(bi->ctx, "glCullFace");
+    bi->glDepthFunc = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthFunc");
+    bi->glStencilFunc = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilFunc");
+    bi->glStencilOp = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilOp");
+    bi->glBlendFuncSeparate = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBlendFuncSeparate");
+    bi->glBlendEquationSeparate = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBlendEquationSeparate");
     if (desktopExt) {
         bi->glGenFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenFramebuffersEXT");
         bi->glDeleteFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteFramebuffersEXT");
@@ -264,7 +348,16 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
     bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, ifmt, GL_UNSIGNED_BYTE, data);
 
-    // TODO: Parameterize the texture
+    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flags & BADGPUTextureFlags_WrapS ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, flags & BADGPUTextureFlags_WrapT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+
+    int32_t minFilter = ((flags & BADGPUTextureFlags_Mipmap) ?
+        ((flags & BADGPUTextureFlags_MinLinear) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+        :
+        ((flags & BADGPUTextureFlags_MinLinear) ? GL_LINEAR : GL_NEAREST)
+    );
+    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, flags & BADGPUTextureFlags_MagLinear ? GL_LINEAR : GL_NEAREST);
 
     badgpuChk(bi, "badgpuNewTexture");
     return (BADGPUTexture) tex;
@@ -368,7 +461,7 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVertex * vertex, BADGPUPrimitiveType pType,
+    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
@@ -377,7 +470,7 @@ BADGPU_EXPORT void badgpuDrawGeom(
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
-    BADGPUTexture texture,
+    BADGPUTexture texture, const BADGPUMatrix * matrixT,
     // PolygonOffset
     float poFactor, float poUnits,
     // Alpha Test
@@ -394,6 +487,140 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPUInstancePriv * bi;
     if (drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
         return;
-    // TODO: Everything
+
+    // Vertex Shader
+    bi->glMatrixMode(GL_PROJECTION);
+    if (!matrixA) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixA);
+    bi->glMatrixMode(GL_MODELVIEW);
+    if (!matrixB) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixB);
+
+    // DepthRange/Viewport
+    bi->glDepthRangef(depthN, depthF);
+    bi->glViewport(vX, vY, vW, vH);
+
+    // Fragment Shader
+    if (texture) {
+        bi->glEnable(GL_TEXTURE_2D);
+        bi->glBindTexture(GL_TEXTURE_2D, BG_TEXTURE(texture)->tex);
+        bi->glMatrixMode(GL_TEXTURE);
+        if (!matrixT) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixT);
+    } else {
+        bi->glDisable(GL_TEXTURE_2D);
+    }
+
+    // PolygonOffset
+    bi->glEnable(GL_POLYGON_OFFSET_FILL);
+    bi->glPolygonOffset(poFactor, poUnits);
+
+    // Alpha Test
+    bi->glEnable(GL_ALPHA_TEST);
+    bi->glAlphaFunc(flags & BADGPUDrawFlags_AlphaTestInvert ? BADGPUCompare_Less : BADGPUCompare_GEqual, alphaTestMin);
+
+    // Stencil Test
+    if (flags & BADGPUDrawFlags_StencilTest) {
+        bi->glEnable(GL_STENCIL_TEST);
+        // no conversion as values deliberately match
+        bi->glStencilFunc(stFunc, stRef, stMask);
+        bi->glStencilOp(stSF, stDF, stDP);
+    } else {
+        bi->glDisable(GL_STENCIL_TEST);
+    }
+
+    // Depth Test
+    if (flags & BADGPUDrawFlags_DepthTest) {
+        bi->glEnable(GL_DEPTH_TEST);
+        // no conversion as values deliberately match
+        bi->glDepthFunc(dtFunc);
+    } else {
+        bi->glDisable(GL_DEPTH_TEST);
+    }
+
+    // Misc. Flags Stuff
+    bi->glFrontFace(flags & BADGPUDrawFlags_FrontFaceCW ? GL_CW : GL_CCW);
+
+    if (flags & BADGPUDrawFlags_CullFace) {
+        bi->glEnable(GL_CULL_FACE);
+        bi->glCullFace(flags & BADGPUDrawFlags_CullFaceFront ? GL_FRONT : GL_BACK);
+    } else {
+        bi->glDisable(GL_CULL_FACE);
+    }
+
+    // Blending
+    if (flags & BADGPUDrawFlags_Blend) {
+        bi->glEnable(GL_BLEND);
+        // no conversion as values deliberately match
+        bi->glBlendFuncSeparate(bwRGBS, bwRGBD, bwAS, bwAD);
+        bi->glBlendEquationSeparate(beRGB, beA);
+    } else {
+        bi->glDisable(GL_BLEND);
+    }
+
+    int32_t mode = GL_TRIANGLES;
+    switch (pType) {
+    case BADGPUPrimitiveType_Points: mode = GL_POINTS; break;
+    case BADGPUPrimitiveType_Lines: mode = GL_LINES; break;
+    case BADGPUPrimitiveType_Triangles: mode = GL_TRIANGLES; break;
+    }
+
+    if (mode == GL_POINTS) {
+        bi->glPointSize(plSize);
+    } else if (mode == GL_LINES) {
+        bi->glLineWidth(plSize);
+    }
+
+    bi->glEnableClientState(GL_VERTEX_ARRAY);
+    bi->glVertexPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->x);
+    bi->glEnableClientState(GL_COLOR_ARRAY);
+    bi->glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(BADGPUVertex), &vertex->cR);
+    bi->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    bi->glTexCoordPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->tS);
+
+    if (indices) {
+        bi->glDrawElements(mode, iCount, GL_UNSIGNED_SHORT, indices + iStart);
+    } else {
+        bi->glDrawArrays(mode, iStart, iCount);
+    }
+    badgpuChk(bi, "badgpuDrawGeom");
+}
+
+BADGPU_EXPORT void badgpuDrawGeomNoDS(
+    BADGPUTexture sTexture,
+    uint32_t sFlags,
+    int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
+    uint32_t flags,
+    // Vertex Loader
+    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
+    uint32_t iStart, uint32_t iCount, const uint16_t * indices,
+    // Vertex Shader
+    const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
+    // Viewport
+    int32_t vX, int32_t vY, int32_t vW, int32_t vH,
+    // Fragment Shader
+    BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    // Alpha Test
+    float alphaTestMin,
+    // Blending
+    BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
+    BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
+) {
+    badgpuDrawGeom(
+    sTexture, NULL,
+    sFlags,
+    sScX, sScY, sScWidth, sScHeight,
+    flags,
+    vertex, pType, plSize,
+    iStart, iCount, indices,
+    matrixA, matrixB,
+    0, 0,
+    vX, vY, vW, vH,
+    texture, matrixT,
+    0, 0,
+    alphaTestMin,
+    BADGPUCompare_Always, 0, 0,
+    BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Keep,
+    BADGPUCompare_Always,
+    bwRGBS, bwRGBD, beRGB,
+    bwAS, bwAD, beA
+    );
 }
 

@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.04
+ * API Specification Version: 0.05
  */
 
 #ifndef BADGPU_H_
@@ -61,7 +61,8 @@
  *      attribute vec4 vertex;
  *      (Rationale: Software TnL, possible interesting effects.)
  *      attribute vec4 colour;
- *      attribute vec2 texCoord;
+ *      attribute vec4 texCoord;
+ *      (Rationale: Interesting possibilities for texCoord-accelerated anim.)
  *     This format is packed (see BADGPUVertex).
  *     The vertex is transformed by two mat4 uniforms.
  *     These are modelview and projection.
@@ -148,9 +149,9 @@ typedef struct BADGPUVector {
 } BADGPUVector;
 
 typedef struct BADGPUVertex {
-    BADGPUVector x, y, z, w;
+    float x, y, z, w;
     uint8_t cR, cG, cB, cA;
-    float tU, tV;
+    float tS, tT, tU, tV;
 } BADGPUVertex;
 
 /*
@@ -187,7 +188,8 @@ typedef enum BADGPUTextureFlags {
     // If mipmapping is used.
     BADGPUTextureFlags_Mipmap = 4,
     // If accesses beyond the edges of the texture repeat (rather than clamping)
-    BADGPUTextureFlags_Wrapping = 16,
+    BADGPUTextureFlags_WrapS = 16,
+    BADGPUTextureFlags_WrapT = 32,
     BADGPUTextureFlags_Force32 = 0x7FFFFFFF
 } BADGPUTextureFlags;
 
@@ -266,71 +268,89 @@ typedef enum BADGPUPrimitiveType {
 
 /*
  * Comparison Function
+ * Values deliberately match glDepthFunc etc.
+ * The implementation may make use of such.
+ * Users should not abuse this.
  */
 typedef enum BADGPUCompare {
-    BADGPUCompare_Never = 0,
-    BADGPUCompare_Always = 1,
-    BADGPUCompare_Less = 2,
-    BADGPUCompare_LEqual = 3,
-    BADGPUCompare_Equal = 4,
-    BADGPUCompare_Greater = 5,
-    BADGPUCompare_GEqual = 6,
-    BADGPUCompare_NotEqual = 7,
+    BADGPUCompare_Never = 0x0200,
+    BADGPUCompare_Always = 0x0207,
+    BADGPUCompare_Less = 0x0201,
+    BADGPUCompare_LEqual = 0x0203,
+    BADGPUCompare_Equal = 0x0202,
+    BADGPUCompare_Greater = 0x0204,
+    BADGPUCompare_GEqual = 0x0206,
+    BADGPUCompare_NotEqual = 0x0205,
     BADGPUCompare_Force32 = 0x7FFFFFFF
 } BADGPUCompare;
 
 /*
  * Stencil Op
+ * Values deliberately match glStencilOp.
+ * The implementation may make use of such.
+ * Users should not abuse this.
  */
 typedef enum BADGPUStencilOp {
-    BADGPUStencilOp_Keep = 0,
-    BADGPUStencilOp_Zero = 1,
-    BADGPUStencilOp_Replace = 2,
-    BADGPUStencilOp_Inc = 3,
-    BADGPUStencilOp_Dec = 4,
-    BADGPUStencilOp_Invert = 5,
+    // GL_KEEP
+    BADGPUStencilOp_Keep = 0x1E00,
+    // GL_ZERO
+    BADGPUStencilOp_Zero = 0,
+    // GL_REPLACE
+    BADGPUStencilOp_Replace = 0x1E01,
+    // GL_INCR
+    BADGPUStencilOp_Inc = 0x1E02,
+    // GL_DECR
+    BADGPUStencilOp_Dec = 0x1E03,
+    // GL_INVERT
+    BADGPUStencilOp_Invert = 0x150A,
     BADGPUStencilOp_Force32 = 0x7FFFFFFF
 } BADGPUStencilOp;
 
 /*
  * Blend Equation
+ * Values deliberately match glBlendEquationSeparate.
+ * The implementation may make use of such.
+ * Users should not abuse this.
  */
 typedef enum BADGPUBlendEquation {
-    // S + D
-    BADGPUBlendEquation_Add = 0,
-    // S - D
-    BADGPUBlendEquation_Sub = 1,
-    // D - S
-    BADGPUBlendEquation_ReverseSub = 2,
+    // GL_FUNC_ADD: S + D
+    BADGPUBlendEquation_Add = 0x8006,
+    // GL_FUNC_SUBTRACT: S - D
+    BADGPUBlendEquation_Sub = 0x800A,
+    // GL_FUNC_REVERSE_SUBTRACT: D - S
+    BADGPUBlendEquation_ReverseSub = 0x800B,
     BADGPUBlendEquation_Force32 = 0x7FFFFFFF
 } BADGPUBlendEquation;
 
 /*
- * Blend Equation
+ * Blend Weight
+ * Values deliberately match glBlendFuncSeparate.
+ * The implementation may make use of such.
+ * Users should not abuse this.
  */
 typedef enum BADGPUBlendWeight {
-    // 0
+    // GL_ZERO: 0
     BADGPUBlendWeight_Zero = 0,
-    // 1
+    // GL_ONE: 1
     BADGPUBlendWeight_One = 1,
-    // Sc
-    BADGPUBlendWeight_Src = 2,
-    // 1 - Sc
-    BADGPUBlendWeight_InvertSrc = 3,
-    // Dc
-    BADGPUBlendWeight_Dst = 4,
-    // 1 - Dc
-    BADGPUBlendWeight_InvertDst = 5,
-    // Sa
-    BADGPUBlendWeight_SrcA = 6,
-    // 1 - Sa
-    BADGPUBlendWeight_InvertSrcA = 7,
-    // Da
-    BADGPUBlendWeight_DstA = 8,
-    // 1 - Da
-    BADGPUBlendWeight_InvertDstA = 9,
-    // min(Sa, 1 - Da) ; except for A output where it's just 1.
-    BADGPUBlendWeight_SrcAlphaSaturate = 10,
+    // GL_SRC_COLOR: Sc
+    BADGPUBlendWeight_Src = 0x300,
+    // GL_ONE_MINUS_SRC_COLOR: 1 - Sc
+    BADGPUBlendWeight_InvertSrc = 0x301,
+    // GL_DST_COLOR: Dc
+    BADGPUBlendWeight_Dst = 0x306,
+    // GL_ONE_MINUS_DST_COLOR: 1 - Dc
+    BADGPUBlendWeight_InvertDst = 0x307,
+    // GL_SRC_ALPHA: Sa
+    BADGPUBlendWeight_SrcA = 0x0302,
+    // GL_ONE_MINUS_SRC_ALPHA: 1 - Sa
+    BADGPUBlendWeight_InvertSrcA = 0x303,
+    // GL_DST_ALPHA: Da
+    BADGPUBlendWeight_DstA = 0x304,
+    // GL_ONE_MINUS_DST_ALPHA: 1 - Da
+    BADGPUBlendWeight_InvertDstA = 0x305,
+    // GL_SRC_ALPHA_SATURATE: min(Sa, 1 - Da) ; except for A output where it's just 1.
+    BADGPUBlendWeight_SrcAlphaSaturate = 0x308,
     BADGPUBlendWeight_Force32 = 0x7FFFFFFF
 } BADGPUBlendWeight;
 
@@ -455,17 +475,18 @@ BADGPU_EXPORT void badgpuDrawClear(
  * Performs a drawing command.
  * The flags provided are BADGPUDrawFlags.
  *
- * iStart and iCount represent ranges in the indices array, which in turn are
+ * iStart and iCount represent a range in the indices array, which in turn are
  *  indices into the vertex array.
  * If indices is null, then it is essentially as if an array was passed with
  *  values 0 to 65535.
- * matrixA and matrixB can be null, in which case they are effectively identity.
+ * matrix* can be null, in which case they are effectively identity.
  * Otherwise, see BADGPUMatrix.
  * depthN, depthF make up the depth range (0, 1 is a good default).
  * vX, vY, vW, vH make up the viewport.
  *
  * texture is multiplied with the vertex colours.
  * (If null, then the vertex colours are used as-is.)
+ * The texture coordinates are multiplied with the texture coordinate matrix.
  * poFactor, poUnits make up the polygon offset.
  * alphaTestMin specifies a minimum alpha.
  * (Or a maximum, if AlphaTestInvert is set.)
@@ -481,7 +502,7 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVertex * vertex, BADGPUPrimitiveType pType,
+    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
@@ -490,7 +511,7 @@ BADGPU_EXPORT void badgpuDrawGeom(
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
-    BADGPUTexture texture,
+    BADGPUTexture texture, const BADGPUMatrix * matrixT,
     // PolygonOffset
     float poFactor, float poUnits,
     // Alpha Test
@@ -500,6 +521,32 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
     // Depth Test
     BADGPUCompare dtFunc,
+    // Blending
+    BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
+    BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
+);
+
+/*
+ * Alias for badgpuDrawGeom that removes parameters only useful with a DSBuffer.
+ * This is solely a convenience wrapper which provides zeros.
+ * It is not an optimization.
+ */
+BADGPU_EXPORT void badgpuDrawGeomNoDS(
+    BADGPUTexture sTexture,
+    uint32_t sFlags,
+    int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
+    uint32_t flags,
+    // Vertex Loader
+    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
+    uint32_t iStart, uint32_t iCount, const uint16_t * indices,
+    // Vertex Shader
+    const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
+    // Viewport
+    int32_t vX, int32_t vY, int32_t vW, int32_t vH,
+    // Fragment Shader
+    BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    // Alpha Test
+    float alphaTestMin,
     // Blending
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA

@@ -13,6 +13,13 @@ void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h);
 #define T_WIDTH 320
 #define T_HEIGHT 200
 
+#define L_WIDTH 8
+#define L_HEIGHT 8
+
+void renderFlagMain(BADGPUTexture tex, int w, int h);
+
+void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h);
+
 int main() {
     char * error;
     BADGPUInstance bi = badgpuNewInstance(BADGPUNewInstanceFlags_Debug, &error);
@@ -21,18 +28,28 @@ int main() {
         return 1;
     }
 
-    // Make a texture to render to!
-    BADGPUTexture tex = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, T_WIDTH, T_HEIGHT, NULL);
+    // Make a little texture to render to!
+    BADGPUTexture tex = badgpuNewTexture(bi, BADGPUTextureFlags_MagLinear, BADGPUTextureFormat_RGB, L_WIDTH, L_HEIGHT, NULL);
 
-    // Render to it!
-    badgpuDrawClear(tex, NULL, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
-    255, 0, 255, 255, 0, 0);
+    renderFlagMain(tex, L_WIDTH, L_HEIGHT);
+
+    // Make a SECOND texture to render to!
+    BADGPUTexture tex2 = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, T_WIDTH, T_HEIGHT, NULL);
+
+    // And render to that.
+    renderFlagMain(tex2, T_WIDTH, T_HEIGHT);
+
+    renderTex2Tex(tex2, tex, T_WIDTH / 2, T_HEIGHT / 2);
 
     // Save the output.
-    writeQOIFromTex(tex, T_WIDTH, T_HEIGHT);
+    writeQOIFromTex(tex2, T_WIDTH, T_HEIGHT);
 
     if (!badgpuUnref(tex)) {
-        puts("hanging references: BADGPUTexture");
+        puts("hanging references: BADGPUTexture 1");
+        return 1;
+    }
+    if (!badgpuUnref(tex2)) {
+        puts("hanging references: BADGPUTexture 2");
         return 1;
     }
     if (!badgpuUnref(bi)) {
@@ -40,6 +57,100 @@ int main() {
         return 1;
     }
     return 0;
+}
+
+void renderFlagMain(BADGPUTexture tex, int w, int h) {
+    // Render to it!
+    badgpuDrawClear(tex, NULL, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+    255, 0, 255, 255, 0, 0);
+
+#define COL(v) (((v) >> 16) & 0xFF), (((v) >> 8) & 0xFF), ((v) & 0xFF), (((v) >> 24) & 0xFF)
+#define M 0.3333
+    BADGPUVertex vertices[] = {
+        {-1,  1, 0, 1, COL(0xff218c), 0, 0, 0, 1},
+        { 1,  1, 0, 1, COL(0xff218c), 0, 0, 0, 1},
+        { 1,  M, 0, 1, COL(0xff218c), 0, 0, 0, 1},
+        {-1,  M, 0, 1, COL(0xff218c), 0, 0, 0, 1},
+        {-1,  M, 0, 1, COL(0xffd800), 0, 0, 0, 1},
+        { 1,  M, 0, 1, COL(0xffd800), 0, 0, 0, 1},
+        { 1, -M, 0, 1, COL(0xffd800), 0, 0, 0, 1},
+        {-1, -M, 0, 1, COL(0xffd800), 0, 0, 0, 1},
+        {-1, -M, 0, 1, COL(0x21b1ff), 0, 0, 0, 1},
+        { 1, -M, 0, 1, COL(0x21b1ff), 0, 0, 0, 1},
+        { 1, -1, 0, 1, COL(0x21b1ff), 0, 0, 0, 1},
+        {-1, -1, 0, 1, COL(0x21b1ff), 0, 0, 0, 1}
+    };
+    uint16_t indices[] = {
+        0, 1, 2, 0, 2, 3,
+        4, 5, 6, 4, 6, 7,
+        8, 9, 10, 8, 10, 11
+    };
+    // Matrix to invert vertically.
+    // If this *isn't* active, the result is the wrong way up.
+    BADGPUMatrix matrix = {
+        {1, 0, 0, 0},
+        {0, -1, 0, 0},
+        {0, 0, 1, 0},
+        {0, 0, 0, 1}
+    };
+    badgpuDrawGeomNoDS(
+        tex, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+        0,
+        // Vertex Loader
+        vertices, BADGPUPrimitiveType_Triangles, 1,
+        0, 18, indices,
+        // Vertex Shader
+        &matrix, NULL,
+        // Viewport
+        0, 0, w, h,
+        // Fragment Shader
+        NULL, NULL,
+        // Alpha Test
+        0,
+        // Blending
+        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add,
+        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add
+    );
+}
+
+void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
+    // Mesh to test texture coordinates and colour+texture combo
+    BADGPUVertex vertices[] = {
+        {-1,  1, 0, 1, 0x80, 0xFF, 0x80, 0xFF, 0, 0, 0, 1},
+        { 1,  1, 0, 1, 0x80, 0x80, 0xFF, 0xFF, 1, 0, 0, 1},
+        { 1, -1, 0, 1, 0x80, 0x80, 0x80, 0xFF, 1, 1, 0, 1},
+
+        {-1,  1, 0, 1, 0x80, 0xFF, 0x80, 0xFF, 0, 0, 0, 1},
+        { 1, -1, 0, 1, 0x80, 0x80, 0x80, 0xFF, 1, 1, 0, 1},
+        {-1, -1, 0, 1, 0xFF, 0x80, 0x80, 0xFF, 0, 1, 0, 1}
+    };
+    // Matrix to test texture matrices.
+    // If this *isn't* active, the result is the wrong way up and NOT skewed.
+    // (It's intentionally skewed)
+    BADGPUMatrix matrix = {
+        {1, 0.5, 0, 0},
+        {0, -1, 0, 0},
+        {0, 0, 1, 0},
+        {0, 0.75, 0, 1}
+    };
+    badgpuDrawGeomNoDS(
+        texDst, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+        0,
+        // Vertex Loader
+        vertices, BADGPUPrimitiveType_Triangles, 1,
+        0, 6, NULL,
+        // Vertex Shader
+        NULL, NULL,
+        // Viewport
+        0, 0, w, h,
+        // Fragment Shader
+        texSrc, &matrix,
+        // Alpha Test
+        0,
+        // Blending
+        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add,
+        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add
+    );
 }
 
 void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba);
