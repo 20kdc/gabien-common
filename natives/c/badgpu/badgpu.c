@@ -293,7 +293,7 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
 
 // FBM
 
-static int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi) {
+static inline int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(sTexture);
     BADGPUDSBufferPriv * sDS = BG_DSBUFFER(sDSBuffer);
     if (sTex)
@@ -336,6 +336,19 @@ static void destroyTexture(BADGPUObject obj) {
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     uint32_t flags, BADGPUTextureFormat format,
     uint16_t width, uint16_t height, const uint8_t * data) {
+
+    // Do this conversion first, it's relevant to memory safety.
+    int32_t ifmt = 0;
+    switch (format) {
+    case BADGPUTextureFormat_Alpha: ifmt = GL_ALPHA; break;
+    case BADGPUTextureFormat_Luma: ifmt = GL_LUMINANCE; break;
+    case BADGPUTextureFormat_LumaAlpha: ifmt = GL_LUMINANCE_ALPHA; break;
+    case BADGPUTextureFormat_RGB: ifmt = GL_RGB; break;
+    case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA; break;
+    default: return 0;
+    }
+
+    // Continue.
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     badgpu_wsiCtxMakeCurrent(bi->ctx);
 
@@ -346,15 +359,6 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
 
     tex->i = BG_INSTANCE(badgpuRef(instance));
     bi->glGenTextures(1, &tex->tex);
-
-    int32_t ifmt = GL_LUMINANCE;
-    switch (format) {
-    case BADGPUTextureFormat_Alpha: ifmt = GL_ALPHA; break;
-    case BADGPUTextureFormat_Luma: ifmt = GL_LUMINANCE; break;
-    case BADGPUTextureFormat_LumaAlpha: ifmt = GL_LUMINANCE_ALPHA; break;
-    case BADGPUTextureFormat_RGB: ifmt = GL_RGB; break;
-    case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA;
-    }
 
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
     bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, ifmt, GL_UNSIGNED_BYTE, data);
@@ -369,6 +373,9 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     );
     bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, flags & BADGPUTextureFlags_MagLinear ? GL_LINEAR : GL_NEAREST);
+
+    if (flags & BADGPUTextureFlags_Mipmap)
+        bi->glGenerateMipmap(GL_TEXTURE_2D);
 
     badgpuChk(bi, "badgpuNewTexture");
     return (BADGPUTexture) tex;
@@ -421,20 +428,23 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
 
 // Drawing Commands
 
-static int drawingCmdSetup(
+static inline int drawingCmdSetup(
     BADGPU_SESSIONFLAGS,
     BADGPUInstancePriv ** bi
 ) {
     if (fbSetup(sTexture, sDSBuffer, bi))
         return 1;
-    (*bi)->glStencilMask(sFlags & BADGPUSessionFlags_StencilAll);
     (*bi)->glColorMask(
         sFlags & BADGPUSessionFlags_MaskR ? 1 : 0,
         sFlags & BADGPUSessionFlags_MaskG ? 1 : 0,
         sFlags & BADGPUSessionFlags_MaskB ? 1 : 0,
         sFlags & BADGPUSessionFlags_MaskA ? 1 : 0
     );
-    (*bi)->glDepthMask(sFlags & BADGPUSessionFlags_MaskDepth ? 1 : 0);
+    // OPT: If we don't have a DSBuffer we don't need to setup the mask for it.
+    if (sDSBuffer) {
+        (*bi)->glStencilMask(sFlags & BADGPUSessionFlags_StencilAll);
+        (*bi)->glDepthMask(sFlags & BADGPUSessionFlags_MaskDepth ? 1 : 0);
+    }
     if (sFlags & BADGPUSessionFlags_Scissor) {
         (*bi)->glEnable(GL_SCISSOR_TEST);
         (*bi)->glScissor(sScX, sScY, sScWidth, sScHeight);
@@ -446,23 +456,26 @@ static int drawingCmdSetup(
 
 BADGPU_EXPORT void badgpuDrawClear(
     BADGPU_SESSIONFLAGS,
-    uint8_t cR, uint8_t cG, uint8_t cB, uint8_t cA, float depth, uint8_t stencil
+    float cR, float cG, float cB, float cA, float depth, uint8_t stencil
 ) {
     BADGPUInstancePriv * bi;
     if (drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
         return;
     int32_t cFlags = 0;
     if (sFlags & BADGPUSessionFlags_MaskRGBA) {
-        bi->glClearColor(cR / 255.0f, cG / 255.0f, cB / 255.0f, cA / 255.0f);
+        bi->glClearColor(cR, cG, cB, cA);
         cFlags |= GL_COLOR_BUFFER_BIT;
     }
-    if (sFlags & BADGPUSessionFlags_MaskDepth) {
-        bi->glClearDepthf(depth);
-        cFlags |= GL_DEPTH_BUFFER_BIT;
-    }
-    if (sFlags & BADGPUSessionFlags_StencilAll) {
-        bi->glClearStencil(stencil);
-        cFlags |= GL_STENCIL_BUFFER_BIT;
+    // OPT: If we don't have a DSBuffer we don't need to setup the clear for it.
+    if (sDSBuffer) {
+        if (sFlags & BADGPUSessionFlags_MaskDepth) {
+            bi->glClearDepthf(depth);
+            cFlags |= GL_DEPTH_BUFFER_BIT;
+        }
+        if (sFlags & BADGPUSessionFlags_StencilAll) {
+            bi->glClearStencil(stencil);
+            cFlags |= GL_STENCIL_BUFFER_BIT;
+        }
     }
     if (cFlags)
         bi->glClear(cFlags);
@@ -507,7 +520,6 @@ BADGPU_EXPORT void badgpuDrawGeom(
     if (!matrixB) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixB);
 
     // DepthRange/Viewport
-    bi->glDepthRangef(depthN, depthF);
     bi->glViewport(vX, vY, vW, vH);
 
     // Fragment Shader
@@ -520,31 +532,39 @@ BADGPU_EXPORT void badgpuDrawGeom(
         bi->glDisable(GL_TEXTURE_2D);
     }
 
-    // PolygonOffset
-    bi->glEnable(GL_POLYGON_OFFSET_FILL);
-    bi->glPolygonOffset(poFactor, poUnits);
-
     // Alpha Test
     bi->glEnable(GL_ALPHA_TEST);
     bi->glAlphaFunc(flags & BADGPUDrawFlags_AlphaTestInvert ? BADGPUCompare_Less : BADGPUCompare_GEqual, alphaTestMin);
 
-    // Stencil Test
-    if (flags & BADGPUDrawFlags_StencilTest) {
-        bi->glEnable(GL_STENCIL_TEST);
-        // no conversion as values deliberately match
-        bi->glStencilFunc(stFunc, stRef, stMask);
-        bi->glStencilOp(stSF, stDF, stDP);
-    } else {
-        bi->glDisable(GL_STENCIL_TEST);
-    }
+    // OPT: Depth and stencil test are force-disabled by GL if we have no d/s.
+    // (ES1.1 4.1.5 Stencil Test, 4.1.6 Depth Buffer Test, last paragraph of
+    //  both)
+    // That in mind, skip anything we dare to.
+    if (sDSBuffer) {
+        bi->glDepthRangef(depthN, depthF);
 
-    // Depth Test
-    if (flags & BADGPUDrawFlags_DepthTest) {
-        bi->glEnable(GL_DEPTH_TEST);
-        // no conversion as values deliberately match
-        bi->glDepthFunc(dtFunc);
-    } else {
-        bi->glDisable(GL_DEPTH_TEST);
+        // PolygonOffset
+        bi->glEnable(GL_POLYGON_OFFSET_FILL);
+        bi->glPolygonOffset(poFactor, poUnits);
+
+        // Stencil Test
+        if (flags & BADGPUDrawFlags_StencilTest) {
+            bi->glEnable(GL_STENCIL_TEST);
+            // no conversion as values deliberately match
+            bi->glStencilFunc(stFunc, stRef, stMask);
+            bi->glStencilOp(stSF, stDF, stDP);
+        } else {
+            bi->glDisable(GL_STENCIL_TEST);
+        }
+
+        // Depth Test
+        if (flags & BADGPUDrawFlags_DepthTest) {
+            bi->glEnable(GL_DEPTH_TEST);
+            // no conversion as values deliberately match
+            bi->glDepthFunc(dtFunc);
+        } else {
+            bi->glDisable(GL_DEPTH_TEST);
+        }
     }
 
     // Misc. Flags Stuff

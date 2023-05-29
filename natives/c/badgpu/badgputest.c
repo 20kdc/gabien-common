@@ -31,6 +31,7 @@ int main() {
     printf("Vendor: %s\n", badgpuGetMetaInfo(bi, BADGPUMetaInfoType_Vendor));
     printf("Renderer: %s\n", badgpuGetMetaInfo(bi, BADGPUMetaInfoType_Renderer));
     printf("Version: %s\n", badgpuGetMetaInfo(bi, BADGPUMetaInfoType_Version));
+    // printf("Extensions: %s\n", badgpuGetMetaInfo(bi, 0x1F03));
 
     // Make a little texture to render to!
     BADGPUTexture tex = badgpuNewTexture(bi, BADGPUTextureFlags_MagLinear, BADGPUTextureFormat_RGB, L_WIDTH, L_HEIGHT, NULL);
@@ -66,7 +67,7 @@ int main() {
 void renderFlagMain(BADGPUTexture tex, int w, int h) {
     // Render to it!
     badgpuDrawClear(tex, NULL, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
-    255, 0, 255, 255, 0, 0);
+    1, 0, 1, 1, 0, 0);
 
 #define CC(v) ((v) / 255.0)
 #define COL(v) CC(((v) >> 16) & 0xFF), CC(((v) >> 8) & 0xFF), CC((v) & 0xFF), CC(((v) >> 24) & 0xFF)

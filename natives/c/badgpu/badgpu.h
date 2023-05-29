@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.07
+ * API Specification Version: 0.08
  */
 
 #ifndef BADGPU_H_
@@ -43,7 +43,8 @@
  *     EXT_blend_subtract,
  *     EXT_blend_func_separate, EXT_framebuffer_object
  * 2. OpenGL ES 1.0 Common +
- *     OES_blend_subtract, OES_framebuffer_object, OES_stencil8
+ *     OES_blend_subtract, OES_framebuffer_object, OES_stencil8,
+ *     GL_OES_texture_npot
  * 3. OpenGL ES 2.0 + shader compiler & NPOT textures
  *
  * Rationale: Complex blend functions are the reason this mess even started.
@@ -54,61 +55,8 @@
  * Features which would require complex code generation to implement in OpenGL
  *  ES 2.0 are not supported.
  *
- * As such, the pipeline looks like this, based off of the OpenGL ES 2 pipeline:
- * 1. Vertex Loading / Shader:
- *     The shader is constant.
- *     Vertices always have the following format:
- *      attribute vec4 vertex;
- *      (Rationale: Software TnL, possible interesting effects.)
- *      attribute vec4 colour;
- *      attribute vec4 texCoord;
- *      (Rationale: Interesting possibilities for texCoord-accelerated anim.)
- *     This format is split into multiple arrays for flexibility.
- *     The vertex is transformed by two mat4 uniforms.
- *     These are modelview and projection.
- * 2. Primitive Assembly:
- *     POINTS, LINES, LINE_STRIP, LINE_LOOP,
- *     TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
- *      PointSize / LineWidth (as one value)
- *      DrawElements as UNSIGNED_SHORT
- * 3. Rasterization:
- *     All attributes are smoothed.
- *     Viewport
- *     SCISSOR_TEST
- *      Scissor
- *     Multisampling/linesmooth is removed by ES2, and thus not present.
- *     FrontFace
- *     CULL_FACE
- *      CullFace
- *     POLYGON_OFFSET_FILL
- *      PolygonOffset
- * 4. Fragment Shader:
- *     There are two shaders, for if the texture is enabled or disabled.
- *     TEXTURE_2D
- *      GenTextures, DeleteTextures, BindTexture
- *      TexImage2D, TexSubImage2D, CopyTexSubImage2D
- *      GenerateMipmap
- *      The texture is multiplied with the colour.
- * 5. Blend/Alpha/Stencil:
- *     ALPHA_TEST
- *      AlphaFunc "kind of"
- *      (Rationale:
- *       Because ES2 removes the alpha test and complicating ES2 makes things
- *       Very Hard, the alpha test is always enabled with a provided threshold,
- *       and with an invert bit.
- *       This can be implemented with a multiply-add sequence on ES2.)
- *     STENCIL_TEST
- *      StencilFunc
- *      StencilOp
- *     DEPTH_TEST
- *      DepthFunc
- *     BLEND
- *      BlendFuncSeparate
- *      BlendEquationSeparate
- * 6. Masks
- *     ColorMask
- *     StencilMask
- *     DepthMask
+ * As such, the pipeline is essentially that of OpenGL ES 2, but with a lot of
+ *  the options cut out and with fixed-function parts inserted where necessary.
  *
  * In terms of API design, BadGPU owes some credit to Vulkan and WebGPU, mostly
  *  the latter, but avoids the heavy use of structs for binding reasons.
@@ -125,7 +73,8 @@
  * BadGPU is thread-safe across different instances, but not across one.
  *
  * Unlike WebGPU, BadGPU does not try to provide absolute memory safety
- *  assurance.
+ *  assurance, but does at least make a good-faith effort to prevent crashes in
+ *  favour of failure.
  */
 
 /*
@@ -133,7 +82,7 @@
  *
  * The big types in BadGPU are object handles.
  * These all have a unified API for creation and destruction.
- * (See badgpuRef/badgpuUnref.)
+ * (See Object Management below.)
  */
 
 // Generic object handle.
@@ -152,7 +101,7 @@ typedef struct BADGPUVector {
 } BADGPUVector;
 
 /*
- * A matrix is a "transposed" matrices as per GL LoadMatrix.
+ * A matrix is a "transposed" matrix as per glLoadMatrix.
  * They are represented as a set of basis vectors.
  * Each basis vector is multiplied by the corresponding input vector float.
  * The multiplied vectors are then added together.
@@ -206,17 +155,22 @@ typedef enum BADGPUTextureFlags {
     BADGPUTextureFlags_Force32 = 0x7FFFFFFF
 } BADGPUTextureFlags;
 
+/*
+ * Rationale: While BadGPU usually aliases these things to GL enums,
+ *  this one's relevant to memory safety, as it changes the expected size of the
+ *  data buffer. That in mind, this is something of a safety guard.
+ */
 typedef enum BADGPUTextureFormat {
     // A -> 111A
-    BADGPUTextureFormat_Alpha = 1,
+    BADGPUTextureFormat_Alpha = 0,
     // L -> LLL1
-    BADGPUTextureFormat_Luma = 2,
+    BADGPUTextureFormat_Luma = 1,
     // LA -> LLLA
-    BADGPUTextureFormat_LumaAlpha = 3,
+    BADGPUTextureFormat_LumaAlpha = 2,
     // RGB -> RGB1
-    BADGPUTextureFormat_RGB = 4,
+    BADGPUTextureFormat_RGB = 3,
     // RGBA -> RGBA
-    BADGPUTextureFormat_RGBA = 5,
+    BADGPUTextureFormat_RGBA = 4,
     BADGPUTextureFormat_Force32 = 0x7FFFFFFF
 } BADGPUTextureFormat;
 
@@ -413,6 +367,11 @@ BADGPU_EXPORT BADGPUObject badgpuRef(BADGPUObject obj);
  * Unreferences a BadGPU object.
  * Returns non-zero if the object was completely removed.
  * Otherwise, hanging references presumably still exist.
+ *
+ * Rationale: Indicating when an object is completely removed is of use for
+ *  debugging purposes. It should not be used by wrappers for memory safety, as
+ *  objects may be unreferenced during the destruction of other objects, and
+ *  these will go unreported.
  */
 BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
 
@@ -455,17 +414,18 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
  *  invalidated.
  *
  * The flags are BADGPUNewInstanceFlags.
+ *
  * The debug flag indicates that a performance hit is acceptable for better
  *  debugging information to be provided in an implementation-dependent manner.
+ * (This may write to, say, standard output.)
  *
  * Rationale: Due to cross-compilation limitations, the current reference
- *  implementation of GL error tracking outputs to standard output.
- *
- * For some applications, this is unacceptable behaviour.
+ *  implementation of BadGPU outputs to standard output, and for some
+ *  applications, this will be unacceptable behaviour.
  *
  * In addition, GL error tracking arguably adds unnecessary overhead. This isn't
  *  as big of a concern to BadGPU, but given there's nowhere to put the errors,
- *  it's relatively okay.
+ *  it's relatively okay to disable it.
  */
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error);
 
@@ -490,6 +450,10 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
  * The size and layout of each pixel in the array of bytes is specified by
  *  the format.
  * If NULL is passed as the data, then the texture contents are undefined.
+ *
+ * Rationale: Width/height are uint16_t because that's usually as far as GL
+ *  implementations go in the best case before giving up. The expected capacity
+ *  of the data buffer is easy to check against the format.
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     uint32_t flags, BADGPUTextureFormat format,
@@ -498,15 +462,39 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
 /*
  * Creates a depth/stencil buffer.
  * These are used for drawing... and that's about it.
+ *
+ * Rationale: While OES_packed_depth_stencil seems essentially ubiquitous,
+ *  it may not turn out so. Furthermore, OES_depth_texture is NOT ubiquitous.
+ *
+ * In fact, even on Vulkan-class hardware, I can't get it on Mesa in
+ *  GLES-CM 1.1 mode. (Can from GLES2, though.)
+ *
+ * That in mind, there are no benefits to treating these as textures.
+ *
+ * At the same time, creating a dedicated renderbuffer API seems wasteful;
+ *  BadGPU does not have any use for an RGBA renderbuffer.
+ *
+ * Abstracting the depth/stencil buffer into a single object that is managed by
+ *  BadGPU isolates applications from changes to the reference implementation,
+ *  and keeps the API simple. OES_packed_depth_stencil may be used to implement
+ *  this or may not.
  */
 BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     uint16_t width, uint16_t height);
 
 /*
- * Generates mipmaps for a texture.
- * This must be done explicitly if the texture is rendered to and then expected
- *  to have consistent mipmaps.
+ * Regenerates mipmaps for a texture.
+ * This must be done explicitly when a texture is rendered to, but doesn't need
+ *  to be done when textures are created with data.
  * It should not be done if mipmaps are not used by the texture.
+ *
+ * Rationale: The EXT_framebuffer_object document goes into great detail about
+ *  the rationale on the GL end. On BadGPU's end, deferring mipmap generation
+ *  until the moment of use sounds bad for performance. The application knows
+ *  when (or if!) it wants mipmaps to be regenerated.
+ *
+ * The ability to specify mipmaps manually was not included, as it
+ *  disincentivizes use of formats that are properly compressed.
  */
 BADGPU_EXPORT void badgpuGenerateMipmap(BADGPUTexture texture);
 
@@ -514,6 +502,8 @@ BADGPU_EXPORT void badgpuGenerateMipmap(BADGPUTexture texture);
  * Reads pixels back from a texture.
  * Pixels are always read back as RGBA8888, as they would be supplied to
  *  badgpuNewTexture.
+ *
+ * Rationale: This is simply what glReadPixels provides for GLES 1.1.
  */
 BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
     uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data);
@@ -534,6 +524,16 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
  *
  * It is important to keep in mind that the default state of the masks is
  *  NOT to render things. Normal operation might use MaskAll or MaskRGBAD.
+ *
+ * Rationale: A struct tends to lead to difficulties for wrappers, which must
+ *  choose if they want to preserve the struct (performance hazard), or
+ *  decompose it themselves. A handle would be inappropriate for data that is
+ *  this dynamic. As such, keeping these as arguments is the best choice.
+ *
+ * FBOs are removed as a concept because they are awkward, and not really
+ *  meaningful except as a performance crutch for API validation by OpenGL.
+ *
+ * FBO caching could be transparently implemented if necessary.
  */
 
 #define BADGPU_SESSIONFLAGS \
@@ -544,12 +544,16 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
 /*
  * Performs a clear.
  * The session flag masks control the clear.
- * If flags are enabled for a buffer, that buffer must be present.
- * However, otherwise, buffers may not be present.
+ * Either buffer may or may not be present, but at least one buffer should be.
+ * (Failure to provide any buffers at all is a wasteful NOP.)
+ *
+ * Rationale: Separate clear flags aren't necessary when the masks exist.
+ *  The reference implementation chooses to still translate these into buffer
+ *  bits in case of potential GL-level optimizations.
  */
 BADGPU_EXPORT void badgpuDrawClear(
     BADGPU_SESSIONFLAGS,
-    uint8_t cR, uint8_t cG, uint8_t cB, uint8_t cA, float depth, uint8_t stencil
+    float cR, float cG, float cB, float cA, float depth, uint8_t stencil
 );
 
 /*
@@ -586,6 +590,10 @@ BADGPU_EXPORT void badgpuDrawClear(
  *  draw flags.
  * stSF, stDF, and stDP control what happens to the stencil buffer under various
  *  situations with the stencil test.
+ *
+ * Rationale: While this function is indeed absolutely massive, there are
+ *  shorter wrappers such as badgpuDrawGeomNoDS. This is also arguably a natural
+ *  cost of the avoidance of stack structs while also avoiding a stateful API.
  */
 BADGPU_EXPORT void badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
@@ -618,8 +626,25 @@ BADGPU_EXPORT void badgpuDrawGeom(
 
 /*
  * Alias for badgpuDrawGeom that removes parameters only useful with a DSBuffer.
- * This is solely a convenience wrapper which provides zeros.
- * It is not an optimization.
+ *
+ * Most removed values are 0/NULL, except:
+ * + All stencil ops are BADGPUStencilOp_Keep.
+ * + stFunc/dtFunc are both BADGPUCompare_Always.
+ *
+ * Rationale: The depth/stencil buffer is naturally linked with 3D drawing or
+ *  at least advanced drawing. Some applications mostly consist of 2D drawing.
+ *
+ * In these cases, some overhead can be shaved, particularly in wrappers, by
+ *  using a version of the function that strips out arguments that are not
+ *  relevant to the DS buffer.
+ *
+ * The default values are set such that the relevant units are kept disabled,
+ *  even if the flags are set to enable those units, to prevent accidents.
+ *
+ * In practice, ES1.1 4.1.5 Stencil Test and 4.1.6 Depth Buffer Test specify
+ *  that the lack of a stencil and depth buffer make those tests always pass,
+ *  and disables stencil modification. With that in mind, sDSBuffer being NULL
+ *  is enough to optimize away the state wrangling.
  */
 BADGPU_EXPORT void badgpuDrawGeomNoDS(
     BADGPUTexture sTexture,
