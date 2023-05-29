@@ -57,6 +57,7 @@
 !natives/c/
 !natives/c/badgpu
 !natives/c/badgpu/
+!natives/c/badgpu/specify.lua
 !natives/c/badgpu/badgpu.h
 !natives/c/badgpu/badgpu_internal.h
 !natives/c/badgpu/badgpu.c

@@ -6,8 +6,109 @@
  */
 
 /*
- * BadGPU C Header And API Specification
- * API Specification Version: 0.08
+ * # BadGPU C Header And API Specification
+ *
+ * Version: `0.9.0`
+ *
+ * ## Versioning Policy
+ *
+ * Semantic versioning is in use here.
+ *
+ * However, this is a specification with a C header, and thus not a piece of
+ *  software in itself.
+ *
+ * This means essentially all non-comment changes are of MINOR severity or
+ *  greater.
+ *
+ * + When the C content (not comments) of the specification changes, a MINOR or
+ *    MAJOR version increment must be made as appropriate.
+ * + Other changes to this specification SHOULD make PATCH increments unless
+ *    the change, despite not changing the C content, makes a meaningful change
+ *    to the ABI (for example, making a parameter optional).
+ *   The rule of thumb here is if the reference implementation was changed to
+ *    implement a spec change, make a MINOR or MAJOR increment.
+ *   Otherwise, make a PATCH increment.
+ *   (Rationale: While the specification is intended to be the ultimate source
+ *    of truth on BadGPU, the reference implementation is the only one that
+ *    exists at this time. It is therefore more useful to version according to
+ *    the behaviour of the reference implementation, and not cause undue version
+ *    drama for any hypothetical working applications over a spec change with
+ *    zero effective impact on said applications.)
+ * + Whenever possible, a single version of this specification must be
+ *     resolvable to a single Git commit.
+ *
+ * ## Formatting Policy
+ *
+ * + 80-column lines in most cases.
+ *   This rule can be ignored for parameters if organization is worsened, or for
+ *    the license block. This rule can't be ignored for comments in general.
+ * + Lines beginning with " *" will be pushed into the markdown file as
+ *    commentary such as this.
+ *   Plan accordingly.
+ * + If a decision is worth explanation, explain it in a Rationale section.
+ *   Rationale: Rationale sections help to clarify why a decision was made,
+ *    and suggest example patterns of usage.
+ *
+ * ## Design Policy
+ *
+ * + Allowed types are:
+ *   + (u)?int(8|16|32)_t
+ *   + unsigned char (as BadGPUBool only! This is chosen to match JNI.)
+ *   + float
+ *   + Structs and enums, including undeclared (i.e. opaque)
+ *     + Structs should not be used as a replacement for parameters unless they
+ *        have some level of dynamic layout, like arrays or different types.
+ *       HOWEVER, adding a struct is better than adding a handle.
+ *       Rationale: Structs tend to add unnecessary overhead in JNI. None of the
+ *        solutions are good. At best you lose what you gained.
+ *   + Pointers of various shapes and sizes
+ *     + Handles in particular should only be used when BadGPU is holding an
+ *        underlying resource of some kind. This is why the only three handle
+ *        types at time of writing are Instance, Texture, and DSBuffer.
+ *       If BadGPU isn't holding a resource, it's added overhead to create
+ *        get/set functions to prod what is essentially a remote struct.
+ * + Function pointers are not okay. Do anything else.
+ *   Rationale: BadGPU is not an asynchronous API, so does not stand to gain
+ *    from using function pointers, except for implementation simplicity.
+ *   Due to how BadGPU manages resources, a situation can occur where BadGPU is
+ *    holding onto a pointer for eternity if code is badly written. This is
+ *    formally considered an application of the "leaking memory is safe"
+ *    principle, but with function pointers it becomes somewhat dangerous.
+ *   Even if a function pointer is used only temporarily, this is a mess that
+ *    wrappers inevitably have to clean up, and when it's temporary it's even
+ *    more likely that there was a simpler and better way.
+ * + Avoid making things stateful unless they hold resources at another level,
+ *    like say the GL. Even then, if state can be avoided by prodding the GL a
+ *    small amount when the resource is in use, try to avoid that state.
+ *   Rationale: If I actually liked the amount of state in OpenGL 1.1, this
+ *    would just have been a context creation library. The amount of functions
+ *    in OpenGL that amount to "get state, set state" is absurd, as a reading
+ *    of the reference implementation will show. Because BadGPU sticks to a
+ *    very limited pipeline, this is actually practical.
+ *   + In particular, never add a mutable variable that simply acts as a
+ *      parameter to a function call. Immutable values can make sense under
+ *      appropriate conditions.
+ * + Never add a function just so BadGPU can retrieve a value the user gave in
+ *    the first place.
+ *   Rationale: OpenGL only did this so that libraries could still function in
+ *    the immense swaths of state OpenGL has.
+ *   It is a very related fact that PushAttrib and PopAttrib exist.
+ *   Since BadGPU avoids immense swaths of state, and particularly mutable state
+ *    that needs saving and restoring, it follows that getters/setters for this
+ *    state are not necessary.
+ *
+ * ## Implementation Policy
+ *
+ * If a detail of rendering is unclear, the implementation may choose any of:
+ *
+ * + OpenGL (any specification between 1.1 and 2.1 inclusive)
+ * + OpenGL ES 1.1 (& Extension Pack, & documents referenced thereby)
+ * + OpenGL extensions referenced by this specification
+ * + OpenGL ES 2.0
+ *
+ * In the name of not overtly constraining implementations, invariance rules are
+ *  assumed to not apply, since otherwise the particular set of GL state
+ *  manipulations performed by the implementation may interfere.
  */
 
 #ifndef BADGPU_H_
@@ -20,7 +121,7 @@
 #endif
 
 /*
- * Abstract
+ * ## Abstract
  *
  * The BadGPU API is a cross-platform offscreen rendering API.
  *
@@ -39,6 +140,7 @@
  *
  * For portability reasons, BadGPU is designed to target the subset of
  *  functionality common between three separate versions of OpenGL:
+ *
  * 1. OpenGL 1.1 +
  *     EXT_blend_subtract,
  *     EXT_blend_func_separate, EXT_framebuffer_object
@@ -78,30 +180,41 @@
  */
 
 /*
- * Types
+ * ## Types
  *
  * The big types in BadGPU are object handles.
  * These all have a unified API for creation and destruction.
  * (See Object Management below.)
+ *
+ * There is also a boolean type.
  */
 
 // Generic object handle.
 typedef struct BADGPUObject * BADGPUObject;
-typedef BADGPUObject BADGPUInstance;
-typedef BADGPUObject BADGPUTexture;
-typedef BADGPUObject BADGPUDSBuffer;
 
+// Chosen for JNI compatibility.
 typedef unsigned char BADGPUBool;
 
+// Instance of BadGPU. The root object, in a sense.
+typedef BADGPUObject BADGPUInstance;
+// A 2D image with possible mipmaps.
+typedef BADGPUObject BADGPUTexture;
+// A depth/stencil buffer.
+typedef BADGPUObject BADGPUDSBuffer;
+
 /*
- * 4D float vector. Used for matrices and also vertex data.
+ * ### `BADGPUVector`
+ *
+ * A 4-dimensional float vector, used for matrices and vertex data.
  */
 typedef struct BADGPUVector {
     float x, y, z, w;
 } BADGPUVector;
 
 /*
- * A matrix is a "transposed" matrix as per glLoadMatrix.
+ * ### `BADGPUMatrix`
+ *
+ * A "transposed" matrix as per `glLoadMatrix`.
  * They are represented as a set of basis vectors.
  * Each basis vector is multiplied by the corresponding input vector float.
  * The multiplied vectors are then added together.
@@ -111,7 +224,7 @@ typedef struct BADGPUMatrix {
 } BADGPUMatrix;
 
 /*
- * NewInstance Flags
+ * ### `BADGPUNewInstanceFlags`
  */
 typedef enum BADGPUNewInstanceFlags {
     BADGPUNewInstanceFlags_Debug = 1,
@@ -119,10 +232,11 @@ typedef enum BADGPUNewInstanceFlags {
 } BADGPUNewInstanceFlags;
 
 /*
- * Metainfo Type
- * Values deliberately match glGetString.
+ * ### `BADGPUMetaInfoType`
+ *
+ * (Values deliberately match `glGetString`.
  * The implementation may make use of such.
- * Users should not abuse this.
+ * Users should not abuse this.)
  */
 typedef enum BADGPUMetaInfoType {
     // GL_VENDOR
@@ -135,12 +249,7 @@ typedef enum BADGPUMetaInfoType {
 } BADGPUMetaInfoType;
 
 /*
- * Texture Formats/Flags
- *
- * BADGPU doesn't support any HDR textures.
- * It also doesn't consider stencil/depth a kind of texture.
- * It's important to note that texture formats also specify the format of
- *  texture data being provided to, say, badgpuNewTexture.
+ * ### `BADGPUTextureFlags`
  */
 typedef enum BADGPUTextureFlags {
     // If minifying the texture uses linear filtering.
@@ -152,10 +261,16 @@ typedef enum BADGPUTextureFlags {
     // If accesses beyond the edges of the texture repeat (rather than clamping)
     BADGPUTextureFlags_WrapS = 16,
     BADGPUTextureFlags_WrapT = 32,
+    // If, on the GPU, the texture has alpha.
+    BADGPUTextureFlags_HasAlpha = 64,
     BADGPUTextureFlags_Force32 = 0x7FFFFFFF
 } BADGPUTextureFlags;
 
 /*
+ * ### `BADGPUTextureFormat`
+ *
+ * Specifies a format of texture for writing to the GPU.
+ *
  * Rationale: While BadGPU usually aliases these things to GL enums,
  *  this one's relevant to memory safety, as it changes the expected size of the
  *  data buffer. That in mind, this is something of a safety guard.
@@ -175,7 +290,7 @@ typedef enum BADGPUTextureFormat {
 } BADGPUTextureFormat;
 
 /*
- * Session Flags
+ * ### `BADGPUSessionFlags`
  */
 typedef enum BADGPUSessionFlags {
     // Masks
@@ -206,7 +321,7 @@ typedef enum BADGPUSessionFlags {
 } BADGPUSessionFlags;
 
 /*
- * Draw Flags
+ * ### `BADGPUDrawFlags`
  */
 typedef enum BADGPUDrawFlags {
     // Changes the definition of a front face to be in reverse.
@@ -229,12 +344,14 @@ typedef enum BADGPUDrawFlags {
 } BADGPUDrawFlags;
 
 /*
- * Primitive Type
- * Values deliberately match glBegin etc.
- * The implementation may make use of such.
- * Users should not abuse this.
+ * ### `BADGPUPrimitiveType`
+ *
+ * (Values deliberately match `glBegin` etc.
+ *  The implementation may make use of such.
+ *  Users should not abuse this.)
+ *
  * (Rationale for not including loop/strip/fan primitive types:
- *  These only really work properly with primitive restart, and DrawElements
+ *  These only really work properly with primitive restart, and `glDrawElements`
  *   makes them pretty close to obsolete anyway. Between that and the 65536
  *   vertex index limit, there's really no good reason to use these.)
  */
@@ -249,10 +366,11 @@ typedef enum BADGPUPrimitiveType {
 } BADGPUPrimitiveType;
 
 /*
- * Comparison Function
- * Values deliberately match glDepthFunc etc.
- * The implementation may make use of such.
- * Users should not abuse this.
+ * ### `BADGPUCompare`
+ *
+ * (Values deliberately match `glDepthFunc` etc.
+ *  The implementation may make use of such.
+ *  Users should not abuse this.)
  */
 typedef enum BADGPUCompare {
     BADGPUCompare_Never = 0x0200,
@@ -267,10 +385,11 @@ typedef enum BADGPUCompare {
 } BADGPUCompare;
 
 /*
- * Stencil Op
- * Values deliberately match glStencilOp.
- * The implementation may make use of such.
- * Users should not abuse this.
+ * ### `BADGPUStencilOp`
+ *
+ * (Values deliberately match `glStencilOp`.
+ *  The implementation may make use of such.
+ *  Users should not abuse this.)
  */
 typedef enum BADGPUStencilOp {
     // GL_KEEP
@@ -289,10 +408,11 @@ typedef enum BADGPUStencilOp {
 } BADGPUStencilOp;
 
 /*
- * Blend Equation
- * Values deliberately match glBlendEquationSeparate.
- * The implementation may make use of such.
- * Users should not abuse this.
+ * ### `BADGPUBlendEquation`
+ *
+ * (Values deliberately match `glBlendEquationSeparate`.
+ *  The implementation may make use of such.
+ *  Users should not abuse this.)
  */
 typedef enum BADGPUBlendEquation {
     // GL_FUNC_ADD: S + D
@@ -305,7 +425,8 @@ typedef enum BADGPUBlendEquation {
 } BADGPUBlendEquation;
 
 /*
- * Blend Weight
+ * ### `BADGPUBlendWeight`
+ *
  * Values deliberately match glBlendFuncSeparate.
  * The implementation may make use of such.
  * Users should not abuse this.
@@ -331,16 +452,17 @@ typedef enum BADGPUBlendWeight {
     BADGPUBlendWeight_DstA = 0x304,
     // GL_ONE_MINUS_DST_ALPHA: 1 - Da
     BADGPUBlendWeight_InvertDstA = 0x305,
-    // GL_SRC_ALPHA_SATURATE: min(Sa, 1 - Da) ; except for A output where it's just 1.
+    // GL_SRC_ALPHA_SATURATE: min(Sa, 1 - Da)
+    //  except for A output where it's just 1.
     BADGPUBlendWeight_SrcAlphaSaturate = 0x308,
     BADGPUBlendWeight_Force32 = 0x7FFFFFFF
 } BADGPUBlendWeight;
 
 /*
- * Object Management
+ * ## Object Management
  *
  * All BadGPU-generated handles are BadGPU objects, manipulatable with the
- *  badgpuRef and badgpuUnref functions.
+ *  `badgpuRef` and `badgpuUnref` functions.
  *
  * BadGPU objects start out with a single reference.
  * This reference is the one being returned from the function creating it.
@@ -358,12 +480,16 @@ typedef enum BADGPUBlendWeight {
  */
 
 /*
+ * ### `badgpuRef`
+ *
  * References a BadGPU object.
  * Returns what it was given.
  */
 BADGPU_EXPORT BADGPUObject badgpuRef(BADGPUObject obj);
 
 /*
+ * ### `badgpuUnref`
+ *
  * Unreferences a BadGPU object.
  * Returns non-zero if the object was completely removed.
  * Otherwise, hanging references presumably still exist.
@@ -376,7 +502,7 @@ BADGPU_EXPORT BADGPUObject badgpuRef(BADGPUObject obj);
 BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
 
 /*
- * Instance Initialization
+ * ## Instance Initialization
  *
  * BadGPU is split into instances.
  * There is no inter-instance resource sharing.
@@ -402,6 +528,8 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
  */
 
 /*
+ * ### `badgpuNewInstance`
+ *
  * Creates a new BadGPU instance.
  *
  * This will allocate resources such as an EGLDisplay or HWND, so the instance
@@ -430,6 +558,8 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error);
 
 /*
+ * ### `badgpuGetMetaInfo`
+ *
  * Returns a string describing an aspect of the instance, or NULL on error.
  *
  * This string's lifetime is only certain until the next call involving the
@@ -439,27 +569,70 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
     BADGPUMetaInfoType mi);
 
 /*
- * Texture/2D Buffer Management
+ * ## Texture/2D Buffer Management
+ *
+ * BADGPU has two kinds of image.
+ *
+ * Textures are fixed-size, always read/write images.
+ *
+ * After creation, they can be written to by using them as framebuffers, and
+ *  drawing to them.
+ *
+ * DSBuffers are depth/stencil buffers. They cannot be directly read or written,
+ *  but they can be used in drawing commands.
+ *
+ * Rationale: `OES_depth_texture` isn't ubiquitous.
+ *
+ * In fact, even on Vulkan-class hardware, I can't get it on Mesa in
+ *  GLES-CM 1.1 mode. (Can from GLES2, though.)
+ *
+ * This, and `OES_packed_depth_stencil`, in mind, bundling depth/stencil into
+ *  a single object that is treated as something of a black box simplifies the
+ *  API for no real downside.
+ *
+ * All defined texture types in OpenGL ES 1.1 are renderable.
+ *
+ * This in mind, insisting all textures can be used as framebuffers allows for
+ *  a very general, easy to use API, rather than trying to specify which
+ *  specific sub-type of texture you can or can't render to.
  */
 
 /*
+ * ### `badgpuNewTexture`
+ *
  * Creates a texture, with possible initial data.
+ *
  * The flags are BADGPUNewTextureFlags.
+ *
  * Mipmaps are automatically created if the texture is mipmapped.
+ *
  * Data can be supplied as a flat array of bytes.
+ *
  * The size and layout of each pixel in the array of bytes is specified by
  *  the format.
- * If NULL is passed as the data, then the texture contents are undefined.
  *
- * Rationale: Width/height are uint16_t because that's usually as far as GL
+ * It's important to note that texture formats only specify the format of
+ *  the data being provided. It does not alter the actual format on the GPU.
+ *
+ * Only `BADGPUTextureFlags_HasAlpha` alters the actual format on the GPU.
+ *
+ * If `NULL` is passed as the data, then the texture contents are undefined.
+ *
+ * Rationale: Width/height are `uint16_t` because that's usually as far as GL
  *  implementations go in the best case before giving up. The expected capacity
  *  of the data buffer is easy to check against the format.
+ *
+ * 1/2-component texture formats are stored on GPU as RGB/RGBA due to the
+ *  requirements of `EXT_framebuffer_object` 4.4.4 Framebuffer Completeness,
+ *  which does not define other formats as renderable.
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     uint32_t flags, BADGPUTextureFormat format,
     uint16_t width, uint16_t height, const uint8_t * data);
 
 /*
+ * ### `badgpuNewDSBuffer`
+ *
  * Creates a depth/stencil buffer.
  * These are used for drawing... and that's about it.
  *
@@ -483,6 +656,8 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     uint16_t width, uint16_t height);
 
 /*
+ * ### `badgpuGenerateMipmap`
+ *
  * Regenerates mipmaps for a texture.
  * This must be done explicitly when a texture is rendered to, but doesn't need
  *  to be done when textures are created with data.
@@ -499,6 +674,8 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
 BADGPU_EXPORT void badgpuGenerateMipmap(BADGPUTexture texture);
 
 /*
+ * ### `badgpuReadPixels`
+ *
  * Reads pixels back from a texture.
  * Pixels are always read back as RGBA8888, as they would be supplied to
  *  badgpuNewTexture.
@@ -509,7 +686,7 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
     uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data);
 
 /*
- * Drawing Commands
+ * ## Drawing Commands
  *
  * The following rule applies to all functions in this section:
  * The texture and depth/stencil buffers, if both present,
@@ -518,14 +695,15 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
  * Drawing commands have the same first parameters, known as the session
  *  parameters, prefixed with 's'.
  * They are controlled by sFlags, which are BADGPUSessionFlags.
- * (Rationale: These parameters are all those documented as common between
- *  clear and drawing commands. See ES 2.0: 4.2.3 Clearing the Buffers,
- *  same place in ES 1.1)
  *
  * It is important to keep in mind that the default state of the masks is
  *  NOT to render things. Normal operation might use MaskAll or MaskRGBAD.
  *
- * Rationale: A struct tends to lead to difficulties for wrappers, which must
+ * Rationale: These parameters are all those documented as common between
+ *  clear and drawing commands. See ES 2.0: 4.2.3 Clearing the Buffers,
+ *  same place in ES 1.1.
+ *
+ * A struct tends to lead to difficulties for wrappers, which must
  *  choose if they want to preserve the struct (performance hazard), or
  *  decompose it themselves. A handle would be inappropriate for data that is
  *  this dynamic. As such, keeping these as arguments is the best choice.
@@ -542,6 +720,8 @@ BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight
 
 /*
+ * ### `badgpuDrawClear`
+ *
  * Performs a clear.
  * The session flag masks control the clear.
  * Either buffer may or may not be present, but at least one buffer should be.
@@ -557,6 +737,8 @@ BADGPU_EXPORT void badgpuDrawClear(
 );
 
 /*
+ * ### `badgpuDrawGeom`
+ *
  * Performs a drawing command.
  * The flags provided are BADGPUDrawFlags.
  *
@@ -625,11 +807,13 @@ BADGPU_EXPORT void badgpuDrawGeom(
 );
 
 /*
- * Alias for badgpuDrawGeom that removes parameters only useful with a DSBuffer.
+ * ### `badgpuDrawGeomNoDS`
  *
- * Most removed values are 0/NULL, except:
- * + All stencil ops are BADGPUStencilOp_Keep.
- * + stFunc/dtFunc are both BADGPUCompare_Always.
+ * Alias for badgpuDrawGeom that removes depth/stencil parameters.
+ *
+ * Most removed values are 0 / `NULL`, except:
+ * + All stencil ops are `BADGPUStencilOp_Keep`.
+ * + `stFunc` / `dtFunc` are both `BADGPUCompare_Always`.
  *
  * Rationale: The depth/stencil buffer is naturally linked with 3D drawing or
  *  at least advanced drawing. Some applications mostly consist of 2D drawing.

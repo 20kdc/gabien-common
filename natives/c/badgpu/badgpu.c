@@ -339,12 +339,13 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
 
     // Do this conversion first, it's relevant to memory safety.
     int32_t ifmt = 0;
+    int32_t efmt = 0;
     switch (format) {
-    case BADGPUTextureFormat_Alpha: ifmt = GL_ALPHA; break;
-    case BADGPUTextureFormat_Luma: ifmt = GL_LUMINANCE; break;
-    case BADGPUTextureFormat_LumaAlpha: ifmt = GL_LUMINANCE_ALPHA; break;
-    case BADGPUTextureFormat_RGB: ifmt = GL_RGB; break;
-    case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA; break;
+    case BADGPUTextureFormat_Alpha: ifmt = GL_RGBA; efmt = GL_ALPHA; break;
+    case BADGPUTextureFormat_Luma: ifmt = GL_RGB; efmt = GL_LUMINANCE; break;
+    case BADGPUTextureFormat_LumaAlpha: ifmt = GL_RGBA; efmt = GL_LUMINANCE_ALPHA; break;
+    case BADGPUTextureFormat_RGB: ifmt = GL_RGB; efmt = GL_RGB; break;
+    case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA; efmt = GL_RGBA; break;
     default: return 0;
     }
 
@@ -361,7 +362,7 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     bi->glGenTextures(1, &tex->tex);
 
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
-    bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, ifmt, GL_UNSIGNED_BYTE, data);
+    bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, efmt, GL_UNSIGNED_BYTE, data);
 
     bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flags & BADGPUTextureFlags_WrapS ? GL_REPEAT : GL_CLAMP_TO_EDGE);
     bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, flags & BADGPUTextureFlags_WrapT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
