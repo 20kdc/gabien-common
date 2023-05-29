@@ -367,6 +367,11 @@ static void destroyTexture(BADGPUObject obj) {
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     uint32_t flags, BADGPUTextureFormat format,
     uint16_t width, uint16_t height, const uint8_t * data) {
+    if (!instance)
+        return NULL;
+
+    // Continue.
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
 
     // Do this conversion first, it's relevant to memory safety.
     int32_t ifmt = 0;
@@ -377,20 +382,19 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     case BADGPUTextureFormat_LumaAlpha: ifmt = GL_RGBA; efmt = GL_LUMINANCE_ALPHA; break;
     case BADGPUTextureFormat_RGB: ifmt = GL_RGB; efmt = GL_RGB; break;
     case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA; efmt = GL_RGBA; break;
-    default: return NULL;
+    default:
+        badgpuErr(bi, "badgpuNewTexture: Invalid BADGPUTextureFormat.");
+        return NULL;
     }
 
-    if (!instance)
-        return NULL;
-
-    // Continue.
-    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    badgpu_wsiCtxMakeCurrent(bi->ctx);
-
     BADGPUTexturePriv * tex = malloc(sizeof(BADGPUTexturePriv));
-    if (!tex)
+    if (!tex) {
+        badgpuErr(bi, "badgpuNewTexture: Unable to allocate memory.");
         return NULL;
+    }
     badgpu_initObj((BADGPUObject) tex, destroyTexture);
+
+    badgpu_wsiCtxMakeCurrent(bi->ctx);
 
     tex->i = BG_INSTANCE(badgpuRef(instance));
     bi->glGenTextures(1, &tex->tex);
@@ -437,8 +441,10 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     badgpu_wsiCtxMakeCurrent(bi->ctx);
 
     BADGPUDSBufferPriv * ds = malloc(sizeof(BADGPUDSBufferPriv));
-    if (!ds)
+    if (!ds) {
+        badgpuErr(bi, "badgpuNewDSBuffer: Unable to allocate memory.");
         return NULL;
+    }
     badgpu_initObj((BADGPUObject) ds, destroyDSBuffer);
 
     ds->i = BG_INSTANCE(badgpuRef(instance));
