@@ -83,7 +83,9 @@ struct BADGPUObject {
 typedef struct BADGPUInstancePriv {
     struct BADGPUObject obj;
     BADGPUWSICtx ctx;
-    int debug;
+    int backendCheck;
+    int backendCheckAggressive;
+    int canPrintf;
     uint32_t fbo;
     int32_t (KHRABI *glGetError)();
     void (KHRABI *glEnable)(int32_t);
@@ -163,11 +165,17 @@ static void badgpu_initObj(BADGPUObject obj, void (*destroy)(BADGPUObject)) {
 }
 
 BADGPU_EXPORT BADGPUObject badgpuRef(BADGPUObject obj) {
+    if (!obj)
+        return 0;
+
     obj->refs++;
     return obj;
 }
 
 BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj) {
+    if (!obj)
+        return 0;
+
     obj->refs--;
     if (!obj->refs) {
         obj->destroy(obj);
@@ -186,33 +194,42 @@ static void destroyInstance(BADGPUObject obj) {
     free(obj);
 }
 
-static void badgpuChkInnards(BADGPUInstancePriv * bi, const char * location) {
+static BADGPUBool badgpuChkInnards(BADGPUInstancePriv * bi, const char * location) {
+    BADGPUBool ok = 1;
     int err;
     while (err = bi->glGetError()) {
-        printf("BADGPU: %s: GL error 0x%x\n", location, err);
+        if (bi->canPrintf)
+            printf("BADGPU: %s: GL error 0x%x\n", location, err);
+        ok = 0;
     }
+    return ok;
 }
 
-static inline void badgpuChk(BADGPUInstancePriv * instance, const char * location) {
+static inline BADGPUBool badgpuChk(BADGPUInstancePriv * instance, const char * location, BADGPUBool failureIsAggressive) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    if (bi->debug)
-        badgpuChkInnards(bi, location);
+    if (bi->backendCheck)
+        return badgpuChkInnards(bi, location) || (failureIsAggressive && !bi->backendCheckAggressive);
+    return 1;
 }
 
-BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
+BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
     BADGPUInstancePriv * bi = malloc(sizeof(BADGPUInstancePriv));
     if (!bi) {
-        *error = "Failed to allocate BADGPUInstance.";
-        return 0;
+        if (error)
+            *error = "Failed to allocate BADGPUInstance.";
+        return NULL;
     }
     memset(bi, 0, sizeof(BADGPUInstancePriv));
-    bi->debug = (flags & BADGPUNewInstanceFlags_Debug) != 0;
+    bi->backendCheck = (flags & BADGPUNewInstanceFlags_BackendCheck) != 0;
+    bi->backendCheckAggressive = (flags & BADGPUNewInstanceFlags_BackendCheckAggressive) != 0;
+    bi->canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
     badgpu_initObj((BADGPUObject) bi, destroyInstance);
     int desktopExt;
     bi->ctx = badgpu_newWsiCtx(error, &desktopExt);
     if (!bi->ctx) {
         free(bi);
-        return 0;
+        // error provided by badgpu_newWsiCtx
+        return NULL;
     }
     bi->glGetError = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGetError");
     bi->glEnable = badgpu_wsiCtxGetProcAddress(bi->ctx, "glEnable");
@@ -280,12 +297,19 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
     }
     bi->glGenFramebuffers(1, &bi->fbo);
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
-    badgpuChk(bi, "badgpuNewInstance");
+    if (!badgpuChk(bi, "badgpuNewInstance", 1)) {
+        badgpuUnref((BADGPUInstance) bi);
+        if (error)
+            *error = "Initial GL resource setup returned an error.";
+        return NULL;
+    }
     return (BADGPUInstance) bi;
 }
 
 BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
     BADGPUMetaInfoType mi) {
+    if (!instance)
+        return NULL;
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     badgpu_wsiCtxMakeCurrent(bi->ctx);
     return bi->glGetString(mi);
@@ -293,7 +317,7 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
 
 // FBM
 
-static inline int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi) {
+static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(sTexture);
     BADGPUDSBufferPriv * sDS = BG_DSBUFFER(sDSBuffer);
     if (sTex)
@@ -304,13 +328,13 @@ static inline int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADG
         return 1;
     badgpu_wsiCtxMakeCurrent((*bi)->ctx);
     (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
-    // badgpuChk(*bi, "fbSetup1");
+    // badgpuChk(*bi, "fbSetup1", 0);
     if (sTex) {
         (*bi)->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
     } else {
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
     }
-    // badgpuChk(*bi, "fbSetup2");
+    // badgpuChk(*bi, "fbSetup2", 0);
     if (sDS) {
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
@@ -318,8 +342,7 @@ static inline int fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADG
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
     }
-    badgpuChk(*bi, "fbSetup");
-    return 0;
+    return badgpuChk(*bi, "fbSetup", 1);
 }
 
 // Texture/2D Buffer Management
@@ -328,7 +351,7 @@ static void destroyTexture(BADGPUObject obj) {
     BADGPUTexturePriv * tex = BG_TEXTURE(obj);
     badgpu_wsiCtxMakeCurrent(tex->i->ctx);
     tex->i->glDeleteTextures(1, &tex->tex);
-    badgpuChk(tex->i, "destroyTexture");
+    badgpuChk(tex->i, "destroyTexture", 0);
     badgpuUnref((BADGPUObject) tex->i);
     free(tex);
 }
@@ -346,8 +369,11 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     case BADGPUTextureFormat_LumaAlpha: ifmt = GL_RGBA; efmt = GL_LUMINANCE_ALPHA; break;
     case BADGPUTextureFormat_RGB: ifmt = GL_RGB; efmt = GL_RGB; break;
     case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA; efmt = GL_RGBA; break;
-    default: return 0;
+    default: return NULL;
     }
+
+    if (!instance)
+        return NULL;
 
     // Continue.
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
@@ -355,7 +381,7 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
 
     BADGPUTexturePriv * tex = malloc(sizeof(BADGPUTexturePriv));
     if (!tex)
-        return 0;
+        return NULL;
     badgpu_initObj((BADGPUObject) tex, destroyTexture);
 
     tex->i = BG_INSTANCE(badgpuRef(instance));
@@ -378,7 +404,10 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     if (flags & BADGPUTextureFlags_Mipmap)
         bi->glGenerateMipmap(GL_TEXTURE_2D);
 
-    badgpuChk(bi, "badgpuNewTexture");
+    if (!badgpuChk(bi, "badgpuNewTexture", 1)) {
+        badgpuUnref((BADGPUTexture) tex);
+        return NULL;
+    }
     return (BADGPUTexture) tex;
 }
 
@@ -386,19 +415,22 @@ static void destroyDSBuffer(BADGPUObject obj) {
     BADGPUDSBufferPriv * ds = BG_DSBUFFER(obj);
     badgpu_wsiCtxMakeCurrent(ds->i->ctx);
     ds->i->glDeleteRenderbuffers(1, &ds->rbo);
-    badgpuChk(ds->i, "destroyDSBuffer");
+    badgpuChk(ds->i, "destroyDSBuffer", 0);
     badgpuUnref((BADGPUObject) ds->i);
     free(ds);
 }
 
 BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     uint16_t width, uint16_t height) {
+    if (!instance)
+        return NULL;
+
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     badgpu_wsiCtxMakeCurrent(bi->ctx);
 
     BADGPUDSBufferPriv * ds = malloc(sizeof(BADGPUDSBufferPriv));
     if (!ds)
-        return 0;
+        return NULL;
     badgpu_initObj((BADGPUObject) ds, destroyDSBuffer);
 
     ds->i = BG_INSTANCE(badgpuRef(instance));
@@ -406,35 +438,40 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
 
     bi->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 
-    badgpuChk(bi, "badgpuNewDSBuffer");
+    if (!badgpuChk(bi, "badgpuNewDSBuffer", 1)) {
+        badgpuUnref((BADGPUDSBuffer) ds);
+        return NULL;
+    }
     return (BADGPUDSBuffer) ds;
 }
 
-BADGPU_EXPORT void badgpuGenerateMipmap(BADGPUTexture texture) {
+BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture) {
+    if (!texture)
+        return 0;
     BADGPUTexturePriv * tex = BG_TEXTURE(texture);
     badgpu_wsiCtxMakeCurrent(tex->i->ctx);
     tex->i->glBindTexture(GL_TEXTURE_2D, tex->tex);
     tex->i->glGenerateMipmap(GL_TEXTURE_2D);
-    badgpuChk(tex->i, "badgpuGenerateMipmap");
+    return badgpuChk(tex->i, "badgpuGenerateMipmap", 0);
 }
 
-BADGPU_EXPORT void badgpuReadPixels(BADGPUTexture texture,
+BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
     uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data) {
     BADGPUInstancePriv * bi;
-    if (fbSetup(texture, NULL, &bi))
-        return;
+    if (!fbSetup(texture, NULL, &bi))
+        return 0;
     bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    badgpuChk(bi, "badgpuReadPixels");
+    return badgpuChk(bi, "badgpuReadPixels", 0);
 }
 
 // Drawing Commands
 
-static inline int drawingCmdSetup(
+static inline BADGPUBool drawingCmdSetup(
     BADGPU_SESSIONFLAGS,
     BADGPUInstancePriv ** bi
 ) {
-    if (fbSetup(sTexture, sDSBuffer, bi))
-        return 1;
+    if (!fbSetup(sTexture, sDSBuffer, bi))
+        return 0;
     (*bi)->glColorMask(
         sFlags & BADGPUSessionFlags_MaskR ? 1 : 0,
         sFlags & BADGPUSessionFlags_MaskG ? 1 : 0,
@@ -452,16 +489,16 @@ static inline int drawingCmdSetup(
     } else {
         (*bi)->glDisable(GL_SCISSOR_TEST);
     }
-    return 0;
+    return 1;
 }
 
-BADGPU_EXPORT void badgpuDrawClear(
+BADGPU_EXPORT BADGPUBool badgpuDrawClear(
     BADGPU_SESSIONFLAGS,
     float cR, float cG, float cB, float cA, float depth, uint8_t stencil
 ) {
     BADGPUInstancePriv * bi;
-    if (drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
-        return;
+    if (!drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
+        return 0;
     int32_t cFlags = 0;
     if (sFlags & BADGPUSessionFlags_MaskRGBA) {
         bi->glClearColor(cR, cG, cB, cA);
@@ -480,9 +517,10 @@ BADGPU_EXPORT void badgpuDrawClear(
     }
     if (cFlags)
         bi->glClear(cFlags);
+    return badgpuChk(bi, "badgpuDrawClear", 0);
 }
 
-BADGPU_EXPORT void badgpuDrawGeom(
+BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
@@ -511,8 +549,8 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
 ) {
     BADGPUInstancePriv * bi;
-    if (drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
-        return;
+    if (!drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
+        return 0;
 
     // Vertex Shader
     bi->glMatrixMode(GL_PROJECTION);
@@ -626,10 +664,10 @@ BADGPU_EXPORT void badgpuDrawGeom(
     } else {
         bi->glDrawArrays(pType, iStart, iCount);
     }
-    badgpuChk(bi, "badgpuDrawGeom");
+    return badgpuChk(bi, "badgpuDrawGeom", 0);
 }
 
-BADGPU_EXPORT void badgpuDrawGeomNoDS(
+BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     BADGPUTexture sTexture,
     uint32_t sFlags,
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
@@ -650,7 +688,7 @@ BADGPU_EXPORT void badgpuDrawGeomNoDS(
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
 ) {
-    badgpuDrawGeom(
+    return badgpuDrawGeom(
     sTexture, NULL,
     sFlags,
     sScX, sScY, sScWidth, sScHeight,

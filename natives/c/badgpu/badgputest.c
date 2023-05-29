@@ -21,8 +21,8 @@ void renderFlagMain(BADGPUTexture tex, int w, int h);
 void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h);
 
 int main() {
-    char * error;
-    BADGPUInstance bi = badgpuNewInstance(BADGPUNewInstanceFlags_Debug, &error);
+    const char * error;
+    BADGPUInstance bi = badgpuNewInstance(BADGPUNewInstanceFlags_CanPrintf | BADGPUNewInstanceFlags_BackendCheck, &error);
     if (!bi) {
         puts(error);
         return 1;

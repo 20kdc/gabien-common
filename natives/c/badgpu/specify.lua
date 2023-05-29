@@ -10,7 +10,9 @@ local inCode = false
 while true do
  local ln = io.read()
  if not ln then break end
- if ln:sub(1, 2) == " *" then
+ if ln == "" then
+  print()
+ elseif ln:sub(1, 2) == " *" then
   if inCode then
    print("```")
    print()

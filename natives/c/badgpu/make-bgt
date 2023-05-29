@@ -1,6 +1,7 @@
 #!/bin/sh
 lua specify.lua < badgpu.h > badgpu.md
 pandoc badgpu.md -o badgpu.html
+pandoc badgpu.md -o badgpu.pdf
 gcc -g badgpu.c badgpu_wsi_egl.c badgputest.c -o badgputest
 ./badgputest
 qoiconv tmp.qoi tmp.png

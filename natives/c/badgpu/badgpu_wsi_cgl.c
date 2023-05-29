@@ -19,13 +19,13 @@ struct BADGPUWSICtx {
     unsigned int (*CGLDestroyPixelFormat)(void *);
 };
 
-static BADGPUWSICtx badgpu_newWsiCtxError(char ** error, const char * err) {
+static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err) {
     if (error)
-        *error = (char *) err;
+        *error = err;
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(char ** error, int * expectDesktopExtensions) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
     *expectDesktopExtensions = 1;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)

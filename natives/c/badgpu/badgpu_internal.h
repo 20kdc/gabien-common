@@ -51,7 +51,7 @@ int printf(const char * fmt, ...);
 typedef struct BADGPUWSICtx * BADGPUWSICtx;
 
 // Creates a new WSICtx and automatically makes it current.
-BADGPUWSICtx badgpu_newWsiCtx(char ** error, int * expectDesktopExtensions);
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions);
 void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
 // Warning: Must be made current first!
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
