@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.10.1`
+ * Version: `0.10.2`
  *
  * ## Formatting Policy
  *
@@ -418,7 +418,7 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
  * After creation, they can be written to by using them as framebuffers, and
  *  drawing to them.
  *
- * `DSBuffer`s are depth/stencil buffers. They cannot be directly read or
+ * `DSBuffer`s are depth / stencil buffers. They cannot be directly read or
  *  written, but they can be used in drawing commands.
  *
  * Rationale: `OES_depth_texture` isn't ubiquitous.
@@ -426,7 +426,7 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
  * In fact, even on Vulkan-class hardware, I can't get it on Mesa in
  *  GLES-CM 1.1 mode. (Can from GLES2, though.)
  *
- * This, and `OES_packed_depth_stencil`, in mind, bundling depth/stencil into
+ * This, and `OES_packed_depth_stencil`, in mind, bundling depth / stencil into
  *  a single object that is treated as something of a black box simplifies the
  *  API for no real downside.
  *
@@ -443,13 +443,6 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
  * A 2D image with possible mipmaps.
  */
 typedef BADGPUObject BADGPUTexture;
-
-/*
- * ### `BADGPUTexture`
- *
- * A depth/stencil buffer.
- */
-typedef BADGPUObject BADGPUDSBuffer;
 
 /*
  * ### `BADGPUTextureFlags`
@@ -528,9 +521,16 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     uint16_t width, uint16_t height, const uint8_t * data);
 
 /*
+ * ### `BADGPUDSBuffer`
+ *
+ * A depth / stencil buffer.
+ */
+typedef BADGPUObject BADGPUDSBuffer;
+
+/*
  * ### `badgpuNewDSBuffer`
  *
- * Creates a depth/stencil buffer. \
+ * Creates a depth / stencil buffer. \
  * These are used for drawing... and that's about it.
  *
  * Returns `NULL` on failure, otherwise the new `DSBuffer`.
@@ -547,10 +547,10 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
  * At the same time, creating a dedicated renderbuffer API seems wasteful;
  *  BadGPU does not have any use for an RGBA renderbuffer.
  *
- * Abstracting the depth/stencil buffer into a single object that is managed by
- *  BadGPU isolates applications from changes to the reference implementation,
- *  and keeps the API simple. `OES_packed_depth_stencil` may be used to
- *  implement this or may not.
+ * Abstracting the depth / stencil buffer into a single object that is managed
+ *  by BadGPU isolates applications from changes to the reference
+ *  implementation, and keeps the API simple. `OES_packed_depth_stencil` may be
+ *  used to implement this or may not.
  */
 BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     uint16_t width, uint16_t height);
@@ -599,7 +599,7 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
  * ## Drawing Commands
  *
  * The following rule applies to all functions in this section:
- * The texture and depth/stencil buffers, if both present,
+ * The texture and depth / stencil buffers, if both present,
  *  must be the same size and instance.
  *
  * Drawing commands have the same first parameters, known as the session
@@ -902,18 +902,19 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
 /*
  * ### `badgpuDrawGeomNoDS`
  *
- * Alias for badgpuDrawGeom that removes depth/stencil parameters.
+ * Alias for badgpuDrawGeom that removes depth / stencil parameters.
  *
  * Most removed values are 0 / `NULL`, except:
  * + All stencil ops are `Keep`.
  * + `stFunc` / `dtFunc` are both `Always`.
  *
- * Rationale: The depth/stencil buffer is naturally linked with 3D drawing or
- *  at least advanced drawing. Some applications mostly consist of 2D drawing.
+ * Rationale: The depth / stencil buffer is naturally linked with 3D drawing, or
+ *  at least advanced drawing. Some applications mostly consist of 2D drawing,
+ *  or otherwise don't need the buffer due to Z-sorting/etc.
  *
  * In these cases, some overhead can be shaved, particularly in wrappers, by
  *  using a version of the function that strips out arguments that are not
- *  relevant to the DS buffer.
+ *  relevant to the `DSBuffer`.
  *
  * The default values are set such that the relevant units are kept disabled,
  *  even if the flags are set to enable those units, to prevent accidents.
