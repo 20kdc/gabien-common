@@ -196,8 +196,10 @@ static void destroyInstance(BADGPUObject obj) {
 
 static BADGPUBool badgpuChkInnards(BADGPUInstancePriv * bi, const char * location) {
     BADGPUBool ok = 1;
-    int err;
-    while (err = bi->glGetError()) {
+    while (1) {
+        int err = bi->glGetError();
+        if (!err)
+            break;
         if (bi->canPrintf)
             printf("BADGPU: %s: GL error 0x%x\n", location, err);
         ok = 0;

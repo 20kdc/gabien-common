@@ -9,7 +9,7 @@
 
 // WSICTX
 struct BADGPUWSICtx {
-    HWND window;
+    HWND hwnd;
     HDC hdc;
     HGLRC ctx;
 };
@@ -73,7 +73,7 @@ void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (ctx->ctx)
         wglDeleteContext(ctx->ctx);
     if (ctx->hwnd)
-        DestroyWindow(ctx->window);
+        DestroyWindow(ctx->hwnd);
     free(ctx);
 }
 

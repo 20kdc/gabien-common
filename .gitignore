@@ -69,10 +69,7 @@
 !natives/c/una.c
 !natives/c/una.h
 !natives/c/unajni.c
-!natives/c/unapoke.c
-!natives/c/unalibc.c
 !natives/c/jnifns.c
-!natives/c/theory.c
 !natives/src
 !natives/src/
 !natives/src/main

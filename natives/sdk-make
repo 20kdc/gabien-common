@@ -7,24 +7,27 @@ TARGETS="x86-linux-gnu"
 TARGETS_W="x86-windows-gnu x86_64-windows-gnu"
 TARGETS_NLTO="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu aarch64-linux-android arm-linux-android x86_64-linux-android"
-SOURCES="c/una.c c/unacall.c c/unajni.c c/unalibc.c c/unapoke.c"
+SOURCES="c/una.c c/unajni.c c/badgpu/badgpu.c"
+SOURCES_U="c/badgpu/badgpu_wsi_egl.c"
+SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
+SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
 for TARGET in $TARGETS ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_U -o $LIBUNA/una.$TARGET $COMMONFLAGS
 done
 for TARGET in $TARGETS_W ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS -lgdi32
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_W -o $LIBUNA/una.$TARGET $COMMONFLAGS -lgdi32 -lopengl32
 done
 # LTO not yet supported
 for TARGET in $TARGETS_NLTO ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" $SOURCES $SOURCES_M -o $LIBUNA/una.$TARGET $COMMONFLAGS
 done
 # on most of the Linuxy targets, use "fake libc" (this particularly works well with the Androids)
 for TARGET in $TARGETS_NSL ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES -o $LIBUNA/una.$TARGET $COMMONFLAGS -nostdlib
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_U -o $LIBUNA/una.$TARGET $COMMONFLAGS -nostdlib
 done
 # ideally, would do 32-bit x86 Android, but weird Zig errors stopped me
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
