@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.10.2`
+ * Version: `0.11.0`
  *
  * ## Formatting Policy
  *
@@ -448,17 +448,8 @@ typedef BADGPUObject BADGPUTexture;
  * ### `BADGPUTextureFlags`
  */
 typedef enum BADGPUTextureFlags {
-    // If minifying the texture uses linear filtering.
-    BADGPUTextureFlags_MinLinear = 1,
-    // If magnifying the texture uses linear filtering.
-    BADGPUTextureFlags_MagLinear = 2,
-    // If mipmapping is used.
-    BADGPUTextureFlags_Mipmap = 4,
-    // If accesses beyond the edges of the texture repeat (rather than clamping)
-    BADGPUTextureFlags_WrapS = 16,
-    BADGPUTextureFlags_WrapT = 32,
     // If, on the GPU, the texture has alpha.
-    BADGPUTextureFlags_HasAlpha = 64,
+    BADGPUTextureFlags_HasAlpha = 1,
     BADGPUTextureFlags_Force32 = 0x7FFFFFFF
 } BADGPUTextureFlags;
 
@@ -494,7 +485,8 @@ typedef enum BADGPUTextureFormat {
  *
  * The flags are `BADGPUNewTextureFlags`.
  *
- * Mipmaps are automatically created if the texture is mipmapped.
+ * Mipmaps are not automatically created. This must be done using
+ *  `badgpuGenerateMipmap` if the texture is to be used with mipmaps.
  *
  * Data can be supplied as a flat array of bytes.
  *
@@ -561,8 +553,8 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
  * Returns 1 on success, 0 on failure.
  *
  * Regenerates mipmaps for a texture. \
- * This must be done explicitly when a texture is rendered to, but doesn't need
- *  to be done when textures are created with data. \
+ * This must be done explicitly after a texture is rendered to, or when textures
+ *  are created with data, if that texture will be used with mipmapping. \
  * It should not be done if mipmaps are not used by the texture.
  *
  * Rationale: The `EXT_framebuffer_object` document goes into great detail about
@@ -700,6 +692,15 @@ typedef enum BADGPUDrawFlags {
     BADGPUDrawFlags_FreezeColour = 128,
     // TC array only has to be one element long, and that's the only TC.
     BADGPUDrawFlags_FreezeTC = 256,
+    // If minifying the texture uses linear filtering.
+    BADGPUDrawFlags_MinLinear = 512,
+    // If magnifying the texture uses linear filtering.
+    BADGPUDrawFlags_MagLinear = 1024,
+    // If mipmapping is used.
+    BADGPUDrawFlags_Mipmap = 2048,
+    // If accesses beyond the edges of the texture repeat (rather than clamping)
+    BADGPUDrawFlags_WrapS = 4096,
+    BADGPUDrawFlags_WrapT = 8192,
     BADGPUDrawFlags_Force32 = 0x7FFFFFFF
 } BADGPUDrawFlags;
 

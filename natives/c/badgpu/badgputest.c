@@ -34,7 +34,7 @@ int main() {
     // printf("Extensions: %s\n", badgpuGetMetaInfo(bi, 0x1F03));
 
     // Make a little texture to render to!
-    BADGPUTexture tex = badgpuNewTexture(bi, BADGPUTextureFlags_MagLinear, BADGPUTextureFormat_RGB, L_WIDTH, L_HEIGHT, NULL);
+    BADGPUTexture tex = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, L_WIDTH, L_HEIGHT, NULL);
 
     renderFlagMain(tex, L_WIDTH, L_HEIGHT);
 
@@ -175,7 +175,7 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
     };
     badgpuDrawGeomNoDS(
         texDst, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
-        0,
+        BADGPUDrawFlags_MagLinear,
         // Vertex Loader
         pos, col, tc,
         BADGPUPrimitiveType_Triangles, 1,

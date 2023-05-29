@@ -402,20 +402,6 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
     bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, efmt, GL_UNSIGNED_BYTE, data);
 
-    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flags & BADGPUTextureFlags_WrapS ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, flags & BADGPUTextureFlags_WrapT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-
-    int32_t minFilter = ((flags & BADGPUTextureFlags_Mipmap) ?
-        ((flags & BADGPUTextureFlags_MinLinear) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
-        :
-        ((flags & BADGPUTextureFlags_MinLinear) ? GL_LINEAR : GL_NEAREST)
-    );
-    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-    bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, flags & BADGPUTextureFlags_MagLinear ? GL_LINEAR : GL_NEAREST);
-
-    if (flags & BADGPUTextureFlags_Mipmap)
-        bi->glGenerateMipmap(GL_TEXTURE_2D);
-
     if (!badgpuChk(bi, "badgpuNewTexture", 1)) {
         badgpuUnref((BADGPUTexture) tex);
         return NULL;
@@ -588,6 +574,17 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         bi->glBindTexture(GL_TEXTURE_2D, BG_TEXTURE(texture)->tex);
         bi->glMatrixMode(GL_TEXTURE);
         if (!matrixT) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixT);
+
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flags & BADGPUDrawFlags_WrapS ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, flags & BADGPUDrawFlags_WrapT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+
+        int32_t minFilter = ((flags & BADGPUDrawFlags_Mipmap) ?
+            ((flags & BADGPUDrawFlags_MinLinear) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
+            :
+            ((flags & BADGPUDrawFlags_MinLinear) ? GL_LINEAR : GL_NEAREST)
+        );
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, flags & BADGPUDrawFlags_MagLinear ? GL_LINEAR : GL_NEAREST);
     } else {
         bi->glDisable(GL_TEXTURE_2D);
     }
