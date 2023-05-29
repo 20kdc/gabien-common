@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.05
+ * API Specification Version: 0.06
  */
 
 #ifndef BADGPU_H_
@@ -150,7 +150,7 @@ typedef struct BADGPUVector {
 
 typedef struct BADGPUVertex {
     float x, y, z, w;
-    uint8_t cR, cG, cB, cA;
+    float cR, cG, cB, cA;
     float tS, tT, tU, tV;
 } BADGPUVertex;
 
@@ -258,11 +258,21 @@ typedef enum BADGPUDrawFlags {
 
 /*
  * Primitive Type
+ * Values deliberately match glBegin etc.
+ * The implementation may make use of such.
+ * Users should not abuse this.
+ * (Rationale for not including loop/strip/fan primitive types:
+ *  These only really work properly with primitive restart, and DrawElements
+ *   makes them pretty close to obsolete anyway. Between that and the 65536
+ *   vertex index limit, there's really no good reason to use these.)
  */
 typedef enum BADGPUPrimitiveType {
-    BADGPUPrimitiveType_Points = 0,
-    BADGPUPrimitiveType_Lines = 1,
-    BADGPUPrimitiveType_Triangles = 2,
+    // GL_POINTS
+    BADGPUPrimitiveType_Points = 0x0000,
+    // GL_LINES
+    BADGPUPrimitiveType_Lines = 0x0001,
+    // GL_TRIANGLES
+    BADGPUPrimitiveType_Triangles = 0x0004,
     BADGPUPrimitiveType_Force32 = 0x7FFFFFFF
 } BADGPUPrimitiveType;
 

@@ -64,7 +64,8 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
     badgpuDrawClear(tex, NULL, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
     255, 0, 255, 255, 0, 0);
 
-#define COL(v) (((v) >> 16) & 0xFF), (((v) >> 8) & 0xFF), ((v) & 0xFF), (((v) >> 24) & 0xFF)
+#define CC(v) ((v) / 255.0)
+#define COL(v) CC(((v) >> 16) & 0xFF), CC(((v) >> 8) & 0xFF), CC((v) & 0xFF), CC(((v) >> 24) & 0xFF)
 #define M 0.3333
     BADGPUVertex vertices[] = {
         {-1,  1, 0, 1, COL(0xff218c), 0, 0, 0, 1},
@@ -116,13 +117,13 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
 void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
     // Mesh to test texture coordinates and colour+texture combo
     BADGPUVertex vertices[] = {
-        {-1,  1, 0, 1, 0x80, 0xFF, 0x80, 0xFF, 0, 0, 0, 1},
-        { 1,  1, 0, 1, 0x80, 0x80, 0xFF, 0xFF, 1, 0, 0, 1},
-        { 1, -1, 0, 1, 0x80, 0x80, 0x80, 0xFF, 1, 1, 0, 1},
+        {-1,  1, 0, 1, COL(0xFF80FF80), 0, 0, 0, 1},
+        { 1,  1, 0, 1, COL(0xFF8080FF), 1, 0, 0, 1},
+        { 1, -1, 0, 1, COL(0xFF808080), 1, 1, 0, 1},
 
-        {-1,  1, 0, 1, 0x80, 0xFF, 0x80, 0xFF, 0, 0, 0, 1},
-        { 1, -1, 0, 1, 0x80, 0x80, 0x80, 0xFF, 1, 1, 0, 1},
-        {-1, -1, 0, 1, 0xFF, 0x80, 0x80, 0xFF, 0, 1, 0, 1}
+        {-1,  1, 0, 1, COL(0xFF80FF80), 0, 0, 0, 1},
+        { 1, -1, 0, 1, COL(0xFF808080), 1, 1, 0, 1},
+        {-1, -1, 0, 1, COL(0xFFFF8080), 0, 1, 0, 1}
     };
     // Matrix to test texture matrices.
     // If this *isn't* active, the result is the wrong way up and NOT skewed.

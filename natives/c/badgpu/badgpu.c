@@ -26,10 +26,6 @@
 #define GL_UNSIGNED_SHORT 0x1403
 #define GL_FLOAT 0x1406
 
-#define GL_POINTS 0x0000
-#define GL_LINES 0x0001
-#define GL_TRIANGLES 0x0004
-
 #define GL_VERTEX_ARRAY 0x8074
 #define GL_COLOR_ARRAY 0x8076
 #define GL_TEXTURE_COORD_ARRAY 0x8078
@@ -555,30 +551,23 @@ BADGPU_EXPORT void badgpuDrawGeom(
         bi->glDisable(GL_BLEND);
     }
 
-    int32_t mode = GL_TRIANGLES;
-    switch (pType) {
-    case BADGPUPrimitiveType_Points: mode = GL_POINTS; break;
-    case BADGPUPrimitiveType_Lines: mode = GL_LINES; break;
-    case BADGPUPrimitiveType_Triangles: mode = GL_TRIANGLES; break;
-    }
-
-    if (mode == GL_POINTS) {
+    if (pType == BADGPUPrimitiveType_Points) {
         bi->glPointSize(plSize);
-    } else if (mode == GL_LINES) {
+    } else if (pType == BADGPUPrimitiveType_Lines) {
         bi->glLineWidth(plSize);
     }
 
     bi->glEnableClientState(GL_VERTEX_ARRAY);
     bi->glVertexPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->x);
     bi->glEnableClientState(GL_COLOR_ARRAY);
-    bi->glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(BADGPUVertex), &vertex->cR);
+    bi->glColorPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->cR);
     bi->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     bi->glTexCoordPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->tS);
 
     if (indices) {
-        bi->glDrawElements(mode, iCount, GL_UNSIGNED_SHORT, indices + iStart);
+        bi->glDrawElements(pType, iCount, GL_UNSIGNED_SHORT, indices + iStart);
     } else {
-        bi->glDrawArrays(mode, iStart, iCount);
+        bi->glDrawArrays(pType, iStart, iCount);
     }
     badgpuChk(bi, "badgpuDrawGeom");
 }
