@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.11.0`
+ * Version: `0.11.1`
  *
  * ## Formatting Policy
  *
@@ -596,7 +596,7 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
  *
  * Drawing commands have the same first parameters, known as the session
  *  parameters, prefixed with 's'.
- * They are controlled by sFlags, which are `BADGPUSessionFlags`.
+ * They are controlled by `sFlags`, which are `BADGPUSessionFlags`.
  *
  * It is important to keep in mind that the default state of the masks is
  *  NOT to render things. Normal operation might use `MaskAll` or `MaskRGBAD`.
@@ -685,7 +685,7 @@ typedef enum BADGPUDrawFlags {
     BADGPUDrawFlags_StencilTest = 8,
     BADGPUDrawFlags_DepthTest = 16,
     BADGPUDrawFlags_Blend = 32,
-    // Usually, the alpha test is >=. This inverts it to <.
+    // Usually, the alpha test is `GEqual`. This inverts it to `Less`.
     BADGPUDrawFlags_AlphaTestInvert = 64,
     // Colour array only has to be one element long, and that's the only colour.
     BADGPUDrawFlags_FreezeColor = 128,
@@ -839,7 +839,7 @@ typedef enum BADGPUBlendWeight {
  *
  * `iStart` and `iCount` represent a range in the indices array, which in turn are
  *  indices into the vertex arrays. \
- * If `indices` is null, then it is essentially as if an array was passed with
+ * If `indices` is `NULL`, then it is essentially as if an array was passed with
  *  values 0 to 65535.
  *
  * `matrixA` and / or `matrixB` can be `NULL`. In this case, they are
@@ -922,7 +922,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
  *
  * In practice, ES1.1 4.1.5 Stencil Test and 4.1.6 Depth Buffer Test specify
  *  that the lack of a stencil and depth buffer make those tests always pass,
- *  and disables stencil modification. With that in mind, sDSBuffer being NULL
+ *  and disables stencil modification. With that in mind, sDSBuffer being `NULL`
  *  is enough to optimize away the state wrangling.
  */
 BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
