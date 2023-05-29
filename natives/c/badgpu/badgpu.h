@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.10.0`
+ * Version: `0.10.1`
  *
  * ## Formatting Policy
  *
@@ -74,13 +74,13 @@
  *   + Structs and enums, including undeclared (i.e. opaque)
  *     + Structs should not be used as a replacement for parameters unless they
  *        have some level of dynamic layout, like arrays or different types.
- *       HOWEVER, adding a struct is better than adding a handle.
+ *       *However,* adding a struct is better than adding a handle.
  *       Rationale: Structs tend to add unnecessary overhead in JNI. None of the
  *        solutions are good. At best you lose what you gained.
  *   + Pointers of various shapes and sizes
  *     + Handles in particular should only be used when BadGPU is holding an
  *        underlying resource of some kind. This is why the only three handle
- *        types at time of writing are Instance, Texture, and DSBuffer.
+ *        types at time of writing are `Instance`, `Texture`, and `DSBuffer`.
  *       If BadGPU isn't holding a resource, it's added overhead to create
  *        get/set functions to prod what is essentially a remote struct.
  * + Function pointers are not okay. Do anything else. \
@@ -271,7 +271,11 @@ typedef struct BADGPUMatrix {
  *  unexpected segmentation faults in wrappers that manage resources using GCs.
  */
 
-// Generic object handle.
+/*
+ * ### `BADGPUObject`
+ *
+ * Generic object handle.
+ */
 typedef struct BADGPUObject * BADGPUObject;
 
 /*
@@ -279,7 +283,7 @@ typedef struct BADGPUObject * BADGPUObject;
  *
  * References a BadGPU object.
  *
- * Does nothing if given NULL.
+ * Does nothing if given `NULL`.
  *
  * Returns what it was given.
  */
@@ -290,7 +294,7 @@ BADGPU_EXPORT BADGPUObject badgpuRef(BADGPUObject obj);
  *
  * Unreferences a BadGPU object.
  *
- * Returns non-zero if the object was completely removed.
+ * Returns 1 if the object was completely removed, otherwise 0.
  *
  * Otherwise, hanging references presumably still exist.
  *
@@ -366,7 +370,7 @@ typedef enum BADGPUNewInstanceFlags {
  * This will allocate resources such as an `EGLDisplay` or `HWND`, so the
  *  instance should be unreferenced when done with.
  *
- * On failure, NULL is returned, and if the error pointer is provided, a
+ * On failure, `NULL` is returned, and if the error pointer is provided, a
  *  constant C string pointer is placed there.
  * (On success, the error pointer is not updated.)
  * This constant C string, being a constant, is thread-safe, and cannot be
@@ -407,15 +411,15 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
 /*
  * ## Texture/2D Buffer Management
  *
- * BADGPU has two kinds of image.
+ * BadGPU has two kinds of image.
  *
  * Textures are fixed-size, always read/write images.
  *
  * After creation, they can be written to by using them as framebuffers, and
  *  drawing to them.
  *
- * DSBuffers are depth/stencil buffers. They cannot be directly read or written,
- *  but they can be used in drawing commands.
+ * `DSBuffer`s are depth/stencil buffers. They cannot be directly read or
+ *  written, but they can be used in drawing commands.
  *
  * Rationale: `OES_depth_texture` isn't ubiquitous.
  *
@@ -433,10 +437,18 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
  *  specific sub-type of texture you can or can't render to.
  */
 
-// A 2D image with possible mipmaps.
+/*
+ * ### `BADGPUTexture`
+ *
+ * A 2D image with possible mipmaps.
+ */
 typedef BADGPUObject BADGPUTexture;
 
-// A depth/stencil buffer.
+/*
+ * ### `BADGPUTexture`
+ *
+ * A depth/stencil buffer.
+ */
 typedef BADGPUObject BADGPUDSBuffer;
 
 /*
@@ -485,7 +497,9 @@ typedef enum BADGPUTextureFormat {
  *
  * Creates a texture, with possible initial data.
  *
- * The flags are BADGPUNewTextureFlags.
+ * Returns `NULL` on failure, otherwise the new texture.
+ *
+ * The flags are `BADGPUNewTextureFlags`.
  *
  * Mipmaps are automatically created if the texture is mipmapped.
  *
@@ -497,15 +511,15 @@ typedef enum BADGPUTextureFormat {
  * It's important to note that texture formats only specify the format of
  *  the data being provided. It does not alter the actual format on the GPU.
  *
- * Only `BADGPUTextureFlags_HasAlpha` alters the actual format on the GPU.
+ * Only the `HasAlpha` flag alters the actual format on the GPU.
  *
  * If `NULL` is passed as the data, then the texture contents are undefined.
  *
- * Rationale: Width/height are `uint16_t` because that's usually as far as GL
- *  implementations go in the best case before giving up. The expected capacity
- *  of the data buffer is easy to check against the format.
+ * Rationale: `width` / `height` are `uint16_t` because that's usually as far as
+ *  GL implementations go in the best case before giving up. The expected
+ *  capacity of the data buffer is easy to check against the format.
  *
- * 1/2-component texture formats are stored on GPU as RGB/RGBA due to the
+ * 1/2-component texture formats are stored on GPU as RGB / RGBA due to the
  *  requirements of `EXT_framebuffer_object` 4.4.4 Framebuffer Completeness,
  *  which does not define other formats as renderable.
  */
@@ -516,11 +530,14 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
 /*
  * ### `badgpuNewDSBuffer`
  *
- * Creates a depth/stencil buffer.
+ * Creates a depth/stencil buffer. \
  * These are used for drawing... and that's about it.
  *
- * Rationale: While OES_packed_depth_stencil seems essentially ubiquitous,
- *  it may not turn out so. Furthermore, OES_depth_texture is NOT ubiquitous.
+ * Returns `NULL` on failure, otherwise the new `DSBuffer`.
+ *
+ * Rationale: While `OES_packed_depth_stencil` seems essentially ubiquitous,
+ *  it may not turn out so. Furthermore, `OES_depth_texture` is _not_
+ *  ubiquitous.
  *
  * In fact, even on Vulkan-class hardware, I can't get it on Mesa in
  *  GLES-CM 1.1 mode. (Can from GLES2, though.)
@@ -532,8 +549,8 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
  *
  * Abstracting the depth/stencil buffer into a single object that is managed by
  *  BadGPU isolates applications from changes to the reference implementation,
- *  and keeps the API simple. OES_packed_depth_stencil may be used to implement
- *  this or may not.
+ *  and keeps the API simple. `OES_packed_depth_stencil` may be used to
+ *  implement this or may not.
  */
 BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     uint16_t width, uint16_t height);
@@ -541,12 +558,14 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
 /*
  * ### `badgpuGenerateMipmap`
  *
- * Regenerates mipmaps for a texture.
+ * Returns 1 on success, 0 on failure.
+ *
+ * Regenerates mipmaps for a texture. \
  * This must be done explicitly when a texture is rendered to, but doesn't need
- *  to be done when textures are created with data.
+ *  to be done when textures are created with data. \
  * It should not be done if mipmaps are not used by the texture.
  *
- * Rationale: The EXT_framebuffer_object document goes into great detail about
+ * Rationale: The `EXT_framebuffer_object` document goes into great detail about
  *  the rationale on the GL end. On BadGPU's end, deferring mipmap generation
  *  until the moment of use sounds bad for performance. The application knows
  *  when (or if!) it wants mipmaps to be regenerated.
@@ -560,10 +579,18 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture);
  * ### `badgpuReadPixels`
  *
  * Reads pixels back from a texture.
- * Pixels are always read back as RGBA8888, as they would be supplied to
- *  badgpuNewTexture.
  *
- * Rationale: This is simply what glReadPixels provides for GLES 1.1.
+ * Returns 1 on success, 0 on failure.
+ *
+ * Pixels are always read back as RGBA8888, as they would be supplied to
+ *  `badgpuNewTexture`.
+ *
+ * Rationale: This is simply what `glReadPixels` provides for GLES 1.1.
+ *
+ * If `width` or `height` is 0, the function silently succeeds.
+ *
+ * Otherwise, fails if `data` or `texture` is `NULL`, or various other issues
+ *  occur.
  */
 BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
     uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data);
@@ -577,10 +604,10 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
  *
  * Drawing commands have the same first parameters, known as the session
  *  parameters, prefixed with 's'.
- * They are controlled by sFlags, which are BADGPUSessionFlags.
+ * They are controlled by sFlags, which are `BADGPUSessionFlags`.
  *
  * It is important to keep in mind that the default state of the masks is
- *  NOT to render things. Normal operation might use MaskAll or MaskRGBAD.
+ *  NOT to render things. Normal operation might use `MaskAll` or `MaskRGBAD`.
  *
  * Rationale: These parameters are all those documented as common between
  *  clear and drawing commands. See ES 2.0: 4.2.3 Clearing the Buffers,
@@ -637,12 +664,15 @@ typedef enum BADGPUSessionFlags {
  * ### `badgpuDrawClear`
  *
  * Performs a clear.
- * The session flag masks control the clear.
- * Either buffer may or may not be present, but at least one buffer should be.
+ *
+ * Returns 1 on success, 0 on failure.
+ *
+ * The session flag masks control the clear. \
+ * Either buffer may or may not be present, but at least one buffer should be. \
  * (Failure to provide any buffers at all is a wasteful NOP.)
  *
- * Rationale: Separate clear flags aren't necessary when the masks exist.
- *  The reference implementation chooses to still translate these into buffer
+ * Rationale: Separate clear flags aren't necessary when the masks exist. \
+ *  The reference implementation chooses to still translate these into buffer \
  *  bits in case of potential GL-level optimizations.
  */
 BADGPU_EXPORT BADGPUBool badgpuDrawClear(
@@ -680,7 +710,7 @@ typedef enum BADGPUDrawFlags {
  *  The implementation may make use of such.
  *  Users should not abuse this.)
  *
- * (Rationale for not including loop/strip/fan primitive types:
+ * (Rationale for not including loop / strip / fan primitive types:
  *  These only really work properly with primitive restart, and `glDrawElements`
  *   makes them pretty close to obsolete anyway. Between that and the 65536
  *   vertex index limit, there's really no good reason to use these.)
@@ -792,38 +822,49 @@ typedef enum BADGPUBlendWeight {
  * ### `badgpuDrawGeom`
  *
  * Performs a drawing command.
+ *
+ * Returns 1 on success, 0 on failure.
+ *
  * The flags provided are `BADGPUDrawFlags`.
  *
- * vPos/vCol/vTC are the vertex data arrays.
- * vCol and vTC can be null to leave that feature at a default.
- * vPos CANNOT be null.
- * For vCol and vTC, there are also "freeze flags".
+ * `vPos` / `vCol` / `vTC` are the vertex data arrays. \
+ * `vCol` and `vTC` can be `NULL` to leave that feature at a default. \
+ * `vPos` *must not* be `NULL`, or the function will error.
+ *
+ * For `vCol` and `vTC`, there are also "freeze flags". \
  * If used in conjunction with the arrays, only the first element of those
- *  arrays is used (allowing for "single-colour uniform" treatment).
+ *  arrays is used (allowing for "single-colour uniform" treatment). \
  * (This lookup ignores indices, and frozen arrays can be just that element.)
  *
- * iStart and iCount represent a range in the indices array, which in turn are
- *  indices into the vertex arrays.
- * If indices is null, then it is essentially as if an array was passed with
+ * `iStart` and `iCount` represent a range in the indices array, which in turn are
+ *  indices into the vertex arrays. \
+ * If `indices` is null, then it is essentially as if an array was passed with
  *  values 0 to 65535.
- * matrix* can be null, in which case they are effectively identity.
- * Otherwise, see BADGPUMatrix.
- * depthN, depthF make up the depth range (0, 1 is a good default).
- * vX, vY, vW, vH make up the viewport.
  *
- * texture is multiplied with the vertex colours.
- * (If null, then the vertex colours are used as-is.)
+ * `matrixA` and / or `matrixB` can be `NULL`. In this case, they are
+ *  effectively identity. \
+ * Otherwise, see `BADGPUMatrix`.
+ *
+ * `depthN`, `depthF` make up the depth range (0, 1 is a good default).
+ *
+ * `vX`, `vY`, `vW`, `vH` make up the viewport.
+ *
+ * `texture` is multiplied with the vertex colours. \
+ * (If `NULL`, then the vertex colours are used as-is.) \
  * The texture coordinates are multiplied with the texture coordinate matrix.
- * poFactor, poUnits make up the polygon offset.
- * alphaTestMin specifies a minimum alpha.
- * (Or a maximum, if AlphaTestInvert is set.)
  *
- * `stFunc`, `stRef`, and `stMask` are used for the stencil test.
- * This stMask is for the test; the mask used for writing is the session's
+ * `poFactor`, `poUnits` make up the polygon offset.
+ *
+ * `alphaTestMin` specifies a minimum alpha. \
+ * (Or a maximum, if `AlphaTestInvert` is set.)
+ *
+ * `stFunc`, `stRef`, and `stMask` are used for the stencil test. \
+ * This `stMask` is for the test; the mask used for writing is the session's
  *  stencil mask. However, no writing occurs if the test isn't enabled in the
  *  draw flags.
- * stSF, stDF, and stDP control what happens to the stencil buffer under various
- *  situations with the stencil test.
+ *
+ * `stSF`, `stDF`, and `stDP` control what happens to the stencil buffer under
+ *  various situations with the stencil test.
  *
  * Rationale: While this function is indeed absolutely massive, there are
  *  shorter wrappers such as badgpuDrawGeomNoDS. This is also arguably a natural

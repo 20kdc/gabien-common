@@ -212,6 +212,13 @@ static inline BADGPUBool badgpuChk(BADGPUInstancePriv * instance, const char * l
     return 1;
 }
 
+static inline BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * location) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    if (bi->canPrintf)
+        printf("BADGPU: %s\n", location);
+    return 0;
+}
+
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
     BADGPUInstancePriv * bi = malloc(sizeof(BADGPUInstancePriv));
     if (!bi) {
@@ -324,8 +331,9 @@ static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffe
         *bi = sTex->i;
     if (sDS)
         *bi = sDS->i;
+    // Sadly, can't report this if it happens
     if (!*bi)
-        return 1;
+        return 0;
     badgpu_wsiCtxMakeCurrent((*bi)->ctx);
     (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
     // badgpuChk(*bi, "fbSetup1", 0);
@@ -458,8 +466,12 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture) {
 BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
     uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data) {
     BADGPUInstancePriv * bi;
+    if (width == 0 || height == 0)
+        return 1;
     if (!fbSetup(texture, NULL, &bi))
         return 0;
+    if (!data)
+        return badgpuErr(bi, "badgpuReadPixels: data == NULL for non-zero area");
     bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
     return badgpuChk(bi, "badgpuReadPixels", 0);
 }
@@ -551,6 +563,9 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPUInstancePriv * bi;
     if (!drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
         return 0;
+
+    if (!vPos)
+        return badgpuErr(bi, "badgpuDrawGeom: vPos is NULL");
 
     // Vertex Shader
     bi->glMatrixMode(GL_PROJECTION);
