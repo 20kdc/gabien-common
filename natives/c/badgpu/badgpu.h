@@ -7,7 +7,7 @@
 
 /*
  * BadGPU C Header And API Specification
- * API Specification Version: 0.06
+ * API Specification Version: 0.07
  */
 
 #ifndef BADGPU_H_
@@ -63,7 +63,7 @@
  *      attribute vec4 colour;
  *      attribute vec4 texCoord;
  *      (Rationale: Interesting possibilities for texCoord-accelerated anim.)
- *     This format is packed (see BADGPUVertex).
+ *     This format is split into multiple arrays for flexibility.
  *     The vertex is transformed by two mat4 uniforms.
  *     These are modelview and projection.
  * 2. Primitive Assembly:
@@ -144,15 +144,12 @@ typedef BADGPUObject BADGPUDSBuffer;
 
 typedef unsigned char BADGPUBool;
 
+/*
+ * 4D float vector. Used for matrices and also vertex data.
+ */
 typedef struct BADGPUVector {
     float x, y, z, w;
 } BADGPUVector;
-
-typedef struct BADGPUVertex {
-    float x, y, z, w;
-    float cR, cG, cB, cA;
-    float tS, tT, tU, tV;
-} BADGPUVertex;
 
 /*
  * A matrix is a "transposed" matrices as per GL LoadMatrix.
@@ -171,6 +168,22 @@ typedef enum BADGPUNewInstanceFlags {
     BADGPUNewInstanceFlags_Debug = 1,
     BADGPUNewInstanceFlags_Force32 = 0x7FFFFFFF
 } BADGPUNewInstanceFlags;
+
+/*
+ * Metainfo Type
+ * Values deliberately match glGetString.
+ * The implementation may make use of such.
+ * Users should not abuse this.
+ */
+typedef enum BADGPUMetaInfoType {
+    // GL_VENDOR
+    BADGPUMetaInfoType_Vendor = 0x1F00,
+    // GL_RENDERER
+    BADGPUMetaInfoType_Renderer = 0x1F01,
+    // GL_VERSION
+    BADGPUMetaInfoType_Version = 0x1F02,
+    BADGPUMetaInfoType_Force32 = 0x7FFFFFFF
+} BADGPUMetaInfoType;
 
 /*
  * Texture Formats/Flags
@@ -253,6 +266,11 @@ typedef enum BADGPUDrawFlags {
     BADGPUDrawFlags_Blend = 32,
     // Usually, the alpha test is >=. This inverts it to <.
     BADGPUDrawFlags_AlphaTestInvert = 64,
+    // Colour array only has to be one element long, and that's the only colour.
+    BADGPUDrawFlags_FreezeColor = 128,
+    BADGPUDrawFlags_FreezeColour = 128,
+    // TC array only has to be one element long, and that's the only TC.
+    BADGPUDrawFlags_FreezeTC = 256,
     BADGPUDrawFlags_Force32 = 0x7FFFFFFF
 } BADGPUDrawFlags;
 
@@ -367,8 +385,22 @@ typedef enum BADGPUBlendWeight {
 /*
  * Object Management
  *
+ * All BadGPU-generated handles are BadGPU objects, manipulatable with the
+ *  badgpuRef and badgpuUnref functions.
+ *
  * BadGPU objects start out with a single reference.
  * This reference is the one being returned from the function creating it.
+ *
+ * Rationale: Providing a single point of reference management for BadGPU
+ *  objects makes the job of wrappers and so forth easier. In addition, this
+ *  also adds memory safety.
+ *
+ * BadGPU objects hold references to things they depend on (the instance), so
+ *  instances will not be deleted until their resources are deleted.
+ *
+ * This ensures handles can't end up in a "stuck" state where they can't be
+ *  deleted because their instance no longer exists, which could cause
+ *  unexpected segmentation faults in wrappers that manage resources using GCs.
  */
 
 /*
@@ -387,25 +419,64 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
 /*
  * Instance Initialization
  *
- * BADGPU is split into instances.
+ * BadGPU is split into instances.
  * There is no inter-instance resource sharing.
  * Instances must only be used from one thread at a time.
+ *
+ * Rationale: Cross-compilation to many platforms,
+ *  particularly macOS and Windows, makes ensuring a ready supply of things
+ *  like threading primitives hard.
+ *
+ * As BadGPU doesn't have any support for external surfaces anyway, relying on
+ *  host memory to carry final framebuffers to their destinations, it seems
+ *  appropriate to simply provide a guarantee of inter-instance isolation.
+ *
+ * If CPU work expended on BadGPU and GL processing becomes a severe issue, or
+ *  simply for convenience or safety purposes, users may choose to layer a
+ *  multi-threading model on top of BadGPU, i.e. one based around queues.
+ *
+ * If two tasks are sufficiently isolated that surface transfers are rare, then
+ *  a model can be created where a texture is copied through host memory to
+ *  provide it on another instance. This functionality is not directly provided
+ *  by BadGPU, because it is more efficient to implement it on a queue system
+ *  as described earlier.
  */
 
 /*
- * Creates a new BADGPU instance.
+ * Creates a new BadGPU instance.
+ *
  * This will allocate resources such as an EGLDisplay or HWND, so the instance
  *  should be unreferenced when done with.
+ *
  * On failure, NULL is returned, and if the error pointer is provided, a
  *  constant C string pointer is placed there.
  * (On success, the error pointer is not updated.)
  * This constant C string, being a constant, is thread-safe, and cannot be
  *  invalidated.
+ *
  * The flags are BADGPUNewInstanceFlags.
  * The debug flag indicates that a performance hit is acceptable for better
  *  debugging information to be provided in an implementation-dependent manner.
+ *
+ * Rationale: Due to cross-compilation limitations, the current reference
+ *  implementation of GL error tracking outputs to standard output.
+ *
+ * For some applications, this is unacceptable behaviour.
+ *
+ * In addition, GL error tracking arguably adds unnecessary overhead. This isn't
+ *  as big of a concern to BadGPU, but given there's nowhere to put the errors,
+ *  it's relatively okay.
  */
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error);
+
+/*
+ * Returns a string describing an aspect of the instance, or NULL on error.
+ *
+ * This string's lifetime is only certain until the next call involving the
+ *  instance or any related object.
+ */
+BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
+    BADGPUMetaInfoType mi);
 
 /*
  * Texture/2D Buffer Management
@@ -485,8 +556,16 @@ BADGPU_EXPORT void badgpuDrawClear(
  * Performs a drawing command.
  * The flags provided are BADGPUDrawFlags.
  *
+ * vPos/vCol/vTC are the vertex data arrays.
+ * vCol and vTC can be null to leave that feature at a default.
+ * vPos CANNOT be null.
+ * For vCol and vTC, there are also "freeze flags".
+ * If used in conjunction with the arrays, only the first element of those
+ *  arrays is used (allowing for "single-colour uniform" treatment).
+ * (This lookup ignores indices, and frozen arrays can be just that element.)
+ *
  * iStart and iCount represent a range in the indices array, which in turn are
- *  indices into the vertex array.
+ *  indices into the vertex arrays.
  * If indices is null, then it is essentially as if an array was passed with
  *  values 0 to 65535.
  * matrix* can be null, in which case they are effectively identity.
@@ -512,7 +591,8 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
+    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
@@ -547,7 +627,8 @@ BADGPU_EXPORT void badgpuDrawGeomNoDS(
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
+    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,

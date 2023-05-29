@@ -71,6 +71,8 @@
 #define GL_CW 0x0900
 #define GL_CCW 0x0901
 
+#define GL_TEXTURE0 0x84C0
+
 // Types
 
 struct BADGPUObject {
@@ -123,6 +125,9 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glStencilOp)(int32_t, int32_t, int32_t);
     void (KHRABI *glBlendFuncSeparate)(int32_t, int32_t, int32_t, int32_t);
     void (KHRABI *glBlendEquationSeparate)(int32_t, int32_t);
+    void (KHRABI *glColor4f)(float, float, float, float);
+    void (KHRABI *glMultiTexCoord4f)(int32_t, float, float, float, float);
+    const char * (KHRABI *glGetString)(int32_t);
     // Desktop/Non-Desktop variable area
     void (KHRABI *glGenFramebuffers)(int32_t, uint32_t *);
     void (KHRABI *glDeleteFramebuffers)(int32_t, uint32_t *);
@@ -249,6 +254,9 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
     bi->glStencilOp = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilOp");
     bi->glBlendFuncSeparate = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBlendFuncSeparate");
     bi->glBlendEquationSeparate = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBlendEquationSeparate");
+    bi->glColor4f = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColor4f");
+    bi->glMultiTexCoord4f = badgpu_wsiCtxGetProcAddress(bi->ctx, "glMultiTexCoord4f");
+    bi->glGetString = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGetString");
     if (desktopExt) {
         bi->glGenFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenFramebuffersEXT");
         bi->glDeleteFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteFramebuffersEXT");
@@ -274,6 +282,13 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, char ** error) {
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
     badgpuChk(bi, "badgpuNewInstance");
     return (BADGPUInstance) bi;
+}
+
+BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
+    BADGPUMetaInfoType mi) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    badgpu_wsiCtxMakeCurrent(bi->ctx);
+    return bi->glGetString(mi);
 }
 
 // FBM
@@ -457,7 +472,8 @@ BADGPU_EXPORT void badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
+    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
@@ -558,11 +574,31 @@ BADGPU_EXPORT void badgpuDrawGeom(
     }
 
     bi->glEnableClientState(GL_VERTEX_ARRAY);
-    bi->glVertexPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->x);
-    bi->glEnableClientState(GL_COLOR_ARRAY);
-    bi->glColorPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->cR);
-    bi->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    bi->glTexCoordPointer(4, GL_FLOAT, sizeof(BADGPUVertex), &vertex->tS);
+    bi->glVertexPointer(4, GL_FLOAT, sizeof(BADGPUVector), &vPos->x);
+    if (vCol) {
+        if (flags & BADGPUDrawFlags_FreezeColour) {
+            bi->glDisableClientState(GL_COLOR_ARRAY);
+            bi->glColor4f(vCol->x, vCol->y, vCol->z, vCol->w);
+        } else {
+            bi->glEnableClientState(GL_COLOR_ARRAY);
+            bi->glColorPointer(4, GL_FLOAT, sizeof(BADGPUVector), &vCol->x);
+        }
+    } else {
+        bi->glDisableClientState(GL_COLOR_ARRAY);
+        bi->glColor4f(1, 1, 1, 1);
+    }
+    if (vTC) {
+        if (flags & BADGPUDrawFlags_FreezeTC) {
+            bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+            bi->glMultiTexCoord4f(GL_TEXTURE0, vTC->x, vTC->y, vTC->z, vTC->w);
+        } else {
+            bi->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            bi->glTexCoordPointer(4, GL_FLOAT, sizeof(BADGPUVector), &vTC->x);
+        }
+    } else {
+        bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        bi->glMultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
+    }
 
     if (indices) {
         bi->glDrawElements(pType, iCount, GL_UNSIGNED_SHORT, indices + iStart);
@@ -578,7 +614,8 @@ BADGPU_EXPORT void badgpuDrawGeomNoDS(
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVertex * vertex, BADGPUPrimitiveType pType, float plSize,
+    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
@@ -597,7 +634,8 @@ BADGPU_EXPORT void badgpuDrawGeomNoDS(
     sFlags,
     sScX, sScY, sScWidth, sScHeight,
     flags,
-    vertex, pType, plSize,
+    vPos, vCol, vTC,
+    pType, plSize,
     iStart, iCount, indices,
     matrixA, matrixB,
     0, 0,
