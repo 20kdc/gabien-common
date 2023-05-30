@@ -114,6 +114,15 @@ public abstract class BadGPU extends BadGPUEnum {
                 return BadGPUUnsafe.getMetaInfo(pointer, type.value);
             }
         }
+
+        public void flush() {
+            try (InstanceBinder ib = syncObject.bind()) {
+                if (!valid)
+                    throw new InvalidatedPointerException(this);
+                BadGPUUnsafe.flushInstance(pointer);
+            }
+        }
+
         public @Nullable Texture newTexture(int flags, int width, int height, ByteBuffer data, int offset) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
                 throw new IllegalArgumentException("Width/height not 0-32767.");

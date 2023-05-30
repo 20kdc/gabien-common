@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.13.0`
+ * Version: `0.14.0`
  *
  * ## Formatting Policy
  *
@@ -449,14 +449,29 @@ BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance);
  *
  * Unbinds a BadGPU instance from the current thread.
  *
- * Some graphics APIs ensure thread safety by preventing the binding of a
- *  context in more than one thread.
- *
  * Note that an instance shouldn't be unbound before being finally unreferenced.
  *
  * In fact, the instance being bound when being unreferenced is required.
  */
 BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance);
+
+/*
+ * ### `badgpuFlushInstance`
+ *
+ * Ensures the GPU is executing sent draw commands.
+ *
+ * There is never a situation where you must run this; it is only a performance
+ *  optimization tool.
+ *
+ * Rationale: GL drivers usually avoid stalling by displaying frames with a
+ *  delay. However, BadGPU requires the user to implement their own WSI via
+ *  CPU memory. This means pixels must be retrieved, and that causes stalling.
+ *
+ * A way to ensure commands are being executed on the GPU is to perform a
+ *  `glFlush`, and then come back around later after spending some time to
+ *  handle CPU-side tasks. This exposes that functionality.
+ */
+BADGPU_EXPORT void badgpuFlushInstance(BADGPUInstance instance);
 
 /*
  * ## Texture/2D Buffer Management

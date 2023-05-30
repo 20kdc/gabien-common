@@ -131,6 +131,7 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glColor4f)(float, float, float, float);
     void (KHRABI *glMultiTexCoord4f)(int32_t, float, float, float, float);
     const char * (KHRABI *glGetString)(int32_t);
+    void (KHRABI *glFlush)();
     // Desktop/Non-Desktop variable area
     void (KHRABI *glGenFramebuffers)(int32_t, uint32_t *);
     void (KHRABI *glDeleteFramebuffers)(int32_t, uint32_t *);
@@ -318,6 +319,7 @@ CHKGLFN(fn)
     BINDGLFN(glColor4f);
     BINDGLFN(glMultiTexCoord4f);
     BINDGLFN(glGetString);
+    BINDGLFN(glFlush);
     if (desktopExt) {
         BINDGLFN2(glGenFramebuffers, EXT);
         BINDGLFN2(glDeleteFramebuffers, EXT);
@@ -382,13 +384,19 @@ BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance) {
     if (!instance)
         return;
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    if (!bi->isBound) {
-        if (bi->canPrintf)
-            printf("BADGPU: badgpuUnbindInstance: Wasn't bound\n");
+    if (!badgpuBChk(bi, "badgpuUnbindInstance"))
         return;
-    }
     badgpu_wsiCtxStopCurrent(bi->ctx);
     bi->isBound = 0;
+}
+
+BADGPU_EXPORT void badgpuFlushInstance(BADGPUInstance instance) {
+    if (!instance)
+        return;
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    if (!badgpuBChk(bi, "badgpuFlushInstance"))
+        return;
+    bi->glFlush();
 }
 
 // FBM

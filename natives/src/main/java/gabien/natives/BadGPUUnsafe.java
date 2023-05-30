@@ -11,7 +11,7 @@ import java.nio.Buffer;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.13.0
+ * VERSION: 0.14.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -26,6 +26,7 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native String getMetaInfo(long instance, int type);
     public static native boolean bindInstance(long instance);
     public static native void unbindInstance(long instance);
+    public static native void flushInstance(long instance);
     // TM
     public static native long newTexture(long instance, int flags, int width, int height, Buffer data, long offset);
     public static native long newDSBuffer(long instance, int width, int height);

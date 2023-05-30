@@ -43,6 +43,10 @@ void J_BADGPU(unbindInstance)(void * env, void * self, int64_t instance) {
     badgpuUnbindInstance(C_PTR(instance));
 }
 
+void J_BADGPU(flushInstance)(void * env, void * self, int64_t instance) {
+    badgpuFlushInstance(C_PTR(instance));
+}
+
 // TM
 
 int64_t J_BADGPU(newTexture)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, void * data, int64_t offset) {

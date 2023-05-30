@@ -39,10 +39,9 @@ public class Main {
         System.out.println("init: renderer: " + instance.getMetaInfo(MetaInfoType.Renderer));
         System.out.println("init: version: " + instance.getMetaInfo(MetaInfoType.Version));
         screen = instance.newTexture(0, 512, 512, null, 0);
-        System.out.println(BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0));
-        System.out.println(BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, 0, 0, 512, 512, 1, 1, 0, 1, 0, 0));
-        System.out.println(BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, 0, 0, 256, 256, 0, 1, 1, 1, 0, 0));
-        System.out.println("---");
+        BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0);
+        BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, 0, 0, 512, 512, 1, 1, 0, 1, 0, 0);
+        BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, 0, 0, 256, 256, 0, 1, 1, 1, 0, 0);
     }
     public static void main(String[] args) {
         System.setProperty("sun.awt.noerasebackground", "true");
@@ -90,7 +89,7 @@ public class Main {
                 BufferedImage tmp = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
                 int[] data = new int[512 * 512];
                 ByteBuffer dataSrc = ByteBuffer.allocateDirect(data.length * 4);
-                System.out.println("rpx" + m.screen.readPixels(0, 0, 512, 512, dataSrc, 0));
+                m.screen.readPixels(0, 0, 512, 512, dataSrc, 0);
                 int ptr = 0;
                 for (int i = 0; i < data.length; i++) {
                     int r = dataSrc.get(ptr++) & 0xFF;
@@ -102,6 +101,6 @@ public class Main {
                 tmp.setRGB(0, 0, 512, 512, data, 0, 512);
                 gr.drawImage(tmp, 0, 0, m.currentCanvasWidth, m.currentCanvasHeight, null);
             }
-        }, 0, 100);
+        }, 0, 16);
     }
 }
