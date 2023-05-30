@@ -152,6 +152,7 @@ public class Main {
         });
         m.t = new Timer();
         m.t.scheduleAtFixedRate(new TimerTask() {
+            BufferedImage tmp = null;
             @Override
             public void run() {
                 // ensure a frame has completed before continuing...
@@ -163,7 +164,6 @@ public class Main {
                 m.currentCanvasHeight = ch;
                 int sw = m.currentBufferWidth;
                 int sh = m.currentBufferHeight;
-                BufferedImage tmp = null;
                 if (m.screen != null) {
                     int[] data = new int[sw * sh];
                     ByteBuffer dataSrc = ByteBuffer.allocateDirect(data.length * 4);
@@ -179,8 +179,9 @@ public class Main {
                         int a = dataSrc.get(ptr++) & 0xFF;
                         data[i] = (r << 16) | (g << 8) | b | (a << 24);
                     }
-                    // this is awful code, and needs revising, but right now I just want to confirm stuff works
-                    tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
+                    // this code isn't great but still
+                    if (tmp == null || tmp.getWidth() != sw || tmp.getHeight() != sh)
+                        tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
                     tmp.setRGB(0, 0, sw, sh, data, 0, sw);
                 } {
                     m.frameRequestSemaphore.release();
