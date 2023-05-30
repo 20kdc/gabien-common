@@ -32,7 +32,7 @@ done
 # ideally, would do 32-bit x86 Android, but weird Zig errors stopped me
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
 # ideally, would do the BSDs, but no libc and can't override
-rm $LIBUNA/natives.lib
+rm $LIBUNA/badgpu_jni.lib
 rm $LIBUNA/natives.pdb
 # strip anything we can
 for x in `ls $LIBUNA`; do
