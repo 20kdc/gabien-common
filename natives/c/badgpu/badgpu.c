@@ -240,69 +240,81 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
         // error provided by badgpu_newWsiCtx
         return NULL;
     }
-    bi->glGetError = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGetError");
-    bi->glEnable = badgpu_wsiCtxGetProcAddress(bi->ctx, "glEnable");
-    bi->glDisable = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDisable");
-    bi->glEnableClientState = badgpu_wsiCtxGetProcAddress(bi->ctx, "glEnableClientState");
-    bi->glDisableClientState = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDisableClientState");
-    bi->glGenTextures = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenTextures");
-    bi->glDeleteTextures = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteTextures");
-    bi->glStencilMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilMask");
-    bi->glColorMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColorMask");
-    bi->glDepthMask = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthMask");
-    bi->glScissor = badgpu_wsiCtxGetProcAddress(bi->ctx, "glScissor");
-    bi->glViewport = badgpu_wsiCtxGetProcAddress(bi->ctx, "glViewport");
-    bi->glClearColor = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearColor");
-    bi->glClearDepthf = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearDepthf");
-    bi->glDepthRangef = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthRangef");
-    bi->glPolygonOffset = badgpu_wsiCtxGetProcAddress(bi->ctx, "glPolygonOffset");
-    bi->glPointSize = badgpu_wsiCtxGetProcAddress(bi->ctx, "glPointSize");
-    bi->glLineWidth = badgpu_wsiCtxGetProcAddress(bi->ctx, "glLineWidth");
-    bi->glClearStencil = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClearStencil");
-    bi->glClear = badgpu_wsiCtxGetProcAddress(bi->ctx, "glClear");
-    bi->glReadPixels = badgpu_wsiCtxGetProcAddress(bi->ctx, "glReadPixels");
-    bi->glBindTexture = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindTexture");
-    bi->glTexImage2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexImage2D");
-    bi->glTexParameteri = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexParameteri");
-    bi->glDrawArrays = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDrawArrays");
-    bi->glDrawElements = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDrawElements");
-    bi->glVertexPointer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glVertexPointer");
-    bi->glColorPointer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColorPointer");
-    bi->glTexCoordPointer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glTexCoordPointer");
-    bi->glMatrixMode = badgpu_wsiCtxGetProcAddress(bi->ctx, "glMatrixMode");
-    bi->glLoadMatrixf = badgpu_wsiCtxGetProcAddress(bi->ctx, "glLoadMatrixf");
-    bi->glLoadIdentity = badgpu_wsiCtxGetProcAddress(bi->ctx, "glLoadIdentity");
-    bi->glAlphaFunc = badgpu_wsiCtxGetProcAddress(bi->ctx, "glAlphaFunc");
-    bi->glFrontFace = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFrontFace");
-    bi->glCullFace = badgpu_wsiCtxGetProcAddress(bi->ctx, "glCullFace");
-    bi->glDepthFunc = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDepthFunc");
-    bi->glStencilFunc = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilFunc");
-    bi->glStencilOp = badgpu_wsiCtxGetProcAddress(bi->ctx, "glStencilOp");
-    bi->glBlendFuncSeparate = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBlendFuncSeparate");
-    bi->glBlendEquationSeparate = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBlendEquationSeparate");
-    bi->glColor4f = badgpu_wsiCtxGetProcAddress(bi->ctx, "glColor4f");
-    bi->glMultiTexCoord4f = badgpu_wsiCtxGetProcAddress(bi->ctx, "glMultiTexCoord4f");
-    bi->glGetString = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGetString");
+#define CHKGLFN(fn) \
+if (!(bi->fn)) { \
+    badgpu_destroyWsiCtx(bi->ctx); \
+    if (error) \
+        *error = "Failed to bind function: " #fn; \
+    free(bi); \
+    return NULL; \
+}
+#define BINDGLFN(fn) bi->fn = badgpu_wsiCtxGetProcAddress(bi->ctx, #fn); \
+CHKGLFN(fn)
+#define BINDGLFN2(fn, ext) bi->fn = badgpu_wsiCtxGetProcAddress(bi->ctx, #fn #ext); \
+CHKGLFN(fn)
+    BINDGLFN(glGetError);
+    BINDGLFN(glEnable);
+    BINDGLFN(glDisable);
+    BINDGLFN(glEnableClientState);
+    BINDGLFN(glDisableClientState);
+    BINDGLFN(glGenTextures);
+    BINDGLFN(glDeleteTextures);
+    BINDGLFN(glStencilMask);
+    BINDGLFN(glColorMask);
+    BINDGLFN(glDepthMask);
+    BINDGLFN(glScissor);
+    BINDGLFN(glViewport);
+    BINDGLFN(glClearColor);
+    BINDGLFN(glClearDepthf);
+    BINDGLFN(glDepthRangef);
+    BINDGLFN(glPolygonOffset);
+    BINDGLFN(glPointSize);
+    BINDGLFN(glLineWidth);
+    BINDGLFN(glClearStencil);
+    BINDGLFN(glClear);
+    BINDGLFN(glReadPixels);
+    BINDGLFN(glBindTexture);
+    BINDGLFN(glTexImage2D);
+    BINDGLFN(glTexParameteri);
+    BINDGLFN(glDrawArrays);
+    BINDGLFN(glDrawElements);
+    BINDGLFN(glVertexPointer);
+    BINDGLFN(glColorPointer);
+    BINDGLFN(glTexCoordPointer);
+    BINDGLFN(glMatrixMode);
+    BINDGLFN(glLoadMatrixf);
+    BINDGLFN(glLoadIdentity);
+    BINDGLFN(glAlphaFunc);
+    BINDGLFN(glFrontFace);
+    BINDGLFN(glCullFace);
+    BINDGLFN(glDepthFunc);
+    BINDGLFN(glStencilFunc);
+    BINDGLFN(glStencilOp);
+    BINDGLFN(glBlendFuncSeparate);
+    BINDGLFN(glBlendEquationSeparate);
+    BINDGLFN(glColor4f);
+    BINDGLFN(glMultiTexCoord4f);
+    BINDGLFN(glGetString);
     if (desktopExt) {
-        bi->glGenFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenFramebuffersEXT");
-        bi->glDeleteFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteFramebuffersEXT");
-        bi->glGenRenderbuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenRenderbuffersEXT");
-        bi->glDeleteRenderbuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteRenderbuffersEXT");
-        bi->glRenderbufferStorage = badgpu_wsiCtxGetProcAddress(bi->ctx, "glRenderbufferStorageEXT");
-        bi->glBindFramebuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindFramebufferEXT");
-        bi->glFramebufferRenderbuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferRenderbufferEXT");
-        bi->glFramebufferTexture2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferTexture2DEXT");
-        bi->glGenerateMipmap = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenerateMipmapEXT");
+        BINDGLFN2(glGenFramebuffers, EXT);
+        BINDGLFN2(glDeleteFramebuffers, EXT);
+        BINDGLFN2(glGenRenderbuffers, EXT);
+        BINDGLFN2(glDeleteRenderbuffers, EXT);
+        BINDGLFN2(glRenderbufferStorage, EXT);
+        BINDGLFN2(glBindFramebuffer, EXT);
+        BINDGLFN2(glFramebufferRenderbuffer, EXT);
+        BINDGLFN2(glFramebufferTexture2D, EXT);
+        BINDGLFN2(glGenerateMipmap, EXT);
     } else {
-        bi->glGenFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenFramebuffersOES");
-        bi->glDeleteFramebuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteFramebuffersOES");
-        bi->glGenRenderbuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenRenderbuffersOES");
-        bi->glDeleteRenderbuffers = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDeleteRenderbuffersOES");
-        bi->glRenderbufferStorage = badgpu_wsiCtxGetProcAddress(bi->ctx, "glRenderbufferStorageOES");
-        bi->glBindFramebuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glBindFramebufferOES");
-        bi->glFramebufferRenderbuffer = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferRenderbufferOES");
-        bi->glFramebufferTexture2D = badgpu_wsiCtxGetProcAddress(bi->ctx, "glFramebufferTexture2DOES");
-        bi->glGenerateMipmap = badgpu_wsiCtxGetProcAddress(bi->ctx, "glGenerateMipmapOES");
+        BINDGLFN2(glGenFramebuffers, OES);
+        BINDGLFN2(glDeleteFramebuffers, OES);
+        BINDGLFN2(glGenRenderbuffers, OES);
+        BINDGLFN2(glDeleteRenderbuffers, OES);
+        BINDGLFN2(glRenderbufferStorage, OES);
+        BINDGLFN2(glBindFramebuffer, OES);
+        BINDGLFN2(glFramebufferRenderbuffer, OES);
+        BINDGLFN2(glFramebufferTexture2D, OES);
+        BINDGLFN2(glGenerateMipmap, OES);
     }
     bi->glGenFramebuffers(1, &bi->fbo);
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);

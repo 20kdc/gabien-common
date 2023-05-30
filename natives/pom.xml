@@ -4,10 +4,10 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<artifactId>gabien-una</artifactId>
+	<artifactId>gabien-natives</artifactId>
 
-	<name>gabien-una</name>
-	<description>Unsafe Native Access library. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
+	<name>gabien-natives</name>
+	<description>Natives plus JNI stubs library. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
 	<!-- This might actually become close to the first *stable* library in the system... we'll see. -->
 
 	<parent>
@@ -17,22 +17,13 @@
 		<relativePath>..</relativePath>
 	</parent>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.3.0</version>
-				<configuration>
-					<archive>
-						<manifestFile>src/main/java/META-INF/MANIFEST.MF</manifestFile>
-					</archive>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
 	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.1</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>

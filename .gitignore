@@ -52,7 +52,6 @@
 !natives/
 !natives/gencall.lua
 !natives/README.md
-!natives/INVOKE_INTERNALS.md
 !natives/c
 !natives/c/
 !natives/c/badgpu
@@ -66,10 +65,8 @@
 !natives/c/badgpu/badgpu_wsi_cgl.c
 !natives/c/badgpu/badgputest.c
 !natives/c/badgpu/make-bgt
-!natives/c/una.c
+!natives/c/badgpu_jni.c
 !natives/c/una.h
-!natives/c/unajni.c
-!natives/c/jnifns.c
 !natives/src
 !natives/src/
 !natives/src/main
@@ -81,6 +78,7 @@
 !natives/sdk-clean
 !natives/sdk-install
 !natives/pom.xml
+!natives/SmokeTest.java
 
 !example-toolchains.xml
 

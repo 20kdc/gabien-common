@@ -1,10 +1,10 @@
 #!/bin/sh
 mvn package
-rm -rf ../una-sdk
-mkdir -p ../una-sdk
-# script that installs the UNA build to the local Maven repo
-cp sdk-install ../una-sdk/
-cp target/gabien-una-0.666-SNAPSHOT.jar ../una-sdk/una.jar
-cp ../COPYING.txt ../una-sdk/
-cp ../CREDITS.txt ../una-sdk/
+rm -rf ../natives-sdk
+mkdir -p ../natives-sdk
+# script that installs the build to the local Maven repo
+cp sdk-install ../natives-sdk/
+cp target/gabien-natives-0.666-SNAPSHOT.jar ../natives-sdk/natives.jar
+cp ../COPYING.txt ../natives-sdk/
+cp ../CREDITS.txt ../natives-sdk/
 

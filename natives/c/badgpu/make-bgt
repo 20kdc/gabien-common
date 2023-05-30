@@ -2,6 +2,7 @@
 lua specify.lua < badgpu.h > badgpu.md
 pandoc badgpu.md -o badgpu.html
 pandoc badgpu.md -o badgpu.pdf
-gcc -g badgpu.c badgpu_wsi_egl.c badgputest.c -o badgputest
+gcc -g badgpu.c badgpu_wsi_egl.c badgputest.c -o badgputest -ldl
+i686-w64-mingw32-gcc -g badgpu.c badgpu_wsi_wgl.c badgputest.c -o badgputest.exe -lopengl32 -lgdi32
 ./badgputest
 qoiconv tmp.qoi tmp.png

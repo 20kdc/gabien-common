@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.una;
+package gabien.natives;
 
 import java.io.File;
 import java.io.InputStream;
@@ -13,11 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Default loader for UNA.
+ * Loader for gabien-natives.
  * Created 25th May, 2023.
  */
-public abstract class UNALoader {
-    private UNALoader() {
+public abstract class Loader {
+    private Loader() {
     }
 
     /* Loader */
@@ -40,7 +40,7 @@ public abstract class UNALoader {
         };
         // for Android
         try {
-            System.loadLibrary("gabien-una");
+            System.loadLibrary("gabien-natives");
             return true;
         } catch (Throwable ex) {
         }
@@ -71,11 +71,11 @@ public abstract class UNALoader {
     }
     private static boolean defaultLoaderConfig(String config) {
         try {
-            System.loadLibrary("gabien-una-" + config);
+            System.loadLibrary("gabien-natives-" + config);
             return true;
         } catch (Throwable ex) {
         }
-        String fn = "una." + config;
+        String fn = "natives." + config;
         try {
             System.load(new File(fn).getAbsolutePath());
             return true;
@@ -84,12 +84,12 @@ public abstract class UNALoader {
         return false;
     }
     private static boolean defaultLoaderConfigTmpfile(String config) {
-        String fn = "una." + config;
+        String fn = "natives." + config;
         String fnf = "lib/" + fn;
         try {
             // This can fail on Android, but that shouldn't run this anyway
             File tmp;
-            try (InputStream inp = UNA.class.getResourceAsStream(fnf)) {
+            try (InputStream inp = Loader.class.getResourceAsStream(fnf)) {
                 if (inp == null)
                     return false;
                 tmp = File.createTempFile(fnf, null);

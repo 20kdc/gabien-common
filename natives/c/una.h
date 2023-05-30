@@ -13,23 +13,47 @@
 #include <windows.h>
 #endif
 
-#define UNA(x) Java_gabien_una_UNA_ ## x
-#define UNAI(x) Java_gabien_una_UNAInvoke_ ## x
-#define UNAP(x) Java_gabien_una_UNAPoke_ ## x
-#define UNAC(x) Java_gabien_una_UNAC_ ## x
+#include "badgpu/badgpu.h"
+
+#define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x
 
 #define C_PTR(l) ((void *) (intptr_t) (l))
 #define J_PTR(l) ((int64_t) (intptr_t) (l))
 
-#define L_TO_D(f0) (*((double *) (&f0)))
-#define F_TO_L(f0) (*((int32_t *) (&f0)))
-#define D_TO_L(f0) (*((int64_t *) (&f0)))
+// So there used to be a dedicated program in the repository for finding these
+//  indexes. It turns out there's a much better option!
+// https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html
+// Contains the index numbers of every function.
 
-// see jnifns.c to get indices
 #define JNIFN(idx) ((*((void***) env))[idx])
 
-// JNI functions that get reused get listed here.
-#define JNI_NewStringUTF ((void * (*)(void *, void *)) JNIFN(167))
+// JNI functions get listed here.
+#define JNI_ThrowNew ((int32_t (*)(void *, void *, const char *)) JNIFN(14))
+#define JNI_NewStringUTF ((void * (*)(void *, const char *)) JNIFN(167))
+#define JNI_NewDirectBuffer ((void * (*)(void *, void *, int64_t)) JNIFN(229))
+#define JNI_GetDirectBufferAddress ((void * (*)(void *, void *)) JNIFN(230))
 
-int printf(const char * str, ...);
+#define JNI_ABORT 2
+
+#define JNI_GetByteArrayElements ((void * (*)(void *, void *, unsigned char *)) JNIFN(184))
+#define JNI_GetShortArrayElements ((void * (*)(void *, void *, unsigned char *)) JNIFN(186))
+#define JNI_GetFloatArrayElements ((void * (*)(void *, void *, unsigned char *)) JNIFN(189))
+#define JNI_ReleaseByteArrayElements ((void * (*)(void *, void *, void *, int32_t)) JNIFN(192))
+#define JNI_ReleaseShortArrayElements ((void * (*)(void *, void *, void *, int32_t)) JNIFN(194))
+#define JNI_ReleaseFloatArrayElements ((void * (*)(void *, void *, void *, int32_t)) JNIFN(197))
+
+#define JNIBA_ARG(name) void * name ## _buf, int32_t name ## _ofs
+
+#define JNIXA_L(name, type, get) type * name = 0; if (name ## _buf) { \
+    name = get(env, name ## _buf, NULL); \
+    name += name ## _ofs; \
+}
+#define JNIXA_R(name, rel, mode) if (name ## _buf) JNI_ReleaseByteArrayElements(env, name ## _buf, name, mode);
+
+#define JNIBA_L(name) JNIXA_L(name, uint8_t, JNI_GetByteArrayElements)
+#define JNIBA_R(name, mode) JNIXA_R(name, JNI_ReleaseByteArrayElements, mode)
+#define JNISA_L(name) JNIXA_L(name, uint16_t, JNI_GetShortArrayElements)
+#define JNISA_R(name, mode) JNIXA_R(name, JNI_ReleaseShortArrayElements, mode)
+#define JNIFA_L(name) JNIXA_L(name, float, JNI_GetFloatArrayElements)
+#define JNIFA_R(name, mode) JNIXA_R(name, JNI_ReleaseFloatArrayElements, mode)
 

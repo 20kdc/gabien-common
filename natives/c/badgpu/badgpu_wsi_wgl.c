@@ -34,7 +34,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         .style = CS_OWNDC
     };
     RegisterClass(&wc);
-    ctx->hwnd = CreateWindowA("gabien_una_gl_window", "una", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 256, 256, 0, 0, GetModuleHandleA(NULL), 0);
+    ctx->hwnd = CreateWindowA("gabien_una_gl_window", "una", WS_OVERLAPPEDWINDOW, 0, 0, 256, 256, 0, 0, GetModuleHandleA(NULL), 0);
     if (!ctx->hwnd)
         return badgpu_newWsiCtxError(error, "Could not create working window");
     ctx->hdc = GetDC(ctx->hwnd);
@@ -63,7 +63,10 @@ void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
-    return wglGetProcAddress(proc);
+    void * main = wglGetProcAddress(proc);
+    if (!main)
+        return GetProcAddress(GetModuleHandleA("opengl32"), proc);
+    return main;
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {

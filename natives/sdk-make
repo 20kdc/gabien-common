@@ -7,43 +7,43 @@ TARGETS="x86-linux-gnu"
 TARGETS_W="x86-windows-gnu x86_64-windows-gnu"
 TARGETS_NLTO="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu aarch64-linux-android arm-linux-android x86_64-linux-android"
-SOURCES="c/una.c c/unajni.c c/badgpu/badgpu.c"
+SOURCES="c/badgpu_jni.c c/badgpu/badgpu.c"
 SOURCES_U="c/badgpu/badgpu_wsi_egl.c"
 SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
 SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
 for TARGET in $TARGETS ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_U -o $LIBUNA/una.$TARGET $COMMONFLAGS
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS
 done
 for TARGET in $TARGETS_W ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_W -o $LIBUNA/una.$TARGET $COMMONFLAGS -lgdi32 -lopengl32
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$TARGET $COMMONFLAGS -lgdi32 -lopengl32
 done
 # LTO not yet supported
 for TARGET in $TARGETS_NLTO ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" $SOURCES $SOURCES_M -o $LIBUNA/una.$TARGET $COMMONFLAGS
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
 done
 # on most of the Linuxy targets, use "fake libc" (this particularly works well with the Androids)
 for TARGET in $TARGETS_NSL ; do
  echo $TARGET
- zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_U -o $LIBUNA/una.$TARGET $COMMONFLAGS -nostdlib
+ zig cc -target $TARGET "-DUNA_ARCHOS=\"$TARGET\"" -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib
 done
 # ideally, would do 32-bit x86 Android, but weird Zig errors stopped me
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
 # ideally, would do the BSDs, but no libc and can't override
-rm $LIBUNA/una.lib
-rm $LIBUNA/una.pdb
+rm $LIBUNA/natives.lib
+rm $LIBUNA/natives.pdb
 # strip anything we can
 for x in `ls $LIBUNA`; do
  llvm-strip $LIBUNA/$x
 done
 # migrate Android files
 mkdir -p $LIBUNAND/x86_64
-mv $LIBUNA/una.x86_64-linux-android $LIBUNAND/x86_64/libgabien-una.so
+mv $LIBUNA/natives.x86_64-linux-android $LIBUNAND/x86_64/libgabien-natives.so
 mkdir -p $LIBUNAND/armeabi-v7a
-mv $LIBUNA/una.arm-linux-android $LIBUNAND/armeabi-v7a/libgabien-una.so
+mv $LIBUNA/natives.arm-linux-android $LIBUNAND/armeabi-v7a/libgabien-natives.so
 mkdir -p $LIBUNAND/aarch64-v8a
-mv $LIBUNA/una.aarch64-linux-android $LIBUNAND/aarch64-v8a/libgabien-una.so
+mv $LIBUNA/natives.aarch64-linux-android $LIBUNAND/aarch64-v8a/libgabien-natives.so
 ./sdk-make-java
 
