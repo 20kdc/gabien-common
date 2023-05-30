@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.11.1`
+ * Version: `0.12.0`
  *
  * ## Formatting Policy
  *
@@ -454,29 +454,6 @@ typedef enum BADGPUTextureFlags {
 } BADGPUTextureFlags;
 
 /*
- * ### `BADGPUTextureFormat`
- *
- * Specifies a format of texture for writing to the GPU.
- *
- * Rationale: While BadGPU usually aliases these things to GL enums,
- *  this one's relevant to memory safety, as it changes the expected size of the
- *  data buffer. That in mind, this is something of a safety guard.
- */
-typedef enum BADGPUTextureFormat {
-    // A -> 111A
-    BADGPUTextureFormat_Alpha = 0,
-    // L -> LLL1
-    BADGPUTextureFormat_Luma = 1,
-    // LA -> LLLA
-    BADGPUTextureFormat_LumaAlpha = 2,
-    // RGB -> RGB1
-    BADGPUTextureFormat_RGB = 3,
-    // RGBA -> RGBA
-    BADGPUTextureFormat_RGBA = 4,
-    BADGPUTextureFormat_Force32 = 0x7FFFFFFF
-} BADGPUTextureFormat;
-
-/*
  * ### `badgpuNewTexture`
  *
  * Creates a texture, with possible initial data.
@@ -490,13 +467,8 @@ typedef enum BADGPUTextureFormat {
  *
  * Data can be supplied as a flat array of bytes.
  *
- * The size and layout of each pixel in the array of bytes is specified by
- *  the format.
- *
- * It's important to note that texture formats only specify the format of
- *  the data being provided. It does not alter the actual format on the GPU.
- *
- * Only the `HasAlpha` flag alters the actual format on the GPU.
+ * The `HasAlpha` flag alters the format, both off-GPU and on-GPU.
+ * If it's enabled, then it's RGBA, otherwise, RGB.
  *
  * If `NULL` is passed as the data, then the texture contents are undefined.
  *
@@ -504,13 +476,15 @@ typedef enum BADGPUTextureFormat {
  *  GL implementations go in the best case before giving up. The expected
  *  capacity of the data buffer is easy to check against the format.
  *
- * 1/2-component texture formats are stored on GPU as RGB / RGBA due to the
+ * 1/2-component texture formats are not allowed due to the
  *  requirements of `EXT_framebuffer_object` 4.4.4 Framebuffer Completeness,
  *  which does not define other formats as renderable.
+ *
+ * Testing also revealed that uploading at least `GL_LUMA` as RGB / RGBA did
+ *  not work. Consider this something of a cut for deadline kind of deal...
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, BADGPUTextureFormat format,
-    uint16_t width, uint16_t height, const uint8_t * data);
+    uint32_t flags, uint16_t width, uint16_t height, const uint8_t * data);
 
 /*
  * ### `BADGPUDSBuffer`

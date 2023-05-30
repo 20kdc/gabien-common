@@ -379,27 +379,14 @@ static void destroyTexture(BADGPUObject obj) {
 }
 
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, BADGPUTextureFormat format,
-    uint16_t width, uint16_t height, const uint8_t * data) {
+    uint32_t flags, uint16_t width, uint16_t height, const uint8_t * data) {
     if (!instance)
         return NULL;
 
     // Continue.
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
 
-    // Do this conversion first, it's relevant to memory safety.
-    int32_t ifmt = 0;
-    int32_t efmt = 0;
-    switch (format) {
-    case BADGPUTextureFormat_Alpha: ifmt = GL_RGBA; efmt = GL_ALPHA; break;
-    case BADGPUTextureFormat_Luma: ifmt = GL_RGB; efmt = GL_LUMINANCE; break;
-    case BADGPUTextureFormat_LumaAlpha: ifmt = GL_RGBA; efmt = GL_LUMINANCE_ALPHA; break;
-    case BADGPUTextureFormat_RGB: ifmt = GL_RGB; efmt = GL_RGB; break;
-    case BADGPUTextureFormat_RGBA: ifmt = GL_RGBA; efmt = GL_RGBA; break;
-    default:
-        badgpuErr(bi, "badgpuNewTexture: Invalid BADGPUTextureFormat.");
-        return NULL;
-    }
+    int32_t ifmt = (flags & BADGPUTextureFlags_HasAlpha) ? GL_RGBA : GL_RGB;
 
     BADGPUTexturePriv * tex = malloc(sizeof(BADGPUTexturePriv));
     if (!tex) {
@@ -414,7 +401,7 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     bi->glGenTextures(1, &tex->tex);
 
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
-    bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, efmt, GL_UNSIGNED_BYTE, data);
+    bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, ifmt, GL_UNSIGNED_BYTE, data);
 
     if (!badgpuChk(bi, "badgpuNewTexture", 1)) {
         badgpuUnref((BADGPUTexture) tex);

@@ -11,7 +11,7 @@ import java.nio.Buffer;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.11.1
+ * VERSION: 0.12.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe {
@@ -32,15 +32,10 @@ public abstract class BadGPUUnsafe {
     public static native String getMetaInfo(long instance, int type);
     // TM
     public static final int BADGPUTextureFlags_HasAlpha = 1;
-    public static final int BADGPUTextureFormat_Alpha = 0;
-    public static final int BADGPUTextureFormat_Luma = 1;
-    public static final int BADGPUTextureFormat_LumaAlpha = 2;
-    public static final int BADGPUTextureFormat_RGB = 3;
-    public static final int BADGPUTextureFormat_RGBA = 4;
-    public static native long newTexture(long instance, int flags, int format, int width, int height, byte[] data, int offset);
+    public static native long newTexture(long instance, int flags, int width, int height, Buffer data, long offset);
     public static native long newDSBuffer(long instance, int width, int height);
     public static native boolean generateMipmap(long texture);
-    public static native boolean readPixels(long texture, int x, int y, int width, int height, byte[] data, int offset);
+    public static native boolean readPixels(long texture, int x, int y, int width, int height, Buffer data, long offset);
     // DC
     public static final int BADGPUSessionFlags_StencilAll = 0x00FF;
     public static final int BADGPUSessionFlags_Stencil0 = 0x0001;

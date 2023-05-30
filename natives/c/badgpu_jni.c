@@ -37,11 +37,11 @@ void * J_BADGPU(getMetaInfo)(void * env, void * self, int64_t instance, int32_t 
 
 // TM
 
-int64_t J_BADGPU(newTexture)(void * env, void * self, int64_t instance, int32_t flags, int32_t fmt, int32_t w, int32_t h, JNIBA_ARG(data)) {
-    JNIBA_L(data);
-    int64_t x = J_PTR(badgpuNewTexture(C_PTR(instance), flags, fmt, w, h, data));
-    JNIBA_R(data, JNI_ABORT);
-    return x;
+int64_t J_BADGPU(newTexture)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, void * data, int64_t offset) {
+    data = data ? JNI_GetDirectBufferAddress(env, data) : NULL;
+    if (data)
+        data += offset;
+    return J_PTR(badgpuNewTexture(C_PTR(instance), flags, w, h, data));
 }
 
 int64_t J_BADGPU(newDSBuffer)(void * env, void * self, int64_t instance, int32_t w, int32_t h) {
@@ -52,11 +52,11 @@ unsigned char J_BADGPU(generateMipmap)(void * env, void * self, int64_t texture)
     return badgpuGenerateMipmap(C_PTR(texture));
 }
 
-unsigned char J_BADGPU(readPixels)(void * env, void * self, int64_t instance, int32_t x, int32_t y, int32_t w, int32_t h, JNIBA_ARG(data)) {
-    JNIBA_L(data);
-    BADGPUBool bl = badgpuReadPixels(C_PTR(instance), x, y, w, h, data);
-    JNIBA_R(data, 0);
-    return bl;
+unsigned char J_BADGPU(readPixels)(void * env, void * self, int64_t instance, int32_t x, int32_t y, int32_t w, int32_t h, void * data, int64_t offset) {
+    data = data ? JNI_GetDirectBufferAddress(env, data) : NULL;
+    if (data)
+        data += offset;
+    return badgpuReadPixels(C_PTR(instance), x, y, w, h, data);
 }
 
 // DC

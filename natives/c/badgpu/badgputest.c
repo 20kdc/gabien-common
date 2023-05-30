@@ -34,12 +34,12 @@ int main() {
     // printf("Extensions: %s\n", badgpuGetMetaInfo(bi, 0x1F03));
 
     // Make a little texture to render to!
-    BADGPUTexture tex = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, L_WIDTH, L_HEIGHT, NULL);
+    BADGPUTexture tex = badgpuNewTexture(bi, 0, L_WIDTH, L_HEIGHT, NULL);
 
     renderFlagMain(tex, L_WIDTH, L_HEIGHT);
 
     // Make a SECOND texture to render to!
-    BADGPUTexture tex2 = badgpuNewTexture(bi, 0, BADGPUTextureFormat_RGB, T_WIDTH, T_HEIGHT, NULL);
+    BADGPUTexture tex2 = badgpuNewTexture(bi, 0, T_WIDTH, T_HEIGHT, NULL);
 
     // And render to that.
     renderFlagMain(tex2, T_WIDTH, T_HEIGHT);
