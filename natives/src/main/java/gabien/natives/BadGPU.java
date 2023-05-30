@@ -8,10 +8,14 @@
 package gabien.natives;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
@@ -26,7 +30,6 @@ public abstract class BadGPU extends BadGPUEnum {
         long instance = BadGPUUnsafe.newInstance(newInstanceFlags, InstanceCreationException.class);
         if (instance == 0)
             throw new InstanceCreationException("Unknown error");
-        BadGPUUnsafe.unbindInstance(instance);
         return new Instance(instance);
     }
 
@@ -37,35 +40,29 @@ public abstract class BadGPU extends BadGPUEnum {
         }
     }
 
-    private static final class InstanceBinder implements AutoCloseable {
-        private final ReentrantLock rl = new ReentrantLock();
+    /**
+     * Manages transfer of the BadGPU instance between threads.
+     */
+    private static final class TransferImpl extends ThreadOwned {
         private final long instance;
         private volatile boolean shutdown;
-        private InstanceBinder(long l) {
+
+        private TransferImpl(long l) {
             instance = l;
         }
-        public InstanceBinder bind() {
-            if (shutdown)
-                return null;
-            rl.lock();
-            // System.out.println("LOCK");
-            BadGPUUnsafe.bindInstance(instance);
-            return this;
-        }
-        public void shutdown() {
+
+        @Override
+        protected void bindImpl() {
             if (shutdown)
                 return;
-            shutdown = true;
-            // System.out.println("UNLOCK");
-            rl.unlock();
+            BadGPUUnsafe.bindInstance(instance);
         }
+
         @Override
-        public void close() {
+        protected void unbindImpl() {
             if (shutdown)
                 return;
             BadGPUUnsafe.unbindInstance(instance);
-            // System.out.println("UNLOCK");
-            rl.unlock();
         }
     }
 
@@ -73,17 +70,20 @@ public abstract class BadGPU extends BadGPUEnum {
      * This is called BadGPUObject, but that was changed here to avoid confusion with Java Object.
      */
     public static class Ref {
-        public final InstanceBinder syncObject;
+        public final ThreadOwned syncObject;
+        private final TransferImpl syncObjectInternal;
         public final long pointer;
         protected volatile boolean valid = true;
 
-        private Ref(InstanceBinder ib, long l) {
+        private Ref(TransferImpl ib, long l) {
             syncObject = ib;
+            syncObjectInternal = ib;
             pointer = l;
         }
 
         private Ref(Ref i, long l) {
             syncObject = i.syncObject;
+            syncObjectInternal = i.syncObjectInternal;
             pointer = l;
         }
 
@@ -92,35 +92,32 @@ public abstract class BadGPU extends BadGPUEnum {
         }
 
         public final void dispose() {
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (valid) {
-                    valid = false;
-                    BadGPUUnsafe.unref(pointer);
-                    if (pointer == ib.instance)
-                        syncObject.shutdown();
-                }
+            syncObject.assertBound();
+            if (valid) {
+                valid = false;
+                BadGPUUnsafe.unref(pointer);
+                if (pointer == syncObjectInternal.instance)
+                    syncObjectInternal.shutdown = true;
             }
         }
     }
     public static final class Instance extends Ref {
         private Instance(long l) {
-            super(new InstanceBinder(l), l);
+            super(new TransferImpl(l), l);
         }
 
         public @Nullable String getMetaInfo(MetaInfoType type) {
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (!valid)
-                    throw new InvalidatedPointerException(this);
-                return BadGPUUnsafe.getMetaInfo(pointer, type.value);
-            }
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            return BadGPUUnsafe.getMetaInfo(pointer, type.value);
         }
 
         public void flush() {
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (!valid)
-                    throw new InvalidatedPointerException(this);
-                BadGPUUnsafe.flushInstance(pointer);
-            }
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            BadGPUUnsafe.flushInstance(pointer);
         }
 
         public @Nullable Texture newTexture(int flags, int width, int height, ByteBuffer data, int offset) {
@@ -136,20 +133,18 @@ public abstract class BadGPU extends BadGPUEnum {
                     throw new IllegalArgumentException("Region not within buffer.");
             }
             long res;
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (!valid)
-                    throw new InvalidatedPointerException(this);
-                res = BadGPUUnsafe.newTexture(pointer, flags, width, height, data, offset);
-            }
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            res = BadGPUUnsafe.newTexture(pointer, flags, width, height, data, offset);
             return res == 0 ? null : new Texture(this, res);
         }
         public @Nullable DSBuffer newDSBuffer(long instance, int width, int height) {
             long res;
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (!valid)
-                    throw new InvalidatedPointerException(this);
-                res = BadGPUUnsafe.newDSBuffer(pointer, width, height);
-            }
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            res = BadGPUUnsafe.newDSBuffer(pointer, width, height);
             return res == 0 ? null : new DSBuffer(this, res);
         }
     }
@@ -158,11 +153,10 @@ public abstract class BadGPU extends BadGPUEnum {
             super(i, l);
         }
         public boolean generateMipmap() {
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (!valid)
-                    throw new InvalidatedPointerException(this);
-                return BadGPUUnsafe.generateMipmap(pointer);
-            }
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            return BadGPUUnsafe.generateMipmap(pointer);
         }
         public boolean readPixels(int x, int y, int width, int height, ByteBuffer data, long offset) {
             if (width == 0 || height == 0)
@@ -177,11 +171,10 @@ public abstract class BadGPU extends BadGPUEnum {
                 throw new IllegalArgumentException("Offset not within buffer.");
             if ((dataCap - offset) < size)
                 throw new IllegalArgumentException("Region not within buffer.");
-            try (InstanceBinder ib = syncObject.bind()) {
-                if (!valid)
-                    throw new InvalidatedPointerException(this);
-                return BadGPUUnsafe.readPixels(pointer, x, y, width, height, data, offset);
-            }
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            return BadGPUUnsafe.readPixels(pointer, x, y, width, height, data, offset);
         }
     }
     public static final class DSBuffer extends Ref {
@@ -199,24 +192,31 @@ public abstract class BadGPU extends BadGPUEnum {
         if (sTexture != null && sDSBuffer != null)
             assert sTexture.syncObject == sDSBuffer.syncObject;
         @SuppressWarnings("resource")
-        InstanceBinder syncObj = sTexture != null ? sTexture.syncObject : sDSBuffer.syncObject;
-        try (InstanceBinder ib = syncObj.bind()) {
-            if (sTexture != null && !sTexture.valid)
-                throw new InvalidatedPointerException(sTexture);
-            if (sDSBuffer != null && !sDSBuffer.valid)
-                throw new InvalidatedPointerException(sDSBuffer);
-            return BadGPUUnsafe.drawClear(
-                    sTexture != null ? sTexture.pointer : 0, sDSBuffer != null ? sDSBuffer.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
-                    cR, cG, cB, cA, depth, stencil);
-        }
+        ThreadOwned syncObj = sTexture != null ? sTexture.syncObject : sDSBuffer.syncObject;
+        syncObj.assertBound();
+        if (sTexture != null && !sTexture.valid)
+            throw new InvalidatedPointerException(sTexture);
+        if (sDSBuffer != null && !sDSBuffer.valid)
+            throw new InvalidatedPointerException(sDSBuffer);
+        return BadGPUUnsafe.drawClear(
+                sTexture != null ? sTexture.pointer : 0, sDSBuffer != null ? sDSBuffer.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
+                cR, cG, cB, cA, depth, stencil);
     }
     private static int getVertexCount(int iStart, int iCount, short[] indices, int indicesOfs) {
+        if (iStart < 0)
+            throw new RuntimeException("Not supposed to have iStart be < 0");
+        if (iCount < 0)
+            throw new RuntimeException("Not supposed to have iCount be < 0");
+        if (indicesOfs < 0)
+            throw new RuntimeException("Not supposed to have indicesOfs be < 0");
+        if (indices == null)
+            return iStart + iCount;
         // this is a quirk of the approach to JNI used here, it's kinda funny and also sad
         iStart += indicesOfs;
         int vCount = 0;
         // Since this iterates through all indices, it also implicitly validates the bounds of the array.
         for (int i = 0; i < iCount; i++) {
-            int efCount = (indices[i] & 0xFFFF) + 1;
+            int efCount = (indices[iStart] & 0xFFFF) + 1;
             if (efCount > vCount)
                 vCount = efCount;
             iStart++;
@@ -227,16 +227,19 @@ public abstract class BadGPU extends BadGPUEnum {
             int iStart, int iCount, short[] indices, int indicesOfs,
             float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs, float[] matrixT, int matrixTOfs) {
         // Collate vertex counts
-        int vCount = getVertexCount(iStart, iCount, indices, indicesOfs);
-        int cCount = ((flags & DrawFlags.FreezeColour) != 0) ? 1 : vCount;
-        int tCount = ((flags & DrawFlags.FreezeTC) != 0) ? 1 : vCount;
+        // (the multiplication by 4 represents the 4 components)
+        int vCount = getVertexCount(iStart, iCount, indices, indicesOfs) * 4;
+        int cCount = ((flags & DrawFlags.FreezeColour) != 0) ? 4 : vCount;
+        int tCount = ((flags & DrawFlags.FreezeTC) != 0) ? 4 : vCount;
         // Check them
         if (vPosOfs < 0 || (vPosOfs + vCount) > vPos.length)
             throw new IllegalArgumentException("vPos out of bounds");
-        if (vColOfs < 0 || (vColOfs + cCount) > vCol.length)
+        if (vCol != null)
+            if (vColOfs < 0 || (vColOfs + cCount) > vCol.length)
             throw new IllegalArgumentException("vCol out of bounds");
-        if (vTCOfs < 0 || (vTCOfs + tCount) > vTC.length)
-            throw new IllegalArgumentException("vTC out of bounds");
+        if (vTC != null)
+            if (vTCOfs < 0 || (vTCOfs + tCount) > vTC.length)
+                throw new IllegalArgumentException("vTC out of bounds");
         // Matrices
         if (matrixA != null)
             if (matrixAOfs < 0 || (matrixAOfs + 16) > matrixA.length)
@@ -271,7 +274,7 @@ public abstract class BadGPU extends BadGPUEnum {
         if (sTexture != null && sDSBuffer != null)
             assert sTexture.syncObject == sDSBuffer.syncObject;
         @SuppressWarnings("resource")
-        InstanceBinder syncObj = sTexture != null ? sTexture.syncObject : sDSBuffer.syncObject;
+        ThreadOwned syncObj = sTexture != null ? sTexture.syncObject : sDSBuffer.syncObject;
         if (texture != null)
             assert syncObj == texture.syncObject;
         // actual parameter checking
@@ -279,31 +282,30 @@ public abstract class BadGPU extends BadGPUEnum {
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs, matrixT, matrixTOfs);
         // continue
-        try (InstanceBinder ib = syncObj.bind()) {
-            if (sTexture != null && !sTexture.valid)
-                throw new InvalidatedPointerException(sTexture);
-            if (sDSBuffer != null && !sDSBuffer.valid)
-                throw new InvalidatedPointerException(sDSBuffer);
-            if (texture != null && !texture.valid)
-                throw new InvalidatedPointerException(texture);
-            return BadGPUUnsafe.drawGeom(
-                    sTexture != null ? sTexture.pointer : 0, sDSBuffer != null ? sDSBuffer.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
-                    flags,
-                    vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
-                    pType.value, plSize,
-                    iStart, iCount, indices, indicesOfs,
-                    matrixA, matrixAOfs, matrixB, matrixBOfs,
-                    depthN, depthF,
-                    vX, vY, vW, vH,
-                    texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
-                    poFactor, poUnits,
-                    alphaTestMin,
-                    stFunc.value, stRef, stMask,
-                    stSF.value, stDF.value, stDP.value,
-                    dtFunc.value,
-                    bwRGBS.value, bwRGBD.value, beRGB.value,
-                    bwAS.value, bwAD.value, beA.value);
-        }
+        syncObj.assertBound();
+        if (sTexture != null && !sTexture.valid)
+            throw new InvalidatedPointerException(sTexture);
+        if (sDSBuffer != null && !sDSBuffer.valid)
+            throw new InvalidatedPointerException(sDSBuffer);
+        if (texture != null && !texture.valid)
+            throw new InvalidatedPointerException(texture);
+        return BadGPUUnsafe.drawGeom(
+                sTexture != null ? sTexture.pointer : 0, sDSBuffer != null ? sDSBuffer.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
+                flags,
+                vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
+                pType.value, plSize,
+                iStart, iCount, indices, indicesOfs,
+                matrixA, matrixAOfs, matrixB, matrixBOfs,
+                depthN, depthF,
+                vX, vY, vW, vH,
+                texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
+                poFactor, poUnits,
+                alphaTestMin,
+                stFunc.value, stRef, stMask,
+                stSF.value, stDF.value, stDP.value,
+                dtFunc.value,
+                bwRGBS.value, bwRGBD.value, beRGB.value,
+                bwAS.value, bwAD.value, beA.value);
     }
     public static boolean drawGeomNoDS(
         @Nullable Texture sTexture, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
@@ -327,23 +329,22 @@ public abstract class BadGPU extends BadGPUEnum {
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs, matrixT, matrixTOfs);
         // continue
-        try (InstanceBinder ib = sTexture.syncObject.bind()) {
-            if (!sTexture.valid)
-                throw new InvalidatedPointerException(sTexture);
-            if (texture != null && !texture.valid)
-                throw new InvalidatedPointerException(texture);
-            return BadGPUUnsafe.drawGeomNoDS(
-                    sTexture != null ? sTexture.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
-                    flags,
-                    vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
-                    pType.value, plSize,
-                    iStart, iCount, indices, indicesOfs,
-                    matrixA, matrixAOfs, matrixB, matrixBOfs,
-                    vX, vY, vW, vH,
-                    texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
-                    alphaTestMin,
-                    bwRGBS.value, bwRGBD.value, beRGB.value,
-                    bwAS.value, bwAD.value, beA.value);
-        }
+        sTexture.syncObject.assertBound();
+        if (!sTexture.valid)
+            throw new InvalidatedPointerException(sTexture);
+        if (texture != null && !texture.valid)
+            throw new InvalidatedPointerException(texture);
+        return BadGPUUnsafe.drawGeomNoDS(
+                sTexture != null ? sTexture.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
+                flags,
+                vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
+                pType.value, plSize,
+                iStart, iCount, indices, indicesOfs,
+                matrixA, matrixAOfs, matrixB, matrixBOfs,
+                vX, vY, vW, vH,
+                texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
+                alphaTestMin,
+                bwRGBS.value, bwRGBD.value, beRGB.value,
+                bwAS.value, bwAD.value, beA.value);
     }
 }

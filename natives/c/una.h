@@ -44,11 +44,11 @@
 
 #define JNIBA_ARG(name) void * name ## _buf, int32_t name ## _ofs
 
-#define JNIXA_L(name, type, get) type * name = 0; if (name ## _buf) { \
-    name = get(env, name ## _buf, NULL); \
+#define JNIXA_L(name, type, get) type * name = 0, * name ## _ori = 0; if (name ## _buf) { \
+    name = name ## _ori = get(env, name ## _buf, NULL); \
     name += name ## _ofs; \
 }
-#define JNIXA_R(name, rel, mode) if (name ## _buf) JNI_ReleaseByteArrayElements(env, name ## _buf, name, mode);
+#define JNIXA_R(name, rel, mode) if (name ## _buf) rel(env, name ## _buf, name ## _ori, mode);
 
 #define JNIBA_L(name) JNIXA_L(name, uint8_t, JNI_GetByteArrayElements)
 #define JNIBA_R(name, mode) JNIXA_R(name, JNI_ReleaseByteArrayElements, mode)

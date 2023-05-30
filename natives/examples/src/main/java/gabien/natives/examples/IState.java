@@ -7,9 +7,11 @@
 
 package gabien.natives.examples;
 
+import gabien.natives.BadGPU;
+
 /**
  * Created 30th May, 2023.
  */
 public interface IState {
-
+    void frame(Main m, BadGPU.Texture screen, int w, int h);
 }
