@@ -46,6 +46,14 @@ int main() {
 
     renderTex2Tex(tex2, tex, T_WIDTH / 2, T_HEIGHT / 2);
 
+    // Test restrained clear.
+    badgpuDrawClear(tex2, NULL, BADGPUSessionFlags_MaskAll | BADGPUSessionFlags_Scissor, T_WIDTH - 32, 0, 32, 32,
+    1, 0, 0, 1, 0, 0);
+    badgpuDrawClear(tex2, NULL, BADGPUSessionFlags_MaskAll | BADGPUSessionFlags_Scissor, T_WIDTH - 40, 8, 32, 32,
+    0, 1, 0, 1, 0, 0);
+    badgpuDrawClear(tex2, NULL, BADGPUSessionFlags_MaskAll | BADGPUSessionFlags_Scissor, T_WIDTH - 48, 16, 32, 32,
+    0, 0, 1, 1, 0, 0);
+
     // Save the output.
     writeQOIFromTex(tex2, T_WIDTH, T_HEIGHT);
 

@@ -83,6 +83,7 @@ struct BADGPUObject {
 typedef struct BADGPUInstancePriv {
     struct BADGPUObject obj;
     BADGPUWSICtx ctx;
+    int isBound;
     int backendCheck;
     int backendCheckAggressive;
     int canPrintf;
@@ -186,12 +187,24 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj) {
 
 // Instance Creation
 
+// Checks that the instance is bound.
+static BADGPUBool badgpuBChk(BADGPUInstancePriv * bi, const char * location) {
+    if (!bi->isBound) {
+        if (bi->canPrintf)
+            printf("BADGPU: %s: Instance not bound\n", location);
+        return 0;
+    }
+    return 1;
+}
+
 static void destroyInstance(BADGPUObject obj) {
     BADGPUInstancePriv * bi = BG_INSTANCE(obj);
-    badgpu_wsiCtxMakeCurrent(bi->ctx);
-    bi->glDeleteFramebuffers(1, &bi->fbo);
-    badgpu_destroyWsiCtx(bi->ctx);
-    free(obj);
+    if (badgpuBChk(bi, "destroyInstance")) {
+        bi->glDeleteFramebuffers(1, &bi->fbo);
+        badgpu_wsiCtxStopCurrent(bi->ctx);
+        badgpu_destroyWsiCtx(bi->ctx);
+        free(obj);
+    }
 }
 
 static BADGPUBool badgpuChkInnards(BADGPUInstancePriv * bi, const char * location) {
@@ -240,6 +253,16 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
         // error provided by badgpu_newWsiCtx
         return NULL;
     }
+    // Initial bind
+    if (!badgpu_wsiCtxMakeCurrent(bi->ctx)) {
+        if (error)
+            *error = "Failed to initially bind instance";
+        badgpu_destroyWsiCtx(bi->ctx);
+        free(bi);
+        return NULL;
+    }
+    bi->isBound = 1;
+    // Function bind
 #define CHKGLFN(fn) \
 if (!(bi->fn)) { \
     badgpu_destroyWsiCtx(bi->ctx); \
@@ -332,8 +355,40 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
     if (!instance)
         return NULL;
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    badgpu_wsiCtxMakeCurrent(bi->ctx);
+    if (!badgpuBChk(bi, "badgpuGetMetaInfo"))
+        return NULL;
     return bi->glGetString(mi);
+}
+
+BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance) {
+    if (!instance)
+        return 0;
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    if (bi->isBound) {
+        if (bi->canPrintf)
+            printf("BADGPU: badgpuBindInstance: already bound somewhere\n");
+        return 1;
+    }
+    if (!badgpu_wsiCtxMakeCurrent(bi->ctx)) {
+        if (bi->canPrintf)
+            printf("BADGPU: badgpuBindInstance: failed to bind\n");
+        return 1;
+    }
+    bi->isBound = 1;
+    return 0;
+}
+
+BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance) {
+    if (!instance)
+        return;
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    if (!bi->isBound) {
+        if (bi->canPrintf)
+            printf("BADGPU: badgpuUnbindInstance: Wasn't bound\n");
+        return;
+    }
+    badgpu_wsiCtxStopCurrent(bi->ctx);
+    bi->isBound = 0;
 }
 
 // FBM
@@ -348,7 +403,8 @@ static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffe
     // Sadly, can't report this if it happens
     if (!*bi)
         return 0;
-    badgpu_wsiCtxMakeCurrent((*bi)->ctx);
+    if (!badgpuBChk(*bi, "fbSetup"))
+        return 0;
     (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
     // badgpuChk(*bi, "fbSetup1", 0);
     if (sTex) {
@@ -371,7 +427,8 @@ static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffe
 
 static void destroyTexture(BADGPUObject obj) {
     BADGPUTexturePriv * tex = BG_TEXTURE(obj);
-    badgpu_wsiCtxMakeCurrent(tex->i->ctx);
+    if (!badgpuBChk(tex->i, "destroyTexture"))
+        return;
     tex->i->glDeleteTextures(1, &tex->tex);
     badgpuChk(tex->i, "destroyTexture", 0);
     badgpuUnref((BADGPUObject) tex->i);
@@ -379,12 +436,20 @@ static void destroyTexture(BADGPUObject obj) {
 }
 
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, uint16_t width, uint16_t height, const uint8_t * data) {
+    uint32_t flags, int16_t width, int16_t height, const uint8_t * data) {
     if (!instance)
         return NULL;
 
     // Continue.
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+
+    if (!badgpuBChk(bi, "badgpuNewTexture"))
+        return NULL;
+
+    if (width <= 0 || height <= 0) {
+        badgpuErr(bi, "badgpuNewTexture: Width or height <= 0.");
+        return NULL;
+    }
 
     int32_t ifmt = (flags & BADGPUTextureFlags_HasAlpha) ? GL_RGBA : GL_RGB;
 
@@ -394,8 +459,6 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
         return NULL;
     }
     badgpu_initObj((BADGPUObject) tex, destroyTexture);
-
-    badgpu_wsiCtxMakeCurrent(bi->ctx);
 
     tex->i = BG_INSTANCE(badgpuRef(instance));
     bi->glGenTextures(1, &tex->tex);
@@ -412,7 +475,8 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
 
 static void destroyDSBuffer(BADGPUObject obj) {
     BADGPUDSBufferPriv * ds = BG_DSBUFFER(obj);
-    badgpu_wsiCtxMakeCurrent(ds->i->ctx);
+    if (!badgpuBChk(ds->i, "destroyDSBuffer"))
+        return;
     ds->i->glDeleteRenderbuffers(1, &ds->rbo);
     badgpuChk(ds->i, "destroyDSBuffer", 0);
     badgpuUnref((BADGPUObject) ds->i);
@@ -420,12 +484,19 @@ static void destroyDSBuffer(BADGPUObject obj) {
 }
 
 BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
-    uint16_t width, uint16_t height) {
+    int16_t width, int16_t height) {
     if (!instance)
         return NULL;
 
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    badgpu_wsiCtxMakeCurrent(bi->ctx);
+
+    if (width <= 0 || height <= 0) {
+        badgpuErr(bi, "badgpuNewDSBuffer: Width or height <= 0.");
+        return NULL;
+    }
+
+    if (!badgpuBChk(bi, "badgpuNewDSBuffer"))
+        return NULL;
 
     BADGPUDSBufferPriv * ds = malloc(sizeof(BADGPUDSBufferPriv));
     if (!ds) {
@@ -450,19 +521,22 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture) {
     if (!texture)
         return 0;
     BADGPUTexturePriv * tex = BG_TEXTURE(texture);
-    badgpu_wsiCtxMakeCurrent(tex->i->ctx);
+    if (!badgpuBChk(tex->i, "badgpuGenerateMipmap"))
+        return 0;
     tex->i->glBindTexture(GL_TEXTURE_2D, tex->tex);
     tex->i->glGenerateMipmap(GL_TEXTURE_2D);
     return badgpuChk(tex->i, "badgpuGenerateMipmap", 0);
 }
 
 BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
-    uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data) {
+    uint16_t x, uint16_t y, int16_t width, int16_t height, uint8_t * data) {
     BADGPUInstancePriv * bi;
     if (width == 0 || height == 0)
         return 1;
     if (!fbSetup(texture, NULL, &bi))
         return 0;
+    if (width < 0 || height < 0)
+        return badgpuErr(bi, "badgpuReadPixels: Width or height < 0.");
     if (!data)
         return badgpuErr(bi, "badgpuReadPixels: data == NULL for non-zero area");
     bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);

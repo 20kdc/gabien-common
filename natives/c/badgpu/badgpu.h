@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.12.0`
+ * Version: `0.13.0`
  *
  * ## Formatting Policy
  *
@@ -259,6 +259,10 @@ typedef struct BADGPUMatrix {
  * BadGPU objects start out with a single reference.
  * This reference is the one being returned from the function creating it.
  *
+ * All BadGPU objects have an _owning instance_. The owning instance of an
+ *  instance is itself. The owning instance must be bound when performing any
+ *  interaction with an object, including referencing or unreferencing.
+ *
  * Rationale: Providing a single point of reference management for BadGPU
  *  objects makes the job of wrappers and so forth easier. In addition, this
  *  also adds memory safety.
@@ -269,6 +273,9 @@ typedef struct BADGPUMatrix {
  * This ensures handles can't end up in a "stuck" state where they can't be
  *  deleted because their instance no longer exists, which could cause
  *  unexpected segmentation faults in wrappers that manage resources using GCs.
+ *
+ * The requirement that the instance must be bound is a reflection of
+ *  limitations in underlying graphics APIs.
  */
 
 /*
@@ -312,7 +319,9 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
  *
  * There is no inter-instance resource sharing.
  *
- * Instances must only be used from one thread at a time.
+ * Instances must only be used from one thread at a time, and they must be
+ *  bound and unbound to a thread by the user using the `badgpuBindInstance` and
+ *  `badgpuUnbindInstance` functions.
  *
  * Rationale: Cross-compilation to many platforms,
  *  particularly macOS and Windows, makes ensuring a ready supply of things
@@ -331,6 +340,11 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
  *  provide it on another instance. This functionality is not directly provided
  *  by BadGPU, because it is more efficient to implement it on a queue system
  *  as described earlier.
+ *
+ * Another problem is that APIs such as EGL do not allow a context to be bound
+ *  to more than one thread at a time, and a further problem is that all of the
+ *  necessary poking to bind contexts incurs overhead and potentially could
+ *  upset other libraries using these APIs.
  */
 
 // Instance of BadGPU. The root object, in a sense.
@@ -365,7 +379,8 @@ typedef enum BADGPUNewInstanceFlags {
 /*
  * ### `badgpuNewInstance`
  *
- * Creates a new BadGPU instance.
+ * Creates a new BadGPU instance and binds it to the current thread.
+ * (See `badgpuBindInstance` and `badgpuUnbindInstance`.)
  *
  * This will allocate resources such as an `EGLDisplay` or `HWND`, so the
  *  instance should be unreferenced when done with.
@@ -407,6 +422,41 @@ typedef enum BADGPUMetaInfoType {
  */
 BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
     BADGPUMetaInfoType mi);
+
+/*
+ * ### `badgpuBindInstance`
+ *
+ * Binds a BadGPU instance to the current thread.
+ *
+ * Returns 1 on success, 0 on failure.
+ *
+ * The instance must not be bound to more than one thread at a time.
+ *
+ * Failure is returned if the instance is detected to already be bound
+ *  somewhere, including on the current thread.
+ *
+ * This detection is not absolute and should not be treated as a replacement for
+ *  proper thread synchronization.
+ *
+ * Rationale: Some graphics APIs ensure thread safety by preventing the binding
+ *  of a context in more than one thread. Therefore, explicit unbinding is
+ *  essentially mandatory, and therefore explicit binding is also mandatory.
+ */
+BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance);
+
+/*
+ * ### `badgpuUnbindInstance`
+ *
+ * Unbinds a BadGPU instance from the current thread.
+ *
+ * Some graphics APIs ensure thread safety by preventing the binding of a
+ *  context in more than one thread.
+ *
+ * Note that an instance shouldn't be unbound before being finally unreferenced.
+ *
+ * In fact, the instance being bound when being unreferenced is required.
+ */
+BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance);
 
 /*
  * ## Texture/2D Buffer Management
@@ -460,6 +510,9 @@ typedef enum BADGPUTextureFlags {
  *
  * Returns `NULL` on failure, otherwise the new texture.
  *
+ * The `width` and `height` must both be above 0. Unfortunately, it is not
+ *  practical to specify one exact maximum limit that will always work.
+ *
  * The flags are `BADGPUNewTextureFlags`.
  *
  * Mipmaps are not automatically created. This must be done using
@@ -472,9 +525,10 @@ typedef enum BADGPUTextureFlags {
  *
  * If `NULL` is passed as the data, then the texture contents are undefined.
  *
- * Rationale: `width` / `height` are `uint16_t` because that's usually as far as
- *  GL implementations go in the best case before giving up. The expected
- *  capacity of the data buffer is easy to check against the format.
+ * Rationale: `width` / `height` are `int16_t` to ensure that only valid inputs
+ *  can be given, and to ensure that overflows cannot occur when calculating the
+ *  required buffer size. Besides, GL implementations don't even reach these
+ *  limits before giving up.
  *
  * 1/2-component texture formats are not allowed due to the
  *  requirements of `EXT_framebuffer_object` 4.4.4 Framebuffer Completeness,
@@ -484,7 +538,7 @@ typedef enum BADGPUTextureFlags {
  *  not work. Consider this something of a cut for deadline kind of deal...
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, uint16_t width, uint16_t height, const uint8_t * data);
+    uint32_t flags, int16_t width, int16_t height, const uint8_t * data);
 
 /*
  * ### `BADGPUDSBuffer`
@@ -500,6 +554,9 @@ typedef BADGPUObject BADGPUDSBuffer;
  * These are used for drawing... and that's about it.
  *
  * Returns `NULL` on failure, otherwise the new `DSBuffer`.
+ *
+ * The `width` and `height` must both be above 0. Unfortunately, it is not
+ *  practical to specify one exact maximum limit that will always work.
  *
  * Rationale: While `OES_packed_depth_stencil` seems essentially ubiquitous,
  *  it may not turn out so. Furthermore, `OES_depth_texture` is _not_
@@ -519,7 +576,7 @@ typedef BADGPUObject BADGPUDSBuffer;
  *  used to implement this or may not.
  */
 BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
-    uint16_t width, uint16_t height);
+    int16_t width, int16_t height);
 
 /*
  * ### `badgpuGenerateMipmap`
@@ -553,13 +610,14 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture);
  *
  * Rationale: This is simply what `glReadPixels` provides for GLES 1.1.
  *
- * If `width` or `height` is 0, the function silently succeeds.
+ * If `width` or `height` is 0, the function succeeds (doing nothing) regardless
+ *  of any other parameters, while if they are below 0, the function fails.
  *
  * Otherwise, fails if `data` or `texture` is `NULL`, or various other issues
  *  occur.
  */
 BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
-    uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t * data);
+    uint16_t x, uint16_t y, int16_t width, int16_t height, uint8_t * data);
 
 /*
  * ## Drawing Commands

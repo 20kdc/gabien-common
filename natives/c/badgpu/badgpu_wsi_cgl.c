@@ -54,13 +54,15 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         return badgpu_newWsiCtxError(error, "Failed to create CGL context");
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create CGL context");
-    if (ctx->CGLSetCurrentContext(ctx->ctx))
-        return badgpu_newWsiCtxError(error, "Failed initial CGLSetCurrentContext");
     return ctx;
 }
 
-void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
-    ctx->CGLSetCurrentContext(ctx->ctx);
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
+    return !ctx->CGLSetCurrentContext(ctx->ctx);
+}
+
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
+    ctx->CGLSetCurrentContext(NULL);
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
@@ -70,7 +72,6 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (!ctx)
         return;
-    ctx->CGLSetCurrentContext(NULL);
     if (ctx->ctx)
         ctx->CGLDestroyContext(ctx->ctx);
     if (ctx->pixFmt)

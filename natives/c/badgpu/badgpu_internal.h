@@ -52,9 +52,10 @@ int printf(const char * fmt, ...);
 
 typedef struct BADGPUWSICtx * BADGPUWSICtx;
 
-// Creates a new WSICtx and automatically makes it current.
+// Creates a new WSICtx.
 BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions);
-void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx);
 // Warning: Must be made current first!
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
 // Attempting to destroy a context generally clears the current context.

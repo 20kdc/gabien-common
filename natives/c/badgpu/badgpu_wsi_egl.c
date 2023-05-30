@@ -66,13 +66,15 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribs2);
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create EGL context");
-    if (!ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx))
-        return badgpu_newWsiCtxError(error, "Failed initial eglMakeCurrent");
     return ctx;
 }
 
-void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
-    ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx);
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
+    return ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx) != 0;
+}
+
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
+    ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, NULL);
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
@@ -82,10 +84,8 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (!ctx)
         return;
-    if (ctx->ctx) {
-        ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, NULL);
+    if (ctx->ctx)
         ctx->eglDestroyContext(ctx->dsp, ctx->ctx);
-    }
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
     if (ctx->eglLibrary)

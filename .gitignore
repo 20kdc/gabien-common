@@ -79,6 +79,11 @@
 !natives/sdk-install
 !natives/pom.xml
 !natives/SmokeTest.java
+!natives/examples
+!natives/examples/
+!natives/examples/pom.xml
+!natives/examples/src
+!natives/examples/src/**
 
 !example-toolchains.xml
 

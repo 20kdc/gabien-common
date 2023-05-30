@@ -35,8 +35,10 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     };
     RegisterClass(&wc);
     ctx->hwnd = CreateWindowA("gabien_una_gl_window", "una", WS_OVERLAPPEDWINDOW, 0, 0, 256, 256, 0, 0, GetModuleHandleA(NULL), 0);
-    if (!ctx->hwnd)
+    if (!ctx->hwnd) {
+        free(ctx);
         return badgpu_newWsiCtxError(error, "Could not create working window");
+    }
     ctx->hdc = GetDC(ctx->hwnd);
     PIXELFORMATDESCRIPTOR pfd = {
         .nSize = sizeof(PIXELFORMATDESCRIPTOR),
@@ -51,15 +53,19 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     int pixFmt = ChoosePixelFormat(ctx->hdc, &pfd);
     SetPixelFormat(ctx->hdc, pixFmt, &pfd);
     ctx->ctx = wglCreateContext(ctx->hdc);
-    if (!ctx->ctx)
+    if (!ctx->ctx) {
+        badgpu_destroyWsiCtx(ctx);
         return badgpu_newWsiCtxError(error, "Could not create GL context");
-    // Done, now make it current!
-    wglMakeCurrent(ctx->hdc, ctx->ctx);
+    }
     return ctx;
 }
 
-void badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
-    wglMakeCurrent(ctx->hdc, ctx->ctx);
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
+    return wglMakeCurrent(ctx->hdc, ctx->ctx) != 0;
+}
+
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
+    wglMakeCurrent(NULL, NULL);
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
@@ -70,7 +76,6 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
-    wglMakeCurrent(NULL, NULL);
     if (!ctx)
         return;
     if (ctx->ctx)
