@@ -8,9 +8,6 @@
 package gabien.natives;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -191,7 +188,6 @@ public abstract class BadGPU extends BadGPUEnum {
             return false;
         if (sTexture != null && sDSBuffer != null)
             assert sTexture.syncObject == sDSBuffer.syncObject;
-        @SuppressWarnings("resource")
         ThreadOwned syncObj = sTexture != null ? sTexture.syncObject : sDSBuffer.syncObject;
         syncObj.assertBound();
         if (sTexture != null && !sTexture.valid)
@@ -273,7 +269,6 @@ public abstract class BadGPU extends BadGPUEnum {
             return false;
         if (sTexture != null && sDSBuffer != null)
             assert sTexture.syncObject == sDSBuffer.syncObject;
-        @SuppressWarnings("resource")
         ThreadOwned syncObj = sTexture != null ? sTexture.syncObject : sDSBuffer.syncObject;
         if (texture != null)
             assert syncObj == texture.syncObject;
