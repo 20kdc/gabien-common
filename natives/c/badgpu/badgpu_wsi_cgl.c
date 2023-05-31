@@ -31,7 +31,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
-    ctx->glLibrary = dlopen("/System/Library/Frameworks/OpenGL.framework/Libraries/libGL.dylib", 2);
+    ctx->glLibrary = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL", 2);
     if (!ctx->glLibrary)
         return badgpu_newWsiCtxError(error, "Could not open CGL");
     ctx->CGLChoosePixelFormat = dlsym(ctx->glLibrary, "CGLChoosePixelFormat");
