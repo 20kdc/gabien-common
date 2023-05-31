@@ -30,7 +30,10 @@ import gabien.uslx.append.ThreadOwned;
  */
 public class Main {
     private volatile int currentCanvasWidth, currentCanvasHeight;
-    private volatile BadGPU.Texture screen;
+    private volatile BadGPU.Texture screen1;
+    private volatile BadGPU.Texture screen2;
+    private volatile ByteBuffer dataSrc;
+    boolean flipper1 = false;
     private volatile int currentBufferWidth, currentBufferHeight;
     public final BadGPU.Instance instance;
     private final ThreadOwned.Locked instanceLock;
@@ -64,11 +67,11 @@ public class Main {
         gameThread = new Thread() {
             @Override
             public void run() {
-                while (!shutdown) {
-                    frameRequestSemaphore.acquireUninterruptibly();
-                    if (shutdown)
-                        break;
-                    try (ThreadOwned.Locked tmp = instanceLock.open()) {
+                try (ThreadOwned.Locked tmp = instanceLock.open()) {
+                    while (!shutdown) {
+                        frameRequestSemaphore.acquireUninterruptibly();
+                        if (shutdown)
+                            break;
                         int clampedCW = currentCanvasWidth;
                         int clampedCH = currentCanvasHeight;
                         if (clampedCW < 1)
@@ -79,15 +82,26 @@ public class Main {
                             clampedCH = 1;
                         if (clampedCH > 32767)
                             clampedCH = 32767;
-                        if (screen == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
-                            screen = instance.newTexture(0, clampedCW, clampedCH, null, 0);
+                        if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
+                            System.out.println(" -- RECREATING TEXTURE --");
+                            screen1 = instance.newTexture(0, clampedCW, clampedCH, null, 0);
+                            screen2 = instance.newTexture(0, clampedCW, clampedCH, null, 0);
+                            dataSrc = ByteBuffer.allocateDirect(clampedCW * clampedCH * 4);
                             currentBufferWidth = clampedCW;
                             currentBufferHeight = clampedCH;
                         }
-                        currentState.frame(Main.this, screen, currentBufferWidth, currentBufferHeight);
+                        currentState.frame(Main.this, flipper1 ? screen1 : screen2, currentBufferWidth, currentBufferHeight);
+                        flipper1 = !flipper1;
+                        long tA, tB;
+                        tA = System.currentTimeMillis();
+                        instance.flush();
+                        (flipper1 ? screen1 : screen2).readPixels(0, 0, currentBufferWidth, currentBufferHeight, dataSrc, 0);
+                        tB = System.currentTimeMillis();
+                        frameCompleteSemaphore.release();
+                        //System.out.println("from TT");
+                        System.out.println(tB - tA);
                         instance.flush();
                     }
-                    frameCompleteSemaphore.release();
                 }
             }
         };
@@ -164,14 +178,10 @@ public class Main {
                 m.currentCanvasHeight = ch;
                 int sw = m.currentBufferWidth;
                 int sh = m.currentBufferHeight;
-                if (m.screen != null) {
+                if (m.dataSrc != null) {
                     int[] data = new int[sw * sh];
-                    ByteBuffer dataSrc = ByteBuffer.allocateDirect(data.length * 4);
-                    try (ThreadOwned.Locked lock = m.instanceLock.open()) {
-                        m.screen.readPixels(0, 0, sw, sh, dataSrc, 0);
-                    }
-                    m.frameRequestSemaphore.release();
                     int ptr = 0;
+                    ByteBuffer dataSrc = m.dataSrc;
                     for (int i = 0; i < data.length; i++) {
                         int r = dataSrc.get(ptr++) & 0xFF;
                         int g = dataSrc.get(ptr++) & 0xFF;
@@ -179,6 +189,7 @@ public class Main {
                         int a = dataSrc.get(ptr++) & 0xFF;
                         data[i] = (r << 16) | (g << 8) | b | (a << 24);
                     }
+                    m.frameRequestSemaphore.release();
                     // this code isn't great but still
                     if (tmp == null || tmp.getWidth() != sw || tmp.getHeight() != sh)
                         tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
@@ -192,7 +203,7 @@ public class Main {
                     gr.drawImage(tmp, 0, 0, cw, ch, null);
                 }
             }
-        }, 0, 16);
+        }, 0, 20);
     }
     private static final float[] triImmDat1 = new float[24];
     public static void triImm(BadGPU.Texture scr, int w, int h,
