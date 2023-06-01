@@ -142,6 +142,7 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glFramebufferRenderbuffer)(int32_t, int32_t, int32_t, uint32_t);
     void (KHRABI *glFramebufferTexture2D)(int32_t, int32_t, int32_t, uint32_t, int32_t);
     void (KHRABI *glGenerateMipmap)(int32_t);
+    void (KHRABI *glBindRenderbuffer)(int32_t, uint32_t);
 } BADGPUInstancePriv;
 #define BG_INSTANCE(x) ((BADGPUInstancePriv *) (x))
 
@@ -330,6 +331,7 @@ CHKGLFN(fn)
         BINDGLFN2(glFramebufferRenderbuffer, EXT);
         BINDGLFN2(glFramebufferTexture2D, EXT);
         BINDGLFN2(glGenerateMipmap, EXT);
+        BINDGLFN2(glBindRenderbuffer, EXT);
     } else {
         BINDGLFN2(glGenFramebuffers, OES);
         BINDGLFN2(glDeleteFramebuffers, OES);
@@ -340,6 +342,7 @@ CHKGLFN(fn)
         BINDGLFN2(glFramebufferRenderbuffer, OES);
         BINDGLFN2(glFramebufferTexture2D, OES);
         BINDGLFN2(glGenerateMipmap, OES);
+        BINDGLFN2(glBindRenderbuffer, OES);
     }
     bi->glGenFramebuffers(1, &bi->fbo);
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
@@ -515,7 +518,7 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
 
     ds->i = BG_INSTANCE(badgpuRef(instance));
     bi->glGenRenderbuffers(1, &ds->rbo);
-
+    bi->glBindRenderbuffer(GL_RENDERBUFFER, ds->rbo);
     bi->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 
     if (!badgpuChk(bi, "badgpuNewDSBuffer", 1)) {
