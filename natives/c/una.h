@@ -35,25 +35,23 @@
 
 #define JNI_ABORT 2
 
-#define JNI_GetByteArrayElements ((void * (*)(void *, void *, unsigned char *)) JNIFN(184))
-#define JNI_GetShortArrayElements ((void * (*)(void *, void *, unsigned char *)) JNIFN(186))
-#define JNI_GetFloatArrayElements ((void * (*)(void *, void *, unsigned char *)) JNIFN(189))
-#define JNI_ReleaseByteArrayElements ((void * (*)(void *, void *, void *, int32_t)) JNIFN(192))
-#define JNI_ReleaseShortArrayElements ((void * (*)(void *, void *, void *, int32_t)) JNIFN(194))
-#define JNI_ReleaseFloatArrayElements ((void * (*)(void *, void *, void *, int32_t)) JNIFN(197))
+#define JNI_GetPrimitiveArrayCritical ((void * (*)(void *, void *, unsigned char *)) JNIFN(222))
+#define JNI_ReleasePrimitiveArrayCritical ((void * (*)(void *, void *, void *, int32_t)) JNIFN(223))
 
 #define JNIBA_ARG(name) void * name ## _buf, int32_t name ## _ofs
 
-#define JNIXA_L(name, type, get) type * name = 0, * name ## _ori = 0; if (name ## _buf) { \
-    name = name ## _ori = get(env, name ## _buf, NULL); \
+#define JNIXA_L(name, type) type * name = 0, * name ## _ori = 0; if (name ## _buf) { \
+    name = name ## _ori = JNI_GetPrimitiveArrayCritical(env, name ## _buf, NULL); \
     name += name ## _ofs; \
 }
-#define JNIXA_R(name, rel, mode) if (name ## _buf) rel(env, name ## _buf, name ## _ori, mode);
+#define JNIXA_R(name, mode) if (name ## _buf) JNI_ReleasePrimitiveArrayCritical(env, name ## _buf, name ## _ori, mode);
 
-#define JNIBA_L(name) JNIXA_L(name, uint8_t, JNI_GetByteArrayElements)
-#define JNIBA_R(name, mode) JNIXA_R(name, JNI_ReleaseByteArrayElements, mode)
-#define JNISA_L(name) JNIXA_L(name, uint16_t, JNI_GetShortArrayElements)
-#define JNISA_R(name, mode) JNIXA_R(name, JNI_ReleaseShortArrayElements, mode)
-#define JNIFA_L(name) JNIXA_L(name, float, JNI_GetFloatArrayElements)
-#define JNIFA_R(name, mode) JNIXA_R(name, JNI_ReleaseFloatArrayElements, mode)
+#define JNIBA_L(name) JNIXA_L(name, int8_t)
+#define JNISA_L(name) JNIXA_L(name, int16_t)
+#define JNIIA_L(name) JNIXA_L(name, int32_t)
+#define JNIFA_L(name) JNIXA_L(name, float)
+#define JNIBA_R(name, mode) JNIXA_R(name, mode)
+#define JNISA_R(name, mode) JNIXA_R(name, mode)
+#define JNIIA_R(name, mode) JNIXA_R(name, mode)
+#define JNIFA_R(name, mode) JNIXA_R(name, mode)
 

@@ -49,19 +49,44 @@ void J_BADGPU(flushInstance)(void * env, void * self, int64_t instance) {
 
 // TCE
 
-void J_BADGPU(pixelsConvert)(void * env, void * self, int32_t fF, int32_t tF, int32_t w, int32_t h, void * fD, int64_t fDOfs, void * tD, int64_t tDOfs) {
-    fD = JNI_GetDirectBufferAddress(env, fD) + fDOfs;
-    tD = JNI_GetDirectBufferAddress(env, tD) + tDOfs;
+void J_BADGPU(pixelsConvertBB)(void * env, void * self, int32_t fF, int32_t tF, int32_t w, int32_t h, JNIBA_ARG(fD), JNIBA_ARG(tD)) {
+    JNIBA_L(fD);
+    JNIBA_L(tD);
     badgpuPixelsConvert(fF, tF, w, h, fD, tD);
+    JNIBA_R(fD, JNI_ABORT);
+    JNIBA_R(tD, 0);
+}
+
+void J_BADGPU(pixelsConvertBI)(void * env, void * self, int32_t fF, int32_t tF, int32_t w, int32_t h, JNIBA_ARG(fD), JNIBA_ARG(tD)) {
+    JNIBA_L(fD);
+    JNIIA_L(tD);
+    badgpuPixelsConvert(fF, tF, w, h, fD, tD);
+    JNIBA_R(fD, JNI_ABORT);
+    JNIIA_R(tD, 0);
+}
+
+void J_BADGPU(pixelsConvertIB)(void * env, void * self, int32_t fF, int32_t tF, int32_t w, int32_t h, JNIBA_ARG(fD), JNIBA_ARG(tD)) {
+    JNIIA_L(fD);
+    JNIBA_L(tD);
+    badgpuPixelsConvert(fF, tF, w, h, fD, tD);
+    JNIIA_R(fD, JNI_ABORT);
+    JNIBA_R(tD, 0);
 }
 
 // TM
 
-int64_t J_BADGPU(newTexture)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, int32_t fmt, void * data, int64_t offset) {
-    data = data ? JNI_GetDirectBufferAddress(env, data) : NULL;
-    if (data)
-        data += offset;
-    return J_PTR(badgpuNewTexture(C_PTR(instance), flags, w, h, fmt, data));
+int64_t J_BADGPU(newTextureB)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    int64_t res = J_PTR(badgpuNewTexture(C_PTR(instance), flags, w, h, fmt, data));
+    JNIBA_R(data, JNI_ABORT);
+    return res;
+}
+
+int64_t J_BADGPU(newTextureI)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    int64_t res = J_PTR(badgpuNewTexture(C_PTR(instance), flags, w, h, fmt, data));
+    JNIIA_R(data, JNI_ABORT);
+    return res;
 }
 
 int64_t J_BADGPU(newDSBuffer)(void * env, void * self, int64_t instance, int32_t w, int32_t h) {
@@ -72,11 +97,18 @@ unsigned char J_BADGPU(generateMipmap)(void * env, void * self, int64_t texture)
     return badgpuGenerateMipmap(C_PTR(texture));
 }
 
-unsigned char J_BADGPU(readPixels)(void * env, void * self, int64_t texture, int32_t x, int32_t y, int32_t w, int32_t h, int32_t fmt, void * data, int64_t offset) {
-    data = data ? JNI_GetDirectBufferAddress(env, data) : NULL;
-    if (data)
-        data += offset;
-    return badgpuReadPixels(C_PTR(texture), x, y, w, h, fmt, data);
+unsigned char J_BADGPU(readPixelsB)(void * env, void * self, int64_t texture, int32_t x, int32_t y, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    BADGPUBool res = badgpuReadPixels(C_PTR(texture), x, y, w, h, fmt, data);
+    JNIBA_R(data, 0);
+    return res;
+}
+
+unsigned char J_BADGPU(readPixelsI)(void * env, void * self, int64_t texture, int32_t x, int32_t y, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    BADGPUBool res = badgpuReadPixels(C_PTR(texture), x, y, w, h, fmt, data);
+    JNIIA_R(data, 0);
+    return res;
 }
 
 // DC
@@ -124,7 +156,7 @@ unsigned char J_BADGPU(drawGeom)(void * env, void * self,
         flags,
         (void *) vPos, (void *) vCol, (void *) vTC,
         pType, plSize,
-        iStart, iCount, indices,
+        iStart, iCount, (void *) indices,
         (void *) matrixA, (void *) matrixB,
         depthN, depthF,
         vX, vY, vW, vH,
@@ -177,7 +209,7 @@ unsigned char J_BADGPU(drawGeomNoDS)(void * env, void * self,
         flags,
         (void *) vPos, (void *) vCol, (void *) vTC,
         pType, plSize,
-        iStart, iCount, indices,
+        iStart, iCount, (void *) indices,
         (void *) matrixA, (void *) matrixB,
         vX, vY, vW, vH,
         C_PTR(texture), (void *) matrixT,

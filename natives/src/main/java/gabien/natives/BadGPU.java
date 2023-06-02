@@ -124,30 +124,41 @@ public abstract class BadGPU extends BadGPUEnum {
             syncObject.assertBound();
             if (!valid)
                 throw new InvalidatedPointerException(this);
-            res = BadGPUUnsafe.newTexture(pointer, flags, width, height, 0, null, 0);
+            res = BadGPUUnsafe.newTextureI(pointer, flags, width, height, 0, null, 0);
             return res == 0 ? null : new Texture(this, res);
         }
 
-        public @Nullable Texture newTexture(int flags, int width, int height, TextureLoadFormat fmt, ByteBuffer data, int offset) {
+        public @Nullable Texture newTexture(int flags, int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
+            newTextureChecks(flags, width, height, fmt, dataOfs, (data != null) ? data.length : -1);
+            long res;
+            res = BadGPUUnsafe.newTextureB(pointer, flags, width, height, fmt.value, data, dataOfs);
+            return res == 0 ? null : new Texture(this, res);
+        }
+        public @Nullable Texture newTexture(int flags, int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
+            newTextureChecks(flags, width, height, fmt, dataOfs, (data != null) ? (data.length * 4) : -1);
+            long res;
+            res = BadGPUUnsafe.newTextureI(pointer, flags, width, height, fmt.value, data, dataOfs);
+            return res == 0 ? null : new Texture(this, res);
+        }
+        private void newTextureChecks(int flags, int width, int height, TextureLoadFormat fmt, int dataOfs, int dataLen) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
                 throw new IllegalArgumentException("Width/height not 0-32767.");
-            if (data != null) {
+            if (dataLen != -1) {
                 int size = (int) BadGPUUnsafe.pixelsSize(fmt.value, width, height);
                 if (size <= 0)
                     throw new IllegalArgumentException("Size overflow.");
-                int dataCap = data.capacity();
-                if (offset < 0 || offset > dataCap)
-                    throw new IllegalArgumentException("Offset not within buffer.");
-                if ((dataCap - offset) < size)
-                    throw new IllegalArgumentException("Region not within buffer.");
+                if (dataOfs < 0)
+                    throw new IllegalArgumentException("Data offset before start.");
+                if (dataOfs > dataLen)
+                    throw new IllegalArgumentException("Data offset after end.");
+                if ((dataOfs + size) > dataLen)
+                    throw new IllegalArgumentException("Data region after end.");
             }
-            long res;
             syncObject.assertBound();
             if (!valid)
                 throw new InvalidatedPointerException(this);
-            res = BadGPUUnsafe.newTexture(pointer, flags, width, height, fmt.value, data, offset);
-            return res == 0 ? null : new Texture(this, res);
         }
+
         public @Nullable DSBuffer newDSBuffer(long instance, int width, int height) {
             long res;
             syncObject.assertBound();
@@ -167,23 +178,35 @@ public abstract class BadGPU extends BadGPUEnum {
                 throw new InvalidatedPointerException(this);
             return BadGPUUnsafe.generateMipmap(pointer);
         }
-        public boolean readPixels(int x, int y, int width, int height, TextureLoadFormat fmt, ByteBuffer data, long offset) {
+        public boolean readPixels(int x, int y, int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
             if (width == 0 || height == 0)
                 return true;
-            if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
-                throw new IllegalArgumentException("Width/height not 0-32767.");
             if (data == null)
                 throw new IllegalArgumentException("data must not be null.");
-            int size = width * height * 4;
-            int dataCap = data.capacity();
-            if (offset < 0 || offset > dataCap)
+            readPixelsChecks(x, y, width, height, fmt, dataOfs, data.length);
+            return BadGPUUnsafe.readPixelsB(pointer, x, y, width, height, fmt.value, data, dataOfs);
+        }
+        public boolean readPixels(int x, int y, int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
+            if (width == 0 || height == 0)
+                return true;
+            if (data == null)
+                throw new IllegalArgumentException("data must not be null.");
+            readPixelsChecks(x, y, width, height, fmt, dataOfs, data.length * 4);
+            return BadGPUUnsafe.readPixelsI(pointer, x, y, width, height, fmt.value, data, dataOfs);
+        }
+        private void readPixelsChecks(int x, int y, int width, int height, TextureLoadFormat fmt, int dataOfs, int dataLen) {
+            if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
+                throw new IllegalArgumentException("Width/height not 0-32767.");
+            int size = (int) BadGPUUnsafe.pixelsSize(fmt.value, width, height);
+            if (size < 0)
+                throw new IllegalArgumentException("Size overflow.");
+            if (dataOfs < 0 || dataOfs > dataLen)
                 throw new IllegalArgumentException("Offset not within buffer.");
-            if ((dataCap - offset) < size)
+            if ((dataLen - dataOfs) < size)
                 throw new IllegalArgumentException("Region not within buffer.");
             syncObject.assertBound();
             if (!valid)
                 throw new InvalidatedPointerException(this);
-            return BadGPUUnsafe.readPixels(pointer, x, y, width, height, fmt.value, data, offset);
         }
     }
     public static final class DSBuffer extends Ref {

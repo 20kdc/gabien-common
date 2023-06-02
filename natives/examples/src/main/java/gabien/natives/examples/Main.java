@@ -9,22 +9,17 @@ package gabien.natives.examples;
 
 import java.awt.AWTException;
 import java.awt.BufferCapabilities;
-import java.awt.Canvas;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.ImageCapabilities;
-import java.awt.BufferCapabilities.FlipContents;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.awt.peer.ComponentPeer;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
@@ -41,9 +36,7 @@ import gabien.uslx.append.ThreadOwned;
 public class Main {
     private volatile int currentCanvasWidth, currentCanvasHeight;
     private volatile BadGPU.Texture screen1;
-    private volatile BadGPU.Texture screen2;
-    private volatile IntBuffer dataSrcI;
-    private volatile ByteBuffer dataSrcB;
+    private volatile int[] dataSrcA, dataSrcB, dataSrc;
     boolean flipper1 = false;
     private volatile int currentBufferWidth, currentBufferHeight;
     public final BadGPU.Instance instance;
@@ -97,10 +90,8 @@ public class Main {
                         if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
                             System.out.println(" -- RECREATING TEXTURE --");
                             screen1 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH);
-                            screen2 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH);
-                            dataSrcB = ByteBuffer.allocateDirect(clampedCW * clampedCH * 4);
-                            dataSrcB.order(ByteOrder.nativeOrder());
-                            dataSrcI = dataSrcB.asIntBuffer();
+                            dataSrcA = new int[clampedCW * clampedCH];
+                            dataSrcB = new int[clampedCW * clampedCH];
                             currentBufferWidth = clampedCW;
                             currentBufferHeight = clampedCH;
                         }
@@ -108,13 +99,14 @@ public class Main {
                         long tA, tB;
                         tA = System.currentTimeMillis();
                         instance.flush();
-                        (flipper1 ? screen1 : screen2).readPixels(0, 0, currentBufferWidth, currentBufferHeight, TextureLoadFormat.ARGBI32, dataSrcB, 0);
+                        dataSrc = flipper1 ? dataSrcA : dataSrcB;
+                        screen1.readPixels(0, 0, currentBufferWidth, currentBufferHeight, TextureLoadFormat.ARGBI32, dataSrc, 0);
                         tB = System.currentTimeMillis();
                         frameCompleteSemaphore.release();
                         //System.out.println("from TT");
                         System.out.println(tB - tA);
                         // continue...
-                        currentState.frame(Main.this, flipper1 ? screen1 : screen2, currentBufferWidth, currentBufferHeight);
+                        currentState.frame(Main.this, screen1, currentBufferWidth, currentBufferHeight);
                         flipper1 = !flipper1;
                         instance.flush();
                     }
@@ -168,6 +160,7 @@ public class Main {
         w.setPreferredSize(new Dimension(800, 600));
         w.pack();
         w.setVisible(true);
+        @SuppressWarnings("deprecation")
         final ComponentPeer wp = w.getPeer();
         ImageCapabilities aic = new ImageCapabilities(true);
         try {
@@ -186,7 +179,7 @@ public class Main {
         m.t = new Timer();
         m.t.scheduleAtFixedRate(new TimerTask() {
             BufferedImage tmp = null;
-            int[] data = null;
+            WritableRaster wr;
             @Override
             public void run() {
                 // ensure a frame has completed before continuing...
@@ -203,31 +196,33 @@ public class Main {
                 m.currentCanvasHeight = ch;
                 int sw = m.currentBufferWidth;
                 int sh = m.currentBufferHeight;
-                if (m.dataSrcI != null) {
+                // the game thread picks a buffer to read into, reads into it, then sets this
+                // then *after* we release the FRS, it changes this and reads into the *other* buffer
+                int[] grabbedDS = m.dataSrc;
+                m.frameRequestSemaphore.release();
+                if (grabbedDS != null) {
                     if (tmp == null || tmp.getWidth() != sw || tmp.getHeight() != sh) {
                         tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
-                        data = new int[sw * sh];
+                        wr = tmp.getRaster();
                     }
-                    IntBuffer dataSrc = m.dataSrcI;
                     long tA = System.currentTimeMillis();
-                    dataSrc.get(data);
-                    dataSrc.rewind();
+                    // that I have to do this to avoid a slowpath is so stupid
+                    wr.setDataElements(0, 0, sw, sh, grabbedDS);
                     long tB = System.currentTimeMillis();
-                    System.out.println("frq:" + (tB - tA));
-                    m.frameRequestSemaphore.release();
-                    tmp.setRGB(0, 0, sw, sh, data, 0, sw);
-                } else {
-                    m.frameRequestSemaphore.release();
+                    System.out.println("SDE:" + (tB - tA));
                 }
                 if (tmp != null) {
                     // now we do the thing
                     Graphics gr = wp.getGraphics();
+                    long tA = System.currentTimeMillis();
                     gr.drawImage(tmp, 0, 0, null);
+                    long tB = System.currentTimeMillis();
+                    System.out.println("DI:" + (tB - tA));
                     gr.dispose();
                     //wp.flip(0, 0, sw, sh, FlipContents.UNDEFINED);
                 }
             }
-        }, 0, 20);
+        }, 0, 16);
     }
     private static final float[] triImmDat1 = new float[24];
     public static void triImm(BadGPU.Texture scr, int w, int h,

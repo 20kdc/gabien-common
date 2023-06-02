@@ -7,8 +7,6 @@
 
 package gabien.natives;
 
-import java.nio.Buffer;
-
 /**
  * Finally, what this project needed.
  * VERSION: 0.15.0
@@ -43,14 +41,16 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
             return width * height * 4L;
         return 0;
     }
-    public static native void pixelsConvert(int fF, int tF, int width, int height, Buffer fD, long fDOfs, Buffer tD, long tDOfs);
+    public static native void pixelsConvertBB(int fF, int tF, int width, int height, byte[] fD, int fDOfs, byte[] tD, int tDOfs);
+    public static native void pixelsConvertBI(int fF, int tF, int width, int height, byte[] fD, int fDOfs, int[] tD, int tDOfs);
+    public static native void pixelsConvertIB(int fF, int tF, int width, int height, int[] fD, int fDOfs, byte[] tD, int tDOfs);
     // TM
-    public static native long newTexture(long instance, int flags, int width, int height, int fmt, Buffer data, long offset);
-    //public static native long newTextureARGBI32(long instance, int flags, int width, int height, int fmt, int[] argb, int argbOfs);
+    public static native long newTextureB(long instance, int flags, int width, int height, int fmt, byte[] data, int dataOfs);
+    public static native long newTextureI(long instance, int flags, int width, int height, int fmt, int[] data, int dataOfs);
     public static native long newDSBuffer(long instance, int width, int height);
     public static native boolean generateMipmap(long texture);
-    public static native boolean readPixels(long texture, int x, int y, int width, int height, int fmt, Buffer data, long offset);
-    //public static native boolean readPixelsARGBI32(long texture, int x, int y, int width, int height, int[] argb, int argbOfs);
+    public static native boolean readPixelsB(long texture, int x, int y, int width, int height, int fmt, byte[] data, int dataOfs);
+    public static native boolean readPixelsI(long texture, int x, int y, int width, int height, int fmt, int[] data, int dataOfs);
     // DC
     public static native boolean drawClear(
         long sTexture, long sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
