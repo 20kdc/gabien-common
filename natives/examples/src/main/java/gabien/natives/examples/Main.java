@@ -127,7 +127,8 @@ public class Main {
         // but unless this is set, we don't get double buffering at all!
         System.setProperty("swing.bufferPerWindow", "true");
         // doing this should help perf right
-        System.setProperty("sun.java2d.opengl", "True");
+        // NO NO NO NO NO
+        // System.setProperty("sun.java2d.opengl", "True");
         gabien.natives.Loader.defaultLoader();
         final Main m = new Main();
         // need to use a JFrame to get VSync
@@ -242,7 +243,7 @@ public class Main {
                     canvas.paintImmediately(0, 0, cw, ch);
                 });
             }
-        }, 0, 16);
+        }, 0, 15);
     }
     private static final float[] triImmDat1 = new float[24];
     public static void triImm(BadGPU.Texture scr, int w, int h,
