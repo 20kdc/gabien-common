@@ -7,25 +7,23 @@
 
 package gabien.natives.examples;
 
-import java.awt.AWTException;
-import java.awt.BufferCapabilities;
-import java.awt.BufferCapabilities.FlipContents;
+import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.Graphics;
-import java.awt.ImageCapabilities;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.awt.peer.ComponentPeer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
+
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.RepaintManager;
+import javax.swing.SwingUtilities;
 
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUEnum.MetaInfoType;
@@ -33,7 +31,7 @@ import gabien.natives.BadGPUEnum.TextureLoadFormat;
 import gabien.uslx.append.ThreadOwned;
 
 /**
- * Yes, this deliberately uses AWT.
+ * An abomination trying to test better ways of handling graphical output.
  * Created 30th May, 2023.
  */
 public class Main {
@@ -50,6 +48,8 @@ public class Main {
     private final Semaphore frameRequestSemaphore = new Semaphore(1);
     private final Semaphore frameCompleteSemaphore = new Semaphore(1);
     private Timer t;
+    private volatile BufferedImage transferBuffer;
+    private volatile WritableRaster transferBufferWR;
 
     public static final int KEY_W = 0;
     public static final int KEY_A = 1;
@@ -71,7 +71,7 @@ public class Main {
         }
         // Do this early 
         frameCompleteSemaphore.acquireUninterruptibly();
-        gameThread = new Thread() {
+        gameThread = new Thread("BadGPU/Game Thread") {
             @Override
             public void run() {
                 try (ThreadOwned.Locked tmp = instanceLock.open()) {
@@ -122,9 +122,16 @@ public class Main {
     public static void main(String[] args) {
         System.setProperty("sun.awt.noerasebackground", "true");
         System.setProperty("sun.awt.erasebackgroundonresize", "true");
+        // "native" double buffering takes us off of the VSync path
+        System.setProperty("awt.nativeDoubleBuffering", "false");
+        // but unless this is set, we don't get double buffering at all!
+        System.setProperty("swing.bufferPerWindow", "true");
+        // doing this should help perf right
+        System.setProperty("sun.java2d.opengl", "True");
         gabien.natives.Loader.defaultLoader();
         final Main m = new Main();
-        final Frame w = new Frame("gabien-natives examples");
+        // need to use a JFrame to get VSync
+        final JFrame w = new JFrame("gabien-natives examples");
         w.addKeyListener(new KeyAdapter() {
             private int translateKey(int kc) {
                 if (kc == KeyEvent.VK_W)
@@ -161,22 +168,37 @@ public class Main {
         });
         // This is the not *really* documented way you set client size in AWT.
         w.setPreferredSize(new Dimension(800, 600));
-        w.pack();
-        w.setVisible(true);
-        @SuppressWarnings("deprecation")
-        final ComponentPeer wp = w.getPeer();
-        w.addComponentListener(new ComponentAdapter() {
+        // w.getRootPane().setDoubleBuffered(true);
+        System.out.println("DBB: " + w.getRootPane().isDoubleBuffered());
+        @SuppressWarnings("serial")
+        final JComponent canvas = new JComponent() {
             @Override
-            public void componentResized(ComponentEvent var1) {
-                ImageCapabilities aic = new ImageCapabilities(true);
-                try {
-                    w.createBufferStrategy(2, new BufferCapabilities(aic, aic, BufferCapabilities.FlipContents.UNDEFINED));
-                } catch (AWTException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
+            public void paint(Graphics var1) {
+                if (m.transferBuffer != null) {
+                    // now we do the thing
+                    long tA = System.currentTimeMillis();
+                    var1.drawImage(m.transferBuffer, 0, 0, null);
+                    long tB = System.currentTimeMillis();
+                    System.out.println("DI:" + (tB - tA));
                 }
             }
-        });
+            @Override
+            public boolean isOpaque() {
+                return true;
+            }
+        };
+        w.getRootPane().setDoubleBuffered(true);
+        canvas.setDoubleBuffered(true);
+        RepaintManager.currentManager(w).setDoubleBufferingEnabled(true);
+        // What the hell, Sun?
+        try {
+            Class.forName("com.sun.java.swing.SwingUtilities3").getMethod("setVsyncRequested", Container.class, boolean.class).invoke(null, w, true);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        w.setContentPane(canvas);
+        w.pack();
+        w.setVisible(true);
         w.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -186,52 +208,39 @@ public class Main {
         });
         m.t = new Timer();
         m.t.scheduleAtFixedRate(new TimerTask() {
-            BufferedImage tmp = null;
-            WritableRaster wr;
+            long lastFrameTime = 0;
             @Override
             public void run() {
-                // ensure a frame has completed before continuing...
-                System.out.println("@ " + System.currentTimeMillis());
-                if (m.frameCompleteSemaphore.availablePermits() == 0) {
-                    System.out.println("Missed frame");
-                    return;
-                }
-                m.frameCompleteSemaphore.acquireUninterruptibly();
-                // this means the game thread is now waiting for us to schedule a new frame
-                int cw = w.getWidth();
-                int ch = w.getHeight();
-                m.currentCanvasWidth = cw;
-                m.currentCanvasHeight = ch;
-                int sw = m.currentBufferWidth;
-                int sh = m.currentBufferHeight;
-                // the game thread picks a buffer to read into, reads into it, then sets this
-                // then *after* we release the FRS, it changes this and reads into the *other* buffer
-                int[] grabbedDS = m.dataSrc;
-                m.frameRequestSemaphore.release();
-                if (grabbedDS != null) {
-                    if (tmp == null || tmp.getWidth() != sw || tmp.getHeight() != sh) {
-                        tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
-                        wr = tmp.getRaster();
-                    }
-                    long tA = System.currentTimeMillis();
-                    // that I have to do this to avoid a slowpath is so stupid
-                    wr.setDataElements(0, 0, sw, sh, grabbedDS);
-                    long tB = System.currentTimeMillis();
-                    System.out.println("SDE:" + (tB - tA));
-                }
-                if (tmp != null) {
-                    try {
-                        // now we do the thing
-                        Graphics gr = wp.getBackBuffer().getGraphics();
+                SwingUtilities.invokeLater(() -> {
+                    // ensure a frame has completed before continuing...
+                    long thisFrameTime = System.currentTimeMillis();
+                    System.out.println("FT: " + (thisFrameTime - lastFrameTime));
+                    lastFrameTime = thisFrameTime;
+                    m.frameCompleteSemaphore.acquireUninterruptibly();
+                    // this means the game thread is now waiting for us to schedule a new frame
+                    int cw = canvas.getWidth();
+                    int ch = canvas.getHeight();
+                    m.currentCanvasWidth = cw;
+                    m.currentCanvasHeight = ch;
+                    int sw = m.currentBufferWidth;
+                    int sh = m.currentBufferHeight;
+                    // the game thread picks a buffer to read into, reads into it, then sets this
+                    // then *after* we release the FRS, it changes this and reads into the *other* buffer
+                    int[] grabbedDS = m.dataSrc;
+                    m.frameRequestSemaphore.release();
+                    if (grabbedDS != null) {
+                        if (m.transferBuffer == null || m.transferBuffer.getWidth() != sw || m.transferBuffer.getHeight() != sh) {
+                            m.transferBuffer = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
+                            m.transferBufferWR = m.transferBuffer.getRaster();
+                        }
                         long tA = System.currentTimeMillis();
-                        gr.drawImage(tmp, 0, 0, null);
+                        // that I have to do this to avoid a slowpath is so stupid
+                        m.transferBufferWR.setDataElements(0, 0, sw, sh, grabbedDS);
                         long tB = System.currentTimeMillis();
-                        System.out.println("DI:" + (tB - tA));
-                        gr.dispose();
-                        wp.flip(0, 0, cw, ch, FlipContents.UNDEFINED);
-                    } catch (Exception ex) {
+                        System.out.println("SDE:" + (tB - tA));
                     }
-                }
+                    canvas.paintImmediately(0, 0, cw, ch);
+                });
             }
         }, 0, 16);
     }
