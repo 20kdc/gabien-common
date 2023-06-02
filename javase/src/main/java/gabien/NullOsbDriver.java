@@ -94,8 +94,8 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public void resize(int wantedRW, int wantedRH) {
-
+    public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
+        return this;
     }
 
     @Override

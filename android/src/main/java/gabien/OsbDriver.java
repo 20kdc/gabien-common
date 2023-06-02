@@ -48,17 +48,6 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
         localST[5] = h;
     }
 
-    protected void resize(int w, int h) {
-        bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        canvas = new Canvas(bitmap);
-        localST = new int[6];
-        localST[4] = w;
-        localST[5] = h;
-        canvas.save();
-        this.w = w;
-        this.h = h;
-    }
-
     @Override
     public Runnable[] getLockingSequenceN() {
         return new Runnable[] {

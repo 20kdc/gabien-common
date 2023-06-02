@@ -11,13 +11,14 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.SurfaceHolder;
 
-public class GrInDriver extends OsbDriver implements IGrInDriver {
+public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;
     public boolean wantsShutdown = false;
     public Rect displayArea = new Rect(0, 0, 1, 1);
+    public OsbDriver backBuffer;
 
     public GrInDriver(int w, int h) {
-        super(w, h, false);
+        backBuffer = new OsbDriver(w, h, false);
         peripherals = new Peripherals(this);
     }
 
@@ -28,7 +29,7 @@ public class GrInDriver extends OsbDriver implements IGrInDriver {
 
     @Override
     public IGrDriver getBackBuffer() {
-        return this;
+        return backBuffer;
     }
 
     @Override
@@ -48,17 +49,21 @@ public class GrInDriver extends OsbDriver implements IGrInDriver {
                             Rect r = sh.getSurfaceFrame();
     
                             int letterboxing2 = 0;
-                            double realAspectRatio = w / (double) h;
+                            int bW = backBuffer.w;
+                            int bH = backBuffer.w;
+                            double realAspectRatio = bW / (double) bH;
                             int goodWidth = (int)(realAspectRatio * r.height());
                             // work out letterboxing from widths
                             int letterboxing = (r.width() - goodWidth) / 2;
     
                             displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
-                            c.drawBitmap(bitmap, new Rect(0, 0, w, h), displayArea, globalPaint);
+                            c.drawBitmap(backBuffer.bitmap, new Rect(0, 0, bW, bH), displayArea, backBuffer.globalPaint);
     
                             sh.unlockCanvasAndPost(c);
-                            if ((r.width() != w) || (r.height() != h))
-                                resize(r.width(), r.height());
+                            if ((r.width() != bW) || (r.height() != bH)) {
+                                backBuffer.shutdown();
+                                backBuffer = new OsbDriver(r.width(), r.height(), false);
+                            }
                         }
                     } catch (Exception e) {
     
@@ -88,6 +93,6 @@ public class GrInDriver extends OsbDriver implements IGrInDriver {
 
     @Override
     public int estimateUIScaleTenths() {
-        return Math.max(10, Math.min(w, h) / 30);
+        return Math.max(10, Math.min(backBuffer.w, backBuffer.h) / 30);
     }
 }

@@ -55,7 +55,10 @@ public interface IGrDriver extends IImage {
 
     void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height);
 
-    // Stop all drawing operations. Makes an OsbDriver unusable.
+    /**
+     * Stop all drawing operations. Makes an OsbDriver unusable.
+     * Please don't call this on backbuffers, please and thank you.
+     */
     void shutdown();
 
     // Gets the local ST buffer, in the order: translateX, translateY, cropL, cropU, cropR, cropD

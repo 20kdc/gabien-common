@@ -29,7 +29,7 @@ public class ProxyOsbDriver extends ProxyGrDriver<IWindowGrBackend> implements I
     }
 
     @Override
-    public void resize(int wantedRW, int wantedRH) {
-        target.resize(wantedRW, wantedRH);
+    public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
+        return new ProxyOsbDriver(target.recreate(wantedRW, wantedRH));
     }
 }

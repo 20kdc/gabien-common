@@ -20,9 +20,7 @@ public class OsbDriverMT extends ThreadForwardingGrDriver<OsbDriverCore> impleme
     }
 
     @Override
-    public void resize(int wantedRW, int wantedRH) {
-        Runnable r = flushCmdBufAndLock();
-        target.resize(wantedRW, wantedRH);
-        r.run();
+    public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
+        return new OsbDriverMT(wantedRW, wantedRH, target.alpha);
     }
 }

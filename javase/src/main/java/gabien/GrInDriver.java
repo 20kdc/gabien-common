@@ -7,7 +7,6 @@
 
 package gabien;
 
-import gabien.backendhelp.ProxyGrDriver;
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 
@@ -25,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * (See: very early versions of IkachanMapEdit)
  * (Though now it's been split up for OsbDriver - Jun 4 2017)
  */
-class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver {
+class GrInDriver implements IGrInDriver {
     public Frame frame; // Really a JFrame for better close handling.
     public Panel panel; // Actually a Panel because there's no point for this to be a JPanel.
     public TextboxMaintainer currentEditingSession;
@@ -44,13 +43,15 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
     public int mousewheelMovements = 0;
     public BufferedImage frontBuffer;
 
+    public IWindowGrBackend backBuffer;
+
     public final KeyListener commonKeyListener;
 
     Random fuzzer = new Random();
 
     @SuppressWarnings("serial")
     public GrInDriver(String name, WindowSpecs ws, IWindowGrBackend t) {
-        super(t);
+        backBuffer = t;
         sc = ws.scale;
         frame = new JFrame(name) {
             @Override
@@ -244,7 +245,7 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
 
     @Override
     public IGrDriver getBackBuffer() {
-        return this;
+        return backBuffer;
     }
 
     @Override
@@ -257,25 +258,25 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         // 2. finish render
         // 3. release queue for next render
         // Note that I did at one point plan to make it so this ran on a 1-frame delay...
-        Runnable[] l = getLockingSequenceN();
+        Runnable[] l = backBuffer.getLockingSequenceN();
         if (l != null)
             l[0].run();
 
         // Update frontBuffer for slowpaint, then perform fastpaint
-        BufferedImage backBuffer = (BufferedImage) target.getNative();
+        BufferedImage backBufferBI = (BufferedImage) (backBuffer.getNative());
         BufferedImage frontBuf = frontBuffer;
         int panelW = panel.getWidth();
         int panelH = panel.getHeight();
         if ((frontBuf.getWidth() != panelW) || (frontBuf.getHeight() != panelH)) {
             // Resize maybe needed?
-            if (getWidth() != 0)
-                if (getHeight() != 0)
+            if (backBuffer.getWidth() != 0)
+                if (backBuffer.getHeight() != 0)
                     frontBuf = new BufferedImage(panelW, panelH, BufferedImage.TYPE_INT_RGB);
         }
         Graphics fbG = frontBuf.getGraphics();
         fbG.setColor(panel.getBackground());
         fbG.fillRect(0, 0, frontBuf.getWidth(), frontBuf.getHeight());
-        fbG.drawImage(backBuffer, 0, 0, backBuffer.getWidth() * sc, backBuffer.getHeight() * sc, null);
+        fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
 
         // Change buffer if necessary
         frontBuffer = frontBuf;
@@ -288,8 +289,8 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         int wantedRW = panelW / sc;
         int wantedRH = panelH / sc;
 
-        if ((getWidth() != wantedRW) || (getHeight() != wantedRH))
-            target.resize(wantedRW, wantedRH);
+        if ((backBuffer.getWidth() != wantedRW) || (backBuffer.getHeight() != wantedRH))
+            backBuffer = backBuffer.recreate(wantedRW, wantedRH);
     }
 
     private void drawFrontBuffer(Graphics pg) {
@@ -301,11 +302,11 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
             int txH = target.getHeight();
             ClipBoundHelper cbh = new ClipBoundHelper();
             cbh.point(0, 0);
-            cbh.point(getWidth() * sc, 0);
-            cbh.point(0, getHeight() * sc);
-            cbh.point(-(getWidth() * sc), 0);
+            cbh.point(backBuffer.getWidth() * sc, 0);
+            cbh.point(0, backBuffer.getHeight() * sc);
+            cbh.point(-(backBuffer.getWidth() * sc), 0);
             // Alternatively, maybe go up to 0, 0 then to txX, txY, and follow the points that way? depends on how much harm would be caused by non-orthogonal lines
-            cbh.point(0, txY - (getHeight() * sc));
+            cbh.point(0, txY - (backBuffer.getHeight() * sc));
             cbh.point(txX, 0);
             cbh.point(0, txH);
             cbh.point(txW, 0);
@@ -339,7 +340,7 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         GaBIEnImpl.lastClosureDevice = frame.getGraphicsConfiguration().getDevice();
         GaBIEnImpl.activeDrivers.remove(this);
         GaBIEnImpl.activeDriverLock.unlock();
-        super.shutdown();
+        backBuffer.shutdown();
         frame.setVisible(false);
     }
 

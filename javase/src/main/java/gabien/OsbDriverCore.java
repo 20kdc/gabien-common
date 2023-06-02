@@ -22,7 +22,7 @@ import org.eclipse.jdt.annotation.NonNull;
  */
 public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
     public Graphics2D bufGraphics;
-    private final boolean alpha;
+    final boolean alpha;
 
     // keeps track of Graphics-side local translation
     private int translationX, translationY;
@@ -31,10 +31,6 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
 
     public OsbDriverCore(int w, int h, boolean a) {
         alpha = a;
-        resize(w, h);
-    }
-
-    public void resize(int w, int h) {
         buf = new BufferedImage(w, h, alpha ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
         bufGraphics = buf.createGraphics();
         translationX = 0;
@@ -45,6 +41,11 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
         localST[3] = 0;
         localST[4] = w;
         localST[5] = h;
+    }
+
+    @Override
+    public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
+        return new OsbDriverCore(wantedRW, wantedRH, alpha);
     }
 
     @Override

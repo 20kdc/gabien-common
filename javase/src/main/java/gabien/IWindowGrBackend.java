@@ -15,5 +15,5 @@ import gabien.backendhelp.INativeImageHolder;
  * Created on 08/06/17.
  */
 public interface IWindowGrBackend extends IGrDriver, INativeImageHolder {
-    void resize(int wantedRW, int wantedRH);
+    IWindowGrBackend recreate(int wantedRW, int wantedRH);
 }
