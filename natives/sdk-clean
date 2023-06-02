@@ -3,6 +3,5 @@
 LIBUNA="src/main/resources/gabien/natives/lib"
 LIBUNAND="src/main/resources/lib"
 rm -rf src/main/resources
-mvn clean
-rm -rf ../natives-sdk
+./sdk-clean-java
 

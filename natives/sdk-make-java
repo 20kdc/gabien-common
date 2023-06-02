@@ -1,10 +1,17 @@
 #!/bin/sh
+# Do a clean rebuild of the Java side of things just to be sure
+./sdk-clean-java
 mvn package
+mvn install
+cd examples
+mvn package
+cd ..
 rm -rf ../natives-sdk
 mkdir -p ../natives-sdk
 # script that installs the build to the local Maven repo
 cp sdk-install ../natives-sdk/
 cp target/gabien-natives-0.666-SNAPSHOT.jar ../natives-sdk/natives.jar
+cp examples/target/gabien-natives-examples-0.666-SNAPSHOT-jar-with-dependencies.jar ../natives-sdk/examples.jar
 cp ../COPYING.txt ../natives-sdk/
 cp ../CREDITS.txt ../natives-sdk/
 

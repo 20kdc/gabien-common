@@ -1,0 +1,8 @@
+#!/bin/sh
+# Java-side cleaning
+mvn clean
+cd examples
+mvn clean
+cd ..
+rm -rf ../natives-sdk
+
