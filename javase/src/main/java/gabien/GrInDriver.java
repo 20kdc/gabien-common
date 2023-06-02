@@ -243,7 +243,12 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
     }
 
     @Override
-    public boolean flush() {
+    public IGrDriver getBackBuffer() {
+        return this;
+    }
+
+    @Override
+    public void flush() {
         if (peripherals instanceof MobilePeripherals)
             ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame();
 
@@ -283,13 +288,8 @@ class GrInDriver extends ProxyGrDriver<IWindowGrBackend> implements IGrInDriver 
         int wantedRW = panelW / sc;
         int wantedRH = panelH / sc;
 
-        boolean resized = false;
-        if ((getWidth() != wantedRW) || (getHeight() != wantedRH)) {
+        if ((getWidth() != wantedRW) || (getHeight() != wantedRH))
             target.resize(wantedRW, wantedRH);
-            resized = true;
-        }
-
-        return resized;
     }
 
     private void drawFrontBuffer(Graphics pg) {

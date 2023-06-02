@@ -10,7 +10,7 @@ package gabien;
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
-public interface IGrInDriver extends IGrDriver {
+public interface IGrInDriver {
     // keys! I'm switching the keymap to some custom thing
     // so Oracle can't hold a sword over my head
     // just because I use the same keymap as them.
@@ -117,11 +117,29 @@ public interface IGrInDriver extends IGrDriver {
 
     // -- Window management functions --
 
-    // Returns true if the display is still visible.
+    /**
+     * Returns true if the display is still visible.
+     */
     boolean stillRunning();
 
-    // This shows the results of drawing on the screen. Returns true if the drawing buffer was lost.
-    boolean flush();
+    /**
+     * Gets the current backbuffer.
+     * This value should only change after flush calls.
+     * The backbuffer also gives you the current window size measurements.
+     */
+    IGrDriver getBackBuffer();
+
+    /**
+     * This will eventually show the backbuffer on the screen.
+     * It used to be that this notified you with a boolean when the backbuffer was lost.
+     * This has changed in preparation for BadGPU, because we need to get clever about buffer management now.
+     */
+    void flush();
+
+    /**
+     * Closes the window.
+     */
+    void shutdown();
 
     // Gets an IPeripherals object with a zero offset (if relevant) suitable for passing to UI.
 

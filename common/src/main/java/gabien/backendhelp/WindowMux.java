@@ -57,7 +57,8 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
     
     @Override
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs) {
-        Window wnd = new Window(underlyingWindow.getWidth(), underlyingWindow.getHeight());
+        IGrDriver oldBackBuffer = underlyingWindow.getBackBuffer();
+        Window wnd = new Window(oldBackBuffer.getWidth(), oldBackBuffer.getHeight());
         Window oldWnd = getCurrentWindow();
         if (isOfSystemPriority(windowspecs)) {
             windowsSystem.add(wnd);
@@ -75,26 +76,22 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
         underlyingWindow.getPeripherals().clearKeys();
         if (o != null) {
             ignorance.shutdown();
-            ignorance = GaBIEn.makeOffscreenBuffer(underlyingWindow.getWidth(), underlyingWindow.getHeight(), false);
-            o.target = ignorance;
-            o.bufferLossFlag = true;
+            IGrDriver igd = underlyingWindow.getBackBuffer();
+            ignorance = GaBIEn.makeOffscreenBuffer(igd.getWidth(), igd.getHeight(), false);
             o.windowPeripherals.target = DeadDesktopPeripherals.INSTANCE;
         }
         if (n != null) {
-            n.target = underlyingWindow;
             n.windowPeripherals.target = underlyingWindow.getPeripherals();
         }
         //System.out.println("-- Window transition " + o + " -> " + n + " --");
     }
     
-    public class Window extends ProxyGrDriver<IGrDriver> implements IGrInDriver {
+    public class Window implements IGrInDriver {
         public boolean running = true;
-        public boolean bufferLossFlag = false;
         public final ProxyPeripherals<IPeripherals> windowPeripherals;
         
         @SuppressWarnings("unchecked")
         public Window(int w, int h) {
-            super(ignorance);
             if (underlyingWindow.getPeripherals() instanceof IDesktopPeripherals) {
                 ProxyDesktopPeripherals<IDesktopPeripherals> wp = new ProxyDesktopPeripherals<IDesktopPeripherals>();
                 wp.target = DeadDesktopPeripherals.INSTANCE;
@@ -111,19 +108,14 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
         }
 
         @Override
-        public boolean flush() {
-            if (getCurrentWindow() == this) {
-                if (bufferLossFlag) {
-                    // The buffer was lost between the previous flush & now
-                    bufferLossFlag = false;
-                    underlyingWindow.flush();
-                    return true;
-                }
-                return underlyingWindow.flush();
-            } else {
-                // Continually indicate buffer loss.
-                return true;
-            }
+        public IGrDriver getBackBuffer() {
+            return getCurrentWindow() == this ? underlyingWindow.getBackBuffer() : ignorance;
+        }
+
+        @Override
+        public void flush() {
+            if (getCurrentWindow() == this)
+                underlyingWindow.flush();
         }
 
         @Override

@@ -9,10 +9,13 @@ package gabien.natives.examples;
 
 import java.awt.AWTException;
 import java.awt.BufferCapabilities;
+import java.awt.BufferCapabilities.FlipContents;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.ImageCapabilities;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -162,19 +165,24 @@ public class Main {
         w.setVisible(true);
         @SuppressWarnings("deprecation")
         final ComponentPeer wp = w.getPeer();
-        ImageCapabilities aic = new ImageCapabilities(true);
-        try {
-            w.createBufferStrategy(2, new BufferCapabilities(aic, aic, BufferCapabilities.FlipContents.UNDEFINED));
-        } catch (AWTException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
+        w.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent var1) {
+                ImageCapabilities aic = new ImageCapabilities(true);
+                try {
+                    w.createBufferStrategy(2, new BufferCapabilities(aic, aic, BufferCapabilities.FlipContents.UNDEFINED));
+                } catch (AWTException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+            }
+        });
         w.addWindowListener(new WindowAdapter() {
-           @Override
-           public void windowClosing(WindowEvent e) {
-               w.dispose();
-               System.exit(1);
-           }
+            @Override
+            public void windowClosing(WindowEvent e) {
+                w.dispose();
+                System.exit(1);
+            }
         });
         m.t = new Timer();
         m.t.scheduleAtFixedRate(new TimerTask() {
@@ -212,14 +220,17 @@ public class Main {
                     System.out.println("SDE:" + (tB - tA));
                 }
                 if (tmp != null) {
-                    // now we do the thing
-                    Graphics gr = wp.getGraphics();
-                    long tA = System.currentTimeMillis();
-                    gr.drawImage(tmp, 0, 0, null);
-                    long tB = System.currentTimeMillis();
-                    System.out.println("DI:" + (tB - tA));
-                    gr.dispose();
-                    //wp.flip(0, 0, sw, sh, FlipContents.UNDEFINED);
+                    try {
+                        // now we do the thing
+                        Graphics gr = wp.getBackBuffer().getGraphics();
+                        long tA = System.currentTimeMillis();
+                        gr.drawImage(tmp, 0, 0, null);
+                        long tB = System.currentTimeMillis();
+                        System.out.println("DI:" + (tB - tA));
+                        gr.dispose();
+                        wp.flip(0, 0, cw, ch, FlipContents.UNDEFINED);
+                    } catch (Exception ex) {
+                    }
                 }
             }
         }, 0, 16);

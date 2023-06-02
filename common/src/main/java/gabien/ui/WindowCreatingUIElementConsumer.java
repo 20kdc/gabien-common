@@ -76,8 +76,9 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             }
 
             boolean needResize = false;
-            int cw = aw.igd.getWidth();
-            int ch = aw.igd.getHeight();
+            IGrDriver backbuffer = aw.igd.getBackBuffer();
+            int cw = backbuffer.getWidth();
+            int ch = backbuffer.getHeight();
             Size s = aw.ue.getSize();
             if (s.width != cw)
                 needResize = true;
@@ -86,18 +87,18 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (needResize)
                 aw.ue.setForcedBounds(null, new Rect(0, 0, cw, ch));
             // Init ST & draw
-            int[] sti = aw.igd.getLocalST();
+            int[] sti = backbuffer.getLocalST();
             sti[0] = 0;
             sti[1] = 0;
             sti[2] = 0;
             sti[3] = 0;
             sti[4] = cw;
             sti[5] = ch;
-            aw.igd.updateST();
+            backbuffer.updateST();
             aw.peripherals.clearOffset();
-            UIBorderedElement.drawBorder(aw.igd, 5, 0, 0, 0, cw, ch);
+            UIBorderedElement.drawBorder(backbuffer, 5, 0, 0, 0, cw, ch);
             aw.ue.update(dT, true, aw.peripherals);
-            aw.ue.render(aw.igd);
+            aw.ue.render(backbuffer);
 
             // Handles the global click/drag/release cycle
 

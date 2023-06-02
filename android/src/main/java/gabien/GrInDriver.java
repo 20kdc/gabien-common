@@ -27,7 +27,12 @@ public class GrInDriver extends OsbDriver implements IGrInDriver {
     }
 
     @Override
-    public boolean flush() {
+    public IGrDriver getBackBuffer() {
+        return this;
+    }
+
+    @Override
+    public void flush() {
         boolean first = true;
         while (true) {
             peripherals.gdUpdateTextbox(first);
@@ -52,11 +57,8 @@ public class GrInDriver extends OsbDriver implements IGrInDriver {
                             c.drawBitmap(bitmap, new Rect(0, 0, w, h), displayArea, globalPaint);
     
                             sh.unlockCanvasAndPost(c);
-                            if ((r.width() != w) || (r.height() != h)) {
+                            if ((r.width() != w) || (r.height() != h))
                                 resize(r.width(), r.height());
-                                return true;
-                            }
-                            return false;
                         }
                     } catch (Exception e) {
     
