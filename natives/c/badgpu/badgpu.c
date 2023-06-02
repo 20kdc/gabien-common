@@ -463,11 +463,11 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
         return NULL;
     }
 
-    int32_t ifmt = GL_RGBA;
-    BADGPUTextureLoadFormat nfmt = BADGPUTextureLoadFormat_RGBA8888;
+    int32_t ifmt = GL_RGB;
+    BADGPUTextureLoadFormat nfmt = BADGPUTextureLoadFormat_RGB888;
     if (flags & BADGPUTextureFlags_HasAlpha) {
-        ifmt = GL_RGB;
-        nfmt = BADGPUTextureLoadFormat_RGB888;
+        ifmt = GL_RGBA;
+        nfmt = BADGPUTextureLoadFormat_RGBA8888;
     }
 
     void * tmpBuf = 0;
