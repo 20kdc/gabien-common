@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.14.1`
+ * Version: `0.15.0`
  *
  * ## Formatting Policy
  *
@@ -477,6 +477,67 @@ BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance);
 BADGPU_EXPORT void badgpuFlushInstance(BADGPUInstance instance);
 
 /*
+ * ## Texture Conversion Engine
+ */
+
+/*
+ * ### `BADGPUTextureLoadFormat`
+ *
+ * This is just the format used for uploading/downloading the texture.
+ * BADGPU will internally convert these as necessary.
+ * With that in mind, only two formats are blessed with "no conversion",
+ *  depending on circumstance.
+ */
+typedef enum BADGPUTextureLoadFormat {
+    // RGBA as individual bytes. No conversion for textures with alpha.
+    BADGPUTextureLoadFormat_RGBA8888 = 0,
+    // RGB as individual bytes. No conversion for textures without alpha.
+    BADGPUTextureLoadFormat_RGB888 = 1,
+    // ARGB as a 32-bit integer.
+    BADGPUTextureLoadFormat_ARGBI32 = 2,
+    BADGPUTextureLoadFormat_Force32 = 0x7FFFFFFF
+} BADGPUTextureLoadFormat;
+
+/*
+ * ### `badgpuPixelsConvert`
+ *
+ * Convert pixels between texture load formats.
+ *
+ * Specifically from `fD` in format `fF` to `tD` in format `tF`.
+ *
+ * Any conversion pair is possible, though some are more efficient than others.
+ *
+ * (In particular, specifying the same source/destination formats is silly.)
+ *
+ * This function cannot convert in-place, so don't try it.
+ *
+ * The main advantage of this functionality is that the compiler may be able
+ *  to vectorize better than one written in a JIT'd language.
+ *
+ * This is a library function and thus does not need an instance.
+ */
+BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
+    BADGPUTextureLoadFormat tF, int16_t width, int16_t height, const void * fD,
+    void * tD);
+
+/*
+ * ### `badgpuPixelsSize`
+ *
+ * Get the size of a texture in a given `BADGPUTextureLoadFormat` in bytes.
+ *
+ * Returns 0 on error.
+ *
+ * This is a library function and thus does not need an instance.
+ *
+ * Rationale: The relation between `width`, `height` and the return value is
+ *  such that an overflow is impossible on any hardware. By comparison, using
+ *  a "standard" type like `size_t` would lead to overflows on 32-bit hardware.
+ */
+BADGPU_EXPORT uint32_t badgpuPixelsSize(BADGPUTextureLoadFormat format,
+    int16_t width, int16_t height);
+
+
+/*
  * ## Texture/2D Buffer Management
  *
  * BadGPU has two kinds of image.
@@ -536,9 +597,12 @@ typedef enum BADGPUTextureFlags {
  * Mipmaps are not automatically created. This must be done using
  *  `badgpuGenerateMipmap` if the texture is to be used with mipmaps.
  *
- * Data can be supplied as a flat array of bytes.
+ * Data can be supplied in various formats; see `fmt`. \
+ * Notably, this format value only affects the format you supply to load it. \
+ * It does not affect the format the GPU stores the texture in. \
+ * (This means that `fmt` is ignored if `data` is NULL.)
  *
- * The `HasAlpha` flag alters the format, both off-GPU and on-GPU.
+ * The `HasAlpha` flag alters the format on-GPU.
  * If it's enabled, then it's RGBA, otherwise, RGB.
  *
  * If `NULL` is passed as the data, then the texture contents are undefined.
@@ -556,7 +620,8 @@ typedef enum BADGPUTextureFlags {
  *  not work. Consider this something of a cut for deadline kind of deal...
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, int16_t width, int16_t height, const uint8_t * data);
+    uint32_t flags, int16_t width, int16_t height, BADGPUTextureLoadFormat fmt,
+    const void * data);
 
 /*
  * ### `BADGPUDSBuffer`
@@ -623,10 +688,11 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture);
  *
  * Returns 1 on success, 0 on failure.
  *
- * Pixels are always read back as RGBA8888, as they would be supplied to
- *  `badgpuNewTexture`.
+ * Pixels are read back in the format set by `fmt` (CPU-side conversion is done
+ *  if necessary).
  *
- * Rationale: This is simply what `glReadPixels` provides for GLES 1.1.
+ * Rationale: RGBA8888 is all `glReadPixels` provides for GLES 1.1, but now we
+ *  have conversion functions so that, say, Java APIs can be made happier.
  *
  * If `width` or `height` is 0, the function succeeds (doing nothing) regardless
  *  of any other parameters, while if they are below 0, the function fails.
@@ -635,7 +701,8 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture);
  *  occur.
  */
 BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
-    uint16_t x, uint16_t y, int16_t width, int16_t height, uint8_t * data);
+    uint16_t x, uint16_t y, int16_t width, int16_t height,
+    BADGPUTextureLoadFormat fmt, void * data);
 
 /*
  * ## Drawing Commands

@@ -11,7 +11,7 @@ import java.nio.Buffer;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.14.0
+ * VERSION: 0.15.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -27,11 +27,30 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean bindInstance(long instance);
     public static native void unbindInstance(long instance);
     public static native void flushInstance(long instance);
+    // TCE
+    /**
+     * Gets the size in bytes for a given size of image.
+     * This is not wrapped natively for various reasons, mainly the overflows.
+     */
+    public static long pixelsSize(int fmt, int width, int height) {
+        if (width <= 0 || height <= 0 || width > 32767 || height > 32767)
+            return 0;
+        if (fmt == 0) // rgba8888
+            return width * height * 4L;
+        if (fmt == 1) // rgba888
+            return width * height * 3L;
+        if (fmt == 2) // argbi32
+            return width * height * 4L;
+        return 0;
+    }
+    public static native void pixelsConvert(int fF, int tF, int width, int height, Buffer fD, long fDOfs, Buffer tD, long tDOfs);
     // TM
-    public static native long newTexture(long instance, int flags, int width, int height, Buffer data, long offset);
+    public static native long newTexture(long instance, int flags, int width, int height, int fmt, Buffer data, long offset);
+    //public static native long newTextureARGBI32(long instance, int flags, int width, int height, int fmt, int[] argb, int argbOfs);
     public static native long newDSBuffer(long instance, int width, int height);
     public static native boolean generateMipmap(long texture);
-    public static native boolean readPixels(long texture, int x, int y, int width, int height, Buffer data, long offset);
+    public static native boolean readPixels(long texture, int x, int y, int width, int height, int fmt, Buffer data, long offset);
+    //public static native boolean readPixelsARGBI32(long texture, int x, int y, int width, int height, int[] argb, int argbOfs);
     // DC
     public static native boolean drawClear(
         long sTexture, long sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,

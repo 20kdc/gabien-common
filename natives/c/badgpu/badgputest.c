@@ -34,12 +34,12 @@ int main() {
     // printf("Extensions: %s\n", badgpuGetMetaInfo(bi, 0x1F03));
 
     // Make a little texture to render to!
-    BADGPUTexture tex = badgpuNewTexture(bi, 0, L_WIDTH, L_HEIGHT, NULL);
+    BADGPUTexture tex = badgpuNewTexture(bi, 0, L_WIDTH, L_HEIGHT, BADGPUTextureLoadFormat_RGBA8888, NULL);
 
     renderFlagMain(tex, L_WIDTH, L_HEIGHT);
 
     // Make a SECOND texture to render to!
-    BADGPUTexture tex2 = badgpuNewTexture(bi, 0, T_WIDTH, T_HEIGHT, NULL);
+    BADGPUTexture tex2 = badgpuNewTexture(bi, 0, T_WIDTH, T_HEIGHT, BADGPUTextureLoadFormat_RGBA8888, NULL);
 
     // And render to that.
     renderFlagMain(tex2, T_WIDTH, T_HEIGHT);
@@ -206,7 +206,7 @@ void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba);
 
 void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h) {
     uint8_t imgData[((size_t) w) * ((size_t) h) * 4];
-    badgpuReadPixels(tex, 0, 0, w, h, imgData);
+    badgpuReadPixels(tex, 0, 0, w, h, BADGPUTextureLoadFormat_RGBA8888, imgData);
     awfulqoiwriter(w, h, imgData);
 }
 

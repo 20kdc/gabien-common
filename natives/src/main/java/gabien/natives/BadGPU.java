@@ -16,7 +16,7 @@ import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
- * VERSION: 0.13.0
+ * VERSION: 0.15.0
  * Created 30th May, 2023.
  */
 public abstract class BadGPU extends BadGPUEnum {
@@ -117,12 +117,24 @@ public abstract class BadGPU extends BadGPUEnum {
             BadGPUUnsafe.flushInstance(pointer);
         }
 
-        public @Nullable Texture newTexture(int flags, int width, int height, ByteBuffer data, int offset) {
+        public @Nullable Texture newTexture(int flags, int width, int height) {
+            if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
+                throw new IllegalArgumentException("Width/height not 0-32767.");
+            long res;
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            res = BadGPUUnsafe.newTexture(pointer, flags, width, height, 0, null, 0);
+            return res == 0 ? null : new Texture(this, res);
+        }
+
+        public @Nullable Texture newTexture(int flags, int width, int height, TextureLoadFormat fmt, ByteBuffer data, int offset) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
                 throw new IllegalArgumentException("Width/height not 0-32767.");
             if (data != null) {
-                int size = width * height;
-                size *= ((flags & TextureFlags.HasAlpha) != 0) ? 4 : 3;
+                int size = (int) BadGPUUnsafe.pixelsSize(fmt.value, width, height);
+                if (size <= 0)
+                    throw new IllegalArgumentException("Size overflow.");
                 int dataCap = data.capacity();
                 if (offset < 0 || offset > dataCap)
                     throw new IllegalArgumentException("Offset not within buffer.");
@@ -133,7 +145,7 @@ public abstract class BadGPU extends BadGPUEnum {
             syncObject.assertBound();
             if (!valid)
                 throw new InvalidatedPointerException(this);
-            res = BadGPUUnsafe.newTexture(pointer, flags, width, height, data, offset);
+            res = BadGPUUnsafe.newTexture(pointer, flags, width, height, fmt.value, data, offset);
             return res == 0 ? null : new Texture(this, res);
         }
         public @Nullable DSBuffer newDSBuffer(long instance, int width, int height) {
@@ -155,7 +167,7 @@ public abstract class BadGPU extends BadGPUEnum {
                 throw new InvalidatedPointerException(this);
             return BadGPUUnsafe.generateMipmap(pointer);
         }
-        public boolean readPixels(int x, int y, int width, int height, ByteBuffer data, long offset) {
+        public boolean readPixels(int x, int y, int width, int height, TextureLoadFormat fmt, ByteBuffer data, long offset) {
             if (width == 0 || height == 0)
                 return true;
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
@@ -171,7 +183,7 @@ public abstract class BadGPU extends BadGPUEnum {
             syncObject.assertBound();
             if (!valid)
                 throw new InvalidatedPointerException(this);
-            return BadGPUUnsafe.readPixels(pointer, x, y, width, height, data, offset);
+            return BadGPUUnsafe.readPixels(pointer, x, y, width, height, fmt.value, data, offset);
         }
     }
     public static final class DSBuffer extends Ref {

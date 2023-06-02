@@ -29,6 +29,7 @@
 void * malloc(size_t sz);
 void free(void * mem);
 void * memset(void * mem, int c, size_t len);
+void * memcpy(void * dst, const void * src, size_t len);
 void * dlopen(const char * fn, int flags);
 void * dlsym(void * mod, const char * symbol);
 int dlclose(void * mod);

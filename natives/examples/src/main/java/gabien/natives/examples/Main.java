@@ -31,6 +31,7 @@ import java.util.concurrent.Semaphore;
 
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUEnum.MetaInfoType;
+import gabien.natives.BadGPUEnum.TextureLoadFormat;
 import gabien.uslx.append.ThreadOwned;
 
 /**
@@ -95,10 +96,10 @@ public class Main {
                             clampedCH = 32767;
                         if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
                             System.out.println(" -- RECREATING TEXTURE --");
-                            screen1 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH, null, 0);
-                            screen2 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH, null, 0);
+                            screen1 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH);
+                            screen2 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH);
                             dataSrcB = ByteBuffer.allocateDirect(clampedCW * clampedCH * 4);
-                            dataSrcB.order(ByteOrder.BIG_ENDIAN);
+                            dataSrcB.order(ByteOrder.nativeOrder());
                             dataSrcI = dataSrcB.asIntBuffer();
                             currentBufferWidth = clampedCW;
                             currentBufferHeight = clampedCH;
@@ -107,7 +108,7 @@ public class Main {
                         long tA, tB;
                         tA = System.currentTimeMillis();
                         instance.flush();
-                        (flipper1 ? screen1 : screen2).readPixels(0, 0, currentBufferWidth, currentBufferHeight, dataSrcB, 0);
+                        (flipper1 ? screen1 : screen2).readPixels(0, 0, currentBufferWidth, currentBufferHeight, TextureLoadFormat.ARGBI32, dataSrcB, 0);
                         tB = System.currentTimeMillis();
                         frameCompleteSemaphore.release();
                         //System.out.println("from TT");
@@ -214,9 +215,6 @@ public class Main {
                     long tB = System.currentTimeMillis();
                     System.out.println("frq:" + (tB - tA));
                     m.frameRequestSemaphore.release();
-                    // this code isn't great but still
-                    for (int i = 0; i < data.length; i++)
-                        data[i] = (data[i] >> 8) | 0xFF000000;
                     tmp.setRGB(0, 0, sw, sh, data, 0, sw);
                 } else {
                     m.frameRequestSemaphore.release();

@@ -60,10 +60,12 @@
 !natives/c/badgpu/badgpu.h
 !natives/c/badgpu/badgpu_internal.h
 !natives/c/badgpu/badgpu.c
+!natives/c/badgpu/badgpu_tce.c
 !natives/c/badgpu/badgpu_wsi_egl.c
 !natives/c/badgpu/badgpu_wsi_wgl.c
 !natives/c/badgpu/badgpu_wsi_cgl.c
 !natives/c/badgpu/badgputest.c
+!natives/c/badgpu/badgputest_tce.c
 !natives/c/badgpu/make-bgt
 !natives/c/badgpu_jni.c
 !natives/c/una.h
