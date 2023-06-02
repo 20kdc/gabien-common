@@ -7,15 +7,24 @@
 
 package gabien.natives.examples;
 
+import java.awt.AWTException;
+import java.awt.BufferCapabilities;
 import java.awt.Canvas;
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.ImageCapabilities;
+import java.awt.BufferCapabilities.FlipContents;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.awt.peer.ComponentPeer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
@@ -32,7 +41,8 @@ public class Main {
     private volatile int currentCanvasWidth, currentCanvasHeight;
     private volatile BadGPU.Texture screen1;
     private volatile BadGPU.Texture screen2;
-    private volatile ByteBuffer dataSrc;
+    private volatile IntBuffer dataSrcI;
+    private volatile ByteBuffer dataSrcB;
     boolean flipper1 = false;
     private volatile int currentBufferWidth, currentBufferHeight;
     public final BadGPU.Instance instance;
@@ -62,8 +72,8 @@ public class Main {
             System.out.println("init: renderer: " + instance.getMetaInfo(MetaInfoType.Renderer));
             System.out.println("init: version: " + instance.getMetaInfo(MetaInfoType.Version));
         }
-        // Do this early, so the game thread doesn't run until the timer has done something
-        frameRequestSemaphore.acquireUninterruptibly();
+        // Do this early 
+        frameCompleteSemaphore.acquireUninterruptibly();
         gameThread = new Thread() {
             @Override
             public void run() {
@@ -87,7 +97,9 @@ public class Main {
                             System.out.println(" -- RECREATING TEXTURE --");
                             screen1 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH, null, 0);
                             screen2 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH, null, 0);
-                            dataSrc = ByteBuffer.allocateDirect(clampedCW * clampedCH * 4);
+                            dataSrcB = ByteBuffer.allocateDirect(clampedCW * clampedCH * 4);
+                            dataSrcB.order(ByteOrder.BIG_ENDIAN);
+                            dataSrcI = dataSrcB.asIntBuffer();
                             currentBufferWidth = clampedCW;
                             currentBufferHeight = clampedCH;
                         }
@@ -95,7 +107,7 @@ public class Main {
                         long tA, tB;
                         tA = System.currentTimeMillis();
                         instance.flush();
-                        (flipper1 ? screen1 : screen2).readPixels(0, 0, currentBufferWidth, currentBufferHeight, dataSrc, 0);
+                        (flipper1 ? screen1 : screen2).readPixels(0, 0, currentBufferWidth, currentBufferHeight, dataSrcB, 0);
                         tB = System.currentTimeMillis();
                         frameCompleteSemaphore.release();
                         //System.out.println("from TT");
@@ -151,15 +163,18 @@ public class Main {
                 m.keys[tk] = false;
             }
         });
-        @SuppressWarnings("serial")
-        final Canvas c = new Canvas() {
-            @Override
-            public void paint(Graphics g) {
-            }
-        };
-        w.add(c);
-        w.setSize(800, 600);
+        // This is the not *really* documented way you set client size in AWT.
+        w.setPreferredSize(new Dimension(800, 600));
+        w.pack();
         w.setVisible(true);
+        final ComponentPeer wp = w.getPeer();
+        ImageCapabilities aic = new ImageCapabilities(true);
+        try {
+            w.createBufferStrategy(2, new BufferCapabilities(aic, aic, BufferCapabilities.FlipContents.UNDEFINED));
+        } catch (AWTException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
         w.addWindowListener(new WindowAdapter() {
            @Override
            public void windowClosing(WindowEvent e) {
@@ -170,47 +185,51 @@ public class Main {
         m.t = new Timer();
         m.t.scheduleAtFixedRate(new TimerTask() {
             BufferedImage tmp = null;
+            int[] data = null;
             @Override
             public void run() {
                 // ensure a frame has completed before continuing...
+                System.out.println("@ " + System.currentTimeMillis());
                 if (m.frameCompleteSemaphore.availablePermits() == 0) {
                     System.out.println("Missed frame");
                     return;
                 }
                 m.frameCompleteSemaphore.acquireUninterruptibly();
                 // this means the game thread is now waiting for us to schedule a new frame
-                int cw = c.getWidth();
-                int ch = c.getHeight();
+                int cw = w.getWidth();
+                int ch = w.getHeight();
                 m.currentCanvasWidth = cw;
                 m.currentCanvasHeight = ch;
                 int sw = m.currentBufferWidth;
                 int sh = m.currentBufferHeight;
-                if (m.dataSrc != null) {
-                    int[] data = new int[sw * sh];
-                    int ptr = 0;
-                    ByteBuffer dataSrc = m.dataSrc;
-                    for (int i = 0; i < data.length; i++) {
-                        int r = dataSrc.get(ptr++) & 0xFF;
-                        int g = dataSrc.get(ptr++) & 0xFF;
-                        int b = dataSrc.get(ptr++) & 0xFF;
-                        int a = dataSrc.get(ptr++) & 0xFF;
-                        data[i] = (r << 16) | (g << 8) | b | (a << 24);
+                if (m.dataSrcI != null) {
+                    if (tmp == null || tmp.getWidth() != sw || tmp.getHeight() != sh) {
+                        tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
+                        data = new int[sw * sh];
                     }
+                    IntBuffer dataSrc = m.dataSrcI;
+                    long tA = System.currentTimeMillis();
+                    dataSrc.get(data);
+                    dataSrc.rewind();
+                    long tB = System.currentTimeMillis();
+                    System.out.println("frq:" + (tB - tA));
                     m.frameRequestSemaphore.release();
                     // this code isn't great but still
-                    if (tmp == null || tmp.getWidth() != sw || tmp.getHeight() != sh)
-                        tmp = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
+                    for (int i = 0; i < data.length; i++)
+                        data[i] = (data[i] >> 8) | 0xFF000000;
                     tmp.setRGB(0, 0, sw, sh, data, 0, sw);
-                } {
+                } else {
                     m.frameRequestSemaphore.release();
                 }
                 if (tmp != null) {
                     // now we do the thing
-                    Graphics gr = c.getGraphics();
-                    gr.drawImage(tmp, 0, 0, cw, ch, null);
+                    Graphics gr = wp.getGraphics();
+                    gr.drawImage(tmp, 0, 0, null);
+                    gr.dispose();
+                    //wp.flip(0, 0, sw, sh, FlipContents.UNDEFINED);
                 }
             }
-        }, 0, 16);
+        }, 0, 20);
     }
     private static final float[] triImmDat1 = new float[24];
     public static void triImm(BadGPU.Texture scr, int w, int h,
