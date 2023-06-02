@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.14.0`
+ * Version: `0.14.1`
  *
  * ## Formatting Policy
  *
@@ -322,6 +322,9 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj);
  * Instances must only be used from one thread at a time, and they must be
  *  bound and unbound to a thread by the user using the `badgpuBindInstance` and
  *  `badgpuUnbindInstance` functions.
+ *
+ * _A word of warning: Moving instances between threads is tempting driver
+ *   bugs._
  *
  * Rationale: Cross-compilation to many platforms,
  *  particularly macOS and Windows, makes ensuring a ready supply of things

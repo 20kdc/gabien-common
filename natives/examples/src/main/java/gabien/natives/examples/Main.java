@@ -72,6 +72,7 @@ public class Main {
                         frameRequestSemaphore.acquireUninterruptibly();
                         if (shutdown)
                             break;
+                        // figure out resize
                         int clampedCW = currentCanvasWidth;
                         int clampedCH = currentCanvasHeight;
                         if (clampedCW < 1)
@@ -84,14 +85,13 @@ public class Main {
                             clampedCH = 32767;
                         if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
                             System.out.println(" -- RECREATING TEXTURE --");
-                            screen1 = instance.newTexture(0, clampedCW, clampedCH, null, 0);
-                            screen2 = instance.newTexture(0, clampedCW, clampedCH, null, 0);
+                            screen1 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH, null, 0);
+                            screen2 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH, null, 0);
                             dataSrc = ByteBuffer.allocateDirect(clampedCW * clampedCH * 4);
                             currentBufferWidth = clampedCW;
                             currentBufferHeight = clampedCH;
                         }
-                        currentState.frame(Main.this, flipper1 ? screen1 : screen2, currentBufferWidth, currentBufferHeight);
-                        flipper1 = !flipper1;
+                        // transfer the last frame
                         long tA, tB;
                         tA = System.currentTimeMillis();
                         instance.flush();
@@ -100,6 +100,9 @@ public class Main {
                         frameCompleteSemaphore.release();
                         //System.out.println("from TT");
                         System.out.println(tB - tA);
+                        // continue...
+                        currentState.frame(Main.this, flipper1 ? screen1 : screen2, currentBufferWidth, currentBufferHeight);
+                        flipper1 = !flipper1;
                         instance.flush();
                     }
                 }
@@ -170,6 +173,10 @@ public class Main {
             @Override
             public void run() {
                 // ensure a frame has completed before continuing...
+                if (m.frameCompleteSemaphore.availablePermits() == 0) {
+                    System.out.println("Missed frame");
+                    return;
+                }
                 m.frameCompleteSemaphore.acquireUninterruptibly();
                 // this means the game thread is now waiting for us to schedule a new frame
                 int cw = c.getWidth();
@@ -203,7 +210,7 @@ public class Main {
                     gr.drawImage(tmp, 0, 0, cw, ch, null);
                 }
             }
-        }, 0, 20);
+        }, 0, 16);
     }
     private static final float[] triImmDat1 = new float[24];
     public static void triImm(BadGPU.Texture scr, int w, int h,
