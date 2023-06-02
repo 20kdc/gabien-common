@@ -7,8 +7,6 @@
 
 package gabien.natives;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
