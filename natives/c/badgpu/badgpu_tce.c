@@ -12,6 +12,9 @@
 
 #include "badgpu_internal.h"
 
+// This is intended to be optimized out
+static const uint32_t ENDIAN_DETECTOR = 1;
+
 static void cRGBA8888_RGB888(const uint8_t * fD, uint8_t * tD, size_t pixels) {
     while (pixels--) {
         tD[0] = fD[0];
@@ -53,6 +56,37 @@ static void cRGB888_ARGBI32(const uint8_t * fD, uint32_t * tD, size_t pixels) {
     }
 }
 static void cARGBI32_RGBA8888(const uint32_t * fD, uint8_t * tD, size_t pixels) {
+    if (sizeof(void *) != 4) {
+        // 64-bit "fast-path"
+        // interestingly clang is perfectly willing to vectorize this
+        uint64_t * fD64 = (void *) fD;
+        uint64_t * tD64 = (void *) tD;
+        while (pixels >= 2) {
+            pixels -= 2;
+            if (((uint8_t *) &(ENDIAN_DETECTOR))[0] == 1) {
+                // LE
+                //             IN 0xAARRGGBBAARRGGBB
+                //            OUT 0xAABBGGRRAABBGGRR
+                uint64_t ag = *fD64;
+                uint64_t b = ag & 0x00FF000000FF0000UL;
+                uint64_t r = ag & 0x000000FF000000FFUL;
+                ag &=             0xFF00FF00FF00FF00UL;
+                *tD64 = ag | (b >> 16) | (r << 16);
+            } else {
+                // BE
+                //              IN 0xAARRGGBBAARRGGBB
+                //             OUT 0xRRGGBBAARRGGBBAA
+                uint64_t rgb = *fD64;
+                uint64_t a = rgb & 0xFF000000FF000000UL;
+                rgb &=             0x00FFFFFF00FFFFFFUL;
+                *tD64 = (rgb << 8) | (a >> 24);
+            }
+            fD64++;
+            tD64++;
+        }
+        fD = (void *) fD64;
+        tD = (void *) tD64;
+    }
     while (pixels--) {
         uint32_t argb = *(fD++);
         tD[0] = argb >> 16;
@@ -120,9 +154,6 @@ BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
     }
 }
 
-// This is intended to be optimized out
-static const uint32_t ENDIAN_DETECTOR = 1;
-
 BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
     int16_t height, void * data) {
     if (width <= 0 || height <= 0)
@@ -140,7 +171,8 @@ BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
             pixels -= 2;
             if (((uint8_t *) &(ENDIAN_DETECTOR))[0] == 1) {
                 // LE
-                //                0xAABBGGRRAABBGGRR
+                //             IN 0xAABBGGRRAABBGGRR
+                //            OUT 0xAARRGGBBAARRGGBB
                 uint64_t ag = *data64;
                 uint64_t b = ag & 0x00FF000000FF0000UL;
                 uint64_t r = ag & 0x000000FF000000FFUL;
@@ -148,7 +180,8 @@ BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
                 *data64 = ag | (b >> 16) | (r << 16);
             } else {
                 // BE
-                //                 0xRRGGBBAARRGGBBAA
+                //              IN 0xRRGGBBAARRGGBBAA
+                //             OUT 0xAARRGGBBAARRGGBB
                 uint64_t rgb = *data64;
                 uint64_t a = rgb & 0x000000FF000000FFUL;
                 rgb &=             0xFFFFFF00FFFFFF00UL;
