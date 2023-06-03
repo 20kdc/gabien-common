@@ -15,6 +15,7 @@ import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -93,6 +94,13 @@ public class GaBIEn {
         } catch (Exception ioe) {
             return null;
         }
+    }
+
+    /**
+     * Deleet this.
+     */
+    public static File VeryTemporaryWorkaroundPlsDelme(String name) {
+        return internal.nativeDestinationSetup(name);
     }
 
     public static boolean singleWindowApp() {

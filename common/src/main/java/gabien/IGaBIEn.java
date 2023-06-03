@@ -7,6 +7,7 @@
 
 package gabien;
 
+import java.io.File;
 import java.io.InputStream;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -79,4 +80,15 @@ public interface IGaBIEn {
     @NonNull NativeFont getDefaultNativeFont(int size);
 
     boolean tryStartTextEditor(String fpath);
+
+    /**
+     * Works out a location for a native with the given name.
+     * This may create a temporary file that will be deleted on exit.
+     * This may also not do that.
+     * The default implementation delegates to the gabien.natives.Loader JavaSE handling,
+     *  as this is almost always what you want, except on Android which is picky.
+     */
+    default File nativeDestinationSetup(String name) {
+        return gabien.natives.Loader.destinationSetupJavaSE(name);
+    }
 }

@@ -81,11 +81,9 @@
 !natives/sdk-clean
 !natives/sdk-clean-java
 !natives/sdk-install
-!natives/pom.xml
 !natives/SmokeTest.java
 !natives/examples
 !natives/examples/
-!natives/examples/pom.xml
 !natives/examples/src
 !natives/examples/src/**
 

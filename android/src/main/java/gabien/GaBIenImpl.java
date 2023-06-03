@@ -143,4 +143,11 @@ public final class GaBIenImpl implements IGaBIEn {
         System.exit(0);
     }
 
+    @Override
+    public File nativeDestinationSetup(String name) {
+        File dataDir = new File(AndroidPortGlobals.applicationContext.getApplicationInfo().dataDir);
+        // don't delete on exit; tablets might not like writing over this data
+        // gabien.natives.Loader should be kind about this
+        return new File(dataDir, "nativeDestinationSetup." + name);
+    }
 }

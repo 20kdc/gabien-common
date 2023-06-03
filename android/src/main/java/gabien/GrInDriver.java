@@ -50,7 +50,7 @@ public class GrInDriver implements IGrInDriver {
     
                             int letterboxing2 = 0;
                             int bW = backBuffer.w;
-                            int bH = backBuffer.w;
+                            int bH = backBuffer.h;
                             double realAspectRatio = bW / (double) bH;
                             int goodWidth = (int)(realAspectRatio * r.height());
                             // work out letterboxing from widths
@@ -64,9 +64,10 @@ public class GrInDriver implements IGrInDriver {
                                 backBuffer.shutdown();
                                 backBuffer = new OsbDriver(r.width(), r.height(), false);
                             }
+                            return;
                         }
                     } catch (Exception e) {
-    
+                        e.printStackTrace();
                     }
                 }
             } finally {
