@@ -26,6 +26,7 @@ import javax.swing.RepaintManager;
 import javax.swing.SwingUtilities;
 
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPU.Instance;
 import gabien.natives.BadGPUEnum.MetaInfoType;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
 import gabien.uslx.append.ThreadOwned;
@@ -34,7 +35,7 @@ import gabien.uslx.append.ThreadOwned;
  * An abomination trying to test better ways of handling graphical output.
  * Created 30th May, 2023.
  */
-public class Main {
+public class Main implements IMain {
     private volatile int currentCanvasWidth, currentCanvasHeight;
     private volatile BadGPU.Texture screen1;
     private volatile int[] dataSrcA, dataSrcB, dataSrc;
@@ -43,7 +44,7 @@ public class Main {
     public final BadGPU.Instance instance;
     private final ThreadOwned.Locked instanceLock;
     private final Thread gameThread;
-    public IState currentState = new StateMenu();
+    public State currentState;
     public volatile boolean shutdown;
     private final Semaphore frameRequestSemaphore = new Semaphore(1);
     private final Semaphore frameCompleteSemaphore = new Semaphore(1);
@@ -51,13 +52,6 @@ public class Main {
     private volatile BufferedImage transferBuffer;
     private volatile WritableRaster transferBufferWR;
 
-    public static final int KEY_W = 0;
-    public static final int KEY_A = 1;
-    public static final int KEY_S = 2;
-    public static final int KEY_D = 3;
-    public static final int KEY_Z = 4;
-    public static final int KEY_X = 5;
-    public static final int KEY_SPACE = 6;
     public boolean[] keysEvent = new boolean[7];
     public boolean[] keys = new boolean[7];
 
@@ -75,6 +69,7 @@ public class Main {
             @Override
             public void run() {
                 try (ThreadOwned.Locked tmp = instanceLock.open()) {
+                    currentState = new StateMenu(Main.this);
                     while (!shutdown) {
                         frameRequestSemaphore.acquireUninterruptibly();
                         if (shutdown)
@@ -112,13 +107,37 @@ public class Main {
                         //System.out.println("from TT");
                         System.out.println("RX:" + (tB - tA));
                         // continue...
-                        currentState.frame(Main.this, screen1, currentBufferWidth, currentBufferHeight);
+                        currentState.frame(screen1, currentBufferWidth, currentBufferHeight);
                         instance.flush();
                     }
                 }
             }
         };
         gameThread.start();
+    }
+
+    @Override
+    public Instance getInstance() {
+        return instance;
+    }
+
+    @Override
+    public void setState(State state) {
+        currentState = state;
+    }
+
+    @Override
+    public boolean getKey(int keyID) {
+        return keys[keyID];
+    }
+
+    @Override
+    public boolean getKeyEvent(int keyID) {
+        synchronized (keysEvent) {
+            boolean res = keysEvent[keyID];
+            keysEvent[keyID] = false;
+            return res;
+        }
     }
 
     public static void main(String[] args) {
@@ -162,7 +181,9 @@ public class Main {
                 if (tk == -1)
                     return;
                 m.keys[tk] = true;
-                m.keysEvent[tk] = true;
+                synchronized (m.keysEvent) {
+                    m.keysEvent[tk] = true;
+                }
             }
             @Override
             public void keyReleased(KeyEvent e) {
@@ -214,42 +235,41 @@ public class Main {
                 System.exit(1);
             }
         });
-        m.t = new Timer();
-        m.t.scheduleAtFixedRate(new TimerTask() {
+        Runnable r = new Runnable() {
             long lastFrameTime = 0;
             @Override
             public void run() {
-                SwingUtilities.invokeLater(() -> {
-                    // ensure a frame has completed before continuing...
-                    long thisFrameTime = System.currentTimeMillis();
-                    System.out.println("FT:" + (thisFrameTime - lastFrameTime));
-                    lastFrameTime = thisFrameTime;
-                    m.frameCompleteSemaphore.acquireUninterruptibly();
-                    // this means the game thread is now waiting for us to schedule a new frame
-                    int cw = canvas.getWidth();
-                    int ch = canvas.getHeight();
-                    m.currentCanvasWidth = cw;
-                    m.currentCanvasHeight = ch;
-                    int sw = m.currentBufferWidth;
-                    int sh = m.currentBufferHeight;
-                    // the game thread picks a buffer to read into, reads into it, then sets this
-                    // then *after* we release the FRS, it changes this and reads into the *other* buffer
-                    int[] grabbedDS = m.dataSrc;
-                    m.frameRequestSemaphore.release();
-                    if (grabbedDS != null) {
-                        if (m.transferBuffer == null || m.transferBuffer.getWidth() != sw || m.transferBuffer.getHeight() != sh) {
-                            m.transferBuffer = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
-                            m.transferBufferWR = m.transferBuffer.getRaster();
-                        }
-                        long tA = System.currentTimeMillis();
-                        // that I have to do this to avoid a slowpath is so stupid
-                        m.transferBufferWR.setDataElements(0, 0, sw, sh, grabbedDS);
-                        long tB = System.currentTimeMillis();
-                        System.out.println("SDE:" + (tB - tA));
+                // ensure a frame has completed before continuing...
+                long thisFrameTime = System.currentTimeMillis();
+                System.out.println("FT:" + (thisFrameTime - lastFrameTime));
+                lastFrameTime = thisFrameTime;
+                m.frameCompleteSemaphore.acquireUninterruptibly();
+                // this means the game thread is now waiting for us to schedule a new frame
+                int cw = canvas.getWidth();
+                int ch = canvas.getHeight();
+                m.currentCanvasWidth = cw;
+                m.currentCanvasHeight = ch;
+                int sw = m.currentBufferWidth;
+                int sh = m.currentBufferHeight;
+                // the game thread picks a buffer to read into, reads into it, then sets this
+                // then *after* we release the FRS, it changes this and reads into the *other* buffer
+                int[] grabbedDS = m.dataSrc;
+                m.frameRequestSemaphore.release();
+                if (grabbedDS != null) {
+                    if (m.transferBuffer == null || m.transferBuffer.getWidth() != sw || m.transferBuffer.getHeight() != sh) {
+                        m.transferBuffer = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
+                        m.transferBufferWR = m.transferBuffer.getRaster();
                     }
-                    canvas.paintImmediately(0, 0, cw, ch);
-                });
+                    long tA = System.currentTimeMillis();
+                    // that I have to do this to avoid a slowpath is so stupid
+                    m.transferBufferWR.setDataElements(0, 0, sw, sh, grabbedDS);
+                    long tB = System.currentTimeMillis();
+                    System.out.println("SDE:" + (tB - tA));
+                }
+                canvas.paintImmediately(0, 0, cw, ch);
+                SwingUtilities.invokeLater(this);
             }
-        }, 0, 16);
+        };
+        r.run();
     }
 }

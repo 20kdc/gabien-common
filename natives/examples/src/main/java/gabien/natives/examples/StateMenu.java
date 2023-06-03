@@ -13,15 +13,27 @@ import gabien.natives.BadGPU.Texture;
 /**
  * Created 30th May, 2023
  */
-public class StateMenu implements IState {
+public class StateMenu extends State {
     float tx = 0;
-    BadGPU.Texture cached;
+    final BadGPU.Texture cached;
+
+    public StateMenu(IMain m) {
+        super(m);
+        cached = U.loadTex(m.getInstance(), "img.png");
+    }
+
     @Override
-    public void frame(Main m, Texture screen, int w, int h) {
+    public void frame(Texture screen, int w, int h) {
+        if (main.getKeyEvent(IMain.KEY_SPACE)) {
+            main.setState(new StateSpriteMarkVeryBad(main));
+            return;
+        }
+        if (main.getKeyEvent(IMain.KEY_D)) {
+            main.setState(new StateSpriteMarkBigBatch(main));
+            return;
+        }
         tx += 0.01f;
         BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-        if (cached == null)
-            cached = U.loadTex(m.instance, "img.png");
         U.texRctImm(screen, 0, 0, w, h, cached);
         U.texRctImm(screen, 0, 0, 320, 200, cached);
         U.triImm(screen, w, h,

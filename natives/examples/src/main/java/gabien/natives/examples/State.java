@@ -12,6 +12,12 @@ import gabien.natives.BadGPU;
 /**
  * Created 30th May, 2023.
  */
-public interface IState {
-    void frame(Main m, BadGPU.Texture screen, int w, int h);
+public abstract class State {
+    public final IMain main;
+
+    public State(IMain m) {
+        main = m;
+    }
+
+    public abstract void frame(BadGPU.Texture screen, int w, int h);
 }
