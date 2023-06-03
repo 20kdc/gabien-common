@@ -28,6 +28,12 @@ static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err)
     return 0;
 }
 
+static const char * locations[] = {
+    "libEGL.so.1",
+    "libEGL.so", // Android needs this
+    NULL
+};
+
 BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
     *expectDesktopExtensions = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
@@ -35,17 +41,19 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
     // Can't guarantee a link to EGL, so we have to do it the *hard* way
-    ctx->eglLibrary = dlopen("libEGL.so.1", 2);
+    ctx->eglLibrary = badgpu_dlOpen(locations, "BADGPU_EGL_LIBRARY");
     if (!ctx->eglLibrary)
         return badgpu_newWsiCtxError(error, "Could not open EGL");
-    ctx->eglGetDisplay = dlsym(ctx->eglLibrary, "eglGetDisplay");
-    ctx->eglInitialize = dlsym(ctx->eglLibrary, "eglInitialize");
-    ctx->eglChooseConfig = dlsym(ctx->eglLibrary, "eglChooseConfig");
-    ctx->eglCreateContext = dlsym(ctx->eglLibrary, "eglCreateContext");
-    ctx->eglGetProcAddress = dlsym(ctx->eglLibrary, "eglGetProcAddress");
-    ctx->eglMakeCurrent = dlsym(ctx->eglLibrary, "eglMakeCurrent");
-    ctx->eglDestroyContext = dlsym(ctx->eglLibrary, "eglDestroyContext");
-    ctx->eglTerminate = dlsym(ctx->eglLibrary, "eglTerminate");
+    // Under extreme circumstances, we need to be able to link to the ANGLE libGLES2 binary directly.
+    // The symbol names are different but the ABI is completely identical.
+    ctx->eglGetDisplay = badgpu_dlSym2(ctx->eglLibrary, "eglGetDisplay", "EGL_GetDisplay");
+    ctx->eglInitialize = badgpu_dlSym2(ctx->eglLibrary, "eglInitialize", "EGL_Initialize");
+    ctx->eglChooseConfig = badgpu_dlSym2(ctx->eglLibrary, "eglChooseConfig", "EGL_ChooseConfig");
+    ctx->eglCreateContext = badgpu_dlSym2(ctx->eglLibrary, "eglCreateContext", "EGL_CreateContext");
+    ctx->eglGetProcAddress = badgpu_dlSym2(ctx->eglLibrary, "eglGetProcAddress", "EGL_GetProcAddress");
+    ctx->eglMakeCurrent = badgpu_dlSym2(ctx->eglLibrary, "eglMakeCurrent", "EGL_MakeCurrent");
+    ctx->eglDestroyContext = badgpu_dlSym2(ctx->eglLibrary, "eglDestroyContext", "EGL_DestroyContext");
+    ctx->eglTerminate = badgpu_dlSym2(ctx->eglLibrary, "eglTerminate", "EGL_Terminate");
     ctx->dsp = ctx->eglGetDisplay(NULL);
     if (!ctx->dsp)
         return badgpu_newWsiCtxError(error, "Could not create EGLDisplay");
@@ -89,7 +97,7 @@ void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
     if (ctx->eglLibrary)
-        dlclose(ctx->eglLibrary);
+        badgpu_dlClose(ctx->eglLibrary);
     free(ctx);
 }
 

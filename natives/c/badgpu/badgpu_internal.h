@@ -51,6 +51,18 @@ int printf(const char * fmt, ...);
     sFlags, \
     sScX, sScY, sScWidth, sScHeight
 
+// DL
+
+// Given a NULL-terminated location list, and an environment variable, loads a native library.
+// Returns NULL on error.
+typedef struct BADGPUDynLib * BADGPUDynLib;
+BADGPUDynLib badgpu_dlOpen(const char ** locations, const char * env);
+void * badgpu_dlSym(BADGPUDynLib lib, const char * sym);
+void * badgpu_dlSym2(BADGPUDynLib lib, const char * sym1, const char * sym2);
+void badgpu_dlClose(BADGPUDynLib lib);
+
+// WSI
+
 typedef struct BADGPUWSICtx * BADGPUWSICtx;
 
 // Creates a new WSICtx.

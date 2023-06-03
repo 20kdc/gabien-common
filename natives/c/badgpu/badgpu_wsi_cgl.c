@@ -25,20 +25,25 @@ static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err)
     return 0;
 }
 
+static const char * locations[] = {
+    "/System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL",
+    NULL
+};
+
 BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
     *expectDesktopExtensions = 1;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
-    ctx->glLibrary = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL", 2);
+    ctx->glLibrary = badgpu_dlOpen(locations, "BADGPU_OPENGL_FRAMEWORK");
     if (!ctx->glLibrary)
         return badgpu_newWsiCtxError(error, "Could not open CGL");
-    ctx->CGLChoosePixelFormat = dlsym(ctx->glLibrary, "CGLChoosePixelFormat");
-    ctx->CGLCreateContext = dlsym(ctx->glLibrary, "CGLCreateContext");
-    ctx->CGLSetCurrentContext = dlsym(ctx->glLibrary, "CGLSetCurrentContext");
-    ctx->CGLDestroyContext = dlsym(ctx->glLibrary, "CGLDestroyContext");
-    ctx->CGLDestroyPixelFormat = dlsym(ctx->glLibrary, "CGLDestroyPixelFormat");
+    ctx->CGLChoosePixelFormat = badgpu_dlSym(ctx->glLibrary, "CGLChoosePixelFormat");
+    ctx->CGLCreateContext = badgpu_dlSym(ctx->glLibrary, "CGLCreateContext");
+    ctx->CGLSetCurrentContext = badgpu_dlSym(ctx->glLibrary, "CGLSetCurrentContext");
+    ctx->CGLDestroyContext = badgpu_dlSym(ctx->glLibrary, "CGLDestroyContext");
+    ctx->CGLDestroyPixelFormat = badgpu_dlSym(ctx->glLibrary, "CGLDestroyPixelFormat");
     int32_t attribs[] = {
         0
     };
@@ -66,7 +71,7 @@ void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
-    return dlsym(ctx->glLibrary, proc);
+    return badgpu_dlSym(ctx->glLibrary, proc);
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
@@ -77,7 +82,7 @@ void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
     if (ctx->pixFmt)
         ctx->CGLDestroyPixelFormat(ctx->pixFmt);
     if (ctx->glLibrary)
-        dlclose(ctx->glLibrary);
+        badgpu_dlClose(ctx->glLibrary);
     free(ctx);
 }
 
