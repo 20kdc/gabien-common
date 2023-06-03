@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.17.0`
+ * Version: `0.18.0`
  *
  * ## Formatting Policy
  *
@@ -977,15 +977,11 @@ typedef enum BADGPUBlendWeight {
  *  effectively identity. \
  * Otherwise, see `BADGPUMatrix`.
  *
- * `depthN`, `depthF` make up the depth range (0, 1 is a good default).
- *
  * `vX`, `vY`, `vW`, `vH` make up the viewport.
  *
  * `texture` is multiplied with the vertex colours. \
  * (If `NULL`, then the vertex colours are used as-is.) \
  * The texture coordinates are multiplied with the texture coordinate matrix.
- *
- * `poFactor`, `poUnits` make up the polygon offset.
  *
  * `stFunc`, `stRef`, and `stMask` are used for the stencil test. \
  * This `stMask` is for the test; the mask used for writing is the session's
@@ -994,6 +990,10 @@ typedef enum BADGPUBlendWeight {
  *
  * `stSF`, `stDF`, and `stDP` control what happens to the stencil buffer under
  *  various situations with the stencil test.
+ *
+ * `dtFunc` is used for the depth test. \
+ * `depthN`, `depthF` make up the depth range (0, 1 is a good default). \
+ * `poFactor`, `poUnits` make up the polygon offset.
  *
  * Rationale: While this function is indeed absolutely massive, there are
  *  shorter wrappers such as badgpuDrawGeomNoDS. This is also arguably a natural
@@ -1016,19 +1016,15 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
-    // DepthRange
-    float depthN, float depthF,
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
-    // PolygonOffset
-    float poFactor, float poUnits,
     // Stencil Test
     BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
-    // Depth Test
-    BADGPUCompare dtFunc,
+    // Depth Test / DepthRange / PolygonOffset
+    BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
     // Blending
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA

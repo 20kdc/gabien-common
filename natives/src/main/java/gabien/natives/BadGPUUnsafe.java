@@ -9,7 +9,7 @@ package gabien.natives;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.17.0
+ * VERSION: 0.18.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -64,13 +64,11 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
         int pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
-        float depthN, float depthF,
         int vX, int vY, int vW, int vH,
         long texture, float[] matrixT, int matrixTOfs,
-        float poFactor, float poUnits,
         int stFunc, int stRef, int stMask,
         int stSF, int stDF, int stDP,
-        int dtFunc,
+        int dtFunc, float depthN, float depthF, float poFactor, float poUnits,
         int bwRGBS, int bwRGBD, int beRGB,
         int bwAS, int bwAD, int beA
     );

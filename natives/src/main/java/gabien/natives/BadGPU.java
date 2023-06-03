@@ -14,7 +14,7 @@ import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
- * VERSION: 0.17.0
+ * VERSION: 0.18.0
  * Created 30th May, 2023.
  */
 public abstract class BadGPU extends BadGPUEnum {
@@ -287,13 +287,11 @@ public abstract class BadGPU extends BadGPUEnum {
         PrimitiveType pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
-        float depthN, float depthF,
         int vX, int vY, int vW, int vH,
         @Nullable Texture texture, float[] matrixT, int matrixTOfs,
-        float poFactor, float poUnits,
         Compare stFunc, int stRef, int stMask,
         StencilOp stSF, StencilOp stDF, StencilOp stDP,
-        Compare dtFunc,
+        Compare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
         BlendWeight bwRGBS, BlendWeight bwRGBD, BlendEquation beRGB,
         BlendWeight bwAS, BlendWeight bwAD, BlendEquation beA
     ) {
@@ -323,13 +321,11 @@ public abstract class BadGPU extends BadGPUEnum {
                 pType.value, plSize,
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs,
-                depthN, depthF,
                 vX, vY, vW, vH,
                 texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
-                poFactor, poUnits,
                 stFunc.value, stRef, stMask,
                 stSF.value, stDF.value, stDP.value,
-                dtFunc.value,
+                dtFunc.value, depthN, depthF, poFactor, poUnits,
                 bwRGBS.value, bwRGBD.value, beRGB.value,
                 bwAS.value, bwAD.value, beA.value);
     }

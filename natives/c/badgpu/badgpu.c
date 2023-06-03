@@ -669,19 +669,15 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
     const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
-    // DepthRange
-    float depthN, float depthF,
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
-    // PolygonOffset
-    float poFactor, float poUnits,
     // Stencil Test
     BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
-    // Depth Test
-    BADGPUCompare dtFunc,
+    // Depth Test / DepthRange / PolygonOffset
+    BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
     // Blending
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
@@ -843,13 +839,11 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     pType, plSize,
     iStart, iCount, indices,
     matrixA, matrixB,
-    0, 0,
     vX, vY, vW, vH,
     texture, matrixT,
-    0, 0,
     BADGPUCompare_Always, 0, 0,
     BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Keep,
-    BADGPUCompare_Always,
+    BADGPUCompare_Always, 0, 0, 0, 0,
     bwRGBS, bwRGBD, beRGB,
     bwAS, bwAD, beA
     );
