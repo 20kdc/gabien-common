@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.15.0`
+ * Version: `0.16.0`
  *
  * ## Formatting Policy
  *
@@ -519,6 +519,22 @@ typedef enum BADGPUTextureLoadFormat {
 BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
     BADGPUTextureLoadFormat tF, int16_t width, int16_t height, const void * fD,
     void * tD);
+
+/*
+ * ### `badgpuPixelsConvertRGBA8888ToARGBI32InPlace`
+ *
+ * A dedicated function to convert `RGBA8888` to `ARGBI32` in-place.
+ *
+ * This has particular optimization effort put towards it that is not evident
+ *  in the general conversion functions.
+ *
+ * This function is used internally to accelerate `badgpuReadPixels` when this
+ *  format is selected.
+ *
+ * This is a library function and thus does not need an instance.
+ */
+BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
+    int16_t height, void * data);
 
 /*
  * ### `badgpuPixelsSize`

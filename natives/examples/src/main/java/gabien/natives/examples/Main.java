@@ -92,7 +92,9 @@ public class Main {
                             clampedCH = 32767;
                         if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
                             System.out.println(" -- RECREATING TEXTURE --");
-                            screen1 = instance.newTexture(BadGPU.TextureFlags.HasAlpha, clampedCW, clampedCH);
+                            int sf = BadGPU.TextureFlags.HasAlpha;
+                            // sf = 0;
+                            screen1 = instance.newTexture(sf, clampedCW, clampedCH);
                             dataSrcA = new int[clampedCW * clampedCH];
                             dataSrcB = new int[clampedCW * clampedCH];
                             currentBufferWidth = clampedCW;
@@ -104,13 +106,13 @@ public class Main {
                         instance.flush();
                         dataSrc = flipper1 ? dataSrcA : dataSrcB;
                         screen1.readPixels(0, 0, currentBufferWidth, currentBufferHeight, TextureLoadFormat.ARGBI32, dataSrc, 0);
+                        flipper1 = !flipper1;
                         tB = System.currentTimeMillis();
                         frameCompleteSemaphore.release();
                         //System.out.println("from TT");
-                        System.out.println(tB - tA);
+                        System.out.println("RX:" + (tB - tA));
                         // continue...
                         currentState.frame(Main.this, screen1, currentBufferWidth, currentBufferHeight);
-                        flipper1 = !flipper1;
                         instance.flush();
                     }
                 }
@@ -122,10 +124,13 @@ public class Main {
     public static void main(String[] args) {
         System.setProperty("sun.awt.noerasebackground", "true");
         System.setProperty("sun.awt.erasebackgroundonresize", "true");
-        // "native" double buffering takes us off of the VSync path
-        System.setProperty("awt.nativeDoubleBuffering", "false");
-        // but unless this is set, we don't get double buffering at all!
-        System.setProperty("swing.bufferPerWindow", "true");
+        boolean tryVSync = true;
+        if (tryVSync) {
+            // "native" double buffering takes us off of the VSync path
+            System.setProperty("awt.nativeDoubleBuffering", "false");
+            // but unless this is set, we don't get double buffering at all!
+            System.setProperty("swing.bufferPerWindow", "true");
+        }
         // doing this should help perf right
         // NO NO NO NO NO
         // System.setProperty("sun.java2d.opengl", "True");
@@ -188,14 +193,16 @@ public class Main {
                 return true;
             }
         };
-        w.getRootPane().setDoubleBuffered(true);
-        canvas.setDoubleBuffered(true);
-        RepaintManager.currentManager(w).setDoubleBufferingEnabled(true);
-        // What the hell, Sun?
-        try {
-            Class.forName("com.sun.java.swing.SwingUtilities3").getMethod("setVsyncRequested", Container.class, boolean.class).invoke(null, w, true);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        if (tryVSync) {
+            w.getRootPane().setDoubleBuffered(true);
+            canvas.setDoubleBuffered(true);
+            RepaintManager.currentManager(w).setDoubleBufferingEnabled(true);
+            // What the hell, Sun?
+            try {
+                Class.forName("com.sun.java.swing.SwingUtilities3").getMethod("setVsyncRequested", Container.class, boolean.class).invoke(null, w, true);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
         w.setContentPane(canvas);
         w.pack();
@@ -215,7 +222,7 @@ public class Main {
                 SwingUtilities.invokeLater(() -> {
                     // ensure a frame has completed before continuing...
                     long thisFrameTime = System.currentTimeMillis();
-                    System.out.println("FT: " + (thisFrameTime - lastFrameTime));
+                    System.out.println("FT:" + (thisFrameTime - lastFrameTime));
                     lastFrameTime = thisFrameTime;
                     m.frameCompleteSemaphore.acquireUninterruptibly();
                     // this means the game thread is now waiting for us to schedule a new frame
@@ -243,52 +250,6 @@ public class Main {
                     canvas.paintImmediately(0, 0, cw, ch);
                 });
             }
-        }, 0, 15);
-    }
-    private static final float[] triImmDat1 = new float[24];
-    public static void triImm(BadGPU.Texture scr, int w, int h,
-            float xA, float yA,
-            float rA, float gA, float bA,
-            float xB, float yB,
-            float rB, float gB, float bB,
-            float xC, float yC,
-            float rC, float gC, float bC
-        ) {
-        float[] data = triImmDat1;
-        data[0] = xA;
-        data[1] = yA;
-        data[2] = 0;
-        data[3] = 1;
-        data[4] = xB;
-        data[5] = yB;
-        data[6] = 0;
-        data[7] = 1;
-        data[8] = xC;
-        data[9] = yC;
-        data[10] = 0;
-        data[11] = 1;
-        data[12] = rA;
-        data[13] = gA;
-        data[14] = bA;
-        data[15] = 1;
-        data[16] = rB;
-        data[17] = gB;
-        data[18] = bB;
-        data[19] = 1;
-        data[20] = rC;
-        data[21] = gC;
-        data[22] = bC;
-        data[23] = 1;
-        BadGPU.drawGeomNoDS(scr, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
-                0,
-                data, 0, data, 12, null, 0,
-                BadGPU.PrimitiveType.Triangles, 0,
-                0, 3, null, 0,
-                null, 0, null, 0,
-                0, 0, w, h,
-                null, null, 0,
-                0,
-                BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add,
-                BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add);
+        }, 0, 16);
     }
 }

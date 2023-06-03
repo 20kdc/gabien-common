@@ -73,6 +73,18 @@ void J_BADGPU(pixelsConvertIB)(void * env, void * self, int32_t fF, int32_t tF, 
     JNIBA_R(tD, 0);
 }
 
+void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceB)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    badgpuPixelsConvertRGBA8888ToARGBI32InPlace(w, h, data);
+    JNIBA_R(data, 0);
+}
+
+void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceI)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    badgpuPixelsConvertRGBA8888ToARGBI32InPlace(w, h, data);
+    JNIIA_R(data, 0);
+}
+
 // TM
 
 int64_t J_BADGPU(newTextureB)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {

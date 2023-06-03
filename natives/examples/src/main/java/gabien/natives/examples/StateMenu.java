@@ -15,18 +15,22 @@ import gabien.natives.BadGPU.Texture;
  */
 public class StateMenu implements IState {
     float tx = 0;
+    BadGPU.Texture cached;
     @Override
     public void frame(Main m, Texture screen, int w, int h) {
         tx += 0.01f;
         BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-        Main.triImm(screen, w, h,
+        if (cached == null)
+            cached = U.loadTex(m.instance, "img.png");
+        U.texRctImm(screen, 0, 0, w, h, cached);
+        U.triImm(screen, w, h,
                 0, -1,
                 1, 0, 0,
                 1, 1,
                 0, 1, 0,
                 -1, 1,
                 0, 0, 1);
-        Main.triImm(screen, w, h,
+        U.triImm(screen, w, h,
                 0, -1,
                 1, 0, 0,
                 (float) Math.sin(tx), 0,

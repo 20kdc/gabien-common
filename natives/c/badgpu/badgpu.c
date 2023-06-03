@@ -581,6 +581,10 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
         return badgpuErr(bi, "badgpuReadPixels: data == NULL for non-zero area");
     if (fmt == BADGPUTextureLoadFormat_RGBA8888) {
         bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32) {
+        // special fast-path because profiling said so
+        bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        badgpuPixelsConvertRGBA8888ToARGBI32InPlace(width, height, data);
     } else {
         uint32_t sz = badgpuPixelsSize(BADGPUTextureLoadFormat_RGBA8888, width, height);
         if (!sz) {
