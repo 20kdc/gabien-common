@@ -23,6 +23,7 @@ public class StateMenu implements IState {
         if (cached == null)
             cached = U.loadTex(m.instance, "img.png");
         U.texRctImm(screen, 0, 0, w, h, cached);
+        U.texRctImm(screen, 0, 0, 320, 200, cached);
         U.triImm(screen, w, h,
                 0, -1,
                 1, 0, 0,

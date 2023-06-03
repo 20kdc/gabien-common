@@ -11,7 +11,7 @@ package gabien.natives;
  * Enums and stuff, because they're weird.
  * This is extensible so that it can be pulled into BadGPUUnsafe and BadGPU.
  * Bit of a cheat, but who's counting?
- * VERSION: 0.15.0
+ * VERSION: 0.17.0
  * Created 30th May, 2023.
  */
 public class BadGPUEnum {
@@ -74,7 +74,6 @@ public class BadGPUEnum {
         public static final int StencilTest = 8;
         public static final int DepthTest = 16;
         public static final int Blend = 32;
-        public static final int AlphaTestInvert = 64;
         public static final int FreezeColor = 128;
         public static final int FreezeColour = 128;
         public static final int FreezeTC = 256;

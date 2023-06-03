@@ -57,7 +57,6 @@ public class U {
                 null, 0, null, 0,
                 0, 0, w, h,
                 null, null, 0,
-                0,
                 BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add,
                 BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add);
     }
@@ -71,15 +70,15 @@ public class U {
         idx = putImmDat(idx, 1, 0, 0, 1);
         idx = putImmDat(idx, 1, 1, 0, 1);
         idx = putImmDat(idx, 0, 1, 0, 1);
+        int df = BadGPU.DrawFlags.MinLinear | BadGPU.DrawFlags.MagLinear;
         BadGPU.drawGeomNoDS(screen, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
-                0,
+                df,
                 triImmDat1, 0, null, 0, triImmDat1, 16,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, 6, rectIndices, 0,
                 null, 0, null, 0,
                 i, j, w, h,
                 cached, null, 0,
-                0,
                 BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add,
                 BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add);
     }

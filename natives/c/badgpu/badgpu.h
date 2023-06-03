@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.16.0`
+ * Version: `0.17.0`
  *
  * ## Formatting Policy
  *
@@ -168,8 +168,7 @@
  * + OpenGL ES 2.0 with shader compiler and `OES_texture_npot`
  *   + That the shader compiler can be omitted in a valid OpenGL ES 2.0
  *     implementation is an interesting trick, but also means that this
- *     specification can't guarantee the ability to implement, say, the alpha
- *     test (which isn't in baseline OpenGL ES 2.0).
+ *     specification can't guarantee to implement certain features.
  *
  * Rationale: Complex blend functions are the reason this mess even started. \
  *  And the stencil buffer, along with the ability to share the stencil buffer
@@ -818,8 +817,7 @@ typedef enum BADGPUDrawFlags {
     BADGPUDrawFlags_StencilTest = 8,
     BADGPUDrawFlags_DepthTest = 16,
     BADGPUDrawFlags_Blend = 32,
-    // Usually, the alpha test is `GEqual`. This inverts it to `Less`.
-    BADGPUDrawFlags_AlphaTestInvert = 64,
+    // Flag 64 is unused
     // Colour array only has to be one element long, and that's the only colour.
     BADGPUDrawFlags_FreezeColor = 128,
     BADGPUDrawFlags_FreezeColour = 128,
@@ -989,9 +987,6 @@ typedef enum BADGPUBlendWeight {
  *
  * `poFactor`, `poUnits` make up the polygon offset.
  *
- * `alphaTestMin` specifies a minimum alpha. \
- * (Or a maximum, if `AlphaTestInvert` is set.)
- *
  * `stFunc`, `stRef`, and `stMask` are used for the stencil test. \
  * This `stMask` is for the test; the mask used for writing is the session's
  *  stencil mask. However, no writing occurs if the test isn't enabled in the
@@ -1003,6 +998,14 @@ typedef enum BADGPUBlendWeight {
  * Rationale: While this function is indeed absolutely massive, there are
  *  shorter wrappers such as badgpuDrawGeomNoDS. This is also arguably a natural
  *  cost of the avoidance of stack structs while also avoiding a stateful API.
+ *
+ * Some specific missing functionality, and why:
+ *
+ * + Lighting isn't a thing because it's annoying for ES2. \
+ *   And it's per-vertex, so you don't really get anything out of it. \
+ *   If you really want this, do it on the CPU or something.
+ * + The alpha test was removed because in practice it was buggy, making opaque
+ *    things disappear. It's also annoying for ES2.
  */
 BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
@@ -1021,8 +1024,6 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
     // PolygonOffset
     float poFactor, float poUnits,
-    // Alpha Test
-    float alphaTestMin,
     // Stencil Test
     BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
@@ -1039,6 +1040,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
  * Alias for badgpuDrawGeom that removes depth / stencil parameters.
  *
  * Most removed values are 0 / `NULL`, except:
+ *
  * + All stencil ops are `Keep`.
  * + `stFunc` / `dtFunc` are both `Always`.
  *
@@ -1073,8 +1075,6 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
-    // Alpha Test
-    float alphaTestMin,
     // Blending
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA

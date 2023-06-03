@@ -612,15 +612,16 @@ static inline BADGPUBool drawingCmdSetup(
     if (!fbSetup(sTexture, sDSBuffer, bi))
         return 0;
     (*bi)->glColorMask(
-        sFlags & BADGPUSessionFlags_MaskR ? 1 : 0,
-        sFlags & BADGPUSessionFlags_MaskG ? 1 : 0,
-        sFlags & BADGPUSessionFlags_MaskB ? 1 : 0,
-        sFlags & BADGPUSessionFlags_MaskA ? 1 : 0
+        (sFlags & BADGPUSessionFlags_MaskR) ? 1 : 0,
+        (sFlags & BADGPUSessionFlags_MaskG) ? 1 : 0,
+        (sFlags & BADGPUSessionFlags_MaskB) ? 1 : 0,
+        (sFlags & BADGPUSessionFlags_MaskA) ? 1 : 0
     );
     // OPT: If we don't have a DSBuffer we don't need to setup the mask for it.
     if (sDSBuffer) {
+        // StencilAll is deliberately at bottom of flags for this
         (*bi)->glStencilMask(sFlags & BADGPUSessionFlags_StencilAll);
-        (*bi)->glDepthMask(sFlags & BADGPUSessionFlags_MaskDepth ? 1 : 0);
+        (*bi)->glDepthMask((sFlags & BADGPUSessionFlags_MaskDepth) ? 1 : 0);
     }
     if (sFlags & BADGPUSessionFlags_Scissor) {
         (*bi)->glEnable(GL_SCISSOR_TEST);
@@ -676,8 +677,6 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
     // PolygonOffset
     float poFactor, float poUnits,
-    // Alpha Test
-    float alphaTestMin,
     // Stencil Test
     BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
@@ -710,8 +709,8 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         bi->glMatrixMode(GL_TEXTURE);
         if (!matrixT) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixT);
 
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, flags & BADGPUDrawFlags_WrapS ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, flags & BADGPUDrawFlags_WrapT ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (flags & BADGPUDrawFlags_WrapS) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (flags & BADGPUDrawFlags_WrapT) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
         int32_t minFilter = ((flags & BADGPUDrawFlags_Mipmap) ?
             ((flags & BADGPUDrawFlags_MinLinear) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -719,14 +718,10 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
             ((flags & BADGPUDrawFlags_MinLinear) ? GL_LINEAR : GL_NEAREST)
         );
         bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, flags & BADGPUDrawFlags_MagLinear ? GL_LINEAR : GL_NEAREST);
+        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (flags & BADGPUDrawFlags_MagLinear) ? GL_LINEAR : GL_NEAREST);
     } else {
         bi->glDisable(GL_TEXTURE_2D);
     }
-
-    // Alpha Test
-    bi->glEnable(GL_ALPHA_TEST);
-    bi->glAlphaFunc(flags & BADGPUDrawFlags_AlphaTestInvert ? BADGPUCompare_Less : BADGPUCompare_GEqual, alphaTestMin);
 
     // OPT: Depth and stencil test are force-disabled by GL if we have no d/s.
     // (ES1.1 4.1.5 Stencil Test, 4.1.6 Depth Buffer Test, last paragraph of
@@ -760,11 +755,11 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     }
 
     // Misc. Flags Stuff
-    bi->glFrontFace(flags & BADGPUDrawFlags_FrontFaceCW ? GL_CW : GL_CCW);
+    bi->glFrontFace((flags & BADGPUDrawFlags_FrontFaceCW) ? GL_CW : GL_CCW);
 
     if (flags & BADGPUDrawFlags_CullFace) {
         bi->glEnable(GL_CULL_FACE);
-        bi->glCullFace(flags & BADGPUDrawFlags_CullFaceFront ? GL_FRONT : GL_BACK);
+        bi->glCullFace((flags & BADGPUDrawFlags_CullFaceFront) ? GL_FRONT : GL_BACK);
     } else {
         bi->glDisable(GL_CULL_FACE);
     }
@@ -835,8 +830,6 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
-    // Alpha Test
-    float alphaTestMin,
     // Blending
     BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
     BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
@@ -854,7 +847,6 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     vX, vY, vW, vH,
     texture, matrixT,
     0, 0,
-    alphaTestMin,
     BADGPUCompare_Always, 0, 0,
     BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Keep,
     BADGPUCompare_Always,

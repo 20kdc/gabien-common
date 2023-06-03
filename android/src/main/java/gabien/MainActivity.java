@@ -66,8 +66,8 @@ public class MainActivity extends Activity {
                 y -= owner.displayArea.top;
                 x /= owner.displayArea.width();
                 y /= owner.displayArea.height();
-                x *= owner.w;
-                y *= owner.h;
+                x *= owner.backBuffer.w;
+                y *= owner.backBuffer.h;
                 owner.peripherals.gdPushEvent(mode, arg1.getPointerId(ptrI), (int) x, (int) y);
             }
         });
