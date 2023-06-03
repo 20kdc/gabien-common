@@ -147,7 +147,7 @@ public abstract class Loader {
                         for (byte b : buf) {
                             int b1 = b & 0xFF;
                             int b2 = fis.read();
-                            if (b != b2) {
+                            if (b1 != b2) {
                                 rewriteNecessary = true;
                                 break;
                             }
