@@ -60,12 +60,12 @@ public abstract class Loader {
         else if (osArch.contains("arm"))
             osArch = "arm";
         for (String c : cpu)
-            if (defaultLoaderConfigTmpfile(c + "-" + osArch))
+            if (defaultLoaderConfigTmpWithBackpathCheck(c + "-" + osArch))
                 return true;
         // get REALLY desperate
         for (String o : os)
             for (String c : cpu)
-                if (defaultLoaderConfigTmpfile(c + "-" + o))
+                if (defaultLoaderConfigTmpWithBackpathCheck(c + "-" + o))
                     return true;
         return false;
     }
@@ -82,6 +82,13 @@ public abstract class Loader {
         } catch (Throwable ex) {
         }
         return false;
+    }
+    private static boolean defaultLoaderConfigTmpWithBackpathCheck(String config) {
+        // Backup mechanism laying around to run this on EGL even on systems that don't traditionally do that.
+        if (System.getenv("BADGPU_EGL_LIBRARY") != null)
+            if (defaultLoaderConfigTmpfile(config + ".CX_BackPath"))
+                return true;
+        return defaultLoaderConfigTmpfile(config);
     }
     private static boolean defaultLoaderConfigTmpfile(String config) {
         String fn = "natives." + config;
