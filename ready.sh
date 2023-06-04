@@ -4,9 +4,9 @@
 # To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
-if [ -e natives.jar ]; then
- mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=natives.jar
-else
- mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=../natives-sdk/natives.jar
-fi
+# Ensures gabien-common is ready for use in a release.
+
+mvn clean &&
+mvn package -DskipTests &&
+mvn install
 

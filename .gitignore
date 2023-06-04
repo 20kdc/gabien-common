@@ -6,6 +6,8 @@
 !.gitignore
 !IDEA-Code-Style.xml
 
+!ready.sh
+
 !uslx
 !uslx/
 !uslx/src
