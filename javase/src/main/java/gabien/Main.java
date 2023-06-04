@@ -107,6 +107,6 @@ abstract class Main {
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
-        GaBIEn.setupAssets();
+        GaBIEn.setupNativesAndAssets();
     }
 }

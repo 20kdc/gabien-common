@@ -71,6 +71,7 @@
 !natives/c/badgpu/badgputest_tce.c
 !natives/c/badgpu/make-bgt
 !natives/c/badgpu_jni.c
+!natives/c/loader_jni.c
 !natives/c/una.h
 !natives/sdk-make
 !natives/sdk-clean

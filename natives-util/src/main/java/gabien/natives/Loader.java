@@ -13,6 +13,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import gabien.uslx.append.IFunction;
 
@@ -45,6 +47,8 @@ public abstract class Loader {
     }
 
     public static boolean defaultLoader(IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup) {
+        StringWriter errors = new StringWriter();
+        PrintWriter errorsP = new PrintWriter(errors);
         // all supported CPUs
         String[] cpu = {
             "x86_64",
@@ -66,22 +70,26 @@ public abstract class Loader {
             System.loadLibrary("gabien-natives");
             return true;
         } catch (Throwable ex) {
+            errorsP.append("gabien.natives.Loader: loadLibrary(gabien-natives): " + ex + "\n");
         }
         // try for anything obvious
         for (String o : os)
             for (String c : cpu)
-                if (defaultLoaderConfig(c + "-" + o))
+                if (defaultLoaderConfig(c + "-" + o, errorsP))
                     return true;
         // get desperate
         String detectedCPU = detectCPU();
         for (String o : os)
-            if (defaultLoaderConfigTmpWithBackpathCheck(detectedCPU + "-" + o, assetLookup, destinationSetup))
+            if (defaultLoaderConfigTmpWithBackpathCheck(detectedCPU + "-" + o, assetLookup, destinationSetup, errorsP))
                 return true;
         // get REALLY desperate
         for (String o : os)
             for (String c : cpu)
-                if (defaultLoaderConfigTmpWithBackpathCheck(c + "-" + o, assetLookup, destinationSetup))
+                if (defaultLoaderConfigTmpWithBackpathCheck(c + "-" + o, assetLookup, destinationSetup, errorsP))
                     return true;
+        // uhoh.
+        System.err.println("gabien.natives.Loader: Failed, information:");
+        System.err.print(errors.toString());
         return false;
     }
     private static String detectCPU() {
@@ -96,36 +104,45 @@ public abstract class Loader {
             detectedCPU = "arm";
         return detectedCPU;
     }
-    private static boolean defaultLoaderConfig(String config) {
+    private static boolean loadLibrary(String name, PrintWriter errorsP) {
         try {
-            System.loadLibrary("gabien-natives-" + config);
+            System.loadLibrary(name);
             return true;
         } catch (Throwable ex) {
+            errorsP.append("gabien.natives.Loader: loadLibrary(" + name + "): " + ex + "\n");
         }
+        return false;
+    }
+    private static boolean defaultLoaderConfig(String config, PrintWriter errorsP) {
+        if (loadLibrary("gabien-natives-" + config, errorsP))
+            return true;
         String fn = "natives." + config;
         try {
             System.load(new File(fn).getAbsolutePath());
             return true;
         } catch (Throwable ex) {
+            errorsP.append("gabien.natives.Loader: load(" + fn + "): " + ex + "\n");
         }
         return false;
     }
-    private static boolean defaultLoaderConfigTmpWithBackpathCheck(String config, IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup) {
+    private static boolean defaultLoaderConfigTmpWithBackpathCheck(String config, IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup, PrintWriter errorsP) {
         // Backup mechanism laying around to run this on EGL even on systems that don't traditionally do that.
         if (System.getenv("BADGPU_EGL_LIBRARY") != null)
-            if (defaultLoaderConfigTmpfile(config + ".CX_BackPath", assetLookup, destinationSetup))
+            if (loadWithTmpfile(config + ".CX_BackPath", assetLookup, destinationSetup, errorsP))
                 return true;
-        return defaultLoaderConfigTmpfile(config, assetLookup, destinationSetup);
+        return loadWithTmpfile(config, assetLookup, destinationSetup, errorsP);
     }
-    private static boolean defaultLoaderConfigTmpfile(String config, IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup) {
+    private static boolean loadWithTmpfile(String config, IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup, PrintWriter errorsP) {
         String fn = "natives." + config;
         String fnf = "gabien-natives/" + fn;
         try {
             // This can fail on Android, but that shouldn't run this anyway
             File tmp;
             try (InputStream inp = assetLookup.apply(fnf)) {
-                if (inp == null)
+                if (inp == null) {
+                    errorsP.append("gabien.natives.Loader: loadViaTmpfile(" + fnf + "): doesn't exist!\n");
                     return false;
+                }
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 byte[] buf = new byte[65536];
                 while (true) {
@@ -170,9 +187,11 @@ public abstract class Loader {
             System.load(tmp.getAbsolutePath());
             return true;
         } catch (Throwable ex) {
-            ex.printStackTrace();
+            errorsP.append("gabien.natives.Loader: loadViaTmpfile(" + fnf + "): " + ex + "\n");
         }
         return false;
     }
+
+    public static native String getNativesVersion();
 }
 

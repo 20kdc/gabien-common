@@ -30,6 +30,7 @@ public final class GaBIenImpl implements IGaBIEn {
     private RawAudioDriver rad;
 
     public static void main() throws Exception {
+        GaBIEn.setupNatives();
         FontManager.fontsReady = true;
         final GaBIenImpl impl = new GaBIenImpl();
     	GaBIEn.internal = impl;
@@ -43,7 +44,7 @@ public final class GaBIenImpl implements IGaBIEn {
     	        return new File("/sdcard", fileName);
     	    }
     	};
-        GaBIEn.setupAssets();
+        GaBIEn.setupNativesAndAssets();
     	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);

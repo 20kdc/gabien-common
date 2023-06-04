@@ -7,12 +7,13 @@
 # tested using Zig 0.11.0-dev.2892+fd6200eda
 . ./sdk-clean
 mkdir -p $LIBUNA
-COMMONFLAGS="-Wno-attributes -O4 -shared"
+UNA_BUILD_ID=`date +%Y.%m.%d.%H.%M.%S`
+COMMONFLAGS="-Wno-attributes -O4 -shared -DUNA_BUILD_ID=\"$UNA_BUILD_ID\""
 TARGETS="x86-linux-gnu"
 TARGETS_W="x86-windows-gnu x86_64-windows-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
-SOURCES="c/badgpu_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c"
+SOURCES="c/badgpu_jni.c c/loader_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c"
 SOURCES_U="c/badgpu/badgpu_wsi_egl.c"
 SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
 SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
@@ -57,6 +58,7 @@ rm -f $LIBUNA/*.pdb
 for x in `ls $LIBUNA`; do
  llvm-strip $LIBUNA/$x
 done
+
 # Maven
 mvn package
 mvn install
@@ -67,4 +69,8 @@ cp sdk-install ../natives-sdk/
 cp target/gabien-natives-0.666-SNAPSHOT.jar ../natives-sdk/natives.jar
 cp ../COPYING.txt ../natives-sdk/
 cp ../CREDITS.txt ../natives-sdk/
+
+echo
+echo Build ID: $UNA_BUILD_ID
+echo
 

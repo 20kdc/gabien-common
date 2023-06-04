@@ -15,7 +15,6 @@ import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -94,13 +93,6 @@ public class GaBIEn {
         } catch (Exception ioe) {
             return null;
         }
-    }
-
-    /**
-     * Deleet this.
-     */
-    public static File VeryTemporaryWorkaroundPlsDelme(String name) {
-        return internal.nativeDestinationSetup(name);
     }
 
     public static boolean singleWindowApp() {
@@ -373,7 +365,10 @@ public class GaBIEn {
     /**
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      */
-    static void setupAssets() {
+    static void setupNativesAndAssets() {
+        if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
+            System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
+        System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
         FontManager.setupFonts();
         UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();

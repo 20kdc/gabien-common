@@ -34,6 +34,7 @@ void * dlopen(const char * fn, int flags);
 void * dlsym(void * mod, const char * symbol);
 int dlclose(void * mod);
 int printf(const char * fmt, ...);
+char * strstr(const char * h, const char * n);
 #else
 #include <stdio.h>
 #endif

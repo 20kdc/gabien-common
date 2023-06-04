@@ -73,6 +73,13 @@
 
 #define GL_TEXTURE0 0x84C0
 
+#define GL_EXTENSIONS 0x1F03
+#define GL_DONT_CARE 0x1100
+#define GL_DEBUG_SOURCE_THIRD_PARTY 0x8249
+#define GL_DEBUG_TYPE_OTHER 0x8251
+#define GL_DEBUG_SEVERITY_NOTIFICATION 0x826B
+#define GL_DEBUG_OUTPUT 0x92E0
+
 // Types
 
 struct BADGPUObject {
@@ -236,6 +243,10 @@ static inline BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * l
     return 0;
 }
 
+static KHRABI void badgpuDebugCB(int32_t a, int32_t b, int32_t c, int32_t d, int32_t len, const char * text, const void * g) {
+    printf("BADGPU: GLDebug: %s\n", text);
+}
+
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
     BADGPUInstancePriv * bi = malloc(sizeof(BADGPUInstancePriv));
     if (!bi) {
@@ -343,6 +354,30 @@ CHKGLFN(fn)
         BINDGLFN2(glFramebufferTexture2D, OES);
         BINDGLFN2(glGenerateMipmap, OES);
         BINDGLFN2(glBindRenderbuffer, OES);
+    }
+    const char * ext = bi->glGetString(GL_EXTENSIONS);
+    if (bi->canPrintf) {
+        if (ext) {
+            printf("BADGPU: GL Extensions: %s\n", ext);
+        } else {
+            printf("BADGPU: GL Extensions not available!\n");
+        }
+    }
+    if (bi->backendCheck && bi->canPrintf && ext) {
+        const char * exCheck = strstr(ext, "GL_KHR_debug");
+        if (exCheck && ((exCheck[12] == 0) || (exCheck[12] == ' '))) {
+            printf("BADGPU: KHR_debug detected, testing...\n");
+            bi->glEnable(GL_DEBUG_OUTPUT);
+            void (KHRABI *glDebugMessageControl)(int32_t, int32_t, int32_t, int32_t, const int32_t *, int32_t) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageControl");
+            if (glDebugMessageControl)
+                glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, 1);
+            void (KHRABI *glDebugMessageCallback)(void *, const void *) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageCallback");
+            if (glDebugMessageCallback)
+                glDebugMessageCallback(badgpuDebugCB, NULL);
+            void (KHRABI *glDebugMessageInsert)(int32_t, int32_t, int32_t, int32_t, int32_t, const char *) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageInsert");
+            if (glDebugMessageInsert)
+                glDebugMessageInsert(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, -1, "BADGPU GL Debug Test Message");
+        }
     }
     bi->glGenFramebuffers(1, &bi->fbo);
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
