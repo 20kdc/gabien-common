@@ -16,8 +16,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
 
 import javax.swing.JComponent;
@@ -48,7 +46,6 @@ public class Main implements IMain {
     public volatile boolean shutdown;
     private final Semaphore frameRequestSemaphore = new Semaphore(1);
     private final Semaphore frameCompleteSemaphore = new Semaphore(1);
-    private Timer t;
     private volatile BufferedImage transferBuffer;
     private volatile WritableRaster transferBufferWR;
 
@@ -262,6 +259,7 @@ public class Main implements IMain {
                     }
                     long tA = System.currentTimeMillis();
                     // that I have to do this to avoid a slowpath is so stupid
+                    // m.transferBuffer.setRGB(0, 0, sw, sh, grabbedDS, 0, sw); // SLOW
                     m.transferBufferWR.setDataElements(0, 0, sw, sh, grabbedDS);
                     long tB = System.currentTimeMillis();
                     System.out.println("SDE:" + (tB - tA));
