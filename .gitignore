@@ -70,22 +70,20 @@
 !natives/c/badgpu/make-bgt
 !natives/c/badgpu_jni.c
 !natives/c/una.h
-!natives/src
-!natives/src/
-!natives/src/main
-!natives/src/main/
-!natives/src/main/java
-!natives/src/main/java/**
 !natives/sdk-make
-!natives/sdk-make-java
 !natives/sdk-clean
-!natives/sdk-clean-java
 !natives/sdk-install
-!natives/SmokeTest.java
-!natives/examples
-!natives/examples/
-!natives/examples/src
-!natives/examples/src/**
+
+!natives-util
+!natives-util/
+!natives-util/src
+!natives-util/src/
+!natives-util/src/**
+!natives-util/SmokeTest.java
+!natives-util/examples
+!natives-util/examples/
+!natives-util/examples/src
+!natives-util/examples/src/**
 
 !example-toolchains.xml
 

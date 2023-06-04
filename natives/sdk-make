@@ -52,5 +52,14 @@ rm -f $LIBUNA/*.pdb
 for x in `ls $LIBUNA`; do
  llvm-strip $LIBUNA/$x
 done
-./sdk-make-java
+# Maven
+mvn package
+mvn install
+rm -rf ../natives-sdk
+mkdir -p ../natives-sdk
+# script that installs the build to the local Maven repo
+cp sdk-install ../natives-sdk/
+cp target/gabien-natives-0.666-SNAPSHOT.jar ../natives-sdk/natives.jar
+cp ../COPYING.txt ../natives-sdk/
+cp ../CREDITS.txt ../natives-sdk/
 

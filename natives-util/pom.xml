@@ -4,10 +4,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<artifactId>gabien-common</artifactId>
+	<artifactId>gabien-natives-util</artifactId>
 
-	<name>gabien-common</name>
-	<description>Cross-platform UI library. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
+	<name>gabien-natives-util</name>
+	<description>Natives with utilities. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
+	<!-- This might actually become close to the first *stable* library in the system... we'll see. -->
 
 	<parent>
 		<groupId>t20kdc.hs2</groupId>
@@ -24,14 +25,16 @@
 		</dependency>
 		<dependency>
 			<groupId>t20kdc.hs2</groupId>
-			<artifactId>gabien-datum</artifactId>
+			<artifactId>gabien-natives</artifactId>
 			<version>0.666-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>t20kdc.hs2</groupId>
-			<artifactId>gabien-natives-util</artifactId>
-			<version>0.666-SNAPSHOT</version>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.1</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
 </project>
 

@@ -1,6 +1,7 @@
 #!/bin/sh
 # cleaning script / initial variables
 LIBUNA="src/main/resources/assets/gabien-natives"
-rm -rf src/main/resources
-./sdk-clean-java
+rm -rf src
+mvn clean
+rm -rf ../natives-sdk
 
