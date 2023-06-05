@@ -192,13 +192,8 @@ unsigned char J_BADGPU(drawGeomNoDS)(void * env, void * self,
     int32_t pType, float plSize,
     int32_t iStart, int32_t iCount, JNIBA_ARG(indices),
     JNIBA_ARG(matrixA), JNIBA_ARG(matrixB),
-    float depthN, float depthF,
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     int64_t texture, JNIBA_ARG(matrixT),
-    float poFactor, float poUnits,
-    int32_t stFunc, int32_t stRef, int32_t stMask,
-    int32_t stSF, int32_t stDF, int32_t stDP,
-    int32_t dtFunc,
     int32_t bwRGBS, int32_t bwRGBD, int32_t beRGB,
     int32_t bwAS, int32_t bwAD, int32_t beA
 ) {
