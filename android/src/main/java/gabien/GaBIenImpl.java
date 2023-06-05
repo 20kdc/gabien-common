@@ -30,7 +30,6 @@ public final class GaBIenImpl implements IGaBIEn {
     private RawAudioDriver rad;
 
     public static void main() throws Exception {
-        GaBIEn.setupNatives();
         FontManager.fontsReady = true;
         final GaBIenImpl impl = new GaBIenImpl();
     	GaBIEn.internal = impl;

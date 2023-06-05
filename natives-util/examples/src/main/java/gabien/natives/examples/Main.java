@@ -151,6 +151,7 @@ public class Main implements IMain {
         // NO NO NO NO NO
         // System.setProperty("sun.java2d.opengl", "True");
         gabien.natives.Loader.defaultLoaderJavaSE();
+        System.out.println("Natives Build ID: " + gabien.natives.Loader.getNativesVersion());
         final Main m = new Main();
         // need to use a JFrame to get VSync
         final JFrame w = new JFrame("gabien-natives examples");
