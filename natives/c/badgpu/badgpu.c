@@ -805,6 +805,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         bi->glDisable(GL_BLEND);
     }
 
+    // Vertex Loader
     if (pType == BADGPUPrimitiveType_Points) {
         bi->glPointSize(plSize);
     } else if (pType == BADGPUPrimitiveType_Lines) {
@@ -838,6 +839,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         bi->glMultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
     }
 
+    // Actual Draw
     if (indices) {
         bi->glDrawElements(pType, iCount, GL_UNSIGNED_SHORT, indices + iStart);
     } else {

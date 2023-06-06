@@ -22,6 +22,7 @@ import gabien.text.NativeFont;
 public class AWTNativeFont extends NativeFont {
     public final Font font;
     public final int size;
+    private static final FontRenderContext frc = new FontRenderContext(AffineTransform.getTranslateInstance(0, 0), true, false);
 
     public AWTNativeFont(Font f, int apparentSize) {
         font = f;
@@ -65,7 +66,7 @@ public class AWTNativeFont extends NativeFont {
     public int measureLine(@NonNull char[] text, int index, int count) {
         if (GaBIEnImpl.fontsAlwaysMeasure16)
             return 16;
-        Rectangle r = font.getStringBounds(text, index, count, new FontRenderContext(AffineTransform.getTranslateInstance(0, 0), true, false)).getBounds();
+        Rectangle r = font.getStringBounds(text, index, count, frc).getBounds();
         return r.width;
     }
     

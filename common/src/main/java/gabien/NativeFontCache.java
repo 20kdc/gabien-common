@@ -24,12 +24,16 @@ final class NativeFontCache {
      * Proxy to IGaBIEn.getDefaultNativeFont
      */
     NativeFont getDefaultNativeFont(int size) {
-        if (lastDefaultFont != null)
-            if (lastDefaultFontSize == size)
-                return lastDefaultFont;
+        synchronized (this) {
+            if (lastDefaultFont != null)
+                if (lastDefaultFontSize == size)
+                    return lastDefaultFont;
+        }
         NativeFont res = GaBIEn.internal.getDefaultNativeFont(size);
-        lastDefaultFontSize = size;
-        lastDefaultFont = res;
+        synchronized (this) {
+            lastDefaultFontSize = size;
+            lastDefaultFont = res;
+        }
         return res;
     }
 
@@ -37,16 +41,20 @@ final class NativeFontCache {
      * Proxy to IGaBIEn.getNativeFont
      */
     NativeFont getNativeFont(int size, String name) {
-        if (lastFont != null)
-            if (lastFontSize == size)
-                if (lastFontName.equals(name))
-                    return lastFont;
+        synchronized (this) {
+            if (lastFont != null)
+                if (lastFontSize == size)
+                    if (lastFontName.equals(name))
+                        return lastFont;
+        }
         NativeFont res = GaBIEn.internal.getNativeFont(size, name);
         if (res == null)
             return null;
-        lastFontName = name;
-        lastFontSize = size;
-        lastFont = res;
+        synchronized (this) {
+            lastFontName = name;
+            lastFontSize = size;
+            lastFont = res;
+        }
         return res;
     }
 }
