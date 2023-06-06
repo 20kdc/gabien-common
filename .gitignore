@@ -83,10 +83,11 @@
 !natives-util/src/
 !natives-util/src/**
 !natives-util/SmokeTest.java
-!natives-util/examples
-!natives-util/examples/
-!natives-util/examples/src
-!natives-util/examples/src/**
+
+!natives-examples
+!natives-examples/
+!natives-examples/src
+!natives-examples/src/**
 
 !example-toolchains.xml
 
