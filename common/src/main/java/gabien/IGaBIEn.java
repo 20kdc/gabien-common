@@ -40,8 +40,6 @@ public interface IGaBIEn {
 
     void ensureQuit();
 
-    IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha);
-
     /**
      * Get an image. The GaBIEn version of this method is cached.
      * Notably, the image format supports ARGB.
@@ -50,10 +48,6 @@ public interface IGaBIEn {
      * On error, this version of the function should return null.
      */
     IWSIImage getImage(String a, boolean res);
-
-    // Make an image from a buffer.
-    // Note that the colours are 0xAARRGGBB.
-    IImage createImage(@NonNull int[] colours, int width, int height);
 
     // Make a WSI image from a buffer.
     // Note that the colours are 0xAARRGGBB.

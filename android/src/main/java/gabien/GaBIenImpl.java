@@ -48,11 +48,6 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public IImage createImage(@NonNull int[] colours, int width, int height) {
-        return new OsbDriver(width, height, colours);
-    }
-
-    @Override
     public IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
         return new WSIImageDriver(colours, width, height);
     }
@@ -90,11 +85,6 @@ public final class GaBIenImpl implements IGaBIEn {
             return null;
         }
 //        return ClassLoader.getSystemClassLoader().getResourceAsStream(resource);
-    }
-
-    @Override
-    public IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha) {
-        return new OsbDriver(w, h, alpha);
     }
 
     @Override

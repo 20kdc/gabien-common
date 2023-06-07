@@ -15,7 +15,6 @@ import gabien.backendhelp.WindowMux;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
 abstract class Main {
-    private static boolean useDBG = false;
     private static boolean ignoreBlindingSun = false;
     /**
      * Use reflection to find and run the application.
@@ -24,12 +23,13 @@ abstract class Main {
         boolean tryForceOpenGL = false;
         boolean ignoreDPI = false;
         boolean useInternalBrowser = false;
+        boolean isDebug = false;
         if (args.length > 0) {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
                     tryForceOpenGL = true;
                 if (s.equalsIgnoreCase("debug"))
-                    useDBG = true;
+                    isDebug = true;
                 if (s.equalsIgnoreCase("iAmARobot"))
                     GaBIEnImpl.mobileEmulation = true;
                 if (s.equalsIgnoreCase("forceIgnoreDPI"))
@@ -55,7 +55,7 @@ abstract class Main {
         	}
         }
 
-        initializeEmbedded();
+        initializeEmbedded(isDebug);
         if (GaBIEnImpl.mobileEmulation) {
         	WindowSpecs ws = new WindowSpecs();
         	ws.resizable = false;
@@ -75,7 +75,7 @@ abstract class Main {
     /**
      * See GaBIEn.initializeEmbedded.
      */
-    public static void initializeEmbedded() {
+    public static void initializeEmbedded(boolean isDebug) {
         if (!ignoreBlindingSun) {
             // Seriously, Sun, were you trying to cause epilepsy episodes?!?!
             System.setProperty("sun.awt.noerasebackground", "true");
@@ -98,12 +98,12 @@ abstract class Main {
                 FontManager.fontsReady = true;
             }
         }.start();
-        GaBIEnImpl impl = new GaBIEnImpl(useDBG);
+        GaBIEnImpl impl = new GaBIEnImpl();
         GaBIEn.internal = impl;
         GaBIEn.clipboard = new ClipboardImpl();
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
-        GaBIEn.setupNativesAndAssets();
+        GaBIEn.setupNativesAndAssets(isDebug);
     }
 }

@@ -7,10 +7,8 @@
 
 package gabien;
 
-import gabien.backendhelp.NullGrDriver;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.append.*;
-import gabien.vopeks.VopeksGrDriver;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
@@ -46,15 +44,9 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     protected static HashSet<GrInDriver> activeDrivers = new HashSet<GrInDriver>();
     protected static GraphicsDevice lastClosureDevice = null;
 
-    private final boolean useDebug;
-
     private RawSoundDriver sound = null;
 
     private String fbDirectory = ".";
-
-    public GaBIEnImpl(boolean useD) {
-        useDebug = useD;
-    }
 
     // Tries to work out a sensible device for fullscreen.
     protected static GraphicsDevice getFSDevice() {
@@ -88,28 +80,8 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         return ClassLoader.getSystemClassLoader().getResourceAsStream("assets/" + resource);
     }
 
-    protected IGrDriver makeOffscreenBufferInt(int w, int h, boolean alpha) {
-        // Note all the multithreading occurs in OsbDriverMT.
-        if (w <= 0)
-            return new NullGrDriver();
-        if (h <= 0)
-            return new NullGrDriver();
-        IGrDriver oc;
-        // oc = new OsbDriverCore(w, h, alpha);
-        oc = new VopeksGrDriver(GaBIEn.vopeks, w, h, alpha, null);
-        if (useDebug)
-            oc = new OsbDriverDebugProxy(oc);
-        return oc;
-    }
-
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs ws) {
         return new gabien.GrInDriver(name, ws, w, h);
-    }
-
-    @Override
-    public IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha) {
-        // Finalization wrapper as a just-in-case.
-        return new ProxyOsbDriver(makeOffscreenBufferInt(w, h, alpha));
     }
 
     @Override
@@ -159,15 +131,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         } catch (Exception ex) {
             return null;
         }
-    }
-
-    @Override
-    public IImage createImage(@NonNull int[] colours, int width, int height) {
-        if (width <= 0)
-            return new NullGrDriver();
-        if (height <= 0)
-            return new NullGrDriver();
-        return new VopeksGrDriver(GaBIEn.vopeks, width, height, true, colours);
     }
 
     @Override

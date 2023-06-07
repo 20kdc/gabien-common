@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.backendhelp.NullGrDriver;
 import gabien.natives.BadGPU;
 import gabien.text.IFixedSizeFont;
 import gabien.ui.UIBorderedElement;
@@ -16,6 +17,8 @@ import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 import gabien.vopeks.Vopeks;
+import gabien.vopeks.VopeksGrDriver;
+import gabien.vopeks.VopeksImage;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -133,8 +136,12 @@ public class GaBIEn {
     }
 
     // Note: The buffer does not have an alpha channel.
-    public static IGrDriver makeOffscreenBuffer(int w, int h, boolean alpha) {
-        return internal.makeOffscreenBuffer(w, h, alpha);
+    public static IGrDriver makeOffscreenBuffer(int width, int height, boolean alpha) {
+        if (width <= 0)
+            return new NullGrDriver();
+        if (height <= 0)
+            return new NullGrDriver();
+        return new VopeksGrDriver(GaBIEn.vopeks, width, height, alpha, null);
     }
 
     // This has to at least support JPGs, PNGs and BMPs.
@@ -209,7 +216,11 @@ public class GaBIEn {
     }
 
     public static IImage createImage(@NonNull int[] colours, int width, int height) {
-        return internal.createImage(colours, width, height);
+        if (width <= 0)
+            return new NullGrDriver();
+        if (height <= 0)
+            return new NullGrDriver();
+        return new VopeksImage(GaBIEn.vopeks, width, height, true, colours);
     }
 
     public static IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
@@ -379,11 +390,14 @@ public class GaBIEn {
     /**
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      */
-    static void setupNativesAndAssets() {
+    static void setupNativesAndAssets(boolean debug) {
         if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
             System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
         System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
-        vopeks = new Vopeks(BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive | BadGPU.NewInstanceFlags.CanPrintf);
+        int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf;
+        if (debug)
+            newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
+        vopeks = new Vopeks(newInstanceFlags);
         FontManager.setupFonts();
         UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();

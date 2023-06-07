@@ -12,14 +12,15 @@ import gabien.natives.BadGPU;
 
 /**
  * New renderers always have to be named in silly ways, right?
+ * To be clear, this API isn't necessarily totally stable.
+ * Direct interaction with it should be restrained to situations where you can reasonably say you need the performance boost.
  *
  * Created 7th June, 2023.
  */
 public final class Vopeks {
-    // private final int TASK_POOL_EXPAND = 256;
     private final int TASK_QUEUE_SIZE = 65536;
     public final Thread vopeksThread;
-    public final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
+    private final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
     private volatile boolean shutdown;
 
     public Vopeks(final int newInstanceFlags) {
@@ -41,8 +42,12 @@ public final class Vopeks {
         vopeksThread.start();
     }
 
-    public void flushPools() {
-        
+    public void putTask(ITask object) {
+        try {
+            taskQueue.put(object);
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
+        }
     }
 
     public void shutdown() {

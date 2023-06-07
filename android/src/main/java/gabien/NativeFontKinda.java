@@ -55,7 +55,7 @@ public class NativeFontKinda implements IFixedSizeFont {
         Canvas cv = new Canvas(wsi.bitmap);
         paint.setARGB(255, r, r, r);
         cv.drawText(text, margin, margin + ((size * 3) / 4), paint);
-        return new ImageRenderedTextChunk.CPU(margin, margin, mt, wsi);
+        return new ImageRenderedTextChunk.CPU(margin, margin, mt, size, wsi);
     }
 
     @Override
@@ -67,6 +67,6 @@ public class NativeFontKinda implements IFixedSizeFont {
         Canvas cv = new Canvas(wsi.bitmap);
         paint.setARGB(255, r, r, r);
         cv.drawText(text, index, length, margin, margin + ((size * 3) / 4), paint);
-        return new ImageRenderedTextChunk.CPU(margin, margin, mt, wsi);
+        return new ImageRenderedTextChunk.CPU(margin, margin, mt, size, wsi);
     }
 }

@@ -8,7 +8,6 @@
 package gabien;
 
 import android.graphics.*;
-import gabien.backendhelp.INativeImageHolder;
 
 import java.io.ByteArrayOutputStream;
 
@@ -18,7 +17,7 @@ import org.eclipse.jdt.annotation.Nullable;
 /**
  * Copied from OsbDriver 7th June 2023.
  */
-public class WSIImageDriver implements INativeImageHolder, IWSIImage.RW {
+public class WSIImageDriver implements IWSIImage.RW {
     protected Bitmap bitmap;
     protected int w, h;
 
@@ -33,11 +32,6 @@ public class WSIImageDriver implements INativeImageHolder, IWSIImage.RW {
         bitmap = bt;
         w = bt.getWidth();
         h = bt.getHeight();
-    }
-
-    @Override
-    public Object getNative() {
-        return bitmap;
     }
 
     @Override
