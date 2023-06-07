@@ -6,24 +6,17 @@
  */
 package gabien.vopeks;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.natives.BadGPU;
-import gabien.natives.BadGPU.Instance;
-import gabien.uslx.append.ObjectPool;
-import gabien.vopeks.Vopeks.ITask;
 
 /**
  * Here goes nothing.
  *
  * Created 7th June, 2023.
  */
-public class VopeksGrDriver extends VopeksImage implements IGrDriver {
+public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     public final int[] localST = new int[6];
-
-    public BlitCommandPool blitPool = new BlitCommandPool(256);
 
     /**
      * Creates a new texture for rendering, and possibly initializes it.
@@ -34,98 +27,65 @@ public class VopeksGrDriver extends VopeksImage implements IGrDriver {
         localST[5] = height;
     }
 
-    private final static float[] STANDARD_TC = new float[] {
-            0, 0, 0, 1,
-            1, 0, 0, 1,
-            1, 1, 0, 1,
-            0, 1, 0, 1
-    };
-
-    private final static float[] STANDARD_VT = new float[] {
-           -1,-1, 0, 1,
-            1,-1, 0, 1,
-            1, 1, 0, 1,
-           -1, 1, 0, 1
-    };
-
-    private final float[] reusedCol = new float[4];
-    private final float[] reusedTM = new float[] {
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-    };
-    private final static short[] STANDARD_INDICES = new short[] {0, 1, 2, 0, 3, 2};
-
-    private void standardBlit(boolean shouldBlend, boolean isTiling, int x, int y, int w, int h, float r, float g, float b, float a, IImage i, int srcx, int srcy, int srcw, int srch) {
-        BlitCommand bc = blitPool.get();
-        bc.shouldBlend = shouldBlend;
-        bc.isTiling = isTiling;
-
-        bc.cropL = localST[2];
-        bc.cropU = localST[3];
-        int cropR = localST[4];
-        int cropD = localST[5];
-        bc.cropW = cropR - bc.cropL;
-        bc.cropH = cropD - bc.cropU;
-
-        bc.adjX = x + localST[0];
-        bc.adjY = y + localST[1];
-        bc.w = w;
-        bc.h = h;
-
-        bc.r = r;
-        bc.g = g;
-        bc.b = b;
-        bc.a = a;
-
-        bc.tex = (i != null && i instanceof IVopeksSurfaceHolder) ? ((IVopeksSurfaceHolder) i) : null;
-        bc.srcx = srcx;
-        bc.srcy = srcy;
-        bc.srcw = srcw;
-        bc.srch = srch;
-
-        vopeks.putTask(bc);
-    }
-
     @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
-        if (i instanceof IVopeksSurfaceHolder)
-            standardBlit(true, false, x, y, srcw, srch, 1, 1, 1, 1, i, srcx, srcy, srcw, srch);
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, TilingMode.None);
     }
 
     @Override
     public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
-        if (cachedTile instanceof IVopeksSurfaceHolder)
-            standardBlit(true, true, x, y, w, h, 1, 1, 1, 1, cachedTile, 0, 0, w, h);
+        blitScaledImage(0, 0, w, h, x, y, w, h, cachedTile, TilingMode.XY);
     }
 
     @Override
     public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
-        if (i instanceof IVopeksSurfaceHolder)
-            standardBlit(true, false, x, y, acw, ach, 1, 1, 1, 1, i, srcx, srcy, srcw, srch);
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None);
+    }
+
+    public synchronized void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int w, int h, IImage i, TilingMode tiling) {
+        x += localST[0];
+        y += localST[1];
+        float srcWF = i.getWidth();
+        float srcHF = i.getHeight();
+        float s0 = srcx / srcWF;
+        float s1 = (srcx + srcw) / srcWF;
+        float t0 = srcy / srcHF;
+        float t1 = (srcy + srch) / srcHF;
+        IVopeksSurfaceHolder vsh = i instanceof IVopeksSurfaceHolder ? (IVopeksSurfaceHolder) i : null;
+        batchEnsureRoom(6);
+        batchInStateScA(BlendMode.Normal, TilingMode.None, vsh);
+        batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
+        batchWrite(x + w, y    , s1, t0, 1, 1, 1, 1);
+        batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
+        batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
+        batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
+        batchWrite(x    , y + h, s0, t1, 1, 1, 1, 1);
     }
 
     @Override
     public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i) {
-        // TODO Auto-generated method stub
-        
+        blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BlendMode.Normal);
     }
 
     @Override
     public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
-        // TODO Auto-generated method stub
+        blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BlendMode.Subtractive : BlendMode.Additive);
+    }
+
+    public synchronized void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, BlendMode blendSub) {
         
     }
 
     @Override
-    public void clearAll(int i, int i0, int i1) {
+    public synchronized void clearAll(int i, int i0, int i1) {
+        batchFlush();
         int cropL = localST[2];
         int cropU = localST[3];
         int cropR = localST[4];
         int cropD = localST[5];
         int cropW = cropR - cropL;
         int cropH = cropD - cropU;
+        batchReferenceBarrier();
         vopeks.putTask((instance) -> {
             BadGPU.drawClear(texture, null,
                     BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
@@ -134,8 +94,28 @@ public class VopeksGrDriver extends VopeksImage implements IGrDriver {
     }
 
     @Override
-    public void clearRectAlpha(int r, int g, int b, int a, int x, int y, int w, int h) {
-        standardBlit(true, false, x, y, w, h, r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f, null, 0, 0, 0, 0);
+    public synchronized void clearRectAlpha(int r, int g, int b, int a, int x, int y, int w, int h) {
+        x += localST[0];
+        y += localST[1];
+        float rF = r / 255f;
+        float gF = g / 255f;
+        float bF = b / 255f;
+        float aF = a / 255f;
+        batchEnsureRoom(6);
+        batchInStateScA(BlendMode.Normal, TilingMode.None, null);
+        batchWrite(x    , y    , 0, 0, rF, gF, bF, aF);
+        batchWrite(x + w, y    , 0, 0, rF, gF, bF, aF);
+        batchWrite(x + w, y + h, 0, 0, rF, gF, bF, aF);
+        batchWrite(x    , y    , 0, 0, rF, gF, bF, aF);
+        batchWrite(x + w, y + h, 0, 0, rF, gF, bF, aF);
+        batchWrite(x    , y + h, 0, 0, rF, gF, bF, aF);
+    }
+
+    /**
+     * batchInState but aware of scissoring
+     */
+    public void batchInStateScA(BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+        batchInState(localST[2], localST[3], localST[4] - localST[2], localST[5] - localST[3], blendMode, tilingMode, tex);
     }
 
     @Override
@@ -150,83 +130,5 @@ public class VopeksGrDriver extends VopeksImage implements IGrDriver {
 
     @Override
     public void updateST() {
-    }
-
-    private class BlitCommandPool extends ObjectPool<BlitCommand> {
-        public BlitCommandPool(int expandChunkSize) {
-            super(expandChunkSize);
-        }
-
-        @Override
-        protected @NonNull BlitCommand gen() {
-            return new BlitCommand();
-        }
-        @Override
-        public void reset(@NonNull BlitCommand element) {
-            element.r = 0;
-            element.g = 0;
-            element.b = 0;
-            element.a = 0;
-            element.srcx = 0;
-            element.srcy = 0;
-            element.srcw = 0;
-            element.srch = 0;
-            element.cropL = 0;
-            element.cropU = 0;
-            element.cropW = 0;
-            element.cropH = 0;
-            element.adjX = 0;
-            element.adjY = 0;
-            element.w = 0;
-            element.h = 0;
-            element.shouldBlend = false;
-            element.isTiling = false;
-            element.tex = null;
-        }
-    }
-
-    private class BlitCommand implements ITask {
-        float r, g, b, a;
-        int srcx, srcy, srcw, srch;
-        int cropL, cropU, cropW, cropH;
-        int adjX, adjY, w, h;
-        boolean shouldBlend;
-        boolean isTiling;
-        IVopeksSurfaceHolder tex;
-
-        @Override
-        public void run(Instance instance) {
-            BadGPU.Texture tx = tex != null ? tex.getTextureFromTask() : null;
-            int drawFlags = BadGPU.DrawFlags.FreezeColour;
-            if (shouldBlend)
-                drawFlags |= BadGPU.DrawFlags.Blend;
-            if (isTiling)
-                drawFlags |= BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT;
-            reusedCol[0] = r;
-            reusedCol[1] = g;
-            reusedCol[2] = b;
-            reusedCol[3] = a;
-            if (tex != null) {
-                // set base & scale
-                float iwf = tex.getWidth();
-                float ihf = tex.getHeight();
-                reusedTM[12] = srcx / iwf;
-                reusedTM[13] = srcy / ihf;
-                reusedTM[0] = srcw / iwf;
-                reusedTM[5] = srch / ihf;
-            }
-            BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor,
-                    cropL, cropU, cropW, cropH,
-                    drawFlags,
-                    STANDARD_VT, 0, reusedCol, 0, STANDARD_TC, 0,
-                    BadGPU.PrimitiveType.Triangles, 1,
-                    0, 6, STANDARD_INDICES, 0,
-                    null, 0, null, 0,
-                    adjX, adjY, w, h,
-                    tx, reusedTM, 0,
-                    BadGPU.BlendWeight.SrcA, BadGPU.BlendWeight.InvertSrcA, BadGPU.BlendEquation.Add,
-                    BadGPU.BlendWeight.One, BadGPU.BlendWeight.InvertSrcA, BadGPU.BlendEquation.Add);
-            blitPool.finish(this);
-        }
     }
 }

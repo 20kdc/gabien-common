@@ -11,7 +11,12 @@ print(" <uses-sdk android:minSdkVersion=\"7\" android:targetSdkVersion=\"10\" />
 for p in permissions:gmatch("[^,]+") do
  print(" <uses-permission android:name=\"" .. p .. "\"/>")
 end
-print(" <application android:debuggable=\"true\" android:icon=\"@drawable/icon\" android:label=\"@string/app_name\" android:theme=\"@style/AppTheme\">")
+print(" <application")
+print("  android:hardwareAccelerated=\"true\"")
+print("  android:debuggable=\"true\"")
+print("  android:icon=\"@drawable/icon\"")
+print("  android:label=\"@string/app_name\"")
+print("  android:theme=\"@style/AppTheme\">")
 print("  <activity android:name=\"gabien.MainActivity\" android:immersive=\"true\">")
 print("   <intent-filter>")
 print("    <action android:name=\"android.intent.action.MAIN\"/>")

@@ -43,14 +43,27 @@ public class VopeksImage implements IVopeksSurfaceHolder {
     public VopeksImage(Vopeks vopeks, int w, int h, boolean alpha, int[] init) {
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
-            texture = instance.newTexture(alpha ? BadGPU.TextureFlags.HasAlpha : 0, w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
+            // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
+            // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
+            texture = instance.newTexture(BadGPU.TextureFlags.HasAlpha, w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
         });
         width = w;
         height = h;
     }
 
     @Override
+    public void batchFlush() {
+        // never written to by default.
+    }
+
+    @Override
+    public void batchReference(IVopeksSurfaceHolder other) {
+        // etc.
+    }
+
+    @Override
     public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+        batchFlush();
         vopeks.putTask((instance) -> {
             texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
             onDone.run();
@@ -80,6 +93,7 @@ public class VopeksImage implements IVopeksSurfaceHolder {
     public synchronized void dispose() {
         if (!wasDisposed) {
             wasDisposed = true;
+            batchFlush();
             vopeks.putTask((instance) -> {
                 texture.dispose();
             });

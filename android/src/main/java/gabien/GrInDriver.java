@@ -22,7 +22,6 @@ public class GrInDriver implements IGrInDriver {
     public int wantedBackBufferWSetAsync, wantedBackBufferHSetAsync;
     public boolean isFirstFrame = true;
     private int[] backBufferDownload = new int[0];
-    private WSIImageDriver backBufferDownloadWSI = new WSIImageDriver(new int[0], 0, 0);
     private Paint globalPaint = new Paint();
     private Semaphore waitingFrames = new Semaphore(1);
 
@@ -67,13 +66,13 @@ public class GrInDriver implements IGrInDriver {
             AndroidPortGlobals.mainActivityLock.unlock();
         }
         // Ensure the buffers are the right size.
-        if (backBufferDownloadWSI.getWidth() != backBufferI.getWidth() || backBufferDownloadWSI.getHeight() != backBufferI.getHeight()) {
-            backBufferDownload = new int[backBufferI.getWidth() * backBufferI.getHeight()];
-            backBufferDownloadWSI = new WSIImageDriver(backBufferDownload, backBufferI.getWidth(), backBufferI.getHeight());
-        }
+        int expectedSize = backBufferI.getWidth() * backBufferI.getHeight();
+        if (backBufferDownload.length != expectedSize)
+            backBufferDownload = new int[expectedSize];
+        int bW = backBufferI.getWidth();
+        int bH = backBufferI.getHeight();
         backBufferI.getPixelsAsync(backBufferDownload, () -> {
-            backBufferDownloadWSI.setPixels(backBufferDownload);
-            doFlushLoop();
+            doFlushLoop(bW, bH);
             waitingFrames.release();
         });
         if (isFirstFrame) {
@@ -86,7 +85,7 @@ public class GrInDriver implements IGrInDriver {
             isFirstFrame = false;
         }
     }
-    private void doFlushLoop() {
+    private void doFlushLoop(int bW, int bH) {
         while (true) {
             AndroidPortGlobals.mainActivityLock.lock();
             try {
@@ -97,7 +96,7 @@ public class GrInDriver implements IGrInDriver {
                         if (sh != null) {
                             Canvas c = sh.lockCanvas();
                             if (c != null) {
-                                flushWithLockedCanvas(sh, c);
+                                flushWithLockedCanvas(sh, c, bW, bH);
                                 return;
                             }
                         }
@@ -116,24 +115,25 @@ public class GrInDriver implements IGrInDriver {
         }
 
     }
-    private void flushWithLockedCanvas(SurfaceHolder sh, Canvas c) {
+    private void flushWithLockedCanvas(SurfaceHolder sh, Canvas c, int bW, int bH) {
         Rect r = sh.getSurfaceFrame();
         
         wantedBackBufferWSetAsync = r.width();
         wantedBackBufferHSetAsync = r.height();
 
-        WSIImageDriver backBuffer = backBufferDownloadWSI;
+        /*
         int letterboxing2 = 0;
-        int bW = backBuffer.w;
-        int bH = backBuffer.h;
         double realAspectRatio = bW / (double) bH;
         int goodWidth = (int)(realAspectRatio * r.height());
         // work out letterboxing from widths
         int letterboxing = (r.width() - goodWidth) / 2;
-
         displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
-        if (backBuffer.bitmap != null)
-            c.drawBitmap(backBuffer.bitmap, new Rect(0, 0, bW, bH), displayArea, globalPaint);
+        */
+
+        // currently ignoring the whole scaling thing so that this works w/ acceptable perf maybe
+        displayArea = new Rect(0, 0, bW, bH);
+        if (bW != 0 && bH != 0)
+            c.drawBitmap(backBufferDownload, 0, bW, 0, 0, bW, bH, true, globalPaint);
 
         sh.unlockCanvasAndPost(c);
     }
