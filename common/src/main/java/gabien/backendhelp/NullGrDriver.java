@@ -1,20 +1,20 @@
 /*
- * gabien-javase - gabien backend for desktop Java
+ * gabien-common - Cross-platform game and UI framework
  * Written starting in 2016 by contributors (see CREDITS.txt)
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-
-package gabien;
-
-import java.awt.image.BufferedImage;
+package gabien.backendhelp;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gabien.IGrDriver;
+import gabien.IImage;
+
 /**
- * Created on 6/20/17.
+ * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
  */
-public class NullOsbDriver implements IWindowGrBackend {
+public class NullGrDriver implements IGrDriver {
     @Override
     public int getWidth() {
         return 0;
@@ -78,16 +78,5 @@ public class NullOsbDriver implements IWindowGrBackend {
     @Override
     public void updateST() {
 
-    }
-
-    @Override
-    public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
-        return this;
-    }
-
-    @Override
-    public Object getNative() {
-        // closest thing to a "no-op" image
-        return new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
     }
 }

@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.natives.BadGPU;
 import gabien.text.IFixedSizeFont;
 import gabien.ui.UIBorderedElement;
 import gabien.ui.theming.ThemingCentral;
@@ -14,6 +15,7 @@ import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
+import gabien.vopeks.Vopeks;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,6 +28,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 public class GaBIEn {
+    public static Vopeks vopeks;
     protected static IGaBIEn internal;
     protected static IGaBIEnMultiWindow internalWindowing;
     protected static IGaBIEnFileBrowser internalFileBrowser;
@@ -380,6 +383,7 @@ public class GaBIEn {
         if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
             System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
         System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
+        vopeks = new Vopeks(BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive | BadGPU.NewInstanceFlags.CanPrintf);
         FontManager.setupFonts();
         UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();

@@ -7,8 +7,10 @@
 
 package gabien;
 
+import gabien.backendhelp.NullGrDriver;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.append.*;
+import gabien.vopeks.VopeksGrDriver;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
@@ -86,14 +88,15 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         return ClassLoader.getSystemClassLoader().getResourceAsStream("assets/" + resource);
     }
 
-    protected IWindowGrBackend makeOffscreenBufferInt(int w, int h, boolean alpha) {
+    protected IGrDriver makeOffscreenBufferInt(int w, int h, boolean alpha) {
         // Note all the multithreading occurs in OsbDriverMT.
         if (w <= 0)
-            return new NullOsbDriver();
+            return new NullGrDriver();
         if (h <= 0)
-            return new NullOsbDriver();
-        IWindowGrBackend oc;
-        oc = new OsbDriverCore(w, h, alpha);
+            return new NullGrDriver();
+        IGrDriver oc;
+        // oc = new OsbDriverCore(w, h, alpha);
+        oc = new VopeksGrDriver(GaBIEn.vopeks, w, h, alpha, null);
         if (useDebug)
             oc = new OsbDriverDebugProxy(oc);
         return oc;
@@ -161,13 +164,10 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     @Override
     public IImage createImage(@NonNull int[] colours, int width, int height) {
         if (width <= 0)
-            return new NullOsbDriver();
+            return new NullGrDriver();
         if (height <= 0)
-            return new NullOsbDriver();
-        AWTImage ia = new AWTImage();
-        ia.buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        ia.buf.getRaster().setDataElements(0, 0, width, height, colours);
-        return ia;
+            return new NullGrDriver();
+        return new VopeksGrDriver(GaBIEn.vopeks, width, height, true, colours);
     }
 
     @Override

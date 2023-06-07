@@ -7,10 +7,12 @@
 
 package gabien.backendhelp;
 
+import gabien.vopeks.VopeksGrDriver;
+
 /**
  * All images must be backed by one of these.
  * Created on August 21th, 2017
  */
 public interface INativeImageHolder {
-    Object getNative();
+    VopeksGrDriver getNative();
 }

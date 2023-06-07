@@ -258,27 +258,32 @@ class GrInDriver implements IGrInDriver {
     }
 
     @Override
-    public synchronized void flush(IImage backBuffer) {
-        if (peripherals instanceof MobilePeripherals)
-            ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame(backBuffer);
+    public void flush(IImage backBuffer) {
+        synchronized (this) {
+            if (peripherals instanceof MobilePeripherals)
+                ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame(backBuffer);
+        }
 
         // This stops backBufferDownload being active for more than one download.
+        // To avoid deadlock, we don't want to be locked while doing waitingFrames
         waitingFrames.acquireUninterruptibly();
 
-        // Ensure the buffers are the right size.
-        if (backBufferDownloadWSI.getWidth() != backBuffer.getWidth() || backBufferDownloadWSI.getHeight() != backBuffer.getHeight()) {
-            backBufferDownload = new int[backBuffer.getWidth() * backBuffer.getHeight()];
-            backBufferDownloadWSI = new AWTWSIImage(backBufferDownload, backBuffer.getWidth(), backBuffer.getHeight());
+        synchronized (this) {
+            // Ensure the buffers are the right size.
+            if (backBufferDownloadWSI.getWidth() != backBuffer.getWidth() || backBufferDownloadWSI.getHeight() != backBuffer.getHeight()) {
+                backBufferDownload = new int[backBuffer.getWidth() * backBuffer.getHeight()];
+                backBufferDownloadWSI = new AWTWSIImage(backBufferDownload, backBuffer.getWidth(), backBuffer.getHeight());
+            }
+            // Transfer.
+            backBuffer.getPixelsAsync(backBufferDownload, () -> {
+                backBufferDownloadWSI.setPixels(backBufferDownload);
+                drawBackBufferToFrontBuffer(backBufferDownloadWSI);
+                waitingFrames.release();
+            });
+    
+            wantedBackBufferW = panel.getWidth() / sc;
+            wantedBackBufferH = panel.getHeight() / sc;
         }
-        // Transfer.
-        backBuffer.getPixelsAsync(backBufferDownload, () -> {
-            backBufferDownloadWSI.setPixels(backBufferDownload);
-            drawBackBufferToFrontBuffer(backBufferDownloadWSI);
-            waitingFrames.release();
-        });
-
-        wantedBackBufferW = panel.getWidth() / sc;
-        wantedBackBufferH = panel.getHeight() / sc;
     }
 
     private synchronized void drawBackBufferToFrontBuffer(IWSIImage wsi) {

@@ -15,18 +15,13 @@ import gabien.backendhelp.ProxyGrDriver;
  * Finalization helper.
  * Created on 08/06/17.
  */
-public class ProxyOsbDriver extends ProxyGrDriver<IWindowGrBackend> implements IWindowGrBackend {
-    public ProxyOsbDriver(IWindowGrBackend targ) {
+public class ProxyOsbDriver extends ProxyGrDriver<IGrDriver> {
+    public ProxyOsbDriver(IGrDriver targ) {
         super(targ);
     }
 
     @Override
     public @NonNull int[] getPixels() {
         return target.getPixels();
-    }
-
-    @Override
-    public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
-        return new ProxyOsbDriver(target.recreate(wantedRW, wantedRH));
     }
 }

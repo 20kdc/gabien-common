@@ -10,9 +10,9 @@ package gabien;
 /**
  * Created 14th October 2022 to debug rendering issues...
  */
-public class OsbDriverDebugProxy extends ProxyOsbDriver implements IWindowGrBackend {
+public class OsbDriverDebugProxy extends ProxyOsbDriver {
     public final IImage scary = GaBIEn.createImage(new int[] {0xFFFF0000, 0xFF00FF00, 0xFF0000FF}, 3, 1);
-    public OsbDriverDebugProxy(IWindowGrBackend targ) {
+    public OsbDriverDebugProxy(IGrDriver targ) {
         super(targ);
     }
 

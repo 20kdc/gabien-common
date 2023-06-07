@@ -11,6 +11,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.vopeks.VopeksGrDriver;
 
 /**
  * Used to allow MT/non-MT implementations of a GrDriver.
@@ -97,7 +98,7 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public Object getNative() {
+    public VopeksGrDriver getNative() {
         INativeImageHolder t = (INativeImageHolder) target;
         return t.getNative();
     }
