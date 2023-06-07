@@ -188,7 +188,7 @@ public abstract class UIBorderedElement extends UIElement {
             }
             if (cachedThemeTiles[borderType] == null) {
                 // Extract tile
-                IGrDriver osb = GaBIEn.makeOffscreenBuffer(12, 12, true);
+                IGrDriver osb = GaBIEn.makeOffscreenBuffer(12, 12);
                 osb.blitImage(borderType * 12, (borderTheme * 18) + 6, 12, 12, 0, 0, cachedTheme);
                 cachedThemeTiles[borderType] = GaBIEn.createImage(osb.getPixels(), 12, 12);
                 osb.shutdown();

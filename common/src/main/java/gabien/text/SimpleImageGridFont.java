@@ -56,7 +56,7 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
         int width = measureLine(text);
-        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight, true);
+        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight);
         // :(
         IImage font = textBlack ? fontBlack : fontWhite;
         int x = 0;
@@ -76,7 +76,7 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
         int width = measureLine(text, index, length);
-        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight, true);
+        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight);
         // :(
         IImage font = textBlack ? fontBlack : fontWhite;
         int x = 0;

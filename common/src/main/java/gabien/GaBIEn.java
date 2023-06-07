@@ -136,7 +136,7 @@ public class GaBIEn {
     }
 
     // Note: The buffer does not have an alpha channel.
-    public static IGrDriver makeOffscreenBuffer(int width, int height, boolean alpha) {
+    public static IGrDriver makeOffscreenBuffer(int width, int height) {
         if (width <= 0)
             return new NullGrDriver();
         if (height <= 0)
