@@ -225,7 +225,7 @@ public class VopeksGrDriver extends VopeksImage implements IGrDriver {
                     adjX, adjY, w, h,
                     tx, reusedTM, 0,
                     BadGPU.BlendWeight.SrcA, BadGPU.BlendWeight.InvertSrcA, BadGPU.BlendEquation.Add,
-                    BadGPU.BlendWeight.SrcA, BadGPU.BlendWeight.InvertSrcA, BadGPU.BlendEquation.Add);
+                    BadGPU.BlendWeight.One, BadGPU.BlendWeight.InvertSrcA, BadGPU.BlendEquation.Add);
             blitPool.finish(this);
         }
     }

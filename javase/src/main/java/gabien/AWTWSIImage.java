@@ -14,13 +14,14 @@ import java.io.ByteArrayOutputStream;
 import javax.imageio.ImageIO;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Copied from AWTImage and OsbDriverCore 7th June 2023.
  */
 public class AWTWSIImage implements IWSIImage.RW {
-    public final BufferedImage buf;
-    public final WritableRaster bufWR;
+    public final @Nullable BufferedImage buf;
+    public final @Nullable WritableRaster bufWR;
 
     public AWTWSIImage(@NonNull BufferedImage bi) {
         if (bi.getType() != BufferedImage.TYPE_INT_ARGB)
@@ -56,9 +57,8 @@ public class AWTWSIImage implements IWSIImage.RW {
 
     @Override
     public void getPixels(@NonNull int[] colours) {
-        if (buf == null)
-            return;
-        bufWR.getDataElements(0, 0, buf.getWidth(), buf.getHeight(), colours);
+        if (bufWR != null)
+            bufWR.getDataElements(0, 0, buf.getWidth(), buf.getHeight(), colours);
     }
 
     @Override

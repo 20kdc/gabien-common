@@ -43,7 +43,7 @@ done
 echo THE ANDROID BUILDS
 doAndroidBuild() {
 echo $1
-zig cc -target $1 -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so
+zig cc -target $1 -flto -DANDROID $SOURCES $SOURCES_U -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so $2/liblog.so
 }
 doAndroidBuild arm-linux-android /media/modus/External2/android-ndk-r9d/platforms/android-3/arch-arm/usr/lib
 doAndroidBuild aarch64-linux-android /media/modus/External2/android-ndk-r12b/platforms/android-21/arch-arm64/usr/lib

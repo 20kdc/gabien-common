@@ -45,8 +45,8 @@ class GrInDriver implements IGrInDriver {
 
     public BufferedImage frontBuffer;
     public int wantedBackBufferW, wantedBackBufferH;
-    public int[] backBufferDownload = new int[0];
-    public AWTWSIImage backBufferDownloadWSI = new AWTWSIImage(new int[0], 0, 0);
+    private int[] backBufferDownload = new int[0];
+    private AWTWSIImage backBufferDownloadWSI = new AWTWSIImage(new int[0], 0, 0);
 
     public final KeyListener commonKeyListener;
 
@@ -298,7 +298,8 @@ class GrInDriver implements IGrInDriver {
         Graphics fbG = frontBuffer.getGraphics();
         fbG.setColor(panel.getBackground());
         fbG.fillRect(0, 0, frontBuffer.getWidth(), frontBuffer.getHeight());
-        fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
+        if (backBufferBI != null)
+            fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
 
         drawFrontBuffer(panel.getGraphics());
     }

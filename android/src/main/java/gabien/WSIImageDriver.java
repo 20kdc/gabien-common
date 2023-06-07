@@ -15,48 +15,60 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * Copied from OsbDriver 7th June 2023.
+ * Copied from OsbDriver 7th June 2023, before that class was then expunged anyway.
+ * The first time it was seen in commit logs was February 12th, 2022, but I know better.
+ * The underlying code's been around in some form or another for a long, long time; since the original I.M.E. on Android tests.
+ * Dear goodness, has it really been ten years?
  */
 public class WSIImageDriver implements IWSIImage.RW {
-    protected Bitmap bitmap;
-    protected int w, h;
+    protected final @Nullable Bitmap bitmap;
+    protected final int w, h;
 
     public WSIImageDriver(@Nullable int[] ints, int w, int h) {
-        this(Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888));
-        if (ints != null)
-            bitmap.setPixels(ints, 0, w, 0, 0, w, h);
-    }
-
-    private WSIImageDriver(Bitmap bt) {
-        bt.setDensity(96);
-        bitmap = bt;
-        w = bt.getWidth();
-        h = bt.getHeight();
+        if (w > 0 && h > 0) {
+            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            if (ints != null)
+                bitmap.setPixels(ints, 0, w, 0, 0, w, h);
+            this.w = w;
+            this.h = h;
+        } else {
+            bitmap = null;
+            this.w = 0;
+            this.h = 0;
+        }
     }
 
     @Override
     public int getWidth() {
+        if (bitmap == null)
+            return 0;
         return bitmap.getWidth();
     }
 
     @Override
     public int getHeight() {
+        if (bitmap == null)
+            return 0;
         return bitmap.getHeight();
     }
 
     @Override
     public void getPixels(@NonNull int[] pixels) {
-        bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
+        if (bitmap != null)
+            bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
     }
 
     @Override
     public void setPixels(@NonNull int[] colours) {
-        bitmap.setPixels(colours, 0, w, 0, 0, w, h);
+        if (bitmap != null)
+            bitmap.setPixels(colours, 0, w, 0, 0, w, h);
     }
 
     @Override
     @NonNull
     public byte[] createPNG() {
+        if (bitmap == null)
+            return new WSIImageDriver(null, 1, 1).createPNG();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
         return baos.toByteArray();

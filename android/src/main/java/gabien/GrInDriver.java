@@ -7,6 +7,8 @@
 
 package gabien;
 
+import java.util.concurrent.Semaphore;
+
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -17,13 +19,18 @@ public class GrInDriver implements IGrInDriver {
     public boolean wantsShutdown = false;
     public Rect displayArea = new Rect(0, 0, 1, 1);
     public int wantedBackBufferW, wantedBackBufferH;
-    private int[] backBufferDownload;
-    private WSIImageDriver backBufferDownloadWSI;
+    public int wantedBackBufferWSetAsync, wantedBackBufferHSetAsync;
+    public boolean isFirstFrame = true;
+    private int[] backBufferDownload = new int[0];
+    private WSIImageDriver backBufferDownloadWSI = new WSIImageDriver(new int[0], 0, 0);
     private Paint globalPaint = new Paint();
+    private Semaphore waitingFrames = new Semaphore(1);
 
     public GrInDriver(int w, int h) {
         wantedBackBufferW = w;
         wantedBackBufferH = h;
+        wantedBackBufferWSetAsync = w;
+        wantedBackBufferHSetAsync = h;
         peripherals = new Peripherals(this);
     }
 
@@ -46,14 +53,42 @@ public class GrInDriver implements IGrInDriver {
     public void flush(IImage backBufferI) {
         /*
          * Big explanation of how the threading works here:
-         * So SurfaceHolder.lockCanvas acts as a natural limiter on frames.
-         * This is because we pass control of the lock over to the render thread.
-         * The render thread therefore owns the canvas lock, and if we try to flush another frame, we get blocked on the existing lock.
-         * Meanwhile we're still able to send the surface details back down to respond to changes.
+         * So the original idea was to use lockCanvas as the lock, but it doesn't actually work that way.
+         * So doing the waitingFrames from JSE, but with added spice.
          */
+        waitingFrames.acquireUninterruptibly();
+        // Grab these from the last frame.
+        wantedBackBufferW = wantedBackBufferWSetAsync;
+        wantedBackBufferH = wantedBackBufferHSetAsync;
+        AndroidPortGlobals.mainActivityLock.lock();
+        try {
+            peripherals.gdUpdateTextboxHoldingMALock();
+        } finally {
+            AndroidPortGlobals.mainActivityLock.unlock();
+        }
+        // Ensure the buffers are the right size.
+        if (backBufferDownloadWSI.getWidth() != backBufferI.getWidth() || backBufferDownloadWSI.getHeight() != backBufferI.getHeight()) {
+            backBufferDownload = new int[backBufferI.getWidth() * backBufferI.getHeight()];
+            backBufferDownloadWSI = new WSIImageDriver(backBufferDownload, backBufferI.getWidth(), backBufferI.getHeight());
+        }
+        backBufferI.getPixelsAsync(backBufferDownload, () -> {
+            backBufferDownloadWSI.setPixels(backBufferDownload);
+            doFlushLoop();
+            waitingFrames.release();
+        });
+        if (isFirstFrame) {
+            // This is so that the first flush always sets up the correct w/h for the game thread.
+            // It has no other use.
+            waitingFrames.acquireUninterruptibly();
+            wantedBackBufferW = wantedBackBufferWSetAsync;
+            wantedBackBufferH = wantedBackBufferHSetAsync;
+            waitingFrames.release();
+            isFirstFrame = false;
+        }
+    }
+    private void doFlushLoop() {
         while (true) {
             AndroidPortGlobals.mainActivityLock.lock();
-            peripherals.gdUpdateTextboxHoldingMALock();
             try {
                 MainActivity last = AndroidPortGlobals.mainActivity;
                 if (last != null) {
@@ -61,8 +96,10 @@ public class GrInDriver implements IGrInDriver {
                         SurfaceHolder sh = last.mySurface.getHolder();
                         if (sh != null) {
                             Canvas c = sh.lockCanvas();
-                            flushWithLockedCanvas(c, sh, backBufferI);
-                            return;
+                            if (c != null) {
+                                flushWithLockedCanvas(sh, c);
+                                return;
+                            }
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -77,33 +114,28 @@ public class GrInDriver implements IGrInDriver {
                 e.printStackTrace();
             }
         }
+
     }
-    private void flushWithLockedCanvas(Canvas c, SurfaceHolder sh, IImage backBufferI) {
+    private void flushWithLockedCanvas(SurfaceHolder sh, Canvas c) {
         Rect r = sh.getSurfaceFrame();
         
-        // Ensure the buffers are the right size.
-        if (backBufferDownloadWSI.getWidth() != backBufferI.getWidth() || backBufferDownloadWSI.getHeight() != backBufferI.getHeight()) {
-            backBufferDownload = new int[backBufferI.getWidth() * backBufferI.getHeight()];
-            backBufferDownloadWSI = new WSIImageDriver(backBufferDownload, backBufferI.getWidth(), backBufferI.getHeight());
-        }
-        backBufferI.getPixelsAsync(backBufferDownload, () -> {
-            WSIImageDriver backBuffer = backBufferDownloadWSI;
-            int letterboxing2 = 0;
-            int bW = backBuffer.w;
-            int bH = backBuffer.h;
-            double realAspectRatio = bW / (double) bH;
-            int goodWidth = (int)(realAspectRatio * r.height());
-            // work out letterboxing from widths
-            int letterboxing = (r.width() - goodWidth) / 2;
+        wantedBackBufferWSetAsync = r.width();
+        wantedBackBufferHSetAsync = r.height();
 
-            displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
+        WSIImageDriver backBuffer = backBufferDownloadWSI;
+        int letterboxing2 = 0;
+        int bW = backBuffer.w;
+        int bH = backBuffer.h;
+        double realAspectRatio = bW / (double) bH;
+        int goodWidth = (int)(realAspectRatio * r.height());
+        // work out letterboxing from widths
+        int letterboxing = (r.width() - goodWidth) / 2;
+
+        displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
+        if (backBuffer.bitmap != null)
             c.drawBitmap(backBuffer.bitmap, new Rect(0, 0, bW, bH), displayArea, globalPaint);
 
-            sh.unlockCanvasAndPost(c);
-        });
-
-        wantedBackBufferW = r.width();
-        wantedBackBufferH = r.height();
+        sh.unlockCanvasAndPost(c);
     }
 
     @Override

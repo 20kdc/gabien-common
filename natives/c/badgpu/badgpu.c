@@ -133,13 +133,13 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glDepthFunc)(int32_t);
     void (KHRABI *glStencilFunc)(int32_t, int32_t, int32_t);
     void (KHRABI *glStencilOp)(int32_t, int32_t, int32_t);
-    void (KHRABI *glBlendFuncSeparate)(int32_t, int32_t, int32_t, int32_t);
-    void (KHRABI *glBlendEquationSeparate)(int32_t, int32_t);
     void (KHRABI *glColor4f)(float, float, float, float);
     void (KHRABI *glMultiTexCoord4f)(int32_t, float, float, float, float);
     const char * (KHRABI *glGetString)(int32_t);
     void (KHRABI *glFlush)();
     // Desktop/Non-Desktop variable area
+    void (KHRABI *glBlendFuncSeparate)(int32_t, int32_t, int32_t, int32_t);
+    void (KHRABI *glBlendEquationSeparate)(int32_t, int32_t);
     void (KHRABI *glGenFramebuffers)(int32_t, uint32_t *);
     void (KHRABI *glDeleteFramebuffers)(int32_t, uint32_t *);
     void (KHRABI *glGenRenderbuffers)(int32_t, uint32_t *);
@@ -326,13 +326,13 @@ CHKGLFN(fn)
     BINDGLFN(glDepthFunc);
     BINDGLFN(glStencilFunc);
     BINDGLFN(glStencilOp);
-    BINDGLFN(glBlendFuncSeparate);
-    BINDGLFN(glBlendEquationSeparate);
     BINDGLFN(glColor4f);
     BINDGLFN(glMultiTexCoord4f);
     BINDGLFN(glGetString);
     BINDGLFN(glFlush);
     if (desktopExt) {
+        BINDGLFN2(glBlendFuncSeparate, EXT);
+        BINDGLFN2(glBlendEquationSeparate, EXT);
         BINDGLFN2(glGenFramebuffers, EXT);
         BINDGLFN2(glDeleteFramebuffers, EXT);
         BINDGLFN2(glGenRenderbuffers, EXT);
@@ -344,6 +344,8 @@ CHKGLFN(fn)
         BINDGLFN2(glGenerateMipmap, EXT);
         BINDGLFN2(glBindRenderbuffer, EXT);
     } else {
+        BINDGLFN2(glBlendFuncSeparate, OES);
+        BINDGLFN2(glBlendEquationSeparate, OES);
         BINDGLFN2(glGenFramebuffers, OES);
         BINDGLFN2(glDeleteFramebuffers, OES);
         BINDGLFN2(glGenRenderbuffers, OES);

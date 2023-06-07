@@ -41,7 +41,7 @@ public final class GaBIenImpl implements IGaBIEn {
     	        return new File("/sdcard", fileName);
     	    }
     	};
-        GaBIEn.setupNativesAndAssets();
+        GaBIEn.setupNativesAndAssets(false);
     	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
@@ -97,6 +97,7 @@ public final class GaBIenImpl implements IGaBIEn {
             b.getPixels(data, 0, w, 0, 0, w, h);
             return new WSIImageDriver(data, w, h);
         } catch (Exception e) {
+            System.err.println("During getImage " + a + " (" + res + "):");
             e.printStackTrace();
         }
         return null;

@@ -33,7 +33,19 @@ void * memcpy(void * dst, const void * src, size_t len);
 void * dlopen(const char * fn, int flags);
 void * dlsym(void * mod, const char * symbol);
 int dlclose(void * mod);
+#ifndef ANDROID
 int printf(const char * fmt, ...);
+#else
+#include <stdarg.h>
+int __android_log_vprint(int prio, const char * tag, const char * fmt, va_list ap);
+static inline int printf(const char * fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int res = __android_log_vprint(3, "BadGPU", fmt, ap);
+    va_end(ap);
+    return res;
+}
+#endif
 char * strstr(const char * h, const char * n);
 #else
 #include <stdio.h>
