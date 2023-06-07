@@ -484,7 +484,7 @@ static void destroyTexture(BADGPUObject obj) {
 }
 
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, int16_t width, int16_t height, BADGPUTextureLoadFormat fmt,
+    int16_t width, int16_t height, BADGPUTextureLoadFormat fmt,
     const void * data) {
     if (!instance)
         return NULL;
@@ -500,18 +500,11 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
         return NULL;
     }
 
-    int32_t ifmt = GL_RGB;
-    BADGPUTextureLoadFormat nfmt = BADGPUTextureLoadFormat_RGB888;
-    if (flags & BADGPUTextureFlags_HasAlpha) {
-        ifmt = GL_RGBA;
-        nfmt = BADGPUTextureLoadFormat_RGBA8888;
-    }
-
     void * tmpBuf = 0;
 
-    if (data && nfmt != fmt) {
+    if (data && fmt != BADGPUTextureLoadFormat_RGBA8888) {
         // Setup conversion buffer and convert
-        uint32_t sz = badgpuPixelsSize(nfmt, width, height);
+        uint32_t sz = badgpuPixelsSize(BADGPUTextureLoadFormat_RGBA8888, width, height);
         if (!sz) {
             badgpuErr(bi, "badgpuNewTexture: Invalid format.");
             return 0;
@@ -521,7 +514,7 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
             badgpuErr(bi, "badgpuNewTexture: Unable to allocate CVB.");
             return NULL;
         }
-        badgpuPixelsConvert(fmt, nfmt, width, height, data, tmpBuf);
+        badgpuPixelsConvert(fmt, BADGPUTextureLoadFormat_RGBA8888, width, height, data, tmpBuf);
         // swap over data pointer
         data = tmpBuf;
     }
@@ -538,7 +531,7 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     bi->glGenTextures(1, &tex->tex);
 
     bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
-    bi->glTexImage2D(GL_TEXTURE_2D, 0, ifmt, width, height, 0, ifmt, GL_UNSIGNED_BYTE, data);
+    bi->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     if (tmpBuf)
         free(tmpBuf);
 

@@ -87,16 +87,16 @@ void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceI)(void * env, void * self, i
 
 // TM
 
-int64_t J_BADGPU(newTextureB)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+int64_t J_BADGPU(newTextureB)(void * env, void * self, int64_t instance, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
     JNIBA_L(data);
-    int64_t res = J_PTR(badgpuNewTexture(C_PTR(instance), flags, w, h, fmt, data));
+    int64_t res = J_PTR(badgpuNewTexture(C_PTR(instance), w, h, fmt, data));
     JNIBA_R(data, JNI_ABORT);
     return res;
 }
 
-int64_t J_BADGPU(newTextureI)(void * env, void * self, int64_t instance, int32_t flags, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+int64_t J_BADGPU(newTextureI)(void * env, void * self, int64_t instance, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
     JNIIA_L(data);
-    int64_t res = J_PTR(badgpuNewTexture(C_PTR(instance), flags, w, h, fmt, data));
+    int64_t res = J_PTR(badgpuNewTexture(C_PTR(instance), w, h, fmt, data));
     JNIIA_R(data, JNI_ABORT);
     return res;
 }

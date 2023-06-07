@@ -84,9 +84,7 @@ public class Main implements IMain {
                             clampedCH = 32767;
                         if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
                             System.out.println(" -- RECREATING TEXTURE --");
-                            int sf = BadGPU.TextureFlags.HasAlpha;
-                            // sf = 0;
-                            screen1 = instance.newTexture(sf, clampedCW, clampedCH);
+                            screen1 = instance.newTexture(clampedCW, clampedCH);
                             dataSrcA = new int[clampedCW * clampedCH];
                             dataSrcB = new int[clampedCW * clampedCH];
                             currentBufferWidth = clampedCW;

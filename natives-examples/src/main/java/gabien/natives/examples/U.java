@@ -21,7 +21,7 @@ public class U {
             int h = bi.getHeight();
             int[] buf = new int[w * h];
             bi.getRGB(0, 0, w, h, buf, 0, w);
-            return i.newTexture(BadGPU.TextureFlags.HasAlpha, w, h, BadGPU.TextureLoadFormat.ARGBI32, buf, 0);
+            return i.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, buf, 0);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

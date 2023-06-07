@@ -45,7 +45,7 @@ public class VopeksImage implements IVopeksSurfaceHolder {
         vopeks.putTask((instance) -> {
             // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
             // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
-            texture = instance.newTexture(BadGPU.TextureFlags.HasAlpha, w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
+            texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
         });
         width = w;
         height = h;

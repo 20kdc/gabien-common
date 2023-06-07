@@ -14,7 +14,7 @@ import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
- * VERSION: 0.18.0
+ * VERSION: 0.19.0
  * Created 30th May, 2023.
  */
 public abstract class BadGPU extends BadGPUEnum {
@@ -115,30 +115,30 @@ public abstract class BadGPU extends BadGPUEnum {
             BadGPUUnsafe.flushInstance(pointer);
         }
 
-        public @Nullable Texture newTexture(int flags, int width, int height) {
+        public @Nullable Texture newTexture(int width, int height) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
                 throw new IllegalArgumentException("Width/height not 0-32767.");
             long res;
             syncObject.assertBound();
             if (!valid)
                 throw new InvalidatedPointerException(this);
-            res = BadGPUUnsafe.newTextureI(pointer, flags, width, height, 0, null, 0);
+            res = BadGPUUnsafe.newTextureI(pointer, width, height, 0, null, 0);
             return res == 0 ? null : new Texture(this, res);
         }
 
-        public @Nullable Texture newTexture(int flags, int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
-            newTextureChecks(flags, width, height, fmt, dataOfs, (data != null) ? data.length : -1);
+        public @Nullable Texture newTexture(int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
+            newTextureChecks(width, height, fmt, dataOfs, (data != null) ? data.length : -1);
             long res;
-            res = BadGPUUnsafe.newTextureB(pointer, flags, width, height, fmt.value, data, dataOfs);
+            res = BadGPUUnsafe.newTextureB(pointer, width, height, fmt.value, data, dataOfs);
             return res == 0 ? null : new Texture(this, res);
         }
-        public @Nullable Texture newTexture(int flags, int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
-            newTextureChecks(flags, width, height, fmt, dataOfs, (data != null) ? (data.length * 4) : -1);
+        public @Nullable Texture newTexture(int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
+            newTextureChecks(width, height, fmt, dataOfs, (data != null) ? (data.length * 4) : -1);
             long res;
-            res = BadGPUUnsafe.newTextureI(pointer, flags, width, height, fmt.value, data, dataOfs);
+            res = BadGPUUnsafe.newTextureI(pointer, width, height, fmt.value, data, dataOfs);
             return res == 0 ? null : new Texture(this, res);
         }
-        private void newTextureChecks(int flags, int width, int height, TextureLoadFormat fmt, int dataOfs, int dataLen) {
+        private void newTextureChecks(int width, int height, TextureLoadFormat fmt, int dataOfs, int dataLen) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
                 throw new IllegalArgumentException("Width/height not 0-32767.");
             if (dataLen != -1) {

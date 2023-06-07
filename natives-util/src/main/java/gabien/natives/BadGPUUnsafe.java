@@ -9,7 +9,7 @@ package gabien.natives;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.18.0
+ * VERSION: 0.19.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -46,8 +46,8 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native void pixelsConvertIB(int fF, int tF, int width, int height, int[] fD, int fDOfs, byte[] tD, int tDOfs);
     public static native void pixelsConvertRGBA8888ToARGBI32InPlaceB(int width, int height, int[] data, int dataOfs);
     // TM
-    public static native long newTextureB(long instance, int flags, int width, int height, int fmt, byte[] data, int dataOfs);
-    public static native long newTextureI(long instance, int flags, int width, int height, int fmt, int[] data, int dataOfs);
+    public static native long newTextureB(long instance, int width, int height, int fmt, byte[] data, int dataOfs);
+    public static native long newTextureI(long instance, int width, int height, int fmt, int[] data, int dataOfs);
     public static native long newDSBuffer(long instance, int width, int height);
     public static native boolean generateMipmap(long texture);
     public static native boolean readPixelsB(long texture, int x, int y, int width, int height, int fmt, byte[] data, int dataOfs);

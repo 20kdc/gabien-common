@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.18.0`
+ * Version: `0.19.0`
  *
  * ## Formatting Policy
  *
@@ -589,15 +589,6 @@ BADGPU_EXPORT uint32_t badgpuPixelsSize(BADGPUTextureLoadFormat format,
 typedef BADGPUObject BADGPUTexture;
 
 /*
- * ### `BADGPUTextureFlags`
- */
-typedef enum BADGPUTextureFlags {
-    // If, on the GPU, the texture has alpha.
-    BADGPUTextureFlags_HasAlpha = 1,
-    BADGPUTextureFlags_Force32 = 0x7FFFFFFF
-} BADGPUTextureFlags;
-
-/*
  * ### `badgpuNewTexture`
  *
  * Creates a texture, with possible initial data.
@@ -607,8 +598,6 @@ typedef enum BADGPUTextureFlags {
  * The `width` and `height` must both be above 0. Unfortunately, it is not
  *  practical to specify one exact maximum limit that will always work.
  *
- * The flags are `BADGPUNewTextureFlags`.
- *
  * Mipmaps are not automatically created. This must be done using
  *  `badgpuGenerateMipmap` if the texture is to be used with mipmaps.
  *
@@ -617,8 +606,7 @@ typedef enum BADGPUTextureFlags {
  * It does not affect the format the GPU stores the texture in. \
  * (This means that `fmt` is ignored if `data` is NULL.)
  *
- * The `HasAlpha` flag alters the format on-GPU.
- * If it's enabled, then it's RGBA, otherwise, RGB.
+ * All textures are RGBA8888. This is because RGB888 is unoptimized in practice.
  *
  * If `NULL` is passed as the data, then the texture contents are undefined.
  *
@@ -633,9 +621,13 @@ typedef enum BADGPUTextureFlags {
  *
  * Testing also revealed that uploading at least `GL_LUMA` as RGB / RGBA did
  *  not work. Consider this something of a cut for deadline kind of deal...
+ *
+ * Further testing also revealed that you get free performance by NOT, repeat,
+ *  NOT allocating RGB888 buffers. As sad as that is, this is why they've been
+ *  removed.
  */
 BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
-    uint32_t flags, int16_t width, int16_t height, BADGPUTextureLoadFormat fmt,
+    int16_t width, int16_t height, BADGPUTextureLoadFormat fmt,
     const void * data);
 
 /*
