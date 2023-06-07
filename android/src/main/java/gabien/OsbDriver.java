@@ -13,8 +13,6 @@ import gabien.backendhelp.Blender;
 import gabien.backendhelp.INativeImageHolder;
 import gabien.text.NativeFont;
 
-import java.io.ByteArrayOutputStream;
-
 import org.eclipse.jdt.annotation.NonNull;
 
 public class OsbDriver implements INativeImageHolder, IGrDriver {
@@ -49,22 +47,6 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public Runnable[] getLockingSequenceN() {
-        return new Runnable[] {
-                new Runnable() {
-                    @Override
-                    public void run() {
-                    }
-                },
-                new Runnable() {
-                    @Override
-                    public void run() {
-                    }
-                }
-        };
-    }
-
-    @Override
     public Object getNative() {
         return bitmap;
     }
@@ -80,7 +62,7 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public int[] getPixels() {
+    public @NonNull int[] getPixels() {
         int[] pixels = new int[w * h];
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
         return pixels;

@@ -198,8 +198,13 @@ public class GaBIEn {
         }
         return errorImage;
     }
-    public static IImage createImage(int[] colours, int width, int height) {
+
+    public static IImage createImage(@NonNull int[] colours, int width, int height) {
         return internal.createImage(colours, width, height);
+    }
+
+    public static IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+        return internal.createWSIImage(colours, width, height);
     }
 
     public static void hintFlushAllTheCaches() {
@@ -372,12 +377,5 @@ public class GaBIEn {
         FontManager.setupFonts();
         UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();
-    }
-
-    /**
-     * Creates a PNG file from ARGB image data.
-     */
-    public static byte[] createPNG(int[] colours, int width, int height) {
-        return internal.createPNG(colours, width, height);
     }
 }

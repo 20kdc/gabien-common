@@ -173,7 +173,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public IImage createImage(int[] colours, int width, int height) {
+    public IImage createImage(@NonNull int[] colours, int width, int height) {
         if (width <= 0)
             return new NullOsbDriver();
         if (height <= 0)
@@ -182,6 +182,11 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         ia.buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         ia.buf.getRaster().setDataElements(0, 0, width, height, colours);
         return ia;
+    }
+
+    @Override
+    public IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+        return new AWTWSIImage(colours, width, height);
     }
 
     public static String getDefaultFont() {
@@ -278,18 +283,5 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
                 });
             }
         });
-    }
-
-    @Override
-    public byte[] createPNG(int[] colours, int width, int height) {
-        BufferedImage buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        buf.getRaster().setDataElements(0, 0, width, height, colours);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(buf, "PNG", baos);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return baos.toByteArray();
     }
 }

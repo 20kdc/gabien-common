@@ -11,6 +11,8 @@ import gabien.backendhelp.INativeImageHolder;
 
 import java.awt.image.BufferedImage;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * Created on 04/06/17.
  */
@@ -19,16 +21,16 @@ public class AWTImage implements IImage, INativeImageHolder {
 
     @Override
     public int getWidth() {
-            return buf.getWidth();
-        }
+        return buf.getWidth();
+    }
 
     @Override
     public int getHeight() {
-            return buf.getHeight();
-        }
+        return buf.getHeight();
+    }
 
     @Override
-    public int[] getPixels() {
+    public @NonNull int[] getPixels() {
         int[] arr = new int[buf.getWidth() * buf.getHeight()];
         buf.getRGB(0, 0, buf.getWidth(), buf.getHeight(), arr, 0, buf.getWidth());
         return arr;

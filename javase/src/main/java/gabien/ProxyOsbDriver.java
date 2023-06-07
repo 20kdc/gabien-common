@@ -7,6 +7,8 @@
 
 package gabien;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.backendhelp.ProxyGrDriver;
 
 /**
@@ -19,7 +21,7 @@ public class ProxyOsbDriver extends ProxyGrDriver<IWindowGrBackend> implements I
     }
 
     @Override
-    public int[] getPixels() {
+    public @NonNull int[] getPixels() {
         return target.getPixels();
     }
 

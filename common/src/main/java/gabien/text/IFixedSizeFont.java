@@ -35,6 +35,11 @@ public interface IFixedSizeFont {
      */
     int measureLine(@NonNull char[] text, int index, int length);
 
+    default RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+        // nope!
+        return null;
+    }
+
     /**
      * Draws a single line in either white or black.
      * The reason for the colour being handled this way presently involves some particularly legacy-ey APIs, and is thus still subject to change.

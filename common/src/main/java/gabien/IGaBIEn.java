@@ -57,7 +57,11 @@ public interface IGaBIEn {
 
     // Make an image from a buffer.
     // Note that the colours are 0xAARRGGBB.
-    IImage createImage(int[] colours, int width, int height);
+    IImage createImage(@NonNull int[] colours, int width, int height);
+
+    // Make a WSI image from a buffer.
+    // Note that the colours are 0xAARRGGBB.
+    IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height);
 
     /**
      * Gets font overrides UILabel can use.
@@ -91,9 +95,4 @@ public interface IGaBIEn {
     default File nativeDestinationSetup(String name) {
         return gabien.natives.Loader.destinationSetupJavaSE(name);
     }
-
-    /**
-     * Creates a PNG file from ARGB image data.
-     */
-    byte[] createPNG(int[] colours, int width, int height);
 }

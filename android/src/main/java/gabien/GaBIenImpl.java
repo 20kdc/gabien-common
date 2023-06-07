@@ -61,8 +61,13 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public IImage createImage(int[] colours, int width, int height) {
+    public IImage createImage(@NonNull int[] colours, int width, int height) {
         return new OsbDriver(width, height, colours);
+    }
+
+    @Override
+    public IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+        return new WSIImageDriver(colours, width, height);
     }
 
     @Override
@@ -149,13 +154,5 @@ public final class GaBIenImpl implements IGaBIEn {
         // don't delete on exit; tablets might not like writing over this data
         // gabien.natives.Loader should be kind about this
         return new File(dataDir, "nativeDestinationSetup." + name);
-    }
-
-    @Override
-    public byte[] createPNG(int[] colours, int width, int height) {
-        Bitmap bitmap = Bitmap.createBitmap(colours, width, height, Bitmap.Config.ARGB_8888);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        return baos.toByteArray();
     }
 }

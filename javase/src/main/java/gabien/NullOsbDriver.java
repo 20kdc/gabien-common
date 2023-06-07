@@ -29,7 +29,7 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public int[] getPixels() {
+    public @NonNull int[] getPixels() {
         return new int[0];
     }
 

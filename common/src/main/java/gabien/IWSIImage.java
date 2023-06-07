@@ -10,10 +10,11 @@ package gabien;
 import org.eclipse.jdt.annotation.NonNull;
 
 /**
- * An image. All IImages that are not IGrDrivers must be immutable.
- * Created on 11/08/17.
+ * This image is backed by whatever resource is necessary for the WSI side of gabien.
+ * These are always mutable.
+ * Copied from IImage 7th June 2023.
  */
-public interface IImage {
+public interface IWSIImage {
     /**
      * Gets the width of the image.
      */
@@ -25,22 +26,26 @@ public interface IImage {
     int getHeight();
 
     /**
-     * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
-     * This may be slow, because processing may not have finished on the image yet.
+     * 0xAARRGGBB. The buffer is safe to edit.
      */
     @NonNull int[] getPixels();
 
     /**
-     * Downloads an IImage (presumably from the GPU) to the CPU as an IWSIImage.
-     * This may be slow, similarly to performing getPixels.
-     * This is a convenience method; for repetitive downloads it's better to reuse buffers.
+     * Creates a PNG file.
      */
-    default @NonNull IWSIImage.RW download() {
-        return GaBIEn.createWSIImage(getPixels(), getWidth(), getHeight());
+    @NonNull byte[] createPNG();
+
+    /**
+     * Uploads an image to IImage (to be backed by BadGPU in future)
+     */
+    default @NonNull IImage upload() {
+        return GaBIEn.createImage(getPixels(), getWidth(), getHeight());
     }
 
-    // Creates a PNG file.
-    default @NonNull byte[] createPNG() {
-        return download().createPNG();
+    interface RW extends IWSIImage {
+        /**
+         * Updates the pixels in the image.
+         */
+        void setPixels(@NonNull int[] colours);
     }
 }

@@ -37,7 +37,7 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public int[] getPixels() {
+    public @NonNull int[] getPixels() {
         return target.getPixels();
     }
 
