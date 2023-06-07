@@ -4,23 +4,13 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-
-package gabien;
+package gabien.text;
 
 /**
- * An image. All IImages that are not IGrDrivers must be immutable.
- * Created on 11/08/17.
+ * Font rendering is the big trouble-causer.
+ * This encapsulates the output of font rendering.
+ * Created 7th June 2023.
  */
-public interface IImage {
-    int getWidth();
+public class RenderedText {
 
-    int getHeight();
-
-    // 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
-    int[] getPixels();
-
-    // Creates a PNG file.
-    default byte[] createPNG() {
-        return GaBIEn.createPNG(getPixels(), getWidth(), getHeight());
-    }
 }

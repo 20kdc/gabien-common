@@ -150,4 +150,12 @@ public final class GaBIenImpl implements IGaBIEn {
         // gabien.natives.Loader should be kind about this
         return new File(dataDir, "nativeDestinationSetup." + name);
     }
+
+    @Override
+    public byte[] createPNG(int[] colours, int width, int height) {
+        Bitmap bitmap = Bitmap.createBitmap(colours, width, height, Bitmap.Config.ARGB_8888);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
 }

@@ -15,7 +15,6 @@ import gabien.backendhelp.WindowMux;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
 abstract class Main {
-    private static boolean useMT = false;
     private static boolean useDBG = false;
     private static boolean ignoreBlindingSun = false;
     /**
@@ -29,8 +28,6 @@ abstract class Main {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
                     tryForceOpenGL = true;
-                if (s.equalsIgnoreCase("mt"))
-                    useMT = true;
                 if (s.equalsIgnoreCase("debug"))
                     useDBG = true;
                 if (s.equalsIgnoreCase("iAmARobot"))
@@ -101,7 +98,7 @@ abstract class Main {
                 FontManager.fontsReady = true;
             }
         }.start();
-        GaBIEnImpl impl = new GaBIEnImpl(useMT, useDBG);
+        GaBIEnImpl impl = new GaBIEnImpl(useDBG);
         GaBIEn.internal = impl;
         GaBIEn.clipboard = new ClipboardImpl();
         GaBIEn.mutableDataFS = new JavaIOFSBackend();

@@ -87,13 +87,6 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public byte[] createPNG() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        return baos.toByteArray();
-    }
-
-    @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
         canvas.drawBitmap((Bitmap) ((INativeImageHolder) i).getNative(), new Rect(srcx, srcy, srcx + srcw, srcy + srch), new Rect(x, y, x + srcw, y + srch), globalPaint);
     }

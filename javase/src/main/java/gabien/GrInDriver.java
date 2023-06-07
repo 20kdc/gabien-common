@@ -258,9 +258,6 @@ class GrInDriver implements IGrInDriver {
         // 2. finish render
         // 3. release queue for next render
         // Note that I did at one point plan to make it so this ran on a 1-frame delay...
-        Runnable[] l = backBuffer.getLockingSequenceN();
-        if (l != null)
-            l[0].run();
 
         // Update frontBuffer for slowpaint, then perform fastpaint
         BufferedImage backBufferBI = (BufferedImage) (backBuffer.getNative());
@@ -280,9 +277,6 @@ class GrInDriver implements IGrInDriver {
 
         // Change buffer if necessary
         frontBuffer = frontBuf;
-
-        if (l != null)
-            l[1].run();
 
         drawFrontBuffer(panel.getGraphics());
 

@@ -24,11 +24,6 @@ public class ProxyOsbDriver extends ProxyGrDriver<IWindowGrBackend> implements I
     }
 
     @Override
-    public byte[] createPNG() {
-        return target.createPNG();
-    }
-
-    @Override
     public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
         return new ProxyOsbDriver(target.recreate(wantedRW, wantedRH));
     }

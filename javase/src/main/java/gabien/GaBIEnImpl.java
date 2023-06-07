@@ -44,7 +44,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     protected static HashSet<GrInDriver> activeDrivers = new HashSet<GrInDriver>();
     protected static GraphicsDevice lastClosureDevice = null;
 
-    private final boolean useMultithread, useDebug;
+    private final boolean useDebug;
 
     private long startup = System.currentTimeMillis();
 
@@ -54,8 +54,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     private String fbDirectory = ".";
 
-    public GaBIEnImpl(boolean useMT, boolean useD) {
-        useMultithread = useMT;
+    public GaBIEnImpl(boolean useD) {
         useDebug = useD;
     }
 
@@ -109,11 +108,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         if (h <= 0)
             return new NullOsbDriver();
         IWindowGrBackend oc;
-        if (useMultithread) {
-            oc = new OsbDriverMT(w, h, alpha);
-        } else {
-            oc = new OsbDriverCore(w, h, alpha);
-        }
+        oc = new OsbDriverCore(w, h, alpha);
         if (useDebug)
             oc = new OsbDriverDebugProxy(oc);
         return oc;
@@ -185,7 +180,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
             return new NullOsbDriver();
         AWTImage ia = new AWTImage();
         ia.buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        ia.buf.setRGB(0, 0, width, height, colours, 0, width);
+        ia.buf.getRaster().setDataElements(0, 0, width, height, colours);
         return ia;
     }
 
@@ -283,5 +278,18 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
                 });
             }
         });
+    }
+
+    @Override
+    public byte[] createPNG(int[] colours, int width, int height) {
+        BufferedImage buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        buf.getRaster().setDataElements(0, 0, width, height, colours);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(buf, "PNG", baos);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return baos.toByteArray();
     }
 }

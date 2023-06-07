@@ -12,9 +12,5 @@ package gabien.backendhelp;
  * Created on August 21th, 2017
  */
 public interface INativeImageHolder {
-    // Only to be called from ThreadForwardingGrDriver or other stuff that needs this kind of direct poking,
-    //  hence the N to cause compile errors on older code.
-    // Should be called when the call is *scheduled by the game.*
-    Runnable[] getLockingSequenceN();
     Object getNative();
 }

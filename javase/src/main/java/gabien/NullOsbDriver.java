@@ -34,11 +34,6 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public byte[] createPNG() {
-        return new byte[0];
-    }
-
-    @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
 
     }
@@ -96,11 +91,6 @@ public class NullOsbDriver implements IWindowGrBackend {
     @Override
     public IWindowGrBackend recreate(int wantedRW, int wantedRH) {
         return this;
-    }
-
-    @Override
-    public Runnable[] getLockingSequenceN() {
-        return null;
     }
 
     @Override

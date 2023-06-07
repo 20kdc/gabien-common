@@ -373,4 +373,11 @@ public class GaBIEn {
         UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();
     }
+
+    /**
+     * Creates a PNG file from ARGB image data.
+     */
+    public static byte[] createPNG(int[] colours, int width, int height) {
+        return internal.createPNG(colours, width, height);
+    }
 }

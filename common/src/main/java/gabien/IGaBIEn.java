@@ -91,4 +91,9 @@ public interface IGaBIEn {
     default File nativeDestinationSetup(String name) {
         return gabien.natives.Loader.destinationSetupJavaSE(name);
     }
+
+    /**
+     * Creates a PNG file from ARGB image data.
+     */
+    byte[] createPNG(int[] colours, int width, int height);
 }

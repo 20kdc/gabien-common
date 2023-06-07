@@ -42,11 +42,6 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     }
 
     @Override
-    public byte[] createPNG() {
-        return target.createPNG();
-    }
-
-    @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
         target.blitImage(srcx, srcy, srcw, srch, x, y, i);
     }
@@ -105,12 +100,6 @@ public class ProxyGrDriver<T extends IGrDriver> implements IGrDriver, INativeIma
     protected void finalize() throws Throwable {
         super.finalize();
         shutdown();
-    }
-
-    @Override
-    public Runnable[] getLockingSequenceN() {
-        INativeImageHolder t = (INativeImageHolder) target;
-        return t.getLockingSequenceN();
     }
 
     @Override
