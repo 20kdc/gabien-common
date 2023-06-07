@@ -21,6 +21,7 @@ public final class Vopeks {
     private final int TASK_QUEUE_SIZE = 65536;
     public final Thread vopeksThread;
     private final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
+    public final VopeksFloatPool floatPool = new VopeksFloatPool();
     private volatile boolean shutdown;
 
     public Vopeks(final int newInstanceFlags) {

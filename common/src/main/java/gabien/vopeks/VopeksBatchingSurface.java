@@ -88,16 +88,19 @@ public class VopeksBatchingSurface extends VopeksImage {
         // Now actually do the batching thing
         if (currentBatch != null) {
             batchReferenceBarrier();
-            float[] megabuffer = new float[currentBatch.vertexCount * 12];
+            int groupCount = currentBatch.tex != null ? 3 : 2;
             int groupLen = currentBatch.vertexCount * 4;
+            float[] megabuffer = vopeks.floatPool.get(groupLen * groupCount);
             currentBatch.megabuffer = megabuffer;
             currentBatch.megabufferOfs = 0;
             int writeOfs = currentBatch.megabufferOfs;
             System.arraycopy(stagingV, 0, megabuffer, writeOfs, groupLen);
             writeOfs += groupLen;
             System.arraycopy(stagingC, 0, megabuffer, writeOfs, groupLen);
-            writeOfs += groupLen;
-            System.arraycopy(stagingT, 0, megabuffer, writeOfs, groupLen);
+            if (currentBatch.tex != null) {
+                writeOfs += groupLen;
+                System.arraycopy(stagingT, 0, megabuffer, writeOfs, groupLen);
+            }
             vopeks.putTask(currentBatch);
         }
         currentBatch = null;
@@ -124,10 +127,12 @@ public class VopeksBatchingSurface extends VopeksImage {
         stagingC[vertexBase + 1] = g;
         stagingC[vertexBase + 2] = b;
         stagingC[vertexBase + 3] = a;
-        stagingT[vertexBase] = s;
-        stagingT[vertexBase + 1] = t;
-        stagingT[vertexBase + 2] = 0;
-        stagingT[vertexBase + 3] = 1;
+        if (currentBatch.tex != null) {
+            stagingT[vertexBase] = s;
+            stagingT[vertexBase + 1] = t;
+            stagingT[vertexBase + 2] = 0;
+            stagingT[vertexBase + 3] = 1;
+        }
     }
 
     private class BatchPool extends ObjectPool<Batch> {
@@ -212,7 +217,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor,
                     cropL, cropU, cropW, cropH,
                     drawFlags,
-                    megabuffer, verticesOfs, megabuffer, coloursOfs, megabuffer, texCoordsOfs,
+                    megabuffer, verticesOfs, megabuffer, coloursOfs, tx == null ? null : megabuffer, texCoordsOfs,
                     BadGPU.PrimitiveType.Triangles, 1,
                     0, vertexCount, null, 0,
                     null, 0, null, 0,
@@ -220,6 +225,7 @@ public class VopeksBatchingSurface extends VopeksImage {
                     tx, null, 0,
                     bwRGBS, bwRGBD, beRGB,
                     bwAS, bwAD, beA);
+            vopeks.floatPool.finish(megabuffer);
             batchPool.finish(this);
         }
 
