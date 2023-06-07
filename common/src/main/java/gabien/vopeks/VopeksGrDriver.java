@@ -21,8 +21,8 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksGrDriver(Vopeks vopeks, int w, int h, boolean alpha, int[] init) {
-        super(vopeks, w, h, alpha, init);
+    public VopeksGrDriver(Vopeks vopeks, int w, int h, int[] init) {
+        super(vopeks, w, h, init);
         localST[4] = width;
         localST[5] = height;
     }

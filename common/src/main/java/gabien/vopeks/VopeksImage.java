@@ -40,7 +40,7 @@ public class VopeksImage implements IVopeksSurfaceHolder {
     /**
      * Creates a new VopeksImage.
      */
-    public VopeksImage(Vopeks vopeks, int w, int h, boolean alpha, int[] init) {
+    public VopeksImage(Vopeks vopeks, int w, int h, int[] init) {
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
             // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha

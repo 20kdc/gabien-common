@@ -141,7 +141,7 @@ public class GaBIEn {
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksGrDriver(GaBIEn.vopeks, width, height, alpha, null);
+        return new VopeksGrDriver(GaBIEn.vopeks, width, height, null);
     }
 
     // This has to at least support JPGs, PNGs and BMPs.
@@ -220,7 +220,7 @@ public class GaBIEn {
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksImage(GaBIEn.vopeks, width, height, true, colours);
+        return new VopeksImage(GaBIEn.vopeks, width, height, colours);
     }
 
     public static IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {

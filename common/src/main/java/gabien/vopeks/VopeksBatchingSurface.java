@@ -38,8 +38,8 @@ public class VopeksBatchingSurface extends VopeksImage {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksBatchingSurface(Vopeks vopeks, int w, int h, boolean alpha, int[] init) {
-        super(vopeks, w, h, alpha, init);
+    public VopeksBatchingSurface(Vopeks vopeks, int w, int h, int[] init) {
+        super(vopeks, w, h, init);
         halfWF = w / 2.0f;
         halfHF = h / 2.0f;
     }
