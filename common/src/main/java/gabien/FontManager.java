@@ -8,9 +8,11 @@
 package gabien;
 
 import gabien.text.IFixedSizeFont;
+import gabien.text.RenderedText;
 import gabien.text.SimpleImageGridFont;
 import gabien.ui.Size;
 
+import java.util.LinkedList;
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -78,7 +80,7 @@ public class FontManager {
         return false;
     }
 
-    private static IFixedSizeFont getFontForText(String text, int height) {
+    public static IFixedSizeFont getFontForText(String text, int height) {
         if (useSystemFont(text, height))
             return GaBIEn.getNativeFont(height, fontOverride, true);
         return getInternalFontFor(height);
@@ -111,6 +113,24 @@ public class FontManager {
             }
             textPtr++;
         }
+    }
+
+    public static RenderedText[] renderString(String text, IFixedSizeFont font, boolean textBlack) {
+        char[] textArray = text.toCharArray();
+        int textStart = 0;
+        int textPtr = 0;
+        LinkedList<RenderedText> chunks = new LinkedList<>();
+        while (true) {
+            if (textPtr == textArray.length || textArray[textPtr] == '\n') {
+                // draw segment (or final segment)
+                chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, textBlack));
+                if (textPtr == textArray.length)
+                    break;
+                textStart = textPtr + 1;
+            }
+            textPtr++;
+        }
+        return chunks.toArray(new RenderedText[0]);
     }
 
     // NOTE: This assumes the results are for the final content block.

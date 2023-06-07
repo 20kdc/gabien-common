@@ -13,7 +13,7 @@ import java.io.InputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.text.NativeFont;
+import gabien.text.IFixedSizeFont;
 
 /**
  * This instance should be the entry point to the program.
@@ -71,13 +71,13 @@ public interface IGaBIEn {
      * Returns a native font by size and name, unless it does not exist (in which case returns null).
      * The GaBIEn version of this method is partially cached.
      */
-    @Nullable NativeFont getNativeFont(int size, @NonNull String name);
+    @Nullable IFixedSizeFont getNativeFont(int size, @NonNull String name);
 
     /**
      * Returns the default/fallback native font.
      * The GaBIEn version of this method is partially cached.
      */
-    @NonNull NativeFont getDefaultNativeFont(int size);
+    @NonNull IFixedSizeFont getDefaultNativeFont(int size);
 
     boolean tryStartTextEditor(String fpath);
 

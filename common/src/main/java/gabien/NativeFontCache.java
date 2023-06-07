@@ -6,7 +6,7 @@
  */
 package gabien;
 
-import gabien.text.NativeFont;
+import gabien.text.IFixedSizeFont;
 
 /**
  * Temporary native font cache to prevent a ton of lookups.
@@ -15,21 +15,21 @@ import gabien.text.NativeFont;
 final class NativeFontCache {
     private String lastFontName = null;
     private int lastFontSize = -1;
-    private NativeFont lastFont = null;
+    private IFixedSizeFont lastFont = null;
 
     private int lastDefaultFontSize = -1;
-    private NativeFont lastDefaultFont = null;
+    private IFixedSizeFont lastDefaultFont = null;
 
     /**
      * Proxy to IGaBIEn.getDefaultNativeFont
      */
-    NativeFont getDefaultNativeFont(int size) {
+    IFixedSizeFont getDefaultNativeFont(int size) {
         synchronized (this) {
             if (lastDefaultFont != null)
                 if (lastDefaultFontSize == size)
                     return lastDefaultFont;
         }
-        NativeFont res = GaBIEn.internal.getDefaultNativeFont(size);
+        IFixedSizeFont res = GaBIEn.internal.getDefaultNativeFont(size);
         synchronized (this) {
             lastDefaultFontSize = size;
             lastDefaultFont = res;
@@ -40,14 +40,14 @@ final class NativeFontCache {
     /**
      * Proxy to IGaBIEn.getNativeFont
      */
-    NativeFont getNativeFont(int size, String name) {
+    IFixedSizeFont getNativeFont(int size, String name) {
         synchronized (this) {
             if (lastFont != null)
                 if (lastFontSize == size)
                     if (lastFontName.equals(name))
                         return lastFont;
         }
-        NativeFont res = GaBIEn.internal.getNativeFont(size, name);
+        IFixedSizeFont res = GaBIEn.internal.getNativeFont(size, name);
         if (res == null)
             return null;
         synchronized (this) {

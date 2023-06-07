@@ -6,6 +6,7 @@
  */
 package gabien.text;
 
+import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.IWSIImage;
 
@@ -15,6 +16,9 @@ import gabien.IWSIImage;
  * Created 7th June 2023.
  */
 public abstract class RenderedText {
+    /**
+     * These are the offset to apply to the image, not specifying the rectangle within the image.
+     */
     public final int offsetX, offsetY;
     public final int measureX;
 
@@ -26,6 +30,11 @@ public abstract class RenderedText {
 
     public abstract IImage getIImage();
     public abstract IWSIImage getIWSIImage();
+
+    public void renderTo(IGrDriver igd, int x, int y) {
+        IImage res = getIImage();
+        igd.blitImage(0, 0, res.getWidth(), res.getHeight(), x + offsetX, y + offsetY, res);
+    }
 
     public static class CPU extends RenderedText {
         public final IWSIImage render;

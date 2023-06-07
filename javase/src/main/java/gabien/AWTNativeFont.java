@@ -7,19 +7,24 @@
 
 package gabien;
 
+import java.awt.Color;
 import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gabien.text.NativeFont;
+import gabien.text.IFixedSizeFont;
+import gabien.text.RenderedText;
 
 /**
  * Created 16th Februrary, 2023
  */
-public class AWTNativeFont extends NativeFont {
+public class AWTNativeFont implements IFixedSizeFont {
     public final Font font;
     public final int size;
     private static final FontRenderContext frc = new FontRenderContext(AffineTransform.getTranslateInstance(0, 0), true, false);
@@ -32,7 +37,7 @@ public class AWTNativeFont extends NativeFont {
     /**
      * Basically implements GaBIEnImpl.getNativeFont
      */
-    public static NativeFont getFont(int textSize, String s) {
+    public static IFixedSizeFont getFont(int textSize, String s) {
         String modified = s == null ? GaBIEnImpl.getDefaultFont() : null; 
         try {
             return new AWTNativeFont(new Font(modified, Font.PLAIN, textSize - (textSize / 8)), textSize);
@@ -41,7 +46,7 @@ public class AWTNativeFont extends NativeFont {
         if (s == null) {
             // Shouldn't happen, so return a fake font as if we know what we're doing.
             System.err.println("AWTNativeFont failed to get fallback font, so a completely fake NativeFont has been generated. Text will probably not display.");
-            return new NativeFont() {
+            return new IFixedSizeFont() {
                 @Override
                 public int getSize() {
                     return textSize;
@@ -51,6 +56,10 @@ public class AWTNativeFont extends NativeFont {
                     if (GaBIEnImpl.fontsAlwaysMeasure16)
                         return 16;
                     return (count * textSize) / 2;
+                }
+                @Override
+                public RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+                    return new RenderedText.GPU(0, 0, measureLine(text, index, length), GaBIEn.getErrorImage());
                 }
             };
         }
@@ -66,8 +75,27 @@ public class AWTNativeFont extends NativeFont {
     public int measureLine(@NonNull char[] text, int index, int count) {
         if (GaBIEnImpl.fontsAlwaysMeasure16)
             return 16;
-        Rectangle r = font.getStringBounds(text, index, count, frc).getBounds();
+        Rectangle r = font.getStringBounds(text, index, index + count, frc).getBounds();
         return r.width;
     }
-    
+
+    @Override
+    public RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+        try {
+            int mt = measureLine(text, index, length);
+            int margin = 16;
+            BufferedImage bi = new BufferedImage(margin + mt + margin, margin + size + margin, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D bufGraphics = bi.createGraphics();
+            bufGraphics.setFont(font);
+            int cV = textBlack ? 0 : 255;
+            bufGraphics.setColor(new Color(cV, cV, cV));
+            bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
+            bufGraphics.drawString(new String(text, index, length), margin, margin + (size - (size / 4)));
+            return new RenderedText.CPU(-margin, -margin, mt, new AWTWSIImage(bi));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return new RenderedText.GPU(0, 0, 0, GaBIEn.getErrorImage());
+    }
 }

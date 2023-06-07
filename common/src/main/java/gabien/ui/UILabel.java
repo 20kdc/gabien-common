@@ -10,6 +10,8 @@ package gabien.ui;
 import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
+import gabien.text.IFixedSizeFont;
+import gabien.text.RenderedText;
 
 /**
  * A label. Displays text.
@@ -73,6 +75,7 @@ public class UILabel extends UIBorderedElement {
         private String lastOverride = null;
         private boolean lastOverrideUE8 = false;
         private int lastBw = 1;
+        private RenderedText[] renderedParagraphB, renderedParagraphW;
 
         public final int textHeight;
         public final String spacerText;
@@ -116,6 +119,9 @@ public class UILabel extends UIBorderedElement {
                 lastSpacerSize = getRecommendedTextSize(spacerText, textHeight, bw);
                 sz2 = new Size(a.width, b.height);
                 sz2 = sz2.sizeMax(lastSpacerSize);
+                IFixedSizeFont fx = FontManager.getFontForText(textFormatted, textHeight);
+                renderedParagraphB = FontManager.renderString(textFormatted, fx, true);
+                renderedParagraphW = FontManager.renderString(textFormatted, fx, false);
             }
             return sz2;
         }
@@ -127,7 +133,12 @@ public class UILabel extends UIBorderedElement {
         public void render(boolean blackText, int x, int y, IGrDriver igd, int alignX, int alignY) {
             x += ((lastSize.width - lastActSize.width) * alignX) / 2;
             y += ((lastSize.height - lastActSize.height) * alignY) / 2;
-            FontManager.drawString(igd, x + lastBw, y + lastBw, textFormatted, true, blackText, textHeight);
+            x += lastBw;
+            y += lastBw;
+            for (RenderedText rt : (blackText ? renderedParagraphB : renderedParagraphW)) {
+                rt.renderTo(igd, x, y);
+                y += textHeight;
+            }
         }
     }
 

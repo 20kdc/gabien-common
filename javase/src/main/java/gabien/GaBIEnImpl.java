@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.text.NativeFont;
+import gabien.text.IFixedSizeFont;
 import gabien.uslx.append.*;
 
 import javax.imageio.ImageIO;
@@ -181,13 +181,13 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     @Override
     @NonNull
-    public NativeFont getDefaultNativeFont(int size) {
+    public IFixedSizeFont getDefaultNativeFont(int size) {
         return AWTNativeFont.getFont(size, null);
     }
 
     @Override
     @Nullable
-    public NativeFont getNativeFont(int size, @NonNull String name) {
+    public IFixedSizeFont getNativeFont(int size, @NonNull String name) {
         return AWTNativeFont.getFont(size, name);
     }
 

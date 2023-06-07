@@ -35,14 +35,14 @@ public interface IFixedSizeFont {
      */
     int measureLine(@NonNull char[] text, int index, int length);
 
-    default RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-        // nope!
-        return null;
-    }
+    /**
+     * The fancy new way to render text that's more GPU-aware.
+     */
+    RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack);
 
     /**
      * Draws a single line in either white or black.
-     * The reason for the colour being handled this way presently involves some particularly legacy-ey APIs, and is thus still subject to change.
+     * Text colour is handled this way because... it's a long story.
      * The text shouldn't contain newlines.
      */
     default void drawLine(IGrDriver igd, int x, int y, @NonNull String text, boolean textBlack) {
@@ -51,8 +51,10 @@ public interface IFixedSizeFont {
 
     /**
      * Draws a single line in either white or black.
-     * The reason for the colour being handled this way presently involves some particularly legacy-ey APIs, and is thus still subject to change.
+     * Text colour is handled this way because... it's a long story.
      * The text shouldn't contain newlines.
      */
-    void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack);
+    default void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
+        renderLine(text, index, length, textBlack).renderTo(igd, x, y);
+    }
 }

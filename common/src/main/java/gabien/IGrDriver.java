@@ -7,10 +7,6 @@
 
 package gabien;
 
-import org.eclipse.jdt.annotation.NonNull;
-
-import gabien.text.NativeFont;
-
 /**
  * Represents a buffer that can be drawn to.
  * Created on 04/06/17.
@@ -32,20 +28,6 @@ public interface IGrDriver extends IImage {
     //  such that these two operations can be considered the basis of others.
     void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
     void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub);
-
-    // Now as official as you can get for a graphics interface nobody uses.
-    // This is "The Way" that text is drawn if the "styled" way doesn't work.
-    // The UI package uses this in case international text comes along.
-    // Now, this still isn't going to be consistent.
-    // It probably never will be.
-    // But it will work, and it means I avoid having to include Unifont.
-
-    /**
-     * Draws text in the given colour and native font.
-     * This is a semi-internal API, being how a NativeFont gets into the driver, but isn't particularly dangerous.
-     * HOWEVER, don't change the contents of the text character array!!!
-     */
-    void drawText(int x, int y, int r, int g, int b, @NonNull char[] text, int index, int count, @NonNull NativeFont font);
 
     void clearAll(int i, int i0, int i1);
 

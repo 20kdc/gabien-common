@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.text.NativeFont;
+import gabien.text.IFixedSizeFont;
 import gabien.ui.UIBorderedElement;
 import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
@@ -228,10 +228,10 @@ public class GaBIEn {
      * Gets a native font by name. If the name is null, returns the default font.
      * If not available, returns null, unless fallback is set.
      */
-    public static @Nullable NativeFont getNativeFont(int size, @Nullable String name, boolean fallback) {
+    public static @Nullable IFixedSizeFont getNativeFont(int size, @Nullable String name, boolean fallback) {
         if (name == null)
             return nativeFontCache.getDefaultNativeFont(size);
-        NativeFont tmp = nativeFontCache.getNativeFont(size, name);
+        IFixedSizeFont tmp = nativeFontCache.getNativeFont(size, name);
         if (tmp == null && fallback)
             return nativeFontCache.getDefaultNativeFont(size);
         return tmp;
@@ -241,10 +241,10 @@ public class GaBIEn {
      * Gets a native font by name. If the name is null, returns the default font.
      * If not available, returns the default font.
      */
-    public static @NonNull NativeFont getNativeFontFallback(int size, @Nullable String name) {
+    public static @NonNull IFixedSizeFont getNativeFontFallback(int size, @Nullable String name) {
         if (name == null)
             return nativeFontCache.getDefaultNativeFont(size);
-        NativeFont nf = nativeFontCache.getNativeFont(size, name);
+        IFixedSizeFont nf = nativeFontCache.getNativeFont(size, name);
         if (nf == null)
             return nativeFontCache.getDefaultNativeFont(size);
         return nf;

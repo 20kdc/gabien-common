@@ -9,13 +9,10 @@ package gabien;
 
 import gabien.backendhelp.Blender;
 import gabien.backendhelp.INativeImageHolder;
-import gabien.text.NativeFont;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-
-import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Created on 04/06/17.
@@ -95,23 +92,6 @@ public class OsbDriverCore extends AWTImage implements IWindowGrBackend {
     @Override
     public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
         Blender.blendRotatedScaledImage(this, srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub);
-    }
-
-    @Override
-    public void drawText(int x, int y, int r, int cg, int b, @NonNull char[] text, int index, int count, @NonNull NativeFont font) {
-        try {
-            int textSize = 16;
-            if (font instanceof AWTNativeFont) {
-                AWTNativeFont nf = (AWTNativeFont) font;
-                bufGraphics.setFont(nf.font);
-                textSize = nf.size;
-            }
-            bufGraphics.setColor(new Color(r, cg, b));
-            bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
-            bufGraphics.drawString(new String(text, index, count), x, y + (textSize - (textSize / 4)));
-        } catch (Exception ex) {
-        }
     }
 
     @Override

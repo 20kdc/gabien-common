@@ -47,16 +47,21 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     }
 
     @Override
-    public void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
+    public RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+        int width = measureLine(text, index, length);
+        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight, true);
+        // :(
         IImage font = textBlack ? fontBlack : fontWhite;
+        int x = 0;
         for (int p = 0; p < length; p++) {
             int cc = text[index + p];
             if (cc < 256) {
-                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, 0, font);
             } else {
-                igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+                igd.blitImage(0, 0, charWidth, charHeight, x, 0, font);
             }
             x += advance;
         }
+        return new RenderedText.GPU(0, 0, width, igd);
     }
 }

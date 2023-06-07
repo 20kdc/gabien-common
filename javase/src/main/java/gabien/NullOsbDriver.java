@@ -10,9 +10,6 @@ package gabien;
 import java.awt.image.BufferedImage;
 
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
-
-import gabien.text.NativeFont;
 
 /**
  * Created on 6/20/17.
@@ -55,11 +52,6 @@ public class NullOsbDriver implements IWindowGrBackend {
 
     @Override
     public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
-
-    }
-
-    @Override
-    public void drawText(int x, int y, int r, int g, int b, @NonNull char[] text, int index, int count, @Nullable NativeFont font) {
 
     }
 
