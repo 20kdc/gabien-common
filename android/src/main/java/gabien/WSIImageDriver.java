@@ -13,6 +13,7 @@ import gabien.backendhelp.INativeImageHolder;
 import java.io.ByteArrayOutputStream;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Copied from OsbDriver 7th June 2023.
@@ -21,9 +22,10 @@ public class WSIImageDriver implements INativeImageHolder, IWSIImage.RW {
     protected Bitmap bitmap;
     protected int w, h;
 
-    public WSIImageDriver(int[] ints, int w, int h) {
+    public WSIImageDriver(@Nullable int[] ints, int w, int h) {
         this(Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888));
-        bitmap.setPixels(ints, 0, w, 0, 0, w, h);
+        if (ints != null)
+            bitmap.setPixels(ints, 0, w, 0, 0, w, h);
     }
 
     private WSIImageDriver(Bitmap bt) {

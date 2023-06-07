@@ -19,7 +19,7 @@ import java.awt.image.BufferedImage;
 import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.text.IFixedSizeFont;
-import gabien.text.RenderedText;
+import gabien.text.ImageRenderedTextChunk;
 
 /**
  * Created 16th Februrary, 2023
@@ -58,8 +58,18 @@ public class AWTNativeFont implements IFixedSizeFont {
                     return (count * textSize) / 2;
                 }
                 @Override
-                public RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-                    return new RenderedText.GPU(0, 0, measureLine(text, index, length), GaBIEn.getErrorImage());
+                public int measureLine(@NonNull String text) {
+                    if (GaBIEnImpl.fontsAlwaysMeasure16)
+                        return 16;
+                    return (text.length() * textSize) / 2;
+                }
+                @Override
+                public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text, index, length), textSize, GaBIEn.getErrorImage());
+                }
+                @Override
+                public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
+                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text), textSize, GaBIEn.getErrorImage());
                 }
             };
         }
@@ -80,9 +90,22 @@ public class AWTNativeFont implements IFixedSizeFont {
     }
 
     @Override
-    public RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+    public int measureLine(@NonNull String text) {
+        if (GaBIEnImpl.fontsAlwaysMeasure16)
+            return 16;
+        Rectangle r = font.getStringBounds(text, frc).getBounds();
+        return r.width;
+    }
+
+    @Override
+    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+        return renderLine(new String(text, index, length), textBlack);
+    }
+
+    @Override
+    public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
         try {
-            int mt = measureLine(text, index, length);
+            int mt = measureLine(text);
             int margin = 16;
             BufferedImage bi = new BufferedImage(margin + mt + margin, margin + size + margin, BufferedImage.TYPE_INT_ARGB);
             Graphics2D bufGraphics = bi.createGraphics();
@@ -91,11 +114,11 @@ public class AWTNativeFont implements IFixedSizeFont {
             bufGraphics.setColor(new Color(cV, cV, cV));
             bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
-            bufGraphics.drawString(new String(text, index, length), margin, margin + (size - (size / 4)));
-            return new RenderedText.CPU(-margin, -margin, mt, new AWTWSIImage(bi));
+            bufGraphics.drawString(text, margin, margin + (size - (size / 4)));
+            return new ImageRenderedTextChunk.CPU(-margin, -margin, mt, size, new AWTWSIImage(bi));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return new RenderedText.GPU(0, 0, 0, GaBIEn.getErrorImage());
+        return new ImageRenderedTextChunk.GPU(0, 0, 0, size, GaBIEn.getErrorImage());
     }
 }

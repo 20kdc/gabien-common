@@ -40,6 +40,13 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     }
 
     @Override
+    public int measureLine(@NonNull String text) {
+        if (text.length() == 0)
+            return 0;
+        return ((text.length() - 1) * advance) + charWidth;
+    }
+
+    @Override
     public int measureLine(@NonNull char[] text, int index, int length) {
         if (length == 0)
             return 0;
@@ -47,7 +54,27 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     }
 
     @Override
-    public RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+    public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
+        int width = measureLine(text);
+        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight, true);
+        // :(
+        IImage font = textBlack ? fontBlack : fontWhite;
+        int x = 0;
+        int l = text.length();
+        for (int p = 0; p < l; p++) {
+            int cc = text.charAt(p);
+            if (cc < 256) {
+                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, 0, font);
+            } else {
+                igd.blitImage(0, 0, charWidth, charHeight, x, 0, font);
+            }
+            x += advance;
+        }
+        return new ImageRenderedTextChunk.GPU(0, 0, width, size, igd);
+    }
+
+    @Override
+    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
         int width = measureLine(text, index, length);
         IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight, true);
         // :(
@@ -62,6 +89,6 @@ public class SimpleImageGridFont implements IFixedSizeFont {
             }
             x += advance;
         }
-        return new RenderedText.GPU(0, 0, width, igd);
+        return new ImageRenderedTextChunk.GPU(0, 0, width, size, igd);
     }
 }

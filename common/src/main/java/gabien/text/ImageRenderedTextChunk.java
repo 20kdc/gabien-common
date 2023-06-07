@@ -15,14 +15,15 @@ import gabien.IWSIImage;
  * This encapsulates the output of font rendering.
  * Created 7th June 2023.
  */
-public abstract class RenderedText {
+public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
     /**
      * These are the offset to apply to the image, not specifying the rectangle within the image.
      */
     public final int offsetX, offsetY;
     public final int measureX;
 
-    public RenderedText(int offsetX, int offsetY, int measureX) {
+    public ImageRenderedTextChunk(int offsetX, int offsetY, int measureX, int lineHeight) {
+        super(lineHeight);
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.measureX = measureX;
@@ -31,17 +32,35 @@ public abstract class RenderedText {
     public abstract IImage getIImage();
     public abstract IWSIImage getIWSIImage();
 
-    public void renderTo(IGrDriver igd, int x, int y) {
-        IImage res = getIImage();
-        igd.blitImage(0, 0, res.getWidth(), res.getHeight(), x + offsetX, y + offsetY, res);
+    @Override
+    public int cursorX(int cursorXIn) {
+        return cursorXIn + measureX;
     }
 
-    public static class CPU extends RenderedText {
+    @Override
+    public int cursorY(int cursorYIn, int lineHeight) {
+        return cursorYIn;
+    }
+
+    @Override
+    public void renderTo(IGrDriver igd, int x, int y, int cX, int cY, int hlh) {
+        IImage res = getIImage();
+        igd.blitImage(0, 0, res.getWidth(), res.getHeight(), x + cX + offsetX, y + cY + offsetY, res);
+    }
+
+    @Override
+    public void backgroundTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
+        int margin = 1;
+        int margin2 = margin * 2;
+        igd.clearRectAlpha(r, g, b, a, x + cursorXIn - margin, y + cursorYIn - margin, measureX + margin2, highestLineHeight + margin2);
+    }
+
+    public static class CPU extends ImageRenderedTextChunk {
         public final IWSIImage render;
         public IImage renderUpload;
 
-        public CPU(int offsetX, int offsetY, int measureX, IWSIImage r) {
-            super(offsetX, offsetY, measureX);
+        public CPU(int offsetX, int offsetY, int measureX, int lineHeight, IWSIImage r) {
+            super(offsetX, offsetY, measureX, lineHeight);
             render = r;
         }
 
@@ -60,12 +79,12 @@ public abstract class RenderedText {
         }
     }
 
-    public static class GPU extends RenderedText {
+    public static class GPU extends ImageRenderedTextChunk {
         public final IImage render;
         public IWSIImage renderDownload;
 
-        public GPU(int offsetX, int offsetY, int measureX, IImage r) {
-            super(offsetX, offsetY, measureX);
+        public GPU(int offsetX, int offsetY, int measureX, int lineHeight, IImage r) {
+            super(offsetX, offsetY, measureX, lineHeight);
             render = r;
         }
 

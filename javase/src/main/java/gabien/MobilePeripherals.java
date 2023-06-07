@@ -90,7 +90,7 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
             String status = "Pointer " + (activePointer + 1) + " of " + dummies.size();
             int statusLen = font.measureLine(status);
             backBufferGr.clearRect(0, 0, 0, 0, 0, statusLen, 16);
-            font.drawLine(backBufferGr, 0, 0, status, false);
+            font.renderLine(status, false).renderRoot(backBufferGr, 0, 0);
         }
     }
 

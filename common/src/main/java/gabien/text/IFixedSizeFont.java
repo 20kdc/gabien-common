@@ -8,8 +8,6 @@ package gabien.text;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gabien.IGrDriver;
-
 /**
  * Fixed-size font interface.
  * This can be, and is intentionally allowed to be, implemented both by userspace and by the gabien backend.
@@ -25,9 +23,7 @@ public interface IFixedSizeFont {
      * Measures the horizontal width of the given text.
      * The text shouldn't contain newlines.
      */
-    default int measureLine(@NonNull String text) {
-        return measureLine(text.toCharArray(), 0, text.length());
-    }
+    int measureLine(@NonNull String text);
 
     /**
      * Measures the horizontal width of the given text.
@@ -38,23 +34,10 @@ public interface IFixedSizeFont {
     /**
      * The fancy new way to render text that's more GPU-aware.
      */
-    RenderedText renderLine(@NonNull char[] text, int index, int length, boolean textBlack);
+    ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack);
 
     /**
-     * Draws a single line in either white or black.
-     * Text colour is handled this way because... it's a long story.
-     * The text shouldn't contain newlines.
+     * The fancy new way to render text that's more GPU-aware.
      */
-    default void drawLine(IGrDriver igd, int x, int y, @NonNull String text, boolean textBlack) {
-        drawLine(igd, x, y, text.toCharArray(), 0, text.length(), textBlack);
-    }
-
-    /**
-     * Draws a single line in either white or black.
-     * Text colour is handled this way because... it's a long story.
-     * The text shouldn't contain newlines.
-     */
-    default void drawLine(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
-        renderLine(text, index, length, textBlack).renderTo(igd, x, y);
-    }
+    ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack);
 }

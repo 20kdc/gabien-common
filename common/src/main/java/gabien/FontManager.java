@@ -8,7 +8,7 @@
 package gabien;
 
 import gabien.text.IFixedSizeFont;
-import gabien.text.RenderedText;
+import gabien.text.RenderedTextChunk;
 import gabien.text.SimpleImageGridFont;
 import gabien.ui.Size;
 
@@ -86,51 +86,37 @@ public class FontManager {
         return getInternalFontFor(height);
     }
 
+    /**
+     * Please don't use this, it bleeds performance.
+     */
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
+        RenderedTextChunk rtc = renderString(text, getFontForText(text, height), textBlack);
         int cc = textBlack ? 255 : 0;
-        if (!noBackground) {
-            int lIdx;
-            String workingText = text + '\n';
-            int toy = oy;
-            while ((lIdx = workingText.indexOf('\n')) != -1) {
-                igd.clearRect(cc, cc, cc, xptr - 1, toy - 1, getLineLength(workingText.substring(0, lIdx), height) + 1, height + 1);
-                workingText = workingText.substring(lIdx + 1);
-                toy += height;
-            }
-        }
-        IFixedSizeFont font = getFontForText(text, height);
-        char[] textArray = text.toCharArray();
-        int textStart = 0;
-        int textPtr = 0;
-        while (true) {
-            if (textPtr == textArray.length || textArray[textPtr] == '\n') {
-                // draw segment (or final segment)
-                font.drawLine(igd, xptr, oy, textArray, textStart, textPtr - textStart, textBlack);
-                oy += height;
-                if (textPtr == textArray.length)
-                    break;
-                textStart = textPtr + 1;
-            }
-            textPtr++;
-        }
+        if (!noBackground)
+            rtc.backgroundRoot(igd, xptr, oy, cc, cc, cc, 255);
+        rtc.renderRoot(igd, xptr, oy);
     }
 
-    public static RenderedText[] renderString(String text, IFixedSizeFont font, boolean textBlack) {
+    /**
+     * Renders text to a chunk.
+     */
+    public static RenderedTextChunk renderString(String text, IFixedSizeFont font, boolean textBlack) {
         char[] textArray = text.toCharArray();
         int textStart = 0;
         int textPtr = 0;
-        LinkedList<RenderedText> chunks = new LinkedList<>();
+        LinkedList<RenderedTextChunk> chunks = new LinkedList<>();
         while (true) {
             if (textPtr == textArray.length || textArray[textPtr] == '\n') {
                 // draw segment (or final segment)
                 chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, textBlack));
                 if (textPtr == textArray.length)
                     break;
+                chunks.add(RenderedTextChunk.CRLF.INSTANCE);
                 textStart = textPtr + 1;
             }
             textPtr++;
         }
-        return chunks.toArray(new RenderedText[0]);
+        return new RenderedTextChunk.Compound(chunks.toArray(new RenderedTextChunk[0]));
     }
 
     // NOTE: This assumes the results are for the final content block.
@@ -172,27 +158,29 @@ public class FontManager {
         formatLock.unlock();
         if (res != null)
             return res;
+        // Actually do the thing
+        IFixedSizeFont font = getFontForText(text, textHeight);
         String[] newlines = text.split("\n", -1);
         StringBuilder work = new StringBuilder();
         if (newlines.length == 1) {
             String firstLine = newlines[0];
             while (true) {
                 String nextFirstLine = "";
-                boolean testLen = getLineLength(firstLine, textHeight) > width;
+                boolean testLen = font.measureLine(firstLine) > width;
                 if (testLen) {
                     // Break down words...
                     int space;
                     while (((space = firstLine.lastIndexOf(' ')) > 0) && testLen) {
                         nextFirstLine = firstLine.substring(space) + nextFirstLine;
                         firstLine = firstLine.substring(0, space);
-                        testLen = getLineLength(firstLine, textHeight) > width;
+                        testLen = font.measureLine(firstLine) > width;
                     }
                     // And, if need be, letters.
                     while (testLen && (firstLine.length() > 1)) {
                         int split = firstLine.length() / 2;
                         nextFirstLine = firstLine.substring(split) + nextFirstLine;
                         firstLine = firstLine.substring(0, split);
-                        testLen = getLineLength(firstLine, textHeight) > width;
+                        testLen = font.measureLine(firstLine) > width;
                     }
                 }
 

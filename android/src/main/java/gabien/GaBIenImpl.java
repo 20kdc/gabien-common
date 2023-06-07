@@ -12,7 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.backendhelp.WindowMux;
-import gabien.text.NativeFont;
+import gabien.text.IFixedSizeFont;
 import gabien.uslx.vfs.impl.*;
 
 import java.io.*;
@@ -59,13 +59,13 @@ public final class GaBIenImpl implements IGaBIEn {
 
     @Override
     @NonNull
-    public NativeFont getDefaultNativeFont(int size) {
+    public IFixedSizeFont getDefaultNativeFont(int size) {
         return new NativeFontKinda(size);
     }
 
     @Override
     @Nullable
-    public NativeFont getNativeFont(int size, @NonNull String name) {
+    public IFixedSizeFont getNativeFont(int size, @NonNull String name) {
         return null;
     }
 

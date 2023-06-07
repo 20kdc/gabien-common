@@ -11,7 +11,7 @@ import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
 import gabien.text.IFixedSizeFont;
-import gabien.text.RenderedText;
+import gabien.text.RenderedTextChunk;
 
 /**
  * A label. Displays text.
@@ -75,7 +75,7 @@ public class UILabel extends UIBorderedElement {
         private String lastOverride = null;
         private boolean lastOverrideUE8 = false;
         private int lastBw = 1;
-        private RenderedText[] renderedParagraphB, renderedParagraphW;
+        private RenderedTextChunk renderedParagraphB, renderedParagraphW;
 
         public final int textHeight;
         public final String spacerText;
@@ -135,10 +135,7 @@ public class UILabel extends UIBorderedElement {
             y += ((lastSize.height - lastActSize.height) * alignY) / 2;
             x += lastBw;
             y += lastBw;
-            for (RenderedText rt : (blackText ? renderedParagraphB : renderedParagraphW)) {
-                rt.renderTo(igd, x, y);
-                y += textHeight;
-            }
+            (blackText ? renderedParagraphB : renderedParagraphW).renderRoot(igd, x, y);
         }
     }
 
