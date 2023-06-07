@@ -18,5 +18,6 @@ public interface ITextboxImplementation {
     void setInactive();
     // Returns true if the textbox is currently active, false otherwise.
     boolean checkupUsage();
+    // Returns false for the "dead" textbox implementation which won't return text you put into it.
     boolean isTrustworthy();
 }

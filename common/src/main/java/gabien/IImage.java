@@ -7,6 +7,8 @@
 
 package gabien;
 
+import java.util.concurrent.Semaphore;
+
 import org.eclipse.jdt.annotation.NonNull;
 
 /**
@@ -27,8 +29,29 @@ public interface IImage {
     /**
      * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
      * This may be slow, because processing may not have finished on the image yet.
+     * Also because this allocates a new buffer.
      */
-    @NonNull int[] getPixels();
+    default @NonNull int[] getPixels() {
+        int[] res = new int[getWidth() * getHeight()];
+        getPixels(res);
+        return res;
+    }
+
+    /**
+     * Same as the other form, but with a provided buffer.
+     * This may be slow, because processing may not have finished on the image yet.
+     */
+    default void getPixels(@NonNull int[] buffer) {
+        Semaphore sm = new Semaphore(1);
+        sm.acquireUninterruptibly();
+        getPixelsAsync(buffer, () -> sm.release());
+        sm.acquireUninterruptibly();
+    }
+
+    /**
+     * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
+     */
+    void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone);
 
     /**
      * Downloads an IImage (presumably from the GPU) to the CPU as an IWSIImage.

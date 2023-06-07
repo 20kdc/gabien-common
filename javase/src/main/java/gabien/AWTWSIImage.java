@@ -19,8 +19,8 @@ import org.eclipse.jdt.annotation.NonNull;
  * Copied from AWTImage and OsbDriverCore 7th June 2023.
  */
 public class AWTWSIImage implements IWSIImage.RW {
-    private final BufferedImage buf;
-    private final WritableRaster bufWR;
+    public final BufferedImage buf;
+    public final WritableRaster bufWR;
 
     public AWTWSIImage(@NonNull int[] colours, int width, int height) {
         if (width <= 0 || height <= 0) {

@@ -29,8 +29,8 @@ public class NullOsbDriver implements IWindowGrBackend {
     }
 
     @Override
-    public @NonNull int[] getPixels() {
-        return new int[0];
+    public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+        onDone.run();
     }
 
     @Override

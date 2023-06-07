@@ -86,11 +86,9 @@ public class TextEditingSession implements ITextEditingSession {
         return sessionOfficiallyDead;
     }
 
-    public void gdUpdateTextbox(boolean flushing) {
-        AndroidPortGlobals.mainActivityLock.lock();
+    public void gdUpdateTextboxHoldingMALock() {
         ITextboxImplementation tio = TextboxImplObject.getInstanceHoldingMALock();
         boolean alive = tio.checkupUsage();
-        AndroidPortGlobals.mainActivityLock.unlock();
         // detect specifically the *event* of textbox closure
         if (!alive) {
             // end the session but mark us as having not actually ended the session

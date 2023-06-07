@@ -7,7 +7,6 @@
 
 package gabien;
 
-import gabien.backendhelp.INativeImageHolder;
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 
@@ -18,6 +17,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -45,10 +45,14 @@ class GrInDriver implements IGrInDriver {
 
     public BufferedImage frontBuffer;
     public int wantedBackBufferW, wantedBackBufferH;
+    public int[] backBufferDownload = new int[0];
+    public AWTWSIImage backBufferDownloadWSI = new AWTWSIImage(new int[0], 0, 0);
 
     public final KeyListener commonKeyListener;
 
     Random fuzzer = new Random();
+
+    private Semaphore waitingFrames = new Semaphore(1);
 
     @SuppressWarnings("serial")
     public GrInDriver(String name, WindowSpecs ws, int rw, int rh) {
@@ -254,36 +258,47 @@ class GrInDriver implements IGrInDriver {
     }
 
     @Override
-    public void flush(IImage backBuffer) {
+    public synchronized void flush(IImage backBuffer) {
         if (peripherals instanceof MobilePeripherals)
             ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame(backBuffer);
 
-        // Update frontBuffer for slowpaint, then perform fastpaint
-        BufferedImage backBufferBI = (BufferedImage) (((INativeImageHolder) backBuffer).getNative());
-        BufferedImage frontBuf = frontBuffer;
-        int panelW = panel.getWidth();
-        int panelH = panel.getHeight();
-        if ((frontBuf.getWidth() != panelW) || (frontBuf.getHeight() != panelH)) {
-            // Resize maybe needed?
-            if (panelW != 0)
-                if (panelH != 0)
-                    frontBuf = new BufferedImage(panelW, panelH, BufferedImage.TYPE_INT_RGB);
+        // This stops backBufferDownload being active for more than one download.
+        waitingFrames.acquireUninterruptibly();
+
+        // Ensure the buffers are the right size.
+        if (backBufferDownloadWSI.getWidth() != backBuffer.getWidth() || backBufferDownloadWSI.getHeight() != backBuffer.getHeight()) {
+            backBufferDownload = new int[backBuffer.getWidth() * backBuffer.getHeight()];
+            backBufferDownloadWSI = new AWTWSIImage(backBufferDownload, backBuffer.getWidth(), backBuffer.getHeight());
         }
-        Graphics fbG = frontBuf.getGraphics();
-        fbG.setColor(panel.getBackground());
-        fbG.fillRect(0, 0, frontBuf.getWidth(), frontBuf.getHeight());
-        fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
+        // Transfer.
+        backBuffer.getPixelsAsync(backBufferDownload, () -> {
+            backBufferDownloadWSI.setPixels(backBufferDownload);
+            drawBackBufferToFrontBuffer(backBufferDownloadWSI);
+            waitingFrames.release();
+        });
 
-        // Change buffer if necessary
-        frontBuffer = frontBuf;
-
-        drawFrontBuffer(panel.getGraphics());
-
-        wantedBackBufferW = panelW / sc;
-        wantedBackBufferH = panelH / sc;
+        wantedBackBufferW = panel.getWidth() / sc;
+        wantedBackBufferH = panel.getHeight() / sc;
     }
 
-    private void drawFrontBuffer(Graphics pg) {
+    private synchronized void drawBackBufferToFrontBuffer(IWSIImage wsi) {
+        final int panelW = panel.getWidth();
+        final int panelH = panel.getHeight();
+        // Update frontBuffer for slowpaint, then perform fastpaint
+        BufferedImage backBufferBI = ((AWTWSIImage) wsi).buf;
+        // Resize maybe needed?
+        if ((frontBuffer.getWidth() != panelW) || (frontBuffer.getHeight() != panelH))
+            if ((panelW != 0) && (panelH != 0))
+                frontBuffer = new BufferedImage(panelW, panelH, BufferedImage.TYPE_INT_RGB);
+        Graphics fbG = frontBuffer.getGraphics();
+        fbG.setColor(panel.getBackground());
+        fbG.fillRect(0, 0, frontBuffer.getWidth(), frontBuffer.getHeight());
+        fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
+
+        drawFrontBuffer(panel.getGraphics());
+    }
+
+    private synchronized void drawFrontBuffer(Graphics pg) {
         if (currentEditingSession != null) {
             JComponent target = currentEditingSession.placeComponent;
             int txX = target.getX();
@@ -327,7 +342,7 @@ class GrInDriver implements IGrInDriver {
     }
 
     @Override
-    public void shutdown() {
+    public synchronized void shutdown() {
         GaBIEnImpl.activeDriverLock.lock();
         GaBIEnImpl.lastClosureDevice = frame.getGraphicsConfiguration().getDevice();
         GaBIEnImpl.activeDrivers.remove(this);

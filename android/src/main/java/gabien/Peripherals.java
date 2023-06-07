@@ -77,9 +77,9 @@ public class Peripherals implements IPeripherals {
         return new TextEditingSession(this, text, multiLine, textHeight, feedback);
     }
 
-    public void gdUpdateTextbox(boolean flushing) {
+    public void gdUpdateTextboxHoldingMALock() {
         if (currentTextEditingSession != null)
-            currentTextEditingSession.gdUpdateTextbox(flushing);
+            currentTextEditingSession.gdUpdateTextboxHoldingMALock();
     }
 
     public void gdResetPointers() {

@@ -30,10 +30,9 @@ public class AWTImage implements IImage, INativeImageHolder {
     }
 
     @Override
-    public @NonNull int[] getPixels() {
-        int[] arr = new int[buf.getWidth() * buf.getHeight()];
-        buf.getRGB(0, 0, buf.getWidth(), buf.getHeight(), arr, 0, buf.getWidth());
-        return arr;
+    public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+        buf.getRGB(0, 0, buf.getWidth(), buf.getHeight(), buffer, 0, buf.getWidth());
+        onDone.run();
     }
 
     @Override
