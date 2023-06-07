@@ -26,9 +26,9 @@ public interface IWSIImage {
     int getHeight();
 
     /**
-     * 0xAARRGGBB. The buffer is safe to edit.
+     * Writes 0xAARRGGBB data into the given buffer.
      */
-    @NonNull int[] getPixels();
+    void getPixels(@NonNull int[] data);
 
     /**
      * Creates a PNG file.
@@ -39,7 +39,9 @@ public interface IWSIImage {
      * Uploads an image to IImage (to be backed by BadGPU in future)
      */
     default @NonNull IImage upload() {
-        return GaBIEn.createImage(getPixels(), getWidth(), getHeight());
+        int[] tmp = new int[getWidth() * getHeight()];
+        getPixels(tmp);
+        return GaBIEn.createImage(tmp, getWidth(), getHeight());
     }
 
     interface RW extends IWSIImage {

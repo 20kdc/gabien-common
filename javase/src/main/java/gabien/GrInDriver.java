@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.backendhelp.INativeImageHolder;
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 
@@ -41,17 +42,16 @@ class GrInDriver implements IGrInDriver {
     public HashSet<Integer> mouseJustDown = new HashSet<Integer>();
     public HashSet<Integer> mouseJustUp = new HashSet<Integer>();
     public int mousewheelMovements = 0;
-    public BufferedImage frontBuffer;
 
-    public IWindowGrBackend backBuffer;
+    public BufferedImage frontBuffer;
+    public int wantedBackBufferW, wantedBackBufferH;
 
     public final KeyListener commonKeyListener;
 
     Random fuzzer = new Random();
 
     @SuppressWarnings("serial")
-    public GrInDriver(String name, WindowSpecs ws, IWindowGrBackend t) {
-        backBuffer = t;
+    public GrInDriver(String name, WindowSpecs ws, int rw, int rh) {
         sc = ws.scale;
         frame = new JFrame(name) {
             @Override
@@ -63,8 +63,8 @@ class GrInDriver implements IGrInDriver {
 
         // Setup frontBuffer...
 
-        int rw = t.getWidth();
-        int rh = t.getHeight();
+        wantedBackBufferW = rw;
+        wantedBackBufferH = rh;
 
         frontBuffer = new BufferedImage(rw * sc, rh * sc, BufferedImage.TYPE_INT_RGB);
 
@@ -244,30 +244,29 @@ class GrInDriver implements IGrInDriver {
     }
 
     @Override
-    public IGrDriver getBackBuffer() {
-        return backBuffer;
+    public int getWidth() {
+        return wantedBackBufferW;
     }
 
     @Override
-    public void flush() {
-        if (peripherals instanceof MobilePeripherals)
-            ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame();
+    public int getHeight() {
+        return wantedBackBufferH;
+    }
 
-        // To explain what goes on here now in MT-mode:
-        // 1. wait for current queue to complete
-        // 2. finish render
-        // 3. release queue for next render
-        // Note that I did at one point plan to make it so this ran on a 1-frame delay...
+    @Override
+    public void flush(IImage backBuffer) {
+        if (peripherals instanceof MobilePeripherals)
+            ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame(backBuffer);
 
         // Update frontBuffer for slowpaint, then perform fastpaint
-        BufferedImage backBufferBI = (BufferedImage) (backBuffer.getNative());
+        BufferedImage backBufferBI = (BufferedImage) (((INativeImageHolder) backBuffer).getNative());
         BufferedImage frontBuf = frontBuffer;
         int panelW = panel.getWidth();
         int panelH = panel.getHeight();
         if ((frontBuf.getWidth() != panelW) || (frontBuf.getHeight() != panelH)) {
             // Resize maybe needed?
-            if (backBuffer.getWidth() != 0)
-                if (backBuffer.getHeight() != 0)
+            if (panelW != 0)
+                if (panelH != 0)
                     frontBuf = new BufferedImage(panelW, panelH, BufferedImage.TYPE_INT_RGB);
         }
         Graphics fbG = frontBuf.getGraphics();
@@ -280,11 +279,8 @@ class GrInDriver implements IGrInDriver {
 
         drawFrontBuffer(panel.getGraphics());
 
-        int wantedRW = panelW / sc;
-        int wantedRH = panelH / sc;
-
-        if ((backBuffer.getWidth() != wantedRW) || (backBuffer.getHeight() != wantedRH))
-            backBuffer = backBuffer.recreate(wantedRW, wantedRH);
+        wantedBackBufferW = panelW / sc;
+        wantedBackBufferH = panelH / sc;
     }
 
     private void drawFrontBuffer(Graphics pg) {
@@ -296,11 +292,13 @@ class GrInDriver implements IGrInDriver {
             int txH = target.getHeight();
             ClipBoundHelper cbh = new ClipBoundHelper();
             cbh.point(0, 0);
-            cbh.point(backBuffer.getWidth() * sc, 0);
-            cbh.point(0, backBuffer.getHeight() * sc);
-            cbh.point(-(backBuffer.getWidth() * sc), 0);
+            int fbW = frontBuffer.getWidth();
+            int fbH = frontBuffer.getHeight();
+            cbh.point(fbW, 0);
+            cbh.point(0, fbH);
+            cbh.point(-fbW, 0);
             // Alternatively, maybe go up to 0, 0 then to txX, txY, and follow the points that way? depends on how much harm would be caused by non-orthogonal lines
-            cbh.point(0, txY - (backBuffer.getHeight() * sc));
+            cbh.point(0, txY - fbH);
             cbh.point(txX, 0);
             cbh.point(0, txH);
             cbh.point(txW, 0);
@@ -334,7 +332,6 @@ class GrInDriver implements IGrInDriver {
         GaBIEnImpl.lastClosureDevice = frame.getGraphicsConfiguration().getDevice();
         GaBIEnImpl.activeDrivers.remove(this);
         GaBIEnImpl.activeDriverLock.unlock();
-        backBuffer.shutdown();
         frame.setVisible(false);
     }
 

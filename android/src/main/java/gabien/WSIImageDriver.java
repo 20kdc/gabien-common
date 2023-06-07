@@ -49,10 +49,8 @@ public class WSIImageDriver implements INativeImageHolder, IWSIImage.RW {
     }
 
     @Override
-    public @NonNull int[] getPixels() {
-        int[] pixels = new int[w * h];
+    public void getPixels(@NonNull int[] pixels) {
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
-        return pixels;
     }
 
     @Override

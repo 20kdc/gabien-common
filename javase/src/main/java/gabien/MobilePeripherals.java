@@ -35,7 +35,10 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
         font = GaBIEn.getNativeFontFallback(16, null);
     }
 
-    public void mobilePeripheralsFinishFrame() {
+    public void mobilePeripheralsFinishFrame(IImage backBuffer) {
+        IGrDriver backBufferGr = null;
+        if (backBuffer instanceof IGrDriver)
+            backBufferGr = (IGrDriver) backBuffer;
         // Initial safeties
         if (activePointer < 0)
             activePointer = dummies.size() - 1;
@@ -76,17 +79,19 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
             mousePointer = null;
         }
         parent.mouseLock.unlock();
-        int idx = 0;
-        IGrDriver backBuffer = parent.getBackBuffer();
-        for (DummyPointer dp : dummies) {
-            backBuffer.clearRect(idx == activePointer ? 0 : 255, 0, 255, dp.x - 1, dp.y - 1, 3, 3);
-            idx++;
+        // Debug stuff
+        if (backBufferGr != null) {
+            int idx = 0;
+            for (DummyPointer dp : dummies) {
+                backBufferGr.clearRect(idx == activePointer ? 0 : 255, 0, 255, dp.x - 1, dp.y - 1, 3, 3);
+                idx++;
+            }
+            // This is called by GrInDriver because MobilePeripherals do special things.
+            String status = "Pointer " + (activePointer + 1) + " of " + dummies.size();
+            int statusLen = font.measureLine(status);
+            backBufferGr.clearRect(0, 0, 0, 0, 0, statusLen, 16);
+            font.drawLine(backBufferGr, 0, 0, status, false);
         }
-        // This is called by GrInDriver because MobilePeripherals do special things.
-        String status = "Pointer " + (activePointer + 1) + " of " + dummies.size();
-        int statusLen = font.measureLine(status);
-        backBuffer.clearRect(0, 0, 0, 0, 0, statusLen, 16);
-        font.drawLine(backBuffer, 0, 0, status, false);
     }
 
     @Override

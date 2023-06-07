@@ -15,10 +15,11 @@ public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;
     public boolean wantsShutdown = false;
     public Rect displayArea = new Rect(0, 0, 1, 1);
-    public OsbDriver backBuffer;
+    public int wantedBackBufferW, wantedBackBufferH;
 
     public GrInDriver(int w, int h) {
-        backBuffer = new OsbDriver(w, h, false);
+        wantedBackBufferW = w;
+        wantedBackBufferH = h;
         peripherals = new Peripherals(this);
     }
 
@@ -28,12 +29,18 @@ public class GrInDriver implements IGrInDriver {
     }
 
     @Override
-    public IGrDriver getBackBuffer() {
-        return backBuffer;
+    public int getWidth() {
+        return wantedBackBufferW;
     }
 
     @Override
-    public void flush() {
+    public int getHeight() {
+        return wantedBackBufferH;
+    }
+
+    @Override
+    public void flush(IImage backBufferI) {
+        OsbDriver backBuffer = (OsbDriver) backBufferI;
         boolean first = true;
         while (true) {
             peripherals.gdUpdateTextbox(first);
@@ -61,8 +68,8 @@ public class GrInDriver implements IGrInDriver {
     
                             sh.unlockCanvasAndPost(c);
                             if ((r.width() != bW) || (r.height() != bH)) {
-                                backBuffer.shutdown();
-                                backBuffer = new OsbDriver(r.width(), r.height(), false);
+                                wantedBackBufferW = bW;
+                                wantedBackBufferH = bH;
                             }
                             return;
                         }
@@ -94,6 +101,6 @@ public class GrInDriver implements IGrInDriver {
 
     @Override
     public int estimateUIScaleTenths() {
-        return Math.max(10, Math.min(backBuffer.w, backBuffer.h) / 30);
+        return Math.max(10, Math.min(wantedBackBufferW, wantedBackBufferH) / 30);
     }
 }

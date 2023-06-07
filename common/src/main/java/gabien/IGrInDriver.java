@@ -7,6 +7,9 @@
 
 package gabien;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * A graphics and input driver.The idea is to speed up work on ports.
  */
@@ -123,18 +126,23 @@ public interface IGrInDriver {
     boolean stillRunning();
 
     /**
-     * Gets the current backbuffer.
+     * Gets the current width.
      * This value should only change after flush calls.
-     * The backbuffer also gives you the current window size measurements.
      */
-    IGrDriver getBackBuffer();
+    int getWidth();
+
+    /**
+     * Gets the current height.
+     * This value should only change after flush calls.
+     */
+    int getHeight();
 
     /**
      * This will eventually show the backbuffer on the screen.
      * It used to be that this notified you with a boolean when the backbuffer was lost.
      * This has changed in preparation for BadGPU, because we need to get clever about buffer management now.
      */
-    void flush();
+    void flush(IImage backBuffer);
 
     /**
      * Closes the window.
@@ -147,4 +155,19 @@ public interface IGrInDriver {
 
     // Estimates UI scale (for DPI support)
     int estimateUIScaleTenths();
+
+    /**
+     * Helper to maintain backbuffer width/height.
+     * Otherwise, shuts down the passed-in backbuffer and returns a new one.
+     */
+    default @NonNull IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer) {
+        int w = getWidth();
+        int h = getHeight();
+        if (backBuffer != null) {
+            if (backBuffer.getWidth() == w && backBuffer.getHeight() == h)
+                return backBuffer;
+            backBuffer.shutdown();
+        }
+        return GaBIEn.makeOffscreenBuffer(w, h, false);
+    }
 }

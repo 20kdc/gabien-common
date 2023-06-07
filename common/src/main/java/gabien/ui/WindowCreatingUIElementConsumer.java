@@ -76,9 +76,10 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             }
 
             boolean needResize = false;
-            IGrDriver backbuffer = aw.igd.getBackBuffer();
-            int cw = backbuffer.getWidth();
-            int ch = backbuffer.getHeight();
+            aw.backBuffer = aw.igd.ensureBackBuffer(aw.backBuffer);
+            IGrDriver backbuffer = aw.backBuffer;
+            int cw = aw.igd.getWidth();
+            int ch = aw.igd.getHeight();
             Size s = aw.ue.getSize();
             if (s.width != cw)
                 needResize = true;
@@ -138,8 +139,9 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                 if (ip != 0)
                     aw.ue.handleMousewheel(idp.getMouseX(), idp.getMouseY(), ip == -1);
             }
-            if (aw.igd.stillRunning())
-                aw.igd.flush();
+            if (aw.igd.stillRunning()) {
+                aw.igd.flush(aw.backBuffer);
+            }
             if (aw.ue.requestsUnparenting()) {
                 closeTheseSD.add(aw);
                 aw.igd.shutdown();
@@ -179,6 +181,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
 
     private class ActiveWindow {
         IGrInDriver igd;
+        IGrDriver backBuffer;
         UIElement ue;
         IPeripherals peripherals;
         HashSet<IPointer> lastActivePointers = new HashSet<IPointer>();

@@ -115,7 +115,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs ws) {
-        return new gabien.GrInDriver(name, ws, makeOffscreenBufferInt(w, h, false));
+        return new gabien.GrInDriver(name, ws, w, h);
     }
 
     @Override

@@ -9,11 +9,10 @@ package gabien.backendhelp;
 
 import java.util.LinkedList;
 
-import gabien.GaBIEn;
 import gabien.IDesktopPeripherals;
 import gabien.IGaBIEnMultiWindow;
-import gabien.IGrDriver;
 import gabien.IGrInDriver;
+import gabien.IImage;
 import gabien.IPeripherals;
 import gabien.PriorityElevatorForUseByBackendHelp;
 import gabien.WindowSpecs;
@@ -28,7 +27,6 @@ import gabien.WindowSpecs;
  */
 public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IGaBIEnMultiWindow {
     public IGrInDriver underlyingWindow;
-    private IGrDriver ignorance = GaBIEn.makeOffscreenBuffer(8, 8, false);
     
     public LinkedList<Window> windows = new LinkedList<WindowMux.Window>();
     public LinkedList<Window> windowsSystem = new LinkedList<WindowMux.Window>();
@@ -57,8 +55,7 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
     
     @Override
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs) {
-        IGrDriver oldBackBuffer = underlyingWindow.getBackBuffer();
-        Window wnd = new Window(oldBackBuffer.getWidth(), oldBackBuffer.getHeight());
+        Window wnd = new Window(underlyingWindow.getWidth(), underlyingWindow.getHeight());
         Window oldWnd = getCurrentWindow();
         if (isOfSystemPriority(windowspecs)) {
             windowsSystem.add(wnd);
@@ -74,12 +71,8 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
         if (o == n)
             return;
         underlyingWindow.getPeripherals().clearKeys();
-        if (o != null) {
-            ignorance.shutdown();
-            IGrDriver igd = underlyingWindow.getBackBuffer();
-            ignorance = GaBIEn.makeOffscreenBuffer(igd.getWidth(), igd.getHeight(), false);
+        if (o != null)
             o.windowPeripherals.target = DeadDesktopPeripherals.INSTANCE;
-        }
         if (n != null) {
             n.windowPeripherals.target = underlyingWindow.getPeripherals();
         }
@@ -108,14 +101,19 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
         }
 
         @Override
-        public IGrDriver getBackBuffer() {
-            return getCurrentWindow() == this ? underlyingWindow.getBackBuffer() : ignorance;
+        public int getWidth() {
+            return underlyingWindow.getWidth();
         }
 
         @Override
-        public void flush() {
+        public int getHeight() {
+            return underlyingWindow.getHeight();
+        }
+
+        @Override
+        public void flush(IImage backBuffer) {
             if (getCurrentWindow() == this)
-                underlyingWindow.flush();
+                underlyingWindow.flush(backBuffer);
         }
 
         @Override

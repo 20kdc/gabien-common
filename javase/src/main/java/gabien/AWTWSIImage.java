@@ -48,12 +48,10 @@ public class AWTWSIImage implements IWSIImage.RW {
     }
 
     @Override
-    public @NonNull int[] getPixels() {
+    public void getPixels(@NonNull int[] colours) {
         if (buf == null)
-            return new int[0];
-        int[] arr = new int[buf.getWidth() * buf.getHeight()];
-        bufWR.getDataElements(0, 0, buf.getWidth(), buf.getHeight(), arr);
-        return arr;
+            return;
+        bufWR.getDataElements(0, 0, buf.getWidth(), buf.getHeight(), colours);
     }
 
     @Override
