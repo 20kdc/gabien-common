@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.FontManager;
 import gabien.IGrDriver;
+import gabien.text.TextTools;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -122,12 +123,12 @@ public class UITabBar extends UIElement.UIPanel {
                     localST[5] = Math.min(localST[5], localST[1] + effectiveHeight);
                     localST[1] += effectiveHeight / 8;
                     igd.updateST();
-                    UITabBar.drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, UITabBar.getVisibleTabName(w, shortTabs), w.icons);
+                    drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w);
                     localST[1] = oldTY;
                     localST[5] = oldCD;
                     igd.updateST();
                 } else {
-                    UITabBar.drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, UITabBar.getVisibleTabName(w, shortTabs), w.icons);
+                    drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w);
                 }
 
                 pos += tabW;
@@ -325,7 +326,7 @@ public class UITabBar extends UIElement.UIPanel {
         return h + ((h / 8) * 2);
     }
 
-    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, TabIcon[] icons) {
+    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab) {
         int margin = h / 8;
         int textHeight = h - (margin * 2);
         int tabExMargin = margin + (margin / 2);
@@ -333,10 +334,14 @@ public class UITabBar extends UIElement.UIPanel {
 
         UIBorderedElement.drawBorder(igd, border, margin, x, y, w, h);
 
-        FontManager.drawString(igd, x + tabExMargin, y + tabExMargin, text, true, UIBorderedElement.getBlackTextFlag(border), textHeight);
+        tab.titleTextCache.text = text;
+        tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(border);
+        tab.titleTextCache.font = FontManager.getFontForText(text, textHeight);
+        tab.titleTextCache.update();
+        tab.titleTextCache.getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
 
         int icoBack = h;
-        for (TabIcon i : icons) {
+        for (TabIcon i : tab.icons) {
             // sometimes too bright, deal with that
             int size = h - (tabIcoMargin * 2);
             int subMargin = tabIcoMargin / 2;
@@ -434,6 +439,7 @@ public class UITabBar extends UIElement.UIPanel {
         // The bounds position is controlled by the tab host (such as a UIWindowView.TabShell).
         public final UIElement contents;
         public final TabIcon[] icons;
+        public final TextTools.PlainCached titleTextCache = new TextTools.PlainCached();
 
         public Tab(UIElement con, TabIcon[] ico) {
             contents = con;

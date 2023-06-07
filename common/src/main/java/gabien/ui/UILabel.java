@@ -10,8 +10,7 @@ package gabien.ui;
 import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
-import gabien.text.IFixedSizeFont;
-import gabien.text.RenderedTextChunk;
+import gabien.text.TextTools;
 
 /**
  * A label. Displays text.
@@ -75,7 +74,7 @@ public class UILabel extends UIBorderedElement {
         private String lastOverride = null;
         private boolean lastOverrideUE8 = false;
         private int lastBw = 1;
-        private RenderedTextChunk renderedParagraphB, renderedParagraphW;
+        private TextTools.PlainCached paragraph = new TextTools.PlainCached();
 
         public final int textHeight;
         public final String spacerText;
@@ -119,9 +118,8 @@ public class UILabel extends UIBorderedElement {
                 lastSpacerSize = getRecommendedTextSize(spacerText, textHeight, bw);
                 sz2 = new Size(a.width, b.height);
                 sz2 = sz2.sizeMax(lastSpacerSize);
-                IFixedSizeFont fx = FontManager.getFontForText(textFormatted, textHeight);
-                renderedParagraphB = FontManager.renderString(textFormatted, fx, true);
-                renderedParagraphW = FontManager.renderString(textFormatted, fx, false);
+                paragraph.font = FontManager.getFontForText(textFormatted, textHeight);
+                paragraph.text = textFormatted;
             }
             return sz2;
         }
@@ -135,7 +133,9 @@ public class UILabel extends UIBorderedElement {
             y += ((lastSize.height - lastActSize.height) * alignY) / 2;
             x += lastBw;
             y += lastBw;
-            (blackText ? renderedParagraphB : renderedParagraphW).renderRoot(igd, x, y);
+            paragraph.blackText = blackText;
+            paragraph.update();
+            paragraph.getChunk().renderRoot(igd, x, y);
         }
     }
 
@@ -173,11 +173,15 @@ public class UILabel extends UIBorderedElement {
     // NOTE: Assumes the label is already formatted accordingly.
     // If not, expect it to go off the right of the screen if need be.
     // If you want multiline support, use a Contents instance.
-    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height) {
+    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache) {
         int h = UIBorderedElement.getRecommendedBorderWidth(height);
         int h2 = height + (h * 2) - (height / 8);
         UIBorderedElement.drawBorder(igd, mode + 2, h, ox, oy, wid, h2);
-        FontManager.drawString(igd, ox + h, oy + h, string, true, UIBorderedElement.getBlackTextFlag(mode + 2), height);
+        cache.font = FontManager.getFontForText(string, height);
+        cache.blackText = UIBorderedElement.getBlackTextFlag(mode + 2);
+        cache.text = string;
+        cache.update();
+        cache.getChunk().renderRoot(igd, ox + h, oy + h);
         return wid;
     }
 }

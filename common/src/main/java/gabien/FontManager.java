@@ -10,9 +10,9 @@ package gabien;
 import gabien.text.IFixedSizeFont;
 import gabien.text.RenderedTextChunk;
 import gabien.text.SimpleImageGridFont;
+import gabien.text.TextTools;
 import gabien.ui.Size;
 
-import java.util.LinkedList;
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -80,6 +80,9 @@ public class FontManager {
         return false;
     }
 
+    /**
+     * FontManager's font lookup function, finally accessible (mainly as a way to otherwise get rid of FontManager).
+     */
     public static IFixedSizeFont getFontForText(String text, int height) {
         if (useSystemFont(text, height))
             return GaBIEn.getNativeFont(height, fontOverride, true);
@@ -88,35 +91,14 @@ public class FontManager {
 
     /**
      * Please don't use this, it bleeds performance.
+     * @see gabien.text.TextTools
      */
     public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
-        RenderedTextChunk rtc = renderString(text, getFontForText(text, height), textBlack);
+        RenderedTextChunk rtc = TextTools.renderString(text, getFontForText(text, height), textBlack);
         int cc = textBlack ? 255 : 0;
         if (!noBackground)
             rtc.backgroundRoot(igd, xptr, oy, cc, cc, cc, 255);
         rtc.renderRoot(igd, xptr, oy);
-    }
-
-    /**
-     * Renders text to a chunk.
-     */
-    public static RenderedTextChunk renderString(String text, IFixedSizeFont font, boolean textBlack) {
-        char[] textArray = text.toCharArray();
-        int textStart = 0;
-        int textPtr = 0;
-        LinkedList<RenderedTextChunk> chunks = new LinkedList<>();
-        while (true) {
-            if (textPtr == textArray.length || textArray[textPtr] == '\n') {
-                // draw segment (or final segment)
-                chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, textBlack));
-                if (textPtr == textArray.length)
-                    break;
-                chunks.add(RenderedTextChunk.CRLF.INSTANCE);
-                textStart = textPtr + 1;
-            }
-            textPtr++;
-        }
-        return new RenderedTextChunk.Compound(chunks.toArray(new RenderedTextChunk[0]));
     }
 
     // NOTE: This assumes the results are for the final content block.
@@ -124,6 +106,7 @@ public class FontManager {
     public static Size getTextSize(String text, int textHeight) {
         int w = 0;
         int h = textHeight;
+        IFixedSizeFont font = getFontForText(text, textHeight);
         while (text.length() > 0) {
             int nlI = text.indexOf('\n');
             String tLine = text;
@@ -135,11 +118,16 @@ public class FontManager {
             } else {
                 text = "";
             }
-            w = Math.max(w, getLineLength(tLine, textHeight));
+            w = Math.max(w, font.measureLine(tLine));
         }
         return new Size(w, h - (textHeight / 8));
     }
 
+    /**
+     * Be careful with this function: It can be a performance hazard if used repeatedly on the same "block" of text.
+     * Use getFontForText(...).measureLine(...) if you're going to do that.
+     * In the two places this is used, it's used for good reason (though that may change as TextTools matures).
+     */
     public static int getLineLength(String text, int height) {
         return getFontForText(text, height).measureLine(text);
     }
@@ -160,48 +148,9 @@ public class FontManager {
             return res;
         // Actually do the thing
         IFixedSizeFont font = getFontForText(text, textHeight);
-        String[] newlines = text.split("\n", -1);
-        StringBuilder work = new StringBuilder();
-        if (newlines.length == 1) {
-            String firstLine = newlines[0];
-            while (true) {
-                String nextFirstLine = "";
-                boolean testLen = font.measureLine(firstLine) > width;
-                if (testLen) {
-                    // Break down words...
-                    int space;
-                    while (((space = firstLine.lastIndexOf(' ')) > 0) && testLen) {
-                        nextFirstLine = firstLine.substring(space) + nextFirstLine;
-                        firstLine = firstLine.substring(0, space);
-                        testLen = font.measureLine(firstLine) > width;
-                    }
-                    // And, if need be, letters.
-                    while (testLen && (firstLine.length() > 1)) {
-                        int split = firstLine.length() / 2;
-                        nextFirstLine = firstLine.substring(split) + nextFirstLine;
-                        firstLine = firstLine.substring(0, split);
-                        testLen = font.measureLine(firstLine) > width;
-                    }
-                }
-
-                work.append(firstLine);
-                firstLine = nextFirstLine;
-                if (firstLine.length() > 0) {
-                    work.append("\n");
-                } else {
-                    break;
-                }
-            }
-        } else {
-            // This causes the caching to be applied per-line.
-            for (int i = 0; i < newlines.length; i++) {
-                if (i != 0)
-                    work.append('\n');
-                work.append(formatTextFor(newlines[i], textHeight, width));
-            }
-        }
+        res = TextTools.formatTextFor(text, font, width);
         formatLock.lock();
-        formatData.put(key, res = work.toString());
+        formatData.put(key, res);
         formatLock.unlock();
         return res;
     }
