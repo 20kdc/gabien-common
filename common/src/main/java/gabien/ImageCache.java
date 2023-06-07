@@ -19,35 +19,39 @@ final class ImageCache {
         String ki = a + "_N_N_N" + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IImage img = GaBIEn.internal.getImage(a, res);
-        if (img == null)
-            img = GaBIEn.getErrorImage();
-        loadedImages.put(ki, img);
-        return img;
+        IWSIImage img = GaBIEn.internal.getImage(a, res);
+        IImage resImg;
+        if (img == null) {
+            resImg = GaBIEn.getErrorImage();
+        } else {
+            resImg = img.upload();
+        }
+        loadedImages.put(ki, resImg);
+        return resImg;
     }
 
     IImage getImageCK(String a, boolean res, int tr, int tg, int tb) {
         String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IImage img = GaBIEn.internal.getImage(a, res);
+        IWSIImage img = GaBIEn.internal.getImage(a, res);
+        IImage resImg;
         if (img == null) {
-            img = GaBIEn.getErrorImage();
-            loadedImages.put(ki, img);
-            return img;
-        }
-        int[] data = img.getPixels();
-        for (int i = 0; i < data.length; i++) {
-            int c = data[i];
-            if ((c & 0xFFFFFF) != (tb | (tg << 8) | (tr << 16))) {
-                data[i] = c | 0xFF000000;
-            } else {
-                data[i] = 0;
+            resImg = GaBIEn.getErrorImage();
+        } else {
+            int[] data = img.getPixels();
+            for (int i = 0; i < data.length; i++) {
+                int c = data[i];
+                if ((c & 0xFFFFFF) != (tb | (tg << 8) | (tr << 16))) {
+                    data[i] = c | 0xFF000000;
+                } else {
+                    data[i] = 0;
+                }
             }
+            resImg = GaBIEn.createImage(data, img.getWidth(), img.getHeight());
         }
-        img = GaBIEn.createImage(data, img.getWidth(), img.getHeight());
-        loadedImages.put(ki, img);
-        return img;
+        loadedImages.put(ki, resImg);
+        return resImg;
     }
 
     public void hintFlushAllTheCaches() {

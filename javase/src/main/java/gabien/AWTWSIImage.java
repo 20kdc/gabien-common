@@ -22,6 +22,13 @@ public class AWTWSIImage implements IWSIImage.RW {
     public final BufferedImage buf;
     public final WritableRaster bufWR;
 
+    public AWTWSIImage(@NonNull BufferedImage bi) {
+        if (bi.getType() != BufferedImage.TYPE_INT_ARGB)
+            throw new IllegalArgumentException("The passed BufferedImage must be TYPE_INT_ARGB");
+        buf = bi;
+        bufWR = bi.getRaster();
+    }
+
     public AWTWSIImage(@NonNull int[] colours, int width, int height) {
         if (width <= 0 || height <= 0) {
             buf = null;

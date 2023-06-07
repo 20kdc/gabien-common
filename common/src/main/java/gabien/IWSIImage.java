@@ -31,6 +31,15 @@ public interface IWSIImage {
     void getPixels(@NonNull int[] data);
 
     /**
+     * Like regular getPixels but allocates a buffer for you.
+     */
+    default @NonNull int[] getPixels() {
+        int[] res = new int[getWidth() * getHeight()];
+        getPixels(res);
+        return res;
+    }
+
+    /**
      * Creates a PNG file.
      */
     @NonNull byte[] createPNG();

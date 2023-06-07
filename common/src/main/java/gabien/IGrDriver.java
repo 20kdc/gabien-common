@@ -57,7 +57,6 @@ public interface IGrDriver extends IImage {
 
     /**
      * Stop all drawing operations. Makes an OsbDriver unusable.
-     * Please don't call this on backbuffers, please and thank you.
      */
     void shutdown();
 

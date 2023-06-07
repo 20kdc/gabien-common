@@ -45,12 +45,18 @@ public class GaBIEn {
     public static String wordInvalidFileName = "Invalid or missing file name.";
     public static int sysCoreFontSize = 8;
 
+    private static double lastDt;
+    private static long startup = System.currentTimeMillis();
+
     public static double getTime() {
-        return internal.getTime();
+        return (System.currentTimeMillis() - startup) / 1000.0;
     }
 
     public static double timeDelta(boolean reset) {
-        return internal.timeDelta(reset);
+        double dt = getTime() - lastDt;
+        if (reset)
+            lastDt = getTime();
+        return dt;
     }
 
     // Regarding this change:

@@ -62,10 +62,9 @@ public class OsbDriver implements INativeImageHolder, IGrDriver {
     }
 
     @Override
-    public @NonNull int[] getPixels() {
-        int[] pixels = new int[w * h];
-        bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
-        return pixels;
+    public void getPixelsAsync(@NonNull int[] data, @NonNull Runnable onDone) {
+        bitmap.getPixels(data, 0, w, 0, 0, w, h);
+        onDone.run();
     }
 
     @Override

@@ -46,10 +46,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     private final boolean useDebug;
 
-    private long startup = System.currentTimeMillis();
-
-    private double lastDt = getTime();
-
     private RawSoundDriver sound = null;
 
     private String fbDirectory = ".";
@@ -84,17 +80,6 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
             if (devs[i].isFullScreenSupported())
                 return devs[i];
         return null;
-    }
-
-    public double getTime() {
-        return (System.currentTimeMillis() - startup) / 1000.0;
-    }
-
-    public double timeDelta(boolean reset) {
-        double dt = getTime() - lastDt;
-        if (reset)
-            lastDt = getTime();
-        return dt;
     }
 
     public InputStream getResource(String resource) {
@@ -160,13 +145,14 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public IImage getImage(String a, boolean res) {
+    public IWSIImage getImage(String a, boolean res) {
         try {
-            AWTImage img = new AWTImage();
-            img.buf = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
-            if (img.buf == null)
-                throw new NullPointerException();
-            return img;
+            BufferedImage bi = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
+            if (bi.getType() == BufferedImage.TYPE_INT_ARGB)
+                return new AWTWSIImage(bi);
+            int[] tmp = new int[bi.getWidth() * bi.getHeight()];
+            bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), tmp, 0, bi.getWidth());
+            return new AWTWSIImage(tmp, bi.getWidth(), bi.getHeight());
         } catch (Exception ex) {
             return null;
         }

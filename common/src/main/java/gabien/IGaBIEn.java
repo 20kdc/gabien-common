@@ -26,10 +26,6 @@ import gabien.text.NativeFont;
  *  like to use their own schedulers)
  */
 public interface IGaBIEn {
-    double getTime();
-
-    double timeDelta(boolean reset);
-
     // NOTE regarding the following two functions.
     // The raw API doesn't bother to do resource overlays - that's managed entirely in gabien-common.
 
@@ -53,7 +49,7 @@ public interface IGaBIEn {
      * 'res' should use GaBIEnImpl.getResource, otherwise GaBIEnImpl.getFile
      * On error, this version of the function should return null.
      */
-    IImage getImage(String a, boolean res);
+    IWSIImage getImage(String a, boolean res);
 
     // Make an image from a buffer.
     // Note that the colours are 0xAARRGGBB.

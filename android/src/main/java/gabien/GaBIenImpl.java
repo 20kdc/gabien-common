@@ -25,8 +25,6 @@ import org.eclipse.jdt.annotation.Nullable;
  */
 public final class GaBIenImpl implements IGaBIEn {
     //In case you get confused.
-    private long startup = System.currentTimeMillis();
-    private double lastdt = getTime();
     private RawAudioDriver rad;
 
     public static void main() throws Exception {
@@ -47,17 +45,6 @@ public final class GaBIenImpl implements IGaBIEn {
     	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
-    }
-
-    public double getTime() {
-        return (System.currentTimeMillis() - startup) / 1000.0d;
-    }
-
-    public double timeDelta(boolean reset) {
-        double dt = getTime() - lastdt;
-        if (reset)
-            lastdt = getTime();
-        return dt;
     }
 
     @Override
@@ -111,14 +98,14 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public IImage getImage(String a, boolean res) {
+    public IWSIImage getImage(String a, boolean res) {
         try {
             Bitmap b = BitmapFactory.decodeStream(res ? getResource(a) : GaBIEn.getInFile(a));
             int w = b.getWidth();
             int h = b.getHeight();
             int[] data = new int[w * h];
             b.getPixels(data, 0, w, 0, 0, w, h);
-            return new OsbDriver(w, h, data);
+            return new WSIImageDriver(data, w, h);
         } catch (Exception e) {
             e.printStackTrace();
         }
