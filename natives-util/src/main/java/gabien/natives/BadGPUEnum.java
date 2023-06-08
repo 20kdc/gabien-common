@@ -11,7 +11,7 @@ package gabien.natives;
  * Enums and stuff, because they're weird.
  * This is extensible so that it can be pulled into BadGPUUnsafe and BadGPU.
  * Bit of a cheat, but who's counting?
- * VERSION: 0.19.0
+ * VERSION: 0.20.0
  * Created 30th May, 2023.
  */
 public class BadGPUEnum {
@@ -115,30 +115,42 @@ public class BadGPUEnum {
             value = ev;
         }
     }
-    public enum BlendEquation {
-        Add(0x8006),
-        Sub(0x800A),
-        ReverseSub(0x800B);
+    public enum BlendOp {
+        Add(0),
+        Sub(1),
+        ReverseSub(2);
         public final int value;
-        private BlendEquation(int ev) {
+        private BlendOp(int ev) {
             value = ev;
         }
     }
     public enum BlendWeight {
-        Zero(0),
-        One(1),
-        Src(0x0300),
-        InvertSrc(0x0301),
-        Dst(0x0306),
-        InvertDst(0x0307),
-        SrcA(0x0302),
-        InvertSrcA(0x0303),
-        DstA(0x0304),
-        InvertDstA(0x0305),
-        SrcAlphaSaturate(0x0308);
+        Zero(000),
+        One(001),
+        SrcAlphaSaturate(002),
+        Dst(030),
+        InvertDst(031),
+        DstA(032),
+        InvertDstA(033),
+        Src(050),
+        InvertSrc(051),
+        SrcA(052),
+        InvertSrcA(053);
         public final int value;
         private BlendWeight(int ev) {
             value = ev;
         }
+    }
+    public static int blendEquation(int bwS, int bwD, int be) {
+        return ((bwS << 9) | (bwD << 3) | be);
+    }
+    public static int blendEquation(BlendWeight bwS, BlendWeight bwD, BlendOp be) {
+        return ((bwS.value << 9) | (bwD.value << 3) | be.value);
+    }
+    public static int blendProgram(int eqRGB, int eqA) {
+        return (eqRGB << 15) | eqA;
+    }
+    public static int blendProgram(BlendWeight rbwS, BlendWeight rbwD, BlendOp rbe, BlendWeight abwS, BlendWeight abwD, BlendOp abe) {
+        return (blendEquation(rbwS, rbwD, rbe) << 15) | blendEquation(abwS, abwD, abe);
     }
 }

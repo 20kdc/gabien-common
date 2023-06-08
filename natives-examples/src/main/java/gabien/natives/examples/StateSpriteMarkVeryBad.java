@@ -62,8 +62,7 @@ public class StateSpriteMarkVeryBad extends State {
                     tmpMatrix, 0, null, 0,
                     0, 0, w, h,
                     cached, null, 0,
-                    BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add,
-                    BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add);
+                    0);
         }
     }
 

@@ -150,8 +150,7 @@ unsigned char J_BADGPU(drawGeom)(void * env, void * self,
     int32_t stFunc, int32_t stRef, int32_t stMask,
     int32_t stSF, int32_t stDF, int32_t stDP,
     int32_t dtFunc, float depthN, float depthF, float poFactor, float poUnits,
-    int32_t bwRGBS, int32_t bwRGBD, int32_t beRGB,
-    int32_t bwAS, int32_t bwAD, int32_t beA
+    int32_t blendProgram
 ) {
     JNIFA_L(vPos);
     JNIFA_L(vCol);
@@ -172,8 +171,7 @@ unsigned char J_BADGPU(drawGeom)(void * env, void * self,
         stFunc, stRef, stMask,
         stSF, stDF, stDP,
         dtFunc, depthN, depthF, poFactor, poUnits,
-        bwRGBS, bwRGBD, beRGB,
-        bwAS, bwAD, beA
+        blendProgram
     );
     JNIFA_R(matrixT, JNI_ABORT);
     JNIFA_R(matrixB, JNI_ABORT);
@@ -194,8 +192,7 @@ unsigned char J_BADGPU(drawGeomNoDS)(void * env, void * self,
     JNIBA_ARG(matrixA), JNIBA_ARG(matrixB),
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     int64_t texture, JNIBA_ARG(matrixT),
-    int32_t bwRGBS, int32_t bwRGBD, int32_t beRGB,
-    int32_t bwAS, int32_t bwAD, int32_t beA
+    int32_t blendProgram
 ) {
     JNIFA_L(vPos);
     JNIFA_L(vCol);
@@ -213,8 +210,7 @@ unsigned char J_BADGPU(drawGeomNoDS)(void * env, void * self,
         (void *) matrixA, (void *) matrixB,
         vX, vY, vW, vH,
         C_PTR(texture), (void *) matrixT,
-        bwRGBS, bwRGBD, beRGB,
-        bwAS, bwAD, beA
+        blendProgram
     );
     JNIFA_R(matrixT, JNI_ABORT);
     JNIFA_R(matrixB, JNI_ABORT);

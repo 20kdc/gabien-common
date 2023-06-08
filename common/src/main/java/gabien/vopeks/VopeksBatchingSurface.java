@@ -12,7 +12,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Instance;
-import gabien.natives.BadGPUEnum.BlendEquation;
+import gabien.natives.BadGPUEnum.BlendOp;
 import gabien.natives.BadGPUEnum.BlendWeight;
 import gabien.uslx.append.ObjectPool;
 import gabien.vopeks.Vopeks.ITask;
@@ -160,10 +160,24 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     public enum BlendMode {
-        None,
-        Normal,
-        Additive,
-        Subtractive
+        None(0),
+        Normal(BadGPU.blendProgram(
+            BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add,
+            BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add
+        )),
+        Additive(BadGPU.blendProgram(
+            BlendWeight.One, BlendWeight.One, BlendOp.Add,
+            BlendWeight.Zero, BlendWeight.One, BlendOp.Add
+        )),
+        Subtractive(BadGPU.blendProgram(
+            BlendWeight.One, BlendWeight.One, BlendOp.ReverseSub,
+            BlendWeight.Zero, BlendWeight.One, BlendOp.Add
+        ));
+        public final int blendProgram;
+
+        BlendMode(int bp) {
+            blendProgram = bp;
+        }
     }
 
     public enum TilingMode {
@@ -194,19 +208,6 @@ public class VopeksBatchingSurface extends VopeksImage {
             if (blendMode != BlendMode.None)
                 drawFlags |= BadGPU.DrawFlags.Blend;
 
-            BlendWeight bwRGBS = BlendWeight.SrcA, bwRGBD = BlendWeight.InvertSrcA;
-            BlendWeight bwAS = BlendWeight.SrcA, bwAD = BlendWeight.InvertSrcA;
-            BlendEquation beRGB = BlendEquation.Add, beA = BlendEquation.Add;
-
-            if (blendMode == BlendMode.Additive || blendMode == BlendMode.Subtractive) {
-                bwAS = BlendWeight.Zero;
-                bwAD = BlendWeight.One;
-                bwRGBS = BlendWeight.One;
-                bwRGBD = BlendWeight.One;
-                if (blendMode == BlendMode.Subtractive)
-                    beRGB = BlendEquation.ReverseSub;
-            }
-
             drawFlags |= tilingMode.value;
 
             int verticesOfs = megabufferOfs;
@@ -223,8 +224,7 @@ public class VopeksBatchingSurface extends VopeksImage {
                     null, 0, null, 0,
                     0, 0, width, height,
                     tx, null, 0,
-                    bwRGBS, bwRGBD, beRGB,
-                    bwAS, bwAD, beA);
+                    blendMode.blendProgram);
             vopeks.floatPool.finish(megabuffer);
             batchPool.finish(this);
         }

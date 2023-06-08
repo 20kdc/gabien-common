@@ -14,7 +14,7 @@ import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
- * VERSION: 0.19.0
+ * VERSION: 0.20.0
  * Created 30th May, 2023.
  */
 public abstract class BadGPU extends BadGPUEnum {
@@ -292,8 +292,7 @@ public abstract class BadGPU extends BadGPUEnum {
         Compare stFunc, int stRef, int stMask,
         StencilOp stSF, StencilOp stDF, StencilOp stDP,
         Compare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
-        BlendWeight bwRGBS, BlendWeight bwRGBD, BlendEquation beRGB,
-        BlendWeight bwAS, BlendWeight bwAD, BlendEquation beA
+        int blendProgram
     ) {
         if (sTexture == null && sDSBuffer == null)
             return false;
@@ -326,8 +325,7 @@ public abstract class BadGPU extends BadGPUEnum {
                 stFunc.value, stRef, stMask,
                 stSF.value, stDF.value, stDP.value,
                 dtFunc.value, depthN, depthF, poFactor, poUnits,
-                bwRGBS.value, bwRGBD.value, beRGB.value,
-                bwAS.value, bwAD.value, beA.value);
+                blendProgram);
     }
     public static boolean drawGeomNoDS(
         @Nullable Texture sTexture, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
@@ -338,8 +336,7 @@ public abstract class BadGPU extends BadGPUEnum {
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
         int vX, int vY, int vW, int vH,
         @Nullable Texture texture, float[] matrixT, int matrixTOfs,
-        BlendWeight bwRGBS, BlendWeight bwRGBD, BlendEquation beRGB,
-        BlendWeight bwAS, BlendWeight bwAD, BlendEquation beA
+        int blendProgram
     ) {
         if (sTexture == null)
             return false;
@@ -364,7 +361,6 @@ public abstract class BadGPU extends BadGPUEnum {
                 matrixA, matrixAOfs, matrixB, matrixBOfs,
                 vX, vY, vW, vH,
                 texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
-                bwRGBS.value, bwRGBD.value, beRGB.value,
-                bwAS.value, bwAD.value, beA.value);
+                blendProgram);
     }
 }

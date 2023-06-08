@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.19.0`
+ * Version: `0.20.0`
  *
  * ## Formatting Policy
  *
@@ -892,55 +892,124 @@ typedef enum BADGPUStencilOp {
 } BADGPUStencilOp;
 
 /*
- * ### `BADGPUBlendEquation`
+ * ### `BADGPUBlendOp`
  *
- * (Values deliberately match `glBlendEquationSeparate`.
- *  The implementation may make use of such.
- *  Users should not abuse this.)
+ * These are 3-bit. See `BADGPU_BLEND_PROGRAM`.
  */
-typedef enum BADGPUBlendEquation {
+typedef enum BADGPUBlendOp {
     // GL_FUNC_ADD: S + D
-    BADGPUBlendEquation_Add = 0x8006,
+    BADGPUBlendOp_Add = 0,
     // GL_FUNC_SUBTRACT: S - D
-    BADGPUBlendEquation_Sub = 0x800A,
+    BADGPUBlendOp_Sub = 1,
     // GL_FUNC_REVERSE_SUBTRACT: D - S
-    BADGPUBlendEquation_ReverseSub = 0x800B,
-    BADGPUBlendEquation_Force32 = 0x7FFFFFFF
-} BADGPUBlendEquation;
+    BADGPUBlendOp_ReverseSub = 2,
+    BADGPUBlendOp_Force32 = 0x7FFFFFFF
+} BADGPUBlendOp;
 
 /*
  * ### `BADGPUBlendWeight`
  *
- * Values deliberately match glBlendFuncSeparate.
- * The implementation may make use of such.
- * Users should not abuse this.
+ * These are 6-bit. See `BADGPU_BLEND_PROGRAM`.
+ *
+ * Rationale: The first digit specifies the source.
+ *
+ * + 0: Special
+ * + 3: Destination
+ * + 5: Source
+ *
+ * The second digit specifies the operation:
+ *
+ * + 0: Channel
+ * + 1: Invert Channel
+ * + 2: Alpha
+ * + 3: Invert Alpha
+ *
+ * Note however that these can't be mixed and matched arbitrarily.
  */
 typedef enum BADGPUBlendWeight {
     // GL_ZERO: 0
-    BADGPUBlendWeight_Zero = 0,
+    BADGPUBlendWeight_Zero =       000,
     // GL_ONE: 1
-    BADGPUBlendWeight_One = 1,
-    // GL_SRC_COLOR: Sc
-    BADGPUBlendWeight_Src = 0x300,
-    // GL_ONE_MINUS_SRC_COLOR: 1 - Sc
-    BADGPUBlendWeight_InvertSrc = 0x301,
-    // GL_DST_COLOR: Dc
-    BADGPUBlendWeight_Dst = 0x306,
-    // GL_ONE_MINUS_DST_COLOR: 1 - Dc
-    BADGPUBlendWeight_InvertDst = 0x307,
-    // GL_SRC_ALPHA: Sa
-    BADGPUBlendWeight_SrcA = 0x0302,
-    // GL_ONE_MINUS_SRC_ALPHA: 1 - Sa
-    BADGPUBlendWeight_InvertSrcA = 0x303,
-    // GL_DST_ALPHA: Da
-    BADGPUBlendWeight_DstA = 0x304,
-    // GL_ONE_MINUS_DST_ALPHA: 1 - Da
-    BADGPUBlendWeight_InvertDstA = 0x305,
+    BADGPUBlendWeight_One =        001,
     // GL_SRC_ALPHA_SATURATE: min(Sa, 1 - Da)
     //  except for A output where it's just 1.
-    BADGPUBlendWeight_SrcAlphaSaturate = 0x308,
+    BADGPUBlendWeight_SrcAlphaSaturate = 002,
+    // GL_DST_COLOR: Dc
+    BADGPUBlendWeight_Dst =        030,
+    // GL_ONE_MINUS_DST_COLOR: 1 - Dc
+    BADGPUBlendWeight_InvertDst =  031,
+    // GL_DST_ALPHA: Da
+    BADGPUBlendWeight_DstA =       032,
+    // GL_ONE_MINUS_DST_ALPHA: 1 - Da
+    BADGPUBlendWeight_InvertDstA = 033,
+    // GL_SRC_COLOR: Sc
+    BADGPUBlendWeight_Src =        050,
+    // GL_ONE_MINUS_SRC_COLOR: 1 - Sc
+    BADGPUBlendWeight_InvertSrc =  051,
+    // GL_SRC_ALPHA: Sa
+    BADGPUBlendWeight_SrcA =       052,
+    // GL_ONE_MINUS_SRC_ALPHA: 1 - Sa
+    BADGPUBlendWeight_InvertSrcA = 053,
     BADGPUBlendWeight_Force32 = 0x7FFFFFFF
 } BADGPUBlendWeight;
+
+/*
+ * ### `BADGPU_BLEND_EQUATION`
+ *
+ * When blending is enabled, blend equations are run for each channel. \
+ * These have two inputs: The source pixel colour (after texturing etc.), \
+ *  and the destination pixel colour (i.e. what's on the framebuffer).
+ *
+ * Blend equations mostly treat all channels as isolated, *except* that the
+ *  alpha channel can be read in particular. As such, when the "colour channel"
+ *  is referred to, that refers to the specific channel being processed. This
+ *  does mean that for the alpha channel, the alpha/non-alpha weights are
+ *  equivalent.
+ *
+ * The results of all blend equations are then (atomically, as far as the
+ *  blending unit is concerned) written to the framebuffer.
+ *
+ * Blend equations are made up of three components, two blend weights
+ *  (multiplied with the source and destination respectively) and one blend
+ *  operation (which combines the two multiplied values).
+ *
+ * `bwS` and `bwD` are the source and destination `BADGPUBlendWeight` values,
+ *  and `be` is the `BADGPUBlendOp` value.
+ *
+ * In order to reduce argument count, BadGPU represents a whole equation as a
+ *  single integer, and can similarly represent the pair of equations required
+ *  to program the blending unit as a single integer.
+ *
+ * For example, oct. `52530` is a decent equation if dstA isn't an issue.
+ *
+ * Fans of premultiplied alpha might prefer a different equation, but beware:
+ *  vertex colours need to be appropriately adjusted to use premultiplied alpha
+ *  in BadGPU.
+ *
+ * An equation such as oct. `01530` may be of use for that.
+ */
+#define BADGPU_BLEND_EQUATION(bwS, bwD, be) (((bwS) << 9) | ((bwD) << 3) | (be))
+
+/*
+ * ### `BADGPU_BLEND_PROGRAM`
+ *
+ * Given two blend equations (see `BADGPU_BLEND_EQUATION`), creates a program.
+ *
+ * `eqRGB` is the blend equation used for the R, G, and B channels.
+ * `eqA` is the blend equation used for the A channel.
+ *
+ * This embeds the entire configuration of the blending unit into one integer.
+ *
+ * Rationale: This format is designed to allow embedding blend programs into
+ *  source code, reading them (as octal), and reducing argument count.
+ *
+ * In particular, blend programs can be calculated at compile or load time,
+ *  and then simply passed as a single argument.
+ *
+ * This is similar to if they were objects, but weighing less, still allowing
+ *  for dynamic use, and still allowing runtime poking.
+ */
+#define BADGPU_BLEND_PROGRAM(eqRGB, eqA) (((equRGB) << 15) | (eqA))
 
 /*
  * ### `badgpuDrawGeom`
@@ -987,6 +1056,8 @@ typedef enum BADGPUBlendWeight {
  * `depthN`, `depthF` make up the depth range (0, 1 is a good default). \
  * `poFactor`, `poUnits` make up the polygon offset.
  *
+ * `blendProgram` is as prepared by `BADGPU_BLEND_PROGRAM`.
+ *
  * Rationale: While this function is indeed absolutely massive, there are
  *  shorter wrappers such as badgpuDrawGeomNoDS. This is also arguably a natural
  *  cost of the avoidance of stack structs while also avoiding a stateful API.
@@ -1018,8 +1089,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     // Depth Test / DepthRange / PolygonOffset
     BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
     // Blending
-    BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
-    BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
+    int32_t blendProgram
 );
 
 /*
@@ -1064,8 +1134,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
     // Blending
-    BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
-    BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
+    int32_t blendProgram
 );
 
 #undef BADGPU_SESSIONFLAGS

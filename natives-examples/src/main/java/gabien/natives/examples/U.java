@@ -57,8 +57,7 @@ public class U {
                 null, 0, null, 0,
                 0, 0, w, h,
                 null, null, 0,
-                BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add,
-                BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add);
+                0);
     }
     public static void texRctImm(Texture screen, int i, int j, int w, int h, Texture cached) {
         int idx = 0;
@@ -79,7 +78,6 @@ public class U {
                 null, 0, null, 0,
                 i, j, w, h,
                 cached, null, 0,
-                BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add,
-                BadGPU.BlendWeight.Zero, BadGPU.BlendWeight.Zero, BadGPU.BlendEquation.Add);
+                0);
     }
 }

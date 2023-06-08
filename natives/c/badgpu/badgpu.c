@@ -690,6 +690,46 @@ BADGPU_EXPORT BADGPUBool badgpuDrawClear(
     return badgpuChk(bi, "badgpuDrawClear", 0);
 }
 
+static int32_t convertBlendWeight(int32_t bw) {
+    switch (bw) {
+    // GL_ZERO
+    case BADGPUBlendWeight_Zero: return 0;
+    // GL_ONE
+    case BADGPUBlendWeight_One: return 1;
+    // GL_SRC_ALPHA_SATURATE
+    case BADGPUBlendWeight_SrcAlphaSaturate: return 0x308;
+    // GL_DST_COLOR
+    case BADGPUBlendWeight_Dst: return 0x306;
+    // GL_ONE_MINUS_DST_COLOR
+    case BADGPUBlendWeight_InvertDst: return 0x307;
+    // GL_DST_ALPHA
+    case BADGPUBlendWeight_DstA: return 0x304;
+    // GL_ONE_MINUS_DST_ALPHA
+    case BADGPUBlendWeight_InvertDstA: return 0x305;
+    // GL_SRC_COLOR
+    case BADGPUBlendWeight_Src: return 0x300;
+    // GL_ONE_MINUS_SRC_COLOR
+    case BADGPUBlendWeight_InvertSrc: return 0x301;
+    // GL_SRC_ALPHA
+    case BADGPUBlendWeight_SrcA: return 0x0302;
+    // GL_ONE_MINUS_SRC_ALPHA
+    case BADGPUBlendWeight_InvertSrcA: return 0x303;
+    default: return 0;
+    }
+}
+
+static int32_t convertBlendOp(int32_t be) {
+    switch (be) {
+    // GL_FUNC_ADD
+    case BADGPUBlendOp_Add: return 0x8006;
+    // GL_FUNC_SUBTRACT
+    case BADGPUBlendOp_Sub: return 0x800A;
+    // GL_FUNC_REVERSE_SUBTRACT
+    case BADGPUBlendOp_ReverseSub: return 0x800B;
+    default: return 0;
+    }
+}
+
 BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
@@ -709,8 +749,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     // Depth Test / DepthRange / PolygonOffset
     BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
     // Blending
-    BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
-    BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
+    int32_t blendProgram
 ) {
     BADGPUInstancePriv * bi;
     if (!drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
@@ -793,9 +832,14 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     // Blending
     if (flags & BADGPUDrawFlags_Blend) {
         bi->glEnable(GL_BLEND);
-        // no conversion as values deliberately match
-        bi->glBlendFuncSeparate(bwRGBS, bwRGBD, bwAS, bwAD);
-        bi->glBlendEquationSeparate(beRGB, beA);
+        bi->glBlendFuncSeparate(
+            convertBlendWeight((blendProgram >> 24) & 077),  // RGB S
+            convertBlendWeight((blendProgram >> 18) & 077),  // RGB D
+            convertBlendWeight((blendProgram >>  9) & 077),  // A   S
+            convertBlendWeight((blendProgram >>  3) & 077)); // A   D
+        bi->glBlendEquationSeparate(
+            convertBlendOp((blendProgram >> 15) & 07),
+            convertBlendOp(blendProgram & 07));
     } else {
         bi->glDisable(GL_BLEND);
     }
@@ -859,8 +903,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
     // Blending
-    BADGPUBlendWeight bwRGBS, BADGPUBlendWeight bwRGBD, BADGPUBlendEquation beRGB,
-    BADGPUBlendWeight bwAS, BADGPUBlendWeight bwAD, BADGPUBlendEquation beA
+    int32_t blendProgram
 ) {
     return badgpuDrawGeom(
     sTexture, NULL,
@@ -876,8 +919,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     BADGPUCompare_Always, 0, 0,
     BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Keep,
     BADGPUCompare_Always, 0, 0, 0, 0,
-    bwRGBS, bwRGBD, beRGB,
-    bwAS, bwAD, beA
+    blendProgram
     );
 }
 

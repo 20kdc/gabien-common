@@ -139,8 +139,7 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
         // Fragment Shader
         NULL, NULL,
         // Blending
-        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add,
-        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add
+        0
     );
 }
 
@@ -193,8 +192,7 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
         // Fragment Shader
         texSrc, &matrix,
         // Blending
-        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add,
-        BADGPUBlendWeight_Zero, BADGPUBlendWeight_Zero, BADGPUBlendEquation_Add
+        0
     );
 }
 
