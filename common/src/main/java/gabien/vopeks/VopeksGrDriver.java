@@ -29,20 +29,20 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
 
     @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
-        blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, TilingMode.None);
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, TilingMode.None, BlendMode.Normal);
     }
 
     @Override
     public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
-        blitScaledImage(0, 0, w, h, x, y, w, h, cachedTile, TilingMode.XY);
+        blitScaledImage(0, 0, w, h, x, y, w, h, cachedTile, TilingMode.XY, BlendMode.Normal);
     }
 
     @Override
     public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
-        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None);
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BlendMode.Normal);
     }
 
-    public synchronized void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int w, int h, IImage i, TilingMode tiling) {
+    public synchronized void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int w, int h, IImage i, TilingMode tiling, BlendMode blendSub) {
         x += localST[0];
         y += localST[1];
         float srcWF = i.getWidth();
@@ -52,8 +52,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float t0 = srcy / srcHF;
         float t1 = (srcy + srch) / srcHF;
         IVopeksSurfaceHolder vsh = i instanceof IVopeksSurfaceHolder ? (IVopeksSurfaceHolder) i : null;
-        batchEnsureRoom(6);
-        batchInStateScA(BlendMode.Normal, TilingMode.None, vsh);
+        batchStartGroupScA(6, blendSub, TilingMode.None, vsh);
         batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
         batchWrite(x + w, y    , s1, t0, 1, 1, 1, 1);
         batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
@@ -73,7 +72,53 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     public synchronized void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, BlendMode blendSub) {
-        
+        if (angle == 0) {
+            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, blendSub);
+            return;
+        }
+        x += localST[0];
+        y += localST[1];
+        // Calculate texture coordinates
+        float srcWF = i.getWidth();
+        float srcHF = i.getHeight();
+        float s0 = srcx / srcWF;
+        float s1 = (srcx + srcw) / srcWF;
+        float t0 = srcy / srcHF;
+        float t1 = (srcy + srch) / srcHF;
+        IVopeksSurfaceHolder vsh = i instanceof IVopeksSurfaceHolder ? (IVopeksSurfaceHolder) i : null;
+        // Calculate regular coordinates
+        // Note the change of the sign. This was tested against the R48 graphics test sheet.
+        double angleInRadians = Math.toRadians(-angle);
+        // Sine. Can be considered xBasis.y.
+        double sin = Math.sin(angleInRadians);
+        // Cosine. Can be considered xBasis.x.
+        double cos = Math.cos(angleInRadians);
+        // Calculate basics
+        float acw2 = acw / 2f;
+        float ach2 = ach / 2f;
+        float centreX = x + acw2;
+        float centreY = y + ach2;
+        float xBasisX = (float) (cos * acw2);
+        float xBasisY = (float) (sin * acw2);
+        float yBasisX = (float) (-sin * ach2);
+        float yBasisY = (float) (cos * ach2);
+        // Calculate points
+        float p00X = centreX - (xBasisX + yBasisX);
+        float p00Y = centreY - (xBasisY + yBasisY);
+        float p10X = (centreX + xBasisX) - yBasisX;
+        float p10Y = (centreY + xBasisY) - yBasisY;
+        float p11X = centreX + xBasisX + yBasisX;
+        float p11Y = centreY + xBasisY + yBasisY;
+        float p01X = (centreX + yBasisX) - xBasisX;
+        float p01Y = (centreY + yBasisY) - xBasisY;
+        // Y basis is X basis rotated 90 degrees and reduced.
+        batchStartGroupScA(6, blendSub, TilingMode.None, vsh);
+        batchWrite(p00X, p00Y, s0, t0, 1, 1, 1, 1);
+        batchWrite(p10X, p10Y, s1, t0, 1, 1, 1, 1);
+        batchWrite(p11X, p11Y, s1, t1, 1, 1, 1, 1);
+        batchWrite(p00X, p00Y, s0, t0, 1, 1, 1, 1);
+        batchWrite(p11X, p11Y, s1, t1, 1, 1, 1, 1);
+        batchWrite(p01X, p01Y, s0, t1, 1, 1, 1, 1);
     }
 
     @Override
@@ -88,7 +133,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
             BadGPU.drawClear(texture, null,
-                    BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
+                    BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
                     i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
         });
     }
@@ -101,8 +146,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchEnsureRoom(6);
-        batchInStateScA(BlendMode.Normal, TilingMode.None, null);
+        batchStartGroupScA(6, BlendMode.Normal, TilingMode.None, null);
         batchWrite(x    , y    , 0, 0, rF, gF, bF, aF);
         batchWrite(x + w, y    , 0, 0, rF, gF, bF, aF);
         batchWrite(x + w, y + h, 0, 0, rF, gF, bF, aF);
@@ -112,10 +156,10 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     /**
-     * batchInState but aware of scissoring
+     * batchStartGroup but aware of scissoring
      */
-    public void batchInStateScA(BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
-        batchInState(localST[2], localST[3], localST[4] - localST[2], localST[5] - localST[3], blendMode, tilingMode, tex);
+    public void batchStartGroupScA(int vertices, BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+        batchStartGroup(vertices, localST[2], localST[3], localST[4] - localST[2], localST[5] - localST[3], blendMode, tilingMode, tex);
     }
 
     @Override

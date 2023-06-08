@@ -62,6 +62,11 @@ public class VopeksImage implements IVopeksSurfaceHolder {
     }
 
     @Override
+    public void batchUnreference(IVopeksSurfaceHolder caller) {
+        // and so forth...
+    }
+
+    @Override
     public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
         batchFlush();
         vopeks.putTask((instance) -> {

@@ -22,10 +22,14 @@ public interface IGrDriver extends IImage {
     void blitTiledImage(int x, int y, int w, int h, IImage cachedTile);
     void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
 
-    // Support optional.
-    // Lack of support should result in no-op.
-    // Note that the top-left here is that of an ordinary blit - the rotation is more or less an afterthought,
-    //  such that these two operations can be considered the basis of others.
+    /**
+     * These two operations can be considered the logical basis of all the blit-series operations in IGrDriver.
+     * (This isn't how it actually works ever since Vopeks, but it's close.)
+     * The 'blend' variant performs additive or subtractive blending, while blit uses regular blending.
+     * Importantly, here's how rotation is applied:
+     * Firstly, the image is placed as if no rotation were involved.
+     * Then the destination is rotated anticlockwise by angle degrees.
+     */
     void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
     void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub);
 

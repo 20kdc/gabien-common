@@ -6,7 +6,7 @@
  */
 package gabien.vopeks;
 
-import java.util.HashSet;
+import java.util.LinkedList;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -33,7 +33,7 @@ public class VopeksBatchingSurface extends VopeksImage {
     private final float[] stagingC = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float[] stagingT = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float halfWF, halfHF;
-    private final HashSet<IVopeksSurfaceHolder> referencedBy = new HashSet<>();
+    private final LinkedList<IVopeksSurfaceHolder> referencedBy = new LinkedList<>();
 
     /**
      * Creates a new texture for rendering, and possibly initializes it.
@@ -45,21 +45,29 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     /**
-     * Ensures the batcher has room for this many vertices, or flushes it.
-     */
-    public void batchEnsureRoom(int vertices) {
-        if (currentBatch != null)
-            if ((currentBatch.vertexCount + vertices) >= MAX_VERTICES_IN_BATCH)
-                batchFlush();
-    }
-
-    /**
      * Ensures the batcher is in the right state to accept the given geometry.
      * This will actually begin a new batch, so make sure you're sure!
      */
-    public void batchInState(int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+    public void batchStartGroup(int vertices, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+        // Presumably, other user calls to other surfaces may have been made between groups.
+        // We can assume that as long as we remain internally consistent:
+        // Other threads aren't a concern in terms of the reference timeline.
+        // (Whenever we consider them to have been referenced is a time they could theoretically have hit.)
+        // But we need to ensure that we split batches if, say:
+        //  SURFACE A/GROUP A -> SURFACE B/GROUP A -> SURFACE A/GROUP B -> SURFACE A/FLUSH
+        //  happens and surface-B-group-A depends on surface-A-group-A but not surface-A-group-B.
+        // Therefore, we have to reference barrier when starting a group.
+        // If we delayed until the flush, then surface-A-flush would be the point where surface-B-group-A is notified,
+        //  and by that point it's too late to split the two groups.
+        batchReferenceBarrier();
+        if (currentBatch != null)
+            if ((currentBatch.vertexCount + vertices) > MAX_VERTICES_IN_BATCH)
+                batchFlush();
         if (currentBatch == null || !currentBatch.matchesState(cropL, cropU, cropW, cropH, blendMode, tilingMode, tex)) {
             batchFlush();
+            // Setup the reference.
+            // Note that we only have to worry about this at the start of a batch.
+            // If something happens, it'll reference-barrier, which will flush us, so we'll re-reference next group.
             if (tex != null)
                 tex.batchReference(this);
             currentBatch = batchPool.get();
@@ -76,19 +84,17 @@ public class VopeksBatchingSurface extends VopeksImage {
     /**
      * Flushes batches of things that have batches attached to this surface.
      * Call immediately before any call to putTask that writes to this surface.
+     * Will be internally called before batchStartGroup.
      */
     public synchronized void batchReferenceBarrier() {
-        for (IVopeksSurfaceHolder ref : referencedBy)
-            ref.batchFlush();
-        referencedBy.clear();
+        while (!referencedBy.isEmpty())
+            referencedBy.pop().batchFlush();
     }
 
     @Override
     public synchronized void batchFlush() {
         // Now actually do the batching thing
         if (currentBatch != null) {
-            batchReferenceBarrier();
-
             // Sizes
             int groupVLen = currentBatch.vertexCount * 2;
             int groupCLen = currentBatch.vertexCount * 4;
@@ -110,8 +116,11 @@ public class VopeksBatchingSurface extends VopeksImage {
             // Copy
             System.arraycopy(stagingV, 0, megabuffer, groupVOfs, groupVLen);
             System.arraycopy(stagingC, 0, megabuffer, groupCOfs, groupCLen);
-            if (currentBatch.tex != null)
+            if (currentBatch.tex != null) {
                 System.arraycopy(stagingT, 0, megabuffer, groupTOfs, groupTLen);
+                // And that's the deadline hit...
+                currentBatch.tex.batchUnreference(this);
+            }
 
             // Put
             vopeks.putTask(currentBatch);
@@ -120,9 +129,19 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     @Override
-    public synchronized void batchReference(IVopeksSurfaceHolder other) {
+    public synchronized void batchReference(IVopeksSurfaceHolder caller) {
+        // If this wasn't here, the caller could refer to an unfinished batch.
+        // Where this becomes a problem is that the caller could submit the task, and the batch might still not be submitted.
+        // Since any changes we do make would require a flush (because we have a reference), just flush now,
+        //  rather than flushing on unreference or something.
+        // (Also, we could be holding a reference to caller, which implies the ability to create reference loops.)
         batchFlush();
-        referencedBy.add(other);
+        referencedBy.add(caller);
+    }
+
+    @Override
+    public void batchUnreference(IVopeksSurfaceHolder caller) {
+        referencedBy.remove(caller);
     }
 
     /**
@@ -217,13 +236,13 @@ public class VopeksBatchingSurface extends VopeksImage {
         @Override
         public void run(Instance instance) {
             BadGPU.Texture tx = tex != null ? tex.getTextureFromTask() : null;
-            int drawFlags = BadGPU.DrawFlags.FreezeColour;
+            int drawFlags = 0;
             if (blendMode != BlendMode.None)
                 drawFlags |= BadGPU.DrawFlags.Blend;
 
             drawFlags |= tilingMode.value;
 
-            BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor,
+            BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
                     cropL, cropU, cropW, cropH,
                     drawFlags,
                     2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,

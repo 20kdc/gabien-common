@@ -25,9 +25,14 @@ public interface IVopeksSurfaceHolder extends IImage {
      * This is used when the caller is writing this image into its own batch.
      * Ensures that any changes to this image first flush the batch of the caller.
      * This ensures that the ordering remains correct.
-     * This can and will lead to false positives, but it's better than the nightmare I envisioned for perfection.
      */
     void batchReference(IVopeksSurfaceHolder caller);
+
+    /**
+     * This is used when the caller has flushed a batch that was using this image.
+     * It cleans up the previously established reference, preventing a memory leak.
+     */
+    void batchUnreference(IVopeksSurfaceHolder caller);
 
     /**
      * Gets a texture. Run from task code.
