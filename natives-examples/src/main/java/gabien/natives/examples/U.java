@@ -51,7 +51,7 @@ public class U {
         idx = putImmDat(idx, rC, gC, bC, 1);
         BadGPU.drawGeomNoDS(scr, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
                 0,
-                data, 0, data, 12, null, 0,
+                4, data, 0, data, 12, 4, null, 0,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, 3, null, 0,
                 null, 0, null, 0,
@@ -72,7 +72,7 @@ public class U {
         int df = BadGPU.DrawFlags.MinLinear | BadGPU.DrawFlags.MagLinear;
         BadGPU.drawGeomNoDS(screen, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
                 df,
-                triImmDat1, 0, null, 0, triImmDat1, 16,
+                4, triImmDat1, 0, null, 0, 4, triImmDat1, 16,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, 6, rectIndices, 0,
                 null, 0, null, 0,

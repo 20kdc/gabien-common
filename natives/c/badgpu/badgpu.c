@@ -734,7 +734,9 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
@@ -757,6 +759,15 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
 
     if (!vPos)
         return badgpuErr(bi, "badgpuDrawGeom: vPos is NULL");
+
+    if ((iCount < 0) || (iCount > 65536))
+        return badgpuErr(bi, "badgpuDrawGeom: iCount out of range");
+
+    if ((vPosD < 2) || (vPosD > 4))
+        return badgpuErr(bi, "badgpuDrawGeom: vPosD out of range");
+
+    if ((vTCD < 2) || (vTCD > 4))
+        return badgpuErr(bi, "badgpuDrawGeom: vTCD out of range");
 
     // Vertex Shader
     bi->glMatrixMode(GL_PROJECTION);
@@ -852,14 +863,14 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     }
 
     bi->glEnableClientState(GL_VERTEX_ARRAY);
-    bi->glVertexPointer(4, GL_FLOAT, sizeof(BADGPUVector), &vPos->x);
+    bi->glVertexPointer(vPosD, GL_FLOAT, 0, vPos);
     if (vCol) {
         if (flags & BADGPUDrawFlags_FreezeColour) {
             bi->glDisableClientState(GL_COLOR_ARRAY);
-            bi->glColor4f(vCol->x, vCol->y, vCol->z, vCol->w);
+            bi->glColor4f(vCol[0], vCol[1], vCol[2], vCol[3]);
         } else {
             bi->glEnableClientState(GL_COLOR_ARRAY);
-            bi->glColorPointer(4, GL_FLOAT, sizeof(BADGPUVector), &vCol->x);
+            bi->glColorPointer(4, GL_FLOAT, 0, vCol);
         }
     } else {
         bi->glDisableClientState(GL_COLOR_ARRAY);
@@ -868,10 +879,16 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     if (vTC) {
         if (flags & BADGPUDrawFlags_FreezeTC) {
             bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-            bi->glMultiTexCoord4f(GL_TEXTURE0, vTC->x, vTC->y, vTC->z, vTC->w);
+            if (vTCD == 4) {
+                bi->glMultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], vTC[2], vTC[3]);
+            } else if (vTCD == 3) {
+                bi->glMultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], vTC[2], 1.0f);
+            } else {
+                bi->glMultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], 0.0f, 1.0f);
+            }
         } else {
             bi->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-            bi->glTexCoordPointer(4, GL_FLOAT, sizeof(BADGPUVector), &vTC->x);
+            bi->glTexCoordPointer(vTCD, GL_FLOAT, 0, vTC);
         }
     } else {
         bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -893,7 +910,9 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
@@ -910,7 +929,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     sFlags,
     sScX, sScY, sScWidth, sScHeight,
     flags,
-    vPos, vCol, vTC,
+    vPosD, vPos, vCol, vTCD, vTC,
     pType, plSize,
     iStart, iCount, indices,
     matrixA, matrixB,

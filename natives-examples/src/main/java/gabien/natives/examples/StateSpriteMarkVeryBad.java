@@ -56,7 +56,7 @@ public class StateSpriteMarkVeryBad extends State {
             tmpMatrix[13] = sms.y[i];
             BadGPU.drawGeomNoDS(screen, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
                     0,
-                    spriteVertexData, 0, null, 0, spriteTCData, 0,
+                    4, spriteVertexData, 0, null, 0, 4, spriteTCData, 0,
                     BadGPU.PrimitiveType.Triangles, 0,
                     0, 6, spriteIndices, 0,
                     tmpMatrix, 0, null, 0,

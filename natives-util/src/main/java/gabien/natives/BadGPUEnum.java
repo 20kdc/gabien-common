@@ -11,7 +11,7 @@ package gabien.natives;
  * Enums and stuff, because they're weird.
  * This is extensible so that it can be pulled into BadGPUUnsafe and BadGPU.
  * Bit of a cheat, but who's counting?
- * VERSION: 0.20.0
+ * VERSION: 0.21.0
  * Created 30th May, 2023.
  */
 public class BadGPUEnum {

@@ -14,7 +14,7 @@ import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
- * VERSION: 0.20.0
+ * VERSION: 0.21.0
  * Created 30th May, 2023.
  */
 public abstract class BadGPU extends BadGPUEnum {
@@ -233,11 +233,11 @@ public abstract class BadGPU extends BadGPUEnum {
     }
     private static int getVertexCount(int iStart, int iCount, short[] indices, int indicesOfs) {
         if (iStart < 0)
-            throw new RuntimeException("Not supposed to have iStart be < 0");
-        if (iCount < 0)
-            throw new RuntimeException("Not supposed to have iCount be < 0");
+            throw new IllegalArgumentException("Not supposed to have iStart be < 0");
+        if ((iCount < 0) || (iCount > 65536))
+            throw new IllegalArgumentException("Not supposed to have iCount be < 0 or > 65536");
         if (indicesOfs < 0)
-            throw new RuntimeException("Not supposed to have indicesOfs be < 0");
+            throw new IllegalArgumentException("Not supposed to have indicesOfs be < 0");
         if (indices == null)
             return iStart + iCount;
         // this is a quirk of the approach to JNI used here, it's kinda funny and also sad
@@ -252,14 +252,22 @@ public abstract class BadGPU extends BadGPUEnum {
         }
         return vCount;
     }
-    private static void checkVL(int flags, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, float[] vTC, int vTCOfs,
+    private static void checkVL(int flags, int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
             int iStart, int iCount, short[] indices, int indicesOfs,
             float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs, float[] matrixT, int matrixTOfs) {
+        if (vPosD < 2 || vPosD > 4)
+            throw new IllegalArgumentException("vPosD out of range");
+        if (vTCD < 2 || vTCD > 4)
+            throw new IllegalArgumentException("vTCD out of range");
         // Collate vertex counts
         // (the multiplication by 4 represents the 4 components)
-        int vCount = getVertexCount(iStart, iCount, indices, indicesOfs) * 4;
-        int cCount = ((flags & DrawFlags.FreezeColour) != 0) ? 4 : vCount;
-        int tCount = ((flags & DrawFlags.FreezeTC) != 0) ? 4 : vCount;
+        int vCount = getVertexCount(iStart, iCount, indices, indicesOfs);
+        int cCount = ((flags & DrawFlags.FreezeColour) != 0) ? 1 : vCount;
+        int tCount = ((flags & DrawFlags.FreezeTC) != 0) ? 1 : vCount;
+        // Multiply by dimensions
+        vCount *= vPosD;
+        cCount *= 4;
+        tCount *= vTCD;
         // Check them
         if (vPosOfs < 0 || (vPosOfs + vCount) > vPos.length)
             throw new IllegalArgumentException("vPos out of bounds");
@@ -283,7 +291,7 @@ public abstract class BadGPU extends BadGPUEnum {
     public static boolean drawGeom(
         @Nullable Texture sTexture, @Nullable DSBuffer sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        float[] vPos, int vPosOfs, float[] vCol, int vColOfs, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         PrimitiveType pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
@@ -302,7 +310,7 @@ public abstract class BadGPU extends BadGPUEnum {
         if (texture != null)
             assert syncObj == texture.syncObject;
         // actual parameter checking
-        checkVL(flags, vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
+        checkVL(flags, vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs, matrixT, matrixTOfs);
         // continue
@@ -316,7 +324,7 @@ public abstract class BadGPU extends BadGPUEnum {
         return BadGPUUnsafe.drawGeom(
                 sTexture != null ? sTexture.pointer : 0, sDSBuffer != null ? sDSBuffer.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
                 flags,
-                vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
+                vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 pType.value, plSize,
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs,
@@ -330,7 +338,7 @@ public abstract class BadGPU extends BadGPUEnum {
     public static boolean drawGeomNoDS(
         @Nullable Texture sTexture, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        float[] vPos, int vPosOfs, float[] vCol, int vColOfs, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         PrimitiveType pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
@@ -343,7 +351,7 @@ public abstract class BadGPU extends BadGPUEnum {
         if (texture != null)
             assert sTexture.syncObject == texture.syncObject;
         // actual parameter checking
-        checkVL(flags, vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
+        checkVL(flags, vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs, matrixT, matrixTOfs);
         // continue
@@ -355,7 +363,7 @@ public abstract class BadGPU extends BadGPUEnum {
         return BadGPUUnsafe.drawGeomNoDS(
                 sTexture != null ? sTexture.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
                 flags,
-                vPos, vPosOfs, vCol, vColOfs, vTC, vTCOfs,
+                vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 pType.value, plSize,
                 iStart, iCount, indices, indicesOfs,
                 matrixA, matrixAOfs, matrixB, matrixBOfs,

@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.20.0`
+ * Version: `0.21.0`
  *
  * ## Formatting Policy
  *
@@ -809,7 +809,7 @@ typedef enum BADGPUDrawFlags {
     BADGPUDrawFlags_StencilTest = 8,
     BADGPUDrawFlags_DepthTest = 16,
     BADGPUDrawFlags_Blend = 32,
-    // Flag 64 is unused
+    // Flag 64 still unused
     // Colour array only has to be one element long, and that's the only colour.
     BADGPUDrawFlags_FreezeColor = 128,
     BADGPUDrawFlags_FreezeColour = 128,
@@ -1024,6 +1024,17 @@ typedef enum BADGPUBlendWeight {
  * `vCol` and `vTC` can be `NULL` to leave that feature at a default. \
  * `vPos` *must not* be `NULL`, or the function will error.
  *
+ * `vPosD` and `vTCD` must be between 2 and 4 inclusive, or the function will
+ *  error.
+ *
+ * `vPos`, `vCol` and `vTC` are arrays of float vectors, but specifically:
+ *
+ * + `vPos` is 2 to 4-dimensional (X, Y, Z, W; defaults for Z, W are 0 and 1). \
+ *   This is controlled by `vPosD`.
+ * + `vCol` is 4-dimensional (R, G, B, A).
+ * + `vTC` is 2 to 4-dimensional (same as vPos). \
+ *   This is controlled by `vTCD`.
+ *
  * For `vCol` and `vTC`, there are also "freeze flags". \
  * If used in conjunction with the arrays, only the first element of those
  *  arrays is used (allowing for "single-colour uniform" treatment). \
@@ -1032,7 +1043,8 @@ typedef enum BADGPUBlendWeight {
  * `iStart` and `iCount` represent a range in the indices array, which in turn are
  *  indices into the vertex arrays. \
  * If `indices` is `NULL`, then it is essentially as if an array was passed with
- *  values 0 to 65535.
+ *  values 0 to 65535. \
+ * `iCount` must not be below 0 or above 65536.
  *
  * `matrixA` and / or `matrixB` can be `NULL`. In this case, they are
  *  effectively identity. \
@@ -1062,19 +1074,33 @@ typedef enum BADGPUBlendWeight {
  *  shorter wrappers such as badgpuDrawGeomNoDS. This is also arguably a natural
  *  cost of the avoidance of stack structs while also avoiding a stateful API.
  *
+ * Some specific included functionality, and why:
+ *
+ * + 4D vertex support had to be included for software TnL. The matrices can't
+ *    really be used in this situation due to a lack of W input; see why TCs
+ *    aren't 4D for why that makes them effectively useless.
+ * + The ability to change vertex and TC dimension counts is important because
+ *    the amount of memory used by batches can get rather high, and associated
+ *    vertex loading costs can also get rather high.
+ *
  * Some specific missing functionality, and why:
  *
  * + Lighting isn't a thing because it's annoying for ES2. \
  *   And it's per-vertex, so you don't really get anything out of it. \
  *   If you really want this, do it on the CPU or something.
- * + The alpha test was removed because in practice it was buggy, making opaque
- *    things disappear. It's also annoying for ES2.
+ * + The alpha test was removed because it's annoying for ES2 and buggy on some
+ *    hardware (can't be trusted on Ironlake, for example).
+ * + Specifying integer vertex/TCs is more trouble than it is worth.
+ *   There may be merit to specifying colours as RGBA bytes, but it would make
+ *    some pretty useful stuff have to go onto a slowpath if actually used.
  */
 BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
@@ -1124,7 +1150,9 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight,
     uint32_t flags,
     // Vertex Loader
-    const BADGPUVector * vPos, const BADGPUVector * vCol, const BADGPUVector * vTC,
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader

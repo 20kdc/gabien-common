@@ -88,19 +88,32 @@ public class VopeksBatchingSurface extends VopeksImage {
         // Now actually do the batching thing
         if (currentBatch != null) {
             batchReferenceBarrier();
-            int groupCount = currentBatch.tex != null ? 3 : 2;
-            int groupLen = currentBatch.vertexCount * 4;
-            float[] megabuffer = vopeks.floatPool.get(groupLen * groupCount);
+
+            // Sizes
+            int groupVLen = currentBatch.vertexCount * 2;
+            int groupCLen = currentBatch.vertexCount * 4;
+            int groupTLen = currentBatch.tex != null ? (currentBatch.vertexCount * 2) : 0;
+            int groupTotalLen = groupVLen + groupCLen + groupTLen;
+
+            // Layout
+            float[] megabuffer = vopeks.floatPool.get(groupTotalLen);
+
+            int groupVOfs = 0;
+            int groupCOfs = groupVOfs + groupVLen;
+            int groupTOfs = groupCOfs + groupCLen;
+
             currentBatch.megabuffer = megabuffer;
-            currentBatch.megabufferOfs = 0;
-            int writeOfs = currentBatch.megabufferOfs;
-            System.arraycopy(stagingV, 0, megabuffer, writeOfs, groupLen);
-            writeOfs += groupLen;
-            System.arraycopy(stagingC, 0, megabuffer, writeOfs, groupLen);
-            if (currentBatch.tex != null) {
-                writeOfs += groupLen;
-                System.arraycopy(stagingT, 0, megabuffer, writeOfs, groupLen);
-            }
+            currentBatch.verticesOfs = groupVOfs;
+            currentBatch.coloursOfs = groupCOfs;
+            currentBatch.texCoordsOfs = groupTOfs;
+
+            // Copy
+            System.arraycopy(stagingV, 0, megabuffer, groupVOfs, groupVLen);
+            System.arraycopy(stagingC, 0, megabuffer, groupCOfs, groupCLen);
+            if (currentBatch.tex != null)
+                System.arraycopy(stagingT, 0, megabuffer, groupTOfs, groupTLen);
+
+            // Put
             vopeks.putTask(currentBatch);
         }
         currentBatch = null;
@@ -118,21 +131,19 @@ public class VopeksBatchingSurface extends VopeksImage {
      * ST would be converted but might be useful to have the ability to introduce epsilon margins.
      */
     public void batchWrite(float x, float y, float s, float t, float r, float g, float b, float a) {
-        int vertexBase = (currentBatch.vertexCount++) * 4;
-        stagingV[vertexBase] = (x - halfWF) / halfWF;
-        stagingV[vertexBase + 1] = (y - halfHF) / halfHF;
-        stagingV[vertexBase + 2] = 0;
-        stagingV[vertexBase + 3] = 1;
-        stagingC[vertexBase] = r;
-        stagingC[vertexBase + 1] = g;
-        stagingC[vertexBase + 2] = b;
-        stagingC[vertexBase + 3] = a;
+        int vertexBase2 = currentBatch.vertexCount * 2;
+        int vertexBase4 = currentBatch.vertexCount * 4;
+        stagingV[vertexBase2] = (x - halfWF) / halfWF;
+        stagingV[vertexBase2 + 1] = (y - halfHF) / halfHF;
+        stagingC[vertexBase4] = r;
+        stagingC[vertexBase4 + 1] = g;
+        stagingC[vertexBase4 + 2] = b;
+        stagingC[vertexBase4 + 3] = a;
         if (currentBatch.tex != null) {
-            stagingT[vertexBase] = s;
-            stagingT[vertexBase + 1] = t;
-            stagingT[vertexBase + 2] = 0;
-            stagingT[vertexBase + 3] = 1;
+            stagingT[vertexBase2] = s;
+            stagingT[vertexBase2 + 1] = t;
         }
+        currentBatch.vertexCount++;
     }
 
     private class BatchPool extends ObjectPool<Batch> {
@@ -155,7 +166,9 @@ public class VopeksBatchingSurface extends VopeksImage {
             element.tilingMode = TilingMode.None;
             element.tex = null;
             element.megabuffer = null;
-            element.megabufferOfs = 0;
+            element.verticesOfs = 0;
+            element.coloursOfs = 0;
+            element.texCoordsOfs = 0;
         }
     }
 
@@ -199,7 +212,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         BlendMode blendMode = BlendMode.None;
         TilingMode tilingMode = TilingMode.None;
         IVopeksSurfaceHolder tex;
-        float[] megabuffer; int megabufferOfs;
+        float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
 
         @Override
         public void run(Instance instance) {
@@ -210,15 +223,10 @@ public class VopeksBatchingSurface extends VopeksImage {
 
             drawFlags |= tilingMode.value;
 
-            int verticesOfs = megabufferOfs;
-            int groupLen = vertexCount * 4;
-            int coloursOfs = verticesOfs + groupLen;
-            int texCoordsOfs = coloursOfs + groupLen;
-
             BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor,
                     cropL, cropU, cropW, cropH,
                     drawFlags,
-                    megabuffer, verticesOfs, megabuffer, coloursOfs, tx == null ? null : megabuffer, texCoordsOfs,
+                    2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
                     BadGPU.PrimitiveType.Triangles, 1,
                     0, vertexCount, null, 0,
                     null, 0, null, 0,

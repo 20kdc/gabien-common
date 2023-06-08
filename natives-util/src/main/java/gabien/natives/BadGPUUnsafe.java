@@ -9,7 +9,7 @@ package gabien.natives;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.20.0
+ * VERSION: 0.21.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -60,7 +60,7 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean drawGeom(
         long sTexture, long sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        float[] vPos, int vPosOfs, float[] vCol, int vColOfs, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         int pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
@@ -74,7 +74,7 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean drawGeomNoDS(
         long sTexture, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        float[] vPos, int vPosOfs, float[] vCol, int vColOfs, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         int pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
         float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,

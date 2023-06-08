@@ -80,37 +80,37 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
 #define CC(v) ((v) / 255.0)
 #define COL(v) CC(((v) >> 16) & 0xFF), CC(((v) >> 8) & 0xFF), CC((v) & 0xFF), CC(((v) >> 24) & 0xFF)
 #define M 0.3333
-    BADGPUVector pos[] = {
-        {-1,  1, 0, 1},
-        { 1,  1, 0, 1},
-        { 1,  M, 0, 1},
-        {-1,  M, 0, 1},
+    float pos[] = {
+        -1,  1, 0, 1,
+         1,  1, 0, 1,
+         1,  M, 0, 1,
+        -1,  M, 0, 1,
 
-        {-1,  M, 0, 1},
-        { 1,  M, 0, 1},
-        { 1, -M, 0, 1},
-        {-1, -M, 0, 1},
+        -1,  M, 0, 1,
+         1,  M, 0, 1,
+         1, -M, 0, 1,
+        -1, -M, 0, 1,
 
-        {-1, -M, 0, 1},
-        { 1, -M, 0, 1},
-        { 1, -1, 0, 1},
-        {-1, -1, 0, 1}
+        -1, -M, 0, 1,
+         1, -M, 0, 1,
+         1, -1, 0, 1,
+        -1, -1, 0, 1
     };
-    BADGPUVector col[] = {
-        {COL(0xFFFF218C)},
-        {COL(0xFFFF218C)},
-        {COL(0xFFFF218C)},
-        {COL(0xFFFF218C)},
+    float col[] = {
+        COL(0xFFFF218C),
+        COL(0xFFFF218C),
+        COL(0xFFFF218C),
+        COL(0xFFFF218C),
 
-        {COL(0xFFFFD800)},
-        {COL(0xFFFFD800)},
-        {COL(0xFFFFD800)},
-        {COL(0xFFFFD800)},
+        COL(0xFFFFD800),
+        COL(0xFFFFD800),
+        COL(0xFFFFD800),
+        COL(0xFFFFD800),
 
-        {COL(0xFF21B1FF)},
-        {COL(0xFF21B1FF)},
-        {COL(0xFF21B1FF)},
-        {COL(0xFF21B1FF)}
+        COL(0xFF21B1FF),
+        COL(0xFF21B1FF),
+        COL(0xFF21B1FF),
+        COL(0xFF21B1FF)
     };
     uint16_t indices[] = {
         0, 1, 2, 0, 2, 3,
@@ -129,7 +129,7 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
         tex, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
         0,
         // Vertex Loader
-        pos, col, NULL,
+        4, pos, col, 2, NULL,
         BADGPUPrimitiveType_Triangles, 1,
         0, 18, indices,
         // Vertex Shader
@@ -145,29 +145,29 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
 
 void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
     // Mesh to test texture coordinates and colour+texture combo
-    BADGPUVector pos[] = {
-        {-1,  1, 0, 1},
-        { 1,  1, 0, 1},
-        { 1, -1, 0, 1},
-        {-1,  1, 0, 1},
-        { 1, -1, 0, 1},
-        {-1, -1, 0, 1}
+    float pos[] = {
+        -1,  1,
+         1,  1,
+         1, -1,
+        -1,  1,
+         1, -1,
+        -1, -1
     };
-    BADGPUVector col[] = {
-        {COL(0xFF80FF80)},
-        {COL(0xFF8080FF)},
-        {COL(0xFF808080)},
-        {COL(0xFF80FF80)},
-        {COL(0xFF808080)},
-        {COL(0xFFFF8080)}
+    float col[] = {
+        COL(0xFF80FF80),
+        COL(0xFF8080FF),
+        COL(0xFF808080),
+        COL(0xFF80FF80),
+        COL(0xFF808080),
+        COL(0xFFFF8080)
     };
-    BADGPUVector tc[] = {
-        {0, 0, 0, 1},
-        {1, 0, 0, 1},
-        {1, 1, 0, 1},
-        {0, 0, 0, 1},
-        {1, 1, 0, 1},
-        {0, 1, 0, 1}
+    float tc[] = {
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 0,
+        1, 1,
+        0, 1
     };
     // Matrix to test texture matrices.
     // If this *isn't* active, the result is the wrong way up and NOT skewed.
@@ -182,7 +182,7 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
         texDst, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
         BADGPUDrawFlags_MagLinear,
         // Vertex Loader
-        pos, col, tc,
+        2, pos, col, 2, tc,
         BADGPUPrimitiveType_Triangles, 1,
         0, 6, NULL,
         // Vertex Shader

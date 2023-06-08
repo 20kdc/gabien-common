@@ -52,7 +52,7 @@ public class StateSpriteMarkBigBatch extends State {
         }
         BadGPU.drawGeomNoDS(screen, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
                 0,
-                vtxBuf, 0, null, 0, tcBuf, 0,
+                4, vtxBuf, 0, null, 0, 4, tcBuf, 0,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, vtxPtr / 4, null, 0,
                 null, 0, null, 0,
