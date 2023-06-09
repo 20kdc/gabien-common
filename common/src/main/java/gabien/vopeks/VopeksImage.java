@@ -12,6 +12,7 @@ import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
+import gabien.uslx.append.TimeLogger;
 
 /**
  * Here goes nothing.
@@ -70,10 +71,19 @@ public class VopeksImage implements IImage {
     @Override
     public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
         batchFlush();
-        vopeks.putTask((instance) -> {
-            texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
-            vopeks.putCallback(onDone);
-        });
+        if (vopeks.timeLoggerReadPixelsTask != null) {
+            vopeks.putTask((instance) -> {
+                try (TimeLogger.Source src = vopeks.timeLoggerReadPixelsTask.open()) {
+                    texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
+                }
+                vopeks.putCallback(onDone);
+            });
+        } else {
+            vopeks.putTask((instance) -> {
+                texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
+                vopeks.putCallback(onDone);
+            });
+        }
     }
 
     @Override

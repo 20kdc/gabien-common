@@ -13,6 +13,9 @@
 !uslx/src
 !uslx/src/
 !uslx/src/**
+!uslx/timelogger-to-chrome.lua
+!uslx/timelogger-view
+!uslx/timelogger.md
 
 !media
 !media/

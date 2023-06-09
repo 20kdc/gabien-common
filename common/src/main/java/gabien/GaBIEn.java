@@ -32,6 +32,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 public class GaBIEn {
     public static Vopeks vopeks;
+    public static TimeLogger timeLogger;
     protected static IGaBIEn internal;
     protected static IGaBIEnMultiWindow internalWindowing;
     protected static IGaBIEnFileBrowser internalFileBrowser;
@@ -119,6 +120,16 @@ public class GaBIEn {
     }
 
     public static void ensureQuit() {
+        try {
+            timeLogger.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        try {
+            vopeks.shutdown();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
         internal.ensureQuit();
     }
 
@@ -390,14 +401,16 @@ public class GaBIEn {
     /**
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      */
-    static void setupNativesAndAssets(boolean debug) {
+    static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger) {
         if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
             System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
         System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
+        if (setupTimeLogger)
+            timeLogger = new TimeLogger(getOutFile("gTimeLogger.bin"));
         int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf;
         if (debug)
             newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
-        vopeks = new Vopeks(newInstanceFlags);
+        vopeks = new Vopeks(newInstanceFlags, timeLogger);
         FontManager.setupFonts();
         UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();

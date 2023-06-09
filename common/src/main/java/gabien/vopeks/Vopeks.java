@@ -8,8 +8,11 @@ package gabien.vopeks;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.natives.BadGPU;
 import gabien.uslx.append.EmptyLambdas;
+import gabien.uslx.append.TimeLogger;
 
 /**
  * New renderers always have to be named in silly ways, right?
@@ -20,6 +23,8 @@ import gabien.uslx.append.EmptyLambdas;
  */
 public final class Vopeks {
     private final int TASK_QUEUE_SIZE = 65536;
+    public final @Nullable TimeLogger timeLogger;
+    public final @Nullable TimeLogger.Source timeLoggerReadPixelsTask;
     public final Thread vopeksThread;
     public final Thread vopeksCBThread;
     private final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
@@ -27,36 +32,68 @@ public final class Vopeks {
     public final VopeksFloatPool floatPool = new VopeksFloatPool();
     private volatile boolean shutdown;
 
-    public Vopeks(final int newInstanceFlags) {
+    public Vopeks(final int newInstanceFlags, @Nullable TimeLogger timeLogger) {
+        this.timeLogger = timeLogger;
+        timeLoggerReadPixelsTask = TimeLogger.optSource(timeLogger, "readPixelsTask");
         vopeksThread = new Thread("VOPEKS Thread") {
             @Override
             public void run() {
                 BadGPU.Instance instance = BadGPU.newInstance(newInstanceFlags);
-                while (!shutdown) {
-                    try {
-                        taskQueue.take().run(instance);
-                    } catch (Throwable t) {
-                        System.err.println("Exception in VOPEKS:");
-                        t.printStackTrace();
+                if (timeLogger != null) {
+                    TimeLogger.Source vs = timeLogger.newSource("vopeks_main");
+                    while (!shutdown) {
+                        try {
+                            ITask task = taskQueue.take();
+                            try (TimeLogger.Source vs2 = vs.open()) {
+                                task.run(instance);
+                            }
+                        } catch (Throwable t) {
+                            System.err.println("Exception in VOPEKS:");
+                            t.printStackTrace();
+                        }
+                    }
+                } else {
+                    while (!shutdown) {
+                        try {
+                            taskQueue.take().run(instance);
+                        } catch (Throwable t) {
+                            System.err.println("Exception in VOPEKS:");
+                            t.printStackTrace();
+                        }
                     }
                 }
                 instance.dispose();
             }
         };
-        vopeksThread.start();
         vopeksCBThread = new Thread("VOPEKS Callback Thread") {
             @Override
             public void run() {
-                while (!shutdown) {
-                    try {
-                        cbQueue.take().run();
-                    } catch (Throwable t) {
-                        System.err.println("Exception in VOPEKS Callback:");
-                        t.printStackTrace();
+                if (timeLogger != null) {
+                    TimeLogger.Source vs = timeLogger.newSource("vopeks_cb");
+                    while (!shutdown) {
+                        try {
+                            Runnable task = cbQueue.take();
+                            try (TimeLogger.Source vs2 = vs.open()) {
+                                task.run();
+                            }
+                        } catch (Throwable t) {
+                            System.err.println("Exception in VOPEKS Callback:");
+                            t.printStackTrace();
+                        }
+                    }
+                } else {
+                    while (!shutdown) {
+                        try {
+                            cbQueue.take().run();
+                        } catch (Throwable t) {
+                            System.err.println("Exception in VOPEKS Callback:");
+                            t.printStackTrace();
+                        }
                     }
                 }
             }
         };
+        vopeksThread.start();
         vopeksCBThread.start();
     }
 

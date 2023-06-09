@@ -4,15 +4,13 @@
 
 ## Base Layer
 
-The base layer of VOPEKS is defined in the `gabien.vopeks.Vopeks` and `gabien.vopeks.IVopeksSurfaceHolder` classes, with `gabien.vopeks.VopeksFloatPool` as something which may get pushed upwards, perhaps as far as USLX.
+The base layer of VOPEKS is defined in the `gabien.vopeks.Vopeks` class and `gabien.IImage` interface, with `gabien.vopeks.VopeksFloatPool` as something which may get pushed upwards, perhaps as far as USLX.
 
-`IImage` is effectively the "public" version of `IVopeksSurfaceHolder`, and they might get merged in future.
-
-`IVopeksSurfaceHolder` is responsible for containing the functions required to synchronize surface access in the presence of batching or batching-like features. It also contains a function to simply outright retrieve the `BadGPU.Texture` handle.
+`IImage` has things like width/height, and is responsible for containing the functions required to synchronize surface access in the presence of batching or batching-like features. It also contains a function to simply outright retrieve the `BadGPU.Texture` handle.
 
 The `Vopeks` object itself contains the functions required to submit tasks to the VOPEKS or Callback threads.
 
-User code therefore can use `IVopeksSurfaceHolder` to make sure different batchers cooperate, then submit a task to VOPEKS, pulling data from or pushing data to any surface that exposes this interface, including VOPEKS images. They can also do the inverse, providing their own surfaces as the `IImage` parameter to standard GaBIEn functions.
+User code therefore can use `IImage` to make sure different batchers cooperate, then submit a task to VOPEKS, pulling data from or pushing data to any surface that exposes this interface, including VOPEKS images. They can also do the inverse, providing their own surfaces to standard GaBIEn functions.
 
 ## Surface Synchronization
 
@@ -20,7 +18,7 @@ Because BadGPU is based on OpenGL, and OpenGL contexts have a single "caller thr
 
 In practice, this is effectively effortless *until* batching is introduced. (Multi-threaded access isn't, by itself, a concern, as in the non-batching case it is automatically synchronized by the task queue.) Batching delays the actual task submission time to after the image was passed into the API, and so tasks that modify the image could, without any synchronization, be submitted after the image was passed in, but before the batch is submitted.
 
-To avoid this, `IVopeksSurfaceHolder` defines three main synchronization functions:
+To avoid this, `IImage` defines three main synchronization functions:
 
 * `batchFlush`: Submits the current batch, if any.
 

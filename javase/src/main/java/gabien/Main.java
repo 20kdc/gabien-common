@@ -24,12 +24,15 @@ abstract class Main {
         boolean ignoreDPI = false;
         boolean useInternalBrowser = false;
         boolean isDebug = false;
+        boolean isTimeLogging = false;
         if (args.length > 0) {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
                     tryForceOpenGL = true;
                 if (s.equalsIgnoreCase("debug"))
                     isDebug = true;
+                if (s.equalsIgnoreCase("timeLogger"))
+                    isTimeLogging = true;
                 if (s.equalsIgnoreCase("iAmARobot"))
                     GaBIEnImpl.mobileEmulation = true;
                 if (s.equalsIgnoreCase("forceIgnoreDPI"))
@@ -55,7 +58,7 @@ abstract class Main {
         	}
         }
 
-        initializeEmbedded(isDebug);
+        initializeEmbedded(isDebug, isTimeLogging);
         if (GaBIEnImpl.mobileEmulation) {
         	WindowSpecs ws = new WindowSpecs();
         	ws.resizable = false;
@@ -75,7 +78,7 @@ abstract class Main {
     /**
      * See GaBIEn.initializeEmbedded.
      */
-    public static void initializeEmbedded(boolean isDebug) {
+    public static void initializeEmbedded(boolean isDebug, boolean isTimeLogging) {
         if (!ignoreBlindingSun) {
             // Seriously, Sun, were you trying to cause epilepsy episodes?!?!
             System.setProperty("sun.awt.noerasebackground", "true");
@@ -104,6 +107,6 @@ abstract class Main {
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
-        GaBIEn.setupNativesAndAssets(isDebug);
+        GaBIEn.setupNativesAndAssets(isDebug, isTimeLogging);
     }
 }

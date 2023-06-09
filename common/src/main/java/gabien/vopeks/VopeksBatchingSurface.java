@@ -6,7 +6,7 @@
  */
 package gabien.vopeks;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -34,7 +34,7 @@ public class VopeksBatchingSurface extends VopeksImage {
     private final float[] stagingC = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float[] stagingT = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float halfWF, halfHF;
-    private final LinkedList<IImage> referencedBy = new LinkedList<>();
+    private final ArrayList<IImage> referencedBy = new ArrayList<>();
 
     /**
      * Creates a new texture for rendering, and possibly initializes it.
@@ -89,7 +89,7 @@ public class VopeksBatchingSurface extends VopeksImage {
      */
     public synchronized void batchReferenceBarrier() {
         while (!referencedBy.isEmpty())
-            referencedBy.pop().batchFlush();
+            referencedBy.remove(referencedBy.size() - 1).batchFlush();
     }
 
     @Override

@@ -9,8 +9,11 @@ package gabien;
 
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
+import gabien.uslx.append.TimeLogger;
 
 import javax.swing.*;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -53,6 +56,8 @@ class GrInDriver implements IGrInDriver {
     Random fuzzer = new Random();
 
     private Semaphore waitingFrames = new Semaphore(1);
+
+    public final @Nullable TimeLogger.Source timeLoggerWSI1Task, timeLoggerWSI2Task, timeLoggerWSI3Task;
 
     @SuppressWarnings("serial")
     public GrInDriver(String name, WindowSpecs ws, int rw, int rh) {
@@ -242,6 +247,11 @@ class GrInDriver implements IGrInDriver {
             if (gd != null)
                 gd.setFullScreenWindow(frame);
         }
+
+        timeLoggerWSI1Task = TimeLogger.optSource(GaBIEn.timeLogger, name + "_wsiSetPixels");
+        timeLoggerWSI2Task = TimeLogger.optSource(GaBIEn.timeLogger, name + "_wsiBlit");
+        timeLoggerWSI3Task = TimeLogger.optSource(GaBIEn.timeLogger, name + "_wsiAcquire");
+
         GaBIEnImpl.activeDriverLock.lock();
         GaBIEnImpl.activeDrivers.add(this);
         GaBIEnImpl.activeDriverLock.unlock();
@@ -267,7 +277,13 @@ class GrInDriver implements IGrInDriver {
         GaBIEn.vopeks.putFlushTask();
         // This stops backBufferDownload being active for more than one download.
         // To avoid deadlock, we don't want to be locked while doing waitingFrames
-        waitingFrames.acquireUninterruptibly();
+        if (timeLoggerWSI3Task != null) {
+            try (TimeLogger.Source src = timeLoggerWSI3Task.open()) {
+                waitingFrames.acquireUninterruptibly();
+            }
+        } else {
+            waitingFrames.acquireUninterruptibly();
+        }
 
         synchronized (this) {
             // Ensure the buffers are the right size.
@@ -276,11 +292,23 @@ class GrInDriver implements IGrInDriver {
                 backBufferDownloadWSI = new AWTWSIImage(backBufferDownload, backBuffer.getWidth(), backBuffer.getHeight());
             }
             // Transfer.
-            backBuffer.getPixelsAsync(backBufferDownload, () -> {
-                backBufferDownloadWSI.setPixels(backBufferDownload);
-                drawBackBufferToFrontBuffer(backBufferDownloadWSI);
-                waitingFrames.release();
-            });
+            if (timeLoggerWSI1Task != null) {
+                backBuffer.getPixelsAsync(backBufferDownload, () -> {
+                    try (TimeLogger.Source src = timeLoggerWSI1Task.open()) {
+                        backBufferDownloadWSI.setPixels(backBufferDownload);
+                    }
+                    try (TimeLogger.Source src = timeLoggerWSI2Task.open()) {
+                        drawBackBufferToFrontBuffer(backBufferDownloadWSI);
+                    }
+                    waitingFrames.release();
+                });
+            } else {
+                backBuffer.getPixelsAsync(backBufferDownload, () -> {
+                    backBufferDownloadWSI.setPixels(backBufferDownload);
+                    drawBackBufferToFrontBuffer(backBufferDownloadWSI);
+                    waitingFrames.release();
+                });
+            }
     
             wantedBackBufferW = panel.getWidth() / sc;
             wantedBackBufferH = panel.getHeight() / sc;

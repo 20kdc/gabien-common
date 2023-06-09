@@ -41,7 +41,8 @@ public final class GaBIenImpl implements IGaBIEn {
     	        return new File("/sdcard", fileName);
     	    }
     	};
-        GaBIEn.setupNativesAndAssets(false);
+    	// Use these "key files" to control startup. Only their existence matters, contents don't.
+        GaBIEn.setupNativesAndAssets(new File("/sdcard/gabien_android_enable_debug").exists(), new File("/sdcard/gabien_android_enable_timelogger").exists());
     	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
