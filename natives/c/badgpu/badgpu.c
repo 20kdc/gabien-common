@@ -137,6 +137,7 @@ typedef struct BADGPUInstancePriv {
     void (KHRABI *glMultiTexCoord4f)(int32_t, float, float, float, float);
     const char * (KHRABI *glGetString)(int32_t);
     void (KHRABI *glFlush)();
+    void (KHRABI *glFinish)();
     // Desktop/Non-Desktop variable area
     void (KHRABI *glBlendFuncSeparate)(int32_t, int32_t, int32_t, int32_t);
     void (KHRABI *glBlendEquationSeparate)(int32_t, int32_t);
@@ -330,6 +331,7 @@ CHKGLFN(fn)
     BINDGLFN(glMultiTexCoord4f);
     BINDGLFN(glGetString);
     BINDGLFN(glFlush);
+    BINDGLFN(glFinish);
     if (desktopExt) {
         BINDGLFN2(glBlendFuncSeparate, EXT);
         BINDGLFN2(glBlendEquationSeparate, EXT);
@@ -437,6 +439,15 @@ BADGPU_EXPORT void badgpuFlushInstance(BADGPUInstance instance) {
     if (!badgpuBChk(bi, "badgpuFlushInstance"))
         return;
     bi->glFlush();
+}
+
+BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance) {
+    if (!instance)
+        return;
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    if (!badgpuBChk(bi, "badgpuFinishInstance"))
+        return;
+    bi->glFinish();
 }
 
 // FBM

@@ -270,7 +270,8 @@ class GrInDriver implements IGrInDriver {
         }
 
         backBuffer.batchFlush();
-        GaBIEn.vopeks.putFlushTask();
+        // Flushes early and helps the profiler.
+        GaBIEn.vopeks.putFinishTask();
 
         // To avoid deadlock, we don't want to be locked while doing waitingFrames
         final int[] ia = dlIA.acquire(backBuffer.getWidth(), backBuffer.getHeight());

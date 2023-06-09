@@ -115,6 +115,13 @@ public abstract class BadGPU extends BadGPUEnum {
             BadGPUUnsafe.flushInstance(pointer);
         }
 
+        public void finish() {
+            syncObject.assertBound();
+            if (!valid)
+                throw new InvalidatedPointerException(this);
+            BadGPUUnsafe.finishInstance(pointer);
+        }
+
         public @Nullable Texture newTexture(int width, int height) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
                 throw new IllegalArgumentException("Width/height not 0-32767.");

@@ -47,6 +47,10 @@ void J_BADGPU(flushInstance)(void * env, void * self, int64_t instance) {
     badgpuFlushInstance(C_PTR(instance));
 }
 
+void J_BADGPU(finishInstance)(void * env, void * self, int64_t instance) {
+    badgpuFinishInstance(C_PTR(instance));
+}
+
 // TCE
 
 void J_BADGPU(pixelsConvertBB)(void * env, void * self, int32_t fF, int32_t tF, int32_t w, int32_t h, JNIBA_ARG(fD), JNIBA_ARG(tD)) {

@@ -27,6 +27,8 @@ public final class Vopeks {
 
     public final @Nullable TimeLogger timeLogger;
     public final @Nullable TimeLogger.Source timeLoggerReadPixelsTask;
+    public final @Nullable TimeLogger.Source timeLoggerFlushTask;
+    public final @Nullable TimeLogger.Source timeLoggerFinishTask;
     public final Thread vopeksThread;
     public final Thread vopeksCBThread;
     private final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
@@ -37,6 +39,8 @@ public final class Vopeks {
     public Vopeks(final int newInstanceFlags, @Nullable TimeLogger timeLogger) {
         this.timeLogger = timeLogger;
         timeLoggerReadPixelsTask = TimeLogger.optSource(timeLogger, "readPixelsTask");
+        timeLoggerFlushTask = TimeLogger.optSource(timeLogger, "flushTask");
+        timeLoggerFinishTask = TimeLogger.optSource(timeLogger, "finishTask");
         vopeksThread = new Thread("VOPEKS Thread") {
             @Override
             public void run() {
@@ -122,13 +126,35 @@ public final class Vopeks {
     }
 
     public void putFlushTask() {
-        putTask((instance) -> {
-            if (tasksBetweenFlushes > 0) {
-                System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
-                tasksBetweenFlushes = 0;
-            }
-            instance.flush();
-        });
+        if (timeLoggerFinishTask != null) {
+            putTask((instance) -> {
+                try (TimeLogger.Source src = timeLoggerFinishTask.open()) {
+                    if (tasksBetweenFlushes > 0) {
+                        System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
+                        tasksBetweenFlushes = 0;
+                    }
+                    instance.flush();
+                }
+            });
+        } else {
+            putTask((instance) -> {
+                instance.flush();
+            });
+        }
+    }
+
+    public void putFinishTask() {
+        if (timeLoggerFinishTask != null) {
+            putTask((instance) -> {
+                try (TimeLogger.Source src = timeLoggerFinishTask.open()) {
+                    instance.finish();
+                }
+            });
+        } else {
+            putTask((instance) -> {
+                instance.finish();
+            });
+        }
     }
 
     public void shutdown() {

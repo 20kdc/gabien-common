@@ -9,7 +9,7 @@ package gabien.natives;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.21.0
+ * VERSION: 0.22.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -25,6 +25,7 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean bindInstance(long instance);
     public static native void unbindInstance(long instance);
     public static native void flushInstance(long instance);
+    public static native void finishInstance(long instance);
     // TCE
     /**
      * Gets the size in bytes for a given size of image.

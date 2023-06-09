@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.21.0`
+ * Version: `0.22.0`
  *
  * ## Formatting Policy
  *
@@ -474,6 +474,16 @@ BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance);
  *  handle CPU-side tasks. This exposes that functionality.
  */
 BADGPU_EXPORT void badgpuFlushInstance(BADGPUInstance instance);
+
+/*
+ * ### `badgpuFinishInstance`
+ *
+ * Exactly equivalent to `glFinish`.
+ *
+ * Rationale: This is useful for timing debugging, and may become more useful
+ *  later on, depending on if off-thread pixel retrieval becomes a thing.
+ */
+BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance);
 
 /*
  * ## Texture Conversion Engine
