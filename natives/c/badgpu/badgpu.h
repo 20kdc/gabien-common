@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.22.0`
+ * Version: `0.23.0`
  *
  * ## Formatting Policy
  *
@@ -718,6 +718,42 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture);
  *  occur.
  */
 BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
+    uint16_t x, uint16_t y, int16_t width, int16_t height,
+    BADGPUTextureLoadFormat fmt, void * data);
+
+/*
+ * ## Off-Thread Commands
+ *
+ * Ok, so this is something of an exception to the rules.
+ * The functions here are hilariously unsafe to use.
+ * But, the risk comes with great reward: Asynchronous pixel reading.
+ *
+ * When using commands (i.e. not badgpuSupportsOffThread):
+ *
+ * + The instance must not be bound to the current thread.
+ * + No other thread may be performing an OTR command.
+ * + Nothing should be going on on the other thread that could cause any passed
+ *    resource to outright disappear. (Notably, you still don't have the ability
+ *    to add references from other threads.)
+ *
+ * Rationale:
+ *  This is a last-ditch attempt to improve performance of BadGPU on Android.
+ */
+
+/*
+ * If this returns true, this BadGPU instance supports off-thread commands.
+ * Otherwise, it doesn't.
+ */
+BADGPU_EXPORT BADGPUBool badgpuSupportsOffThread(BADGPUInstance instance);
+
+/*
+ * ### `badgpuReadPixelsOffThread`
+ *
+ * This allows for off-thread pixel retrieval.
+ * This has the "don't do anything stupid" threading nature, similar to
+ * `badgpuBindInstance`.
+ */
+BADGPU_EXPORT BADGPUBool badgpuReadPixelsOffThread(BADGPUTexture texture,
     uint16_t x, uint16_t y, int16_t width, int16_t height,
     BADGPUTextureLoadFormat fmt, void * data);
 

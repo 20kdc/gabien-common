@@ -97,4 +97,12 @@ public class NullGrDriver implements IGrDriver {
     public Texture getTextureFromTask() {
         return null;
     }
+
+    @Override
+    public void otrLock() {
+    }
+
+    @Override
+    public void otrUnlock() {
+    }
 }

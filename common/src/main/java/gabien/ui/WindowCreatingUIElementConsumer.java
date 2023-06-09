@@ -75,9 +75,12 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                 continue;
             }
 
+            // Cycle through backbuffers. This is important for async readPixels.
+            aw.nextBackBuffer++;
+            aw.nextBackBuffer = aw.nextBackBuffer % aw.backBuffers.length;
+            IGrDriver backbuffer = aw.backBuffers[aw.nextBackBuffer] = aw.igd.ensureBackBuffer(aw.backBuffers[aw.nextBackBuffer]);
+
             boolean needResize = false;
-            aw.backBuffer = aw.igd.ensureBackBuffer(aw.backBuffer);
-            IGrDriver backbuffer = aw.backBuffer;
             int cw = aw.igd.getWidth();
             int ch = aw.igd.getHeight();
             Size s = aw.ue.getSize();
@@ -140,7 +143,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
                     aw.ue.handleMousewheel(idp.getMouseX(), idp.getMouseY(), ip == -1);
             }
             if (aw.igd.stillRunning()) {
-                aw.igd.flush(aw.backBuffer);
+                aw.igd.flush(backbuffer);
             }
             if (aw.ue.requestsUnparenting()) {
                 closeTheseSD.add(aw);
@@ -181,7 +184,8 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
 
     private class ActiveWindow {
         IGrInDriver igd;
-        IGrDriver backBuffer;
+        int nextBackBuffer = 0;
+        IGrDriver[] backBuffers = new IGrDriver[2];
         UIElement ue;
         IPeripherals peripherals;
         HashSet<IPointer> lastActivePointers = new HashSet<IPointer>();

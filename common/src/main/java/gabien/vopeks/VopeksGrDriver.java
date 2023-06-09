@@ -194,9 +194,14 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         int cropH = cropD - cropU;
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
-            BadGPU.drawClear(texture, null,
-                    BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
-                    i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
+            otrLock();
+            try {
+                BadGPU.drawClear(texture, null,
+                        BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
+                        i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
+            } finally {
+                otrUnlock();
+            }
         });
     }
 

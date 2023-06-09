@@ -30,8 +30,9 @@ static const char * locations[] = {
     NULL
 };
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR) {
     *expectDesktopExtensions = 1;
+    *supportsOTR = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -62,11 +63,11 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     return ctx;
 }
 
-BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx, int otr) {
     return !ctx->CGLSetCurrentContext(ctx->ctx);
 }
 
-void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx, int otr) {
     ctx->CGLSetCurrentContext(NULL);
 }
 

@@ -20,8 +20,9 @@ static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err)
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR) {
     *expectDesktopExtensions = 1;
+    *supportsOTR = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -60,11 +61,11 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     return ctx;
 }
 
-BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx, int otr) {
     return wglMakeCurrent(ctx->hdc, ctx->ctx) != 0;
 }
 
-void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx, int otr) {
     wglMakeCurrent(NULL, NULL);
 }
 

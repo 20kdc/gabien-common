@@ -254,16 +254,21 @@ public class VopeksBatchingSurface extends VopeksImage {
 
             drawFlags |= tilingMode.value;
 
-            BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
-                    cropL, cropU, cropW, cropH,
-                    drawFlags,
-                    2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
-                    BadGPU.PrimitiveType.Triangles, 1,
-                    0, vertexCount, null, 0,
-                    null, 0, null, 0,
-                    0, 0, width, height,
-                    tx, null, 0,
-                    blendMode.blendProgram);
+            otrLock();
+            try {
+                BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
+                        cropL, cropU, cropW, cropH,
+                        drawFlags,
+                        2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
+                        BadGPU.PrimitiveType.Triangles, 1,
+                        0, vertexCount, null, 0,
+                        null, 0, null, 0,
+                        0, 0, width, height,
+                        tx, null, 0,
+                        blendMode.blendProgram);
+            } finally {
+                otrUnlock();
+            }
             vopeks.floatPool.finish(megabuffer);
             batchPool.finish(this);
         }

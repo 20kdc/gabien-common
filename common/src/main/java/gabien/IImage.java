@@ -53,6 +53,7 @@ public interface IImage {
      * This may be slow, because processing may not have finished on the image yet.
      */
     default void getPixels(@NonNull int[] buffer) {
+        batchFlush();
         Semaphore sm = new Semaphore(1);
         sm.acquireUninterruptibly();
         getPixelsAsync(buffer, () -> sm.release());
@@ -102,4 +103,15 @@ public interface IImage {
      * This can return null if the texture is empty (0 width, 0 height).
      */
     @Nullable BadGPU.Texture getTextureFromTask();
+
+    /**
+     * Locks the OTR lock.
+     * The image promises to not allow rendering commands to be submitted to the GL writing to this image until unlocked.
+     */
+    void otrLock();
+
+    /**
+     * Unlocks the OTR lock.
+     */
+    void otrUnlock();
 }

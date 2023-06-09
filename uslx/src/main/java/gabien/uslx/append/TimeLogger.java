@@ -31,6 +31,12 @@ public final class TimeLogger implements AutoCloseable {
         return logger.newSource(name);
     }
 
+    public static @Nullable Source optOpen(@Nullable Source src) {
+        if (src == null)
+            return null;
+        return src.open();
+    }
+
     private synchronized void event(int type, int sourceID, @Nullable String addendum) {
         if (output == null)
             return;

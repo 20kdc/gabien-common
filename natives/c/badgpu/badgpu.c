@@ -94,7 +94,8 @@ typedef struct BADGPUInstancePriv {
     int backendCheck;
     int backendCheckAggressive;
     int canPrintf;
-    uint32_t fbo;
+    int supportsOTR;
+    uint32_t fbo, fboOTR;
     int32_t (KHRABI *glGetError)();
     void (KHRABI *glEnable)(int32_t);
     void (KHRABI *glDisable)(int32_t);
@@ -211,7 +212,7 @@ static void destroyInstance(BADGPUObject obj) {
     BADGPUInstancePriv * bi = BG_INSTANCE(obj);
     if (badgpuBChk(bi, "destroyInstance")) {
         bi->glDeleteFramebuffers(1, &bi->fbo);
-        badgpu_wsiCtxStopCurrent(bi->ctx);
+        badgpu_wsiCtxStopCurrent(bi->ctx, 0);
         badgpu_destroyWsiCtx(bi->ctx);
         free(obj);
     }
@@ -261,14 +262,14 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     bi->canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
     badgpu_initObj((BADGPUObject) bi, destroyInstance);
     int desktopExt;
-    bi->ctx = badgpu_newWsiCtx(error, &desktopExt);
+    bi->ctx = badgpu_newWsiCtx(error, &desktopExt, &bi->supportsOTR);
     if (!bi->ctx) {
         free(bi);
         // error provided by badgpu_newWsiCtx
         return NULL;
     }
     // Initial bind
-    if (!badgpu_wsiCtxMakeCurrent(bi->ctx)) {
+    if (!badgpu_wsiCtxMakeCurrent(bi->ctx, 0)) {
         if (error)
             *error = "Failed to initially bind instance";
         badgpu_destroyWsiCtx(bi->ctx);
@@ -384,6 +385,8 @@ CHKGLFN(fn)
         }
     }
     bi->glGenFramebuffers(1, &bi->fbo);
+    if (bi->supportsOTR)
+        bi->glGenFramebuffers(1, &bi->fboOTR);
     bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
     if (!badgpuChk(bi, "badgpuNewInstance", 1)) {
         badgpuUnref((BADGPUInstance) bi);
@@ -413,7 +416,7 @@ BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance) {
             printf("BADGPU: badgpuBindInstance: already bound somewhere\n");
         return 1;
     }
-    if (!badgpu_wsiCtxMakeCurrent(bi->ctx)) {
+    if (!badgpu_wsiCtxMakeCurrent(bi->ctx, 0)) {
         if (bi->canPrintf)
             printf("BADGPU: badgpuBindInstance: failed to bind\n");
         return 1;
@@ -428,7 +431,7 @@ BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     if (!badgpuBChk(bi, "badgpuUnbindInstance"))
         return;
-    badgpu_wsiCtxStopCurrent(bi->ctx);
+    badgpu_wsiCtxStopCurrent(bi->ctx, 0);
     bi->isBound = 0;
 }
 
@@ -452,7 +455,7 @@ BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance) {
 
 // FBM
 
-static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi) {
+static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi, int isOffThread) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(sTexture);
     BADGPUDSBufferPriv * sDS = BG_DSBUFFER(sDSBuffer);
     if (sTex)
@@ -462,9 +465,18 @@ static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffe
     // Sadly, can't report this if it happens
     if (!*bi)
         return 0;
-    if (!badgpuBChk(*bi, "fbSetup"))
-        return 0;
-    (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
+    if (!isOffThread) {
+        if (!badgpuBChk(*bi, "fbSetup"))
+            return 0;
+        (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
+    } else {
+        // OTR does things weirdly
+        if (!((*bi)->supportsOTR))
+            return 0;
+        if (!badgpu_wsiCtxMakeCurrent((*bi)->ctx, 1))
+            return 0;
+        (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fboOTR);
+    }
     // badgpuChk(*bi, "fbSetup1", 0);
     if (sTex) {
         (*bi)->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
@@ -479,6 +491,8 @@ static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffe
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
         (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
     }
+    if (isOffThread)
+        return 1;
     return badgpuChk(*bi, "fbSetup", 1);
 }
 
@@ -608,18 +622,25 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture) {
     return badgpuChk(tex->i, "badgpuGenerateMipmap", 0);
 }
 
-BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
+static BADGPUBool badgpuReadPixelsCore(BADGPUTexture texture,
     uint16_t x, uint16_t y, int16_t width, int16_t height,
-    BADGPUTextureLoadFormat fmt, void * data) {
+    BADGPUTextureLoadFormat fmt, void * data, int isOffThread) {
     BADGPUInstancePriv * bi;
     if (width == 0 || height == 0)
         return 1;
-    if (!fbSetup(texture, NULL, &bi))
+    if (!fbSetup(texture, NULL, &bi, isOffThread))
         return 0;
-    if (width < 0 || height < 0)
+    if (width < 0 || height < 0) {
+        if (isOffThread)
+            badgpu_wsiCtxStopCurrent(bi->ctx, 1);
         return badgpuErr(bi, "badgpuReadPixels: Width or height < 0.");
-    if (!data)
+    }
+    if (!data) {
+        if (isOffThread)
+            badgpu_wsiCtxStopCurrent(bi->ctx, 1);
         return badgpuErr(bi, "badgpuReadPixels: data == NULL for non-zero area");
+    }
+
     if (fmt == BADGPUTextureLoadFormat_RGBA8888) {
         bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
     } else if (fmt == BADGPUTextureLoadFormat_ARGBI32) {
@@ -629,11 +650,15 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
     } else {
         uint32_t sz = badgpuPixelsSize(BADGPUTextureLoadFormat_RGBA8888, width, height);
         if (!sz) {
+            if (isOffThread)
+                badgpu_wsiCtxStopCurrent(bi->ctx, 1);
             badgpuErr(bi, "badgpuReadPixels: Invalid format.");
             return 0;
         }
         void * tmpBuf = malloc(sz);
         if (!tmpBuf) {
+            if (isOffThread)
+                badgpu_wsiCtxStopCurrent(bi->ctx, 1);
             badgpuErr(bi, "badgpuReadPixels: Unable to allocate conversion buffer.");
             return 0;
         }
@@ -641,7 +666,30 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
         badgpuPixelsConvert(BADGPUTextureLoadFormat_RGBA8888, fmt, width, height, tmpBuf, data);
         free(tmpBuf);
     }
+    if (isOffThread) {
+        badgpu_wsiCtxStopCurrent(bi->ctx, 1);
+        return 1;
+    }
     return badgpuChk(bi, "badgpuReadPixels", 0);
+}
+
+BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
+    uint16_t x, uint16_t y, int16_t width, int16_t height,
+    BADGPUTextureLoadFormat fmt, void * data) {
+    return badgpuReadPixelsCore(texture, x, y, width, height, fmt, data, 0);
+}
+
+// Off-Thread Commands
+
+BADGPU_EXPORT BADGPUBool badgpuSupportsOffThread(BADGPUInstance instance) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    return bi->supportsOTR;
+}
+
+BADGPU_EXPORT BADGPUBool badgpuReadPixelsOffThread(BADGPUTexture texture,
+    uint16_t x, uint16_t y, int16_t width, int16_t height,
+    BADGPUTextureLoadFormat fmt, void * data) {
+    return badgpuReadPixelsCore(texture, x, y, width, height, fmt, data, 1);
 }
 
 // Drawing Commands
@@ -650,7 +698,7 @@ static inline BADGPUBool drawingCmdSetup(
     BADGPU_SESSIONFLAGS,
     BADGPUInstancePriv ** bi
 ) {
-    if (!fbSetup(sTexture, sDSBuffer, bi))
+    if (!fbSetup(sTexture, sDSBuffer, bi, 0))
         return 0;
     (*bi)->glColorMask(
         (sFlags & BADGPUSessionFlags_MaskR) ? 1 : 0,

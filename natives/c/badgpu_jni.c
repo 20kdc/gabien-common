@@ -127,6 +127,26 @@ unsigned char J_BADGPU(readPixelsI)(void * env, void * self, int64_t texture, in
     return res;
 }
 
+// OTC
+
+unsigned char J_BADGPU(supportsOffThread)(void * env, void * self, int64_t instance) {
+    return badgpuSupportsOffThread(C_PTR(instance));
+}
+
+unsigned char J_BADGPU(readPixelsOffThreadB)(void * env, void * self, int64_t texture, int32_t x, int32_t y, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    BADGPUBool res = badgpuReadPixelsOffThread(C_PTR(texture), x, y, w, h, fmt, data);
+    JNIBA_R(data, 0);
+    return res;
+}
+
+unsigned char J_BADGPU(readPixelsOffThreadI)(void * env, void * self, int64_t texture, int32_t x, int32_t y, int32_t w, int32_t h, int32_t fmt, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    BADGPUBool res = badgpuReadPixelsOffThread(C_PTR(texture), x, y, w, h, fmt, data);
+    JNIIA_R(data, 0);
+    return res;
+}
+
 // DC
 
 #define JSESS_ARGS int64_t sTexture, int64_t sDSBuffer, int32_t sFlags, int32_t sScX, int32_t sScY, int32_t sScWidth, int32_t sScHeight

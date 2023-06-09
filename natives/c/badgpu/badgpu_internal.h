@@ -79,9 +79,10 @@ void badgpu_dlClose(BADGPUDynLib lib);
 typedef struct BADGPUWSICtx * BADGPUWSICtx;
 
 // Creates a new WSICtx.
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions);
-BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
-void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx);
+// "OTR" is a second context which is created for the off-thread retrieval stuff.
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR);
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx, int otr);
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx, int otr);
 // Warning: Must be made current first!
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
 // Attempting to destroy a context generally clears the current context.

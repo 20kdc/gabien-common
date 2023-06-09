@@ -6,15 +6,15 @@
  */
 package gabien.vopeks;
 
+import java.util.concurrent.Semaphore;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.IImage;
 import gabien.natives.BadGPU;
-import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Texture;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
-import gabien.uslx.append.TimeLogger;
 
 /**
  * Here goes nothing.
@@ -45,6 +45,12 @@ public class VopeksImage implements IImage {
      * ID for debugging.
      */
     public final @NonNull String debugId;
+
+    /**
+     * Confirms the image isn't engaged in OTR.
+     * We need to "ping this"
+     */
+    private final Semaphore imageOTRActivity = new Semaphore(1);
 
     /**
      * Creates a new VopeksImage.
@@ -83,26 +89,17 @@ public class VopeksImage implements IImage {
 
     @Override
     public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
-        batchFlush();
-        if (vopeks.timeLoggerReadPixelsTask != null) {
-            vopeks.putTask((instance) -> {
-                try (TimeLogger.Source src = vopeks.timeLoggerReadPixelsTask.open()) {
-                    texture.readPixels(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0);
-                }
-                vopeks.putCallback(() -> {
-                    BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
-                    onDone.run();
-                });
-            });
-        } else {
-            vopeks.putTask((instance) -> {
-                texture.readPixels(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0);
-                vopeks.putCallback(() -> {
-                    BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
-                    onDone.run();
-                });
-            });
-        }
+        vopeks.asyncReadPixels(this, 0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0, onDone);
+    }
+
+    @Override
+    public void otrLock() {
+        imageOTRActivity.acquireUninterruptibly();
+    }
+
+    @Override
+    public void otrUnlock() {
+        imageOTRActivity.release();
     }
 
     @Override
