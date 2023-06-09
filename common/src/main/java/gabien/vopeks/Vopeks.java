@@ -126,9 +126,9 @@ public final class Vopeks {
     }
 
     public void putFlushTask() {
-        if (timeLoggerFinishTask != null) {
+        if (timeLoggerFlushTask != null) {
             putTask((instance) -> {
-                try (TimeLogger.Source src = timeLoggerFinishTask.open()) {
+                try (TimeLogger.Source src = timeLoggerFlushTask.open()) {
                     if (tasksBetweenFlushes > 0) {
                         System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
                         tasksBetweenFlushes = 0;

@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.view.SurfaceHolder;
 import gabien.backendhelp.WSIDownloadPair;
+import gabien.uslx.append.TimeLogger;
 
 public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;
@@ -22,6 +23,7 @@ public class GrInDriver implements IGrInDriver {
     public boolean isFirstFrame = true;
     private DLIAPair dlIA = new DLIAPair("Android");
     private Paint globalPaint = new Paint();
+    private final TimeLogger.Source timeLoggerGameThread = TimeLogger.optSource(GaBIEn.timeLogger, "GameThread");
 
     public GrInDriver(int w, int h) {
         wantedBackBufferW = w;
@@ -29,6 +31,7 @@ public class GrInDriver implements IGrInDriver {
         wantedBackBufferWSetAsync = w;
         wantedBackBufferHSetAsync = h;
         peripherals = new Peripherals(this);
+        timeLoggerGameThread.open();
     }
 
     @Override
@@ -48,6 +51,7 @@ public class GrInDriver implements IGrInDriver {
 
     @Override
     public void flush(IImage backBufferI) {
+        timeLoggerGameThread.close();
         backBufferI.batchFlush();
         // Flushes early and helps the profiler.
         GaBIEn.vopeks.putFinishTask();
@@ -84,6 +88,7 @@ public class GrInDriver implements IGrInDriver {
         } finally {
             AndroidPortGlobals.mainActivityLock.unlock();
         }
+        timeLoggerGameThread.open();
     }
     private void doFlushLoop(int[] backBufferDownload, int bW, int bH) {
         while (true) {
