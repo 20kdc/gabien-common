@@ -51,8 +51,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s1 = (srcx + srcw) / srcWF;
         float t0 = srcy / srcHF;
         float t1 = (srcy + srch) / srcHF;
-        IVopeksSurfaceHolder vsh = i instanceof IVopeksSurfaceHolder ? (IVopeksSurfaceHolder) i : null;
-        batchStartGroupScA(6, blendSub, TilingMode.None, vsh);
+        batchStartGroupScA(6, blendSub, TilingMode.None, i);
         batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
         batchWrite(x + w, y    , s1, t0, 1, 1, 1, 1);
         batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
@@ -85,7 +84,6 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s1 = (srcx + srcw) / srcWF;
         float t0 = srcy / srcHF;
         float t1 = (srcy + srch) / srcHF;
-        IVopeksSurfaceHolder vsh = i instanceof IVopeksSurfaceHolder ? (IVopeksSurfaceHolder) i : null;
         // Calculate regular coordinates
         // Note the change of the sign. This was tested against the R48 graphics test sheet.
         double angleInRadians = Math.toRadians(-angle);
@@ -112,7 +110,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchStartGroupScA(6, blendSub, TilingMode.None, vsh);
+        batchStartGroupScA(6, blendSub, TilingMode.None, i);
         batchWrite(p00X, p00Y, s0, t0, 1, 1, 1, 1);
         batchWrite(p10X, p10Y, s1, t0, 1, 1, 1, 1);
         batchWrite(p11X, p11Y, s1, t1, 1, 1, 1, 1);
@@ -158,7 +156,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     /**
      * batchStartGroup but aware of scissoring
      */
-    public void batchStartGroupScA(int vertices, BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+    public void batchStartGroupScA(int vertices, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
         batchStartGroup(vertices, localST[2], localST[3], localST[4] - localST[2], localST[5] - localST[3], blendMode, tilingMode, tex);
     }
 

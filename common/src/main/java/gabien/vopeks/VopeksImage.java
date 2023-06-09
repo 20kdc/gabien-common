@@ -8,6 +8,7 @@ package gabien.vopeks;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
@@ -18,7 +19,7 @@ import gabien.natives.BadGPUEnum.TextureLoadFormat;
  *
  * Created 7th June, 2023.
  */
-public class VopeksImage implements IVopeksSurfaceHolder {
+public class VopeksImage implements IImage {
     /**
      * The parent instance.
      */
@@ -57,12 +58,12 @@ public class VopeksImage implements IVopeksSurfaceHolder {
     }
 
     @Override
-    public void batchReference(IVopeksSurfaceHolder other) {
+    public void batchReference(IImage other) {
         // etc.
     }
 
     @Override
-    public void batchUnreference(IVopeksSurfaceHolder caller) {
+    public void batchUnreference(IImage caller) {
         // and so forth...
     }
 

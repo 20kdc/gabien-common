@@ -60,11 +60,8 @@ Game Thread->>VOPEKS Thread: F3...
 VOPEKS Thread->>VOPEKS Callback Thread: readPixels F2 Callback
 VOPEKS Callback Thread->>Frame Semaphore: Release
 deactivate Frame Semaphore
-
 ```
 
 Notably, even in these circumstances, we're still able to perform actual rendering on the VOPEKS thread during WSI, depending on how quickly VOPEKS is completing readPixels requests. If we're bottlenecked by not being able to start readPixels until after WSI finishes, switching between buffers fixes that too, but that's not implemented yet and would change the timing diagram (it requires two semaphores).
 
 Under ideal conditions, while the game thread is preparing rendering commands, the GPU and WSI work finishes, so we're never actually waiting on the semaphore. This means the game can output frames as fast (or as slow) as it wishes to prepare them. They'll all eventually reach the screen; their readPixels calls are kept in sequence by the VOPEKS thread, which also keeps their callbacks in sequence, which keeps their WSI in sequence.
-
-

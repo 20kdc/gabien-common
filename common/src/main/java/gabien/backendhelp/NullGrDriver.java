@@ -10,6 +10,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.natives.BadGPU.Texture;
 
 /**
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
@@ -78,5 +79,22 @@ public class NullGrDriver implements IGrDriver {
     @Override
     public void updateST() {
 
+    }
+
+    @Override
+    public void batchFlush() {
+    }
+
+    @Override
+    public void batchReference(IImage caller) {
+    }
+
+    @Override
+    public void batchUnreference(IImage caller) {
+    }
+
+    @Override
+    public Texture getTextureFromTask() {
+        return null;
     }
 }

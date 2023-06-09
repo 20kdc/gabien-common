@@ -10,6 +10,7 @@ import java.util.LinkedList;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Instance;
 import gabien.natives.BadGPUEnum.BlendOp;
@@ -33,7 +34,7 @@ public class VopeksBatchingSurface extends VopeksImage {
     private final float[] stagingC = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float[] stagingT = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float halfWF, halfHF;
-    private final LinkedList<IVopeksSurfaceHolder> referencedBy = new LinkedList<>();
+    private final LinkedList<IImage> referencedBy = new LinkedList<>();
 
     /**
      * Creates a new texture for rendering, and possibly initializes it.
@@ -48,7 +49,7 @@ public class VopeksBatchingSurface extends VopeksImage {
      * Ensures the batcher is in the right state to accept the given geometry.
      * This will actually begin a new batch, so make sure you're sure!
      */
-    public void batchStartGroup(int vertices, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+    public void batchStartGroup(int vertices, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -129,7 +130,7 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     @Override
-    public synchronized void batchReference(IVopeksSurfaceHolder caller) {
+    public synchronized void batchReference(IImage caller) {
         // If this wasn't here, the caller could refer to an unfinished batch.
         // Where this becomes a problem is that the caller could submit the task, and the batch might still not be submitted.
         // Since any changes we do make would require a flush (because we have a reference), just flush now,
@@ -140,7 +141,7 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     @Override
-    public void batchUnreference(IVopeksSurfaceHolder caller) {
+    public void batchUnreference(IImage caller) {
         referencedBy.remove(caller);
     }
 
@@ -230,7 +231,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         int vertexCount;
         BlendMode blendMode = BlendMode.None;
         TilingMode tilingMode = TilingMode.None;
-        IVopeksSurfaceHolder tex;
+        IImage tex;
         float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
 
         @Override
@@ -256,7 +257,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             batchPool.finish(this);
         }
 
-        public boolean matchesState(int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IVopeksSurfaceHolder tex) {
+        public boolean matchesState(int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
             if (cropL != this.cropL || cropU != this.cropU || cropW != this.cropW || cropH != this.cropH)
                 return false;
             if (blendMode != this.blendMode)

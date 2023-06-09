@@ -10,10 +10,21 @@ package gabien;
 import java.util.concurrent.Semaphore;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.natives.BadGPU;
 
 /**
  * An image. All IImages that are not IGrDrivers must be immutable.
- * Created on 11/08/17.
+ * In theory, this was created on 11/08/17.
+ * In practice, this was an inner interface of IGraphicsDriver back in the very beginning.
+ * The earliest version on record is from August 3rd, 2014.
+ * By the end of 2016, which was when R48 started, it was still part of IGrInDriver.
+ * R48 0.7.1 finally separated out the interface. (The class compile date is August 11th, 2017.)
+ * IAWTImageLike was introduced sometime around June 9th, 2017.
+ * It then became INativeImageHolder sometime around August 21st, 2017.
+ * On the 7th June, 2023, it became IVopeksSurfaceHolder.
+ * Now it's 9th June 2023. Vopeks is pretty much certain; we're not going back, so everything was merged.
  */
 public interface IImage {
     /**
@@ -66,4 +77,29 @@ public interface IImage {
     default @NonNull byte[] createPNG() {
         return download().createPNG();
     }
+
+    /**
+     * Flushes any queued operations to the Vopeks task queue.
+     * This ensures that any operations you subsequently schedule run after the preceding operations.
+     */
+    void batchFlush();
+
+    /**
+     * This is used when the caller is writing this image into its own batch.
+     * Ensures that any changes to this image first flush the batch of the caller.
+     * This ensures that the ordering remains correct.
+     */
+    void batchReference(IImage caller);
+
+    /**
+     * This is used when the caller has flushed a batch that was using this image.
+     * It cleans up the previously established reference, preventing a memory leak.
+     */
+    void batchUnreference(IImage caller);
+
+    /**
+     * Gets a texture. Run from Vopeks task code.
+     * This can return null if the texture is empty (0 width, 0 height).
+     */
+    @Nullable BadGPU.Texture getTextureFromTask();
 }
