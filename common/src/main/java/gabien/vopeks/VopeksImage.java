@@ -10,6 +10,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.IImage;
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Texture;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
 import gabien.uslx.append.TimeLogger;
@@ -74,14 +75,20 @@ public class VopeksImage implements IImage {
         if (vopeks.timeLoggerReadPixelsTask != null) {
             vopeks.putTask((instance) -> {
                 try (TimeLogger.Source src = vopeks.timeLoggerReadPixelsTask.open()) {
-                    texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
+                    texture.readPixels(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0);
                 }
-                vopeks.putCallback(onDone);
+                vopeks.putCallback(() -> {
+                    BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
+                    onDone.run();
+                });
             });
         } else {
             vopeks.putTask((instance) -> {
-                texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
-                vopeks.putCallback(onDone);
+                texture.readPixels(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0);
+                vopeks.putCallback(() -> {
+                    BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
+                    onDone.run();
+                });
             });
         }
     }

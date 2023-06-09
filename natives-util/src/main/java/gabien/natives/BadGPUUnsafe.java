@@ -44,7 +44,8 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native void pixelsConvertBB(int fF, int tF, int width, int height, byte[] fD, int fDOfs, byte[] tD, int tDOfs);
     public static native void pixelsConvertBI(int fF, int tF, int width, int height, byte[] fD, int fDOfs, int[] tD, int tDOfs);
     public static native void pixelsConvertIB(int fF, int tF, int width, int height, int[] fD, int fDOfs, byte[] tD, int tDOfs);
-    public static native void pixelsConvertRGBA8888ToARGBI32InPlaceB(int width, int height, int[] data, int dataOfs);
+    public static native void pixelsConvertRGBA8888ToARGBI32InPlaceB(int width, int height, byte[] data, int dataOfs);
+    public static native void pixelsConvertRGBA8888ToARGBI32InPlaceI(int width, int height, int[] data, int dataOfs);
     // TM
     public static native long newTextureB(long instance, int width, int height, int fmt, byte[] data, int dataOfs);
     public static native long newTextureI(long instance, int width, int height, int fmt, int[] data, int dataOfs);
