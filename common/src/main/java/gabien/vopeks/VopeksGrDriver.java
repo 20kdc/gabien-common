@@ -9,6 +9,7 @@ package gabien.vopeks;
 import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPUUnsafe;
 
 /**
  * Here goes nothing.
@@ -195,13 +196,10 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
             otrLock();
-            try {
-                BadGPU.drawClear(texture, null,
-                        BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
-                        i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
-            } finally {
-                otrUnlock();
-            }
+            BadGPUUnsafe.drawClear(texture.pointer, 0,
+                    BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
+                    i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
+            otrUnlock();
         });
     }
 

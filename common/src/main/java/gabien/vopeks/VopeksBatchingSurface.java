@@ -12,6 +12,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.IImage;
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
 import gabien.natives.BadGPUEnum.BlendOp;
 import gabien.natives.BadGPUEnum.BlendWeight;
@@ -248,6 +249,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         @Override
         public void run(Instance instance) {
             BadGPU.Texture tx = tex != null ? tex.getTextureFromTask() : null;
+            long tx2 = tx != null ? tx.pointer : 0;
             int drawFlags = 0;
             if (blendMode != BlendMode.None)
                 drawFlags |= BadGPU.DrawFlags.Blend;
@@ -255,20 +257,17 @@ public class VopeksBatchingSurface extends VopeksImage {
             drawFlags |= tilingMode.value;
 
             otrLock();
-            try {
-                BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
-                        cropL, cropU, cropW, cropH,
-                        drawFlags,
-                        2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
-                        BadGPU.PrimitiveType.Triangles, 1,
-                        0, vertexCount, null, 0,
-                        null, 0, null, 0,
-                        0, 0, width, height,
-                        tx, null, 0,
-                        blendMode.blendProgram);
-            } finally {
-                otrUnlock();
-            }
+            BadGPUUnsafe.drawGeomNoDS(texture.pointer, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
+                    cropL, cropU, cropW, cropH,
+                    drawFlags,
+                    2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
+                    BadGPU.PrimitiveType.Triangles.value, 1,
+                    0, vertexCount, null, 0,
+                    null, 0, null, 0,
+                    0, 0, width, height,
+                    tx2, null, 0,
+                    blendMode.blendProgram);
+            otrUnlock();
             vopeks.floatPool.finish(megabuffer);
             batchPool.finish(this);
         }

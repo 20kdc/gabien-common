@@ -51,7 +51,9 @@ local recordedNames = {}
 
 -- Reading Side
 while ptr <= #ic do
- local rType, rID, rTS = string.unpack(">i1i4i8", ic, ptr)
+ local hdr = ic:sub(ptr, ptr + 12)
+ if #hdr < 13 then break end
+ local rType, rID, rTS = string.unpack(">i1i4i8", hdr)
  ptr = ptr + 13
  if rType == 0 then
   -- has string

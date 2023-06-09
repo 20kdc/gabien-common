@@ -9,6 +9,7 @@ package gabien.uslx.append;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -20,9 +21,23 @@ import org.eclipse.jdt.annotation.Nullable;
 public final class TimeLogger implements AutoCloseable {
     private DataOutputStream output;
     private int nextSourceID;
+    private ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(256);
+
+    private Thread runner = new Thread("TimeLogger") {
+        public void run() {
+            while (true) {
+                try {
+                    queue.take().run();
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace();
+                }
+            }
+        }
+    };
 
     public TimeLogger(OutputStream os) {
         output = new DataOutputStream(os);
+        runner.start();
     }
 
     public static @Nullable TimeLogger.Source optSource(@Nullable TimeLogger logger, String name) {
@@ -37,13 +52,13 @@ public final class TimeLogger implements AutoCloseable {
         return src.open();
     }
 
-    private synchronized void event(int type, int sourceID, @Nullable String addendum) {
+    private synchronized void event(int type, int sourceID, @Nullable String addendum, long now) {
         if (output == null)
             return;
         try {
             output.write(type);
             output.writeInt(sourceID);
-            output.writeLong(System.nanoTime());
+            output.writeLong(now);
             if (addendum != null)
                 output.writeUTF(addendum);
         } catch (Throwable ex) {
@@ -53,7 +68,8 @@ public final class TimeLogger implements AutoCloseable {
 
     public synchronized Source newSource(@NonNull String id) {
         int sid = nextSourceID++;
-        event(0, sid, id);
+        long now = System.nanoTime();
+        queue.add(() -> event(0, sid, id, now));
         return new Source(sid);
     }
 
@@ -72,18 +88,29 @@ public final class TimeLogger implements AutoCloseable {
 
     public final class Source implements AutoCloseable {
         public final int id;
+
         public Source(int id) {
             this.id = id;
         }
 
         public Source open() {
-            event(1, id, null);
+            try {
+                long now = System.nanoTime();
+                queue.put(() -> event(1, id, null, now));
+            } catch (InterruptedException ie) {
+                ie.printStackTrace();
+            }
             return this;
         }
 
         @Override
         public void close() {
-            event(2, id, null);
+            try {
+                long now = System.nanoTime();
+                queue.put(() -> event(2, id, null, now));
+            } catch (InterruptedException ie) {
+                ie.printStackTrace();
+            }
         }
     }
 }

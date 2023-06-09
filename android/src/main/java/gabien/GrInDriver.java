@@ -52,9 +52,6 @@ public class GrInDriver implements IGrInDriver {
     @Override
     public void flush(IImage backBufferI) {
         timeLoggerGameThread.close();
-        backBufferI.batchFlush();
-        // Flushes early and helps the profiler.
-        GaBIEn.vopeks.putFinishTask();
         /*
          * Big explanation of how the threading works here:
          * So the original idea was to use lockCanvas as the lock, but it doesn't actually work that way.
