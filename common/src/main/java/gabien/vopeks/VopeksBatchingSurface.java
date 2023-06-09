@@ -48,8 +48,9 @@ public class VopeksBatchingSurface extends VopeksImage {
     /**
      * Ensures the batcher is in the right state to accept the given geometry.
      * This will actually begin a new batch, so make sure you're sure!
+     * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      */
-    public void batchStartGroup(int vertices, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+    public void batchStartGroup(int vertices, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -64,7 +65,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         if (currentBatch != null)
             if ((currentBatch.vertexCount + vertices) > MAX_VERTICES_IN_BATCH)
                 batchFlush();
-        if (currentBatch == null || !currentBatch.matchesState(cropL, cropU, cropW, cropH, blendMode, tilingMode, tex)) {
+        if (currentBatch == null || !currentBatch.matchesState(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex)) {
             batchFlush();
             // Setup the reference.
             // Note that we only have to worry about this at the start of a batch.
@@ -72,10 +73,17 @@ public class VopeksBatchingSurface extends VopeksImage {
             if (tex != null)
                 tex.batchReference(this);
             currentBatch = batchPool.get();
-            currentBatch.cropL = cropL;
-            currentBatch.cropU = cropU;
-            currentBatch.cropW = cropW;
-            currentBatch.cropH = cropH;
+            if (cropEssential) {
+                currentBatch.cropL = cropL;
+                currentBatch.cropU = cropU;
+                currentBatch.cropW = cropW;
+                currentBatch.cropH = cropH;
+            } else {
+                currentBatch.cropL = 0;
+                currentBatch.cropU = 0;
+                currentBatch.cropW = width;
+                currentBatch.cropH = height;
+            }
             currentBatch.blendMode = blendMode;
             currentBatch.tilingMode = tilingMode;
             currentBatch.tex = tex;
@@ -257,15 +265,34 @@ public class VopeksBatchingSurface extends VopeksImage {
             batchPool.finish(this);
         }
 
-        public boolean matchesState(int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
-            if (cropL != this.cropL || cropU != this.cropU || cropW != this.cropW || cropH != this.cropH)
+        public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+            if (cropEssential) {
+                if (cropL != this.cropL || cropU != this.cropU || cropW != this.cropW || cropH != this.cropH) {
+                    // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropW + "," + cropH + " -> " + this.cropL + "," + this.cropU + "," + this.cropW + "," + this.cropH);
+                    return false;
+                }
+            } else {
+                int cropR = cropL + cropW;
+                int cropD = cropU + cropH;
+                int tCropR = this.cropL + this.cropW;
+                int tCropD = this.cropU + this.cropH;
+                if (cropL > this.cropL || cropU > this.cropU || cropR < tCropR || cropD < tCropD) {
+                    // System.out.println("break batch: SCO on a non-essential crop");
+                    return false;
+                }
+            }
+            if (blendMode != this.blendMode) {
+                // System.out.println("break batch: blendMode: " + blendMode + " -> " + this.blendMode);
                 return false;
-            if (blendMode != this.blendMode)
+            }
+            if (tilingMode != this.tilingMode) {
+                // System.out.println("break batch: tilingMode: " + tilingMode + " -> " + this.tilingMode);
                 return false;
-            if (tilingMode != this.tilingMode)
+            }
+            if (tex != this.tex) {
+                // System.out.println("break batch: tex: " + tex + " -> " + this.tex);
                 return false;
-            if (tex != this.tex)
-                return false;
+            }
             return true;
         }
     }

@@ -29,12 +29,55 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
 
     @Override
     public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
-        blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, TilingMode.None, BlendMode.Normal);
+        blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BlendMode.Normal);
     }
 
     @Override
     public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
-        blitScaledImage(0, 0, w, h, x, y, w, h, cachedTile, TilingMode.XY, BlendMode.Normal);
+        blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BlendMode.Normal);
+    }
+
+    public synchronized void blitImage(int srcx, int srcy, int w, int h, int x, int y, IImage i, TilingMode tiling, BlendMode blendSub) {
+        x += localST[0];
+        y += localST[1];
+        // CPU scissor
+        int cR = x + w;
+        int cD = y + h;
+        int srcR = srcx + w;
+        int srcD = srcy + h;
+        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        if (x < scL) {
+            srcx += scL - x;
+            x = scL;
+        }
+        if (y < scU) {
+            srcy += scU - y;
+            y = scU;
+        }
+        if (cR > scR) {
+            srcR -= cR - scR;
+            cR = scR;
+        }
+        if (cD > scD) {
+            srcD -= cD - scD;
+            cD = scD;
+        }
+        if ((cR <= x) || (cD <= y))
+            return;
+        // The rest
+        float srcWF = i.getWidth();
+        float srcHF = i.getHeight();
+        float s0 = srcx / srcWF;
+        float s1 = srcR / srcWF;
+        float t0 = srcy / srcHF;
+        float t1 = srcD / srcHF;
+        batchStartGroupScA(false, 6, blendSub, tiling, i);
+        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
+        batchWrite(cR, y , s1, t0, 1, 1, 1, 1);
+        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
+        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
+        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
+        batchWrite(x , cD, s0, t1, 1, 1, 1, 1);
     }
 
     @Override
@@ -43,6 +86,10 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     public synchronized void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int w, int h, IImage i, TilingMode tiling, BlendMode blendSub) {
+        if (srcw == w && srch == h) {
+            blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
+            return;
+        }
         x += localST[0];
         y += localST[1];
         float srcWF = i.getWidth();
@@ -51,7 +98,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s1 = (srcx + srcw) / srcWF;
         float t0 = srcy / srcHF;
         float t1 = (srcy + srch) / srcHF;
-        batchStartGroupScA(6, blendSub, TilingMode.None, i);
+        batchStartGroupScA(true, 6, blendSub, tiling, i);
         batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
         batchWrite(x + w, y    , s1, t0, 1, 1, 1, 1);
         batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
@@ -110,7 +157,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchStartGroupScA(6, blendSub, TilingMode.None, i);
+        batchStartGroupScA(true, 6, blendSub, TilingMode.None, i);
         batchWrite(p00X, p00Y, s0, t0, 1, 1, 1, 1);
         batchWrite(p10X, p10Y, s1, t0, 1, 1, 1, 1);
         batchWrite(p11X, p11Y, s1, t1, 1, 1, 1, 1);
@@ -140,24 +187,41 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     public synchronized void clearRectAlpha(int r, int g, int b, int a, int x, int y, int w, int h) {
         x += localST[0];
         y += localST[1];
+        // CPU scissor
+        int cR = x + w;
+        int cD = y + h;
+        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        if (x < scL)
+            x = scL;
+        if (y < scU)
+            y = scU;
+        if (cR > scR)
+            cR = scR;
+        if (cD > scD)
+            cD = scD;
+        if ((cR <= x) || (cD <= y))
+            return;
+
+        // Continue...
         float rF = r / 255f;
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchStartGroupScA(6, BlendMode.Normal, TilingMode.None, null);
-        batchWrite(x    , y    , 0, 0, rF, gF, bF, aF);
-        batchWrite(x + w, y    , 0, 0, rF, gF, bF, aF);
-        batchWrite(x + w, y + h, 0, 0, rF, gF, bF, aF);
-        batchWrite(x    , y    , 0, 0, rF, gF, bF, aF);
-        batchWrite(x + w, y + h, 0, 0, rF, gF, bF, aF);
-        batchWrite(x    , y + h, 0, 0, rF, gF, bF, aF);
+        batchStartGroupScA(false, 6, BlendMode.Normal, TilingMode.None, null);
+        batchWrite(x , y , 0, 0, rF, gF, bF, aF);
+        batchWrite(cR, y , 0, 0, rF, gF, bF, aF);
+        batchWrite(cR, cD, 0, 0, rF, gF, bF, aF);
+        batchWrite(x , y , 0, 0, rF, gF, bF, aF);
+        batchWrite(cR, cD, 0, 0, rF, gF, bF, aF);
+        batchWrite(x , cD, 0, 0, rF, gF, bF, aF);
     }
 
     /**
      * batchStartGroup but aware of scissoring
      */
-    public void batchStartGroupScA(int vertices, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
-        batchStartGroup(vertices, localST[2], localST[3], localST[4] - localST[2], localST[5] - localST[3], blendMode, tilingMode, tex);
+    public void batchStartGroupScA(boolean essential, int vertices, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        batchStartGroup(vertices, essential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex);
     }
 
     @Override
