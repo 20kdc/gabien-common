@@ -7,12 +7,11 @@
 
 package gabien;
 
-import java.util.concurrent.Semaphore;
-
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.view.SurfaceHolder;
+import gabien.backendhelp.WSIDownloadPair;
 
 public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;
@@ -21,9 +20,8 @@ public class GrInDriver implements IGrInDriver {
     public int wantedBackBufferW, wantedBackBufferH;
     public int wantedBackBufferWSetAsync, wantedBackBufferHSetAsync;
     public boolean isFirstFrame = true;
-    private int[] backBufferDownload = new int[0];
+    private DLIAPair dlIA = new DLIAPair("Android");
     private Paint globalPaint = new Paint();
-    private Semaphore waitingFrames = new Semaphore(1);
 
     public GrInDriver(int w, int h) {
         wantedBackBufferW = w;
@@ -50,62 +48,69 @@ public class GrInDriver implements IGrInDriver {
 
     @Override
     public void flush(IImage backBufferI) {
+        backBufferI.batchFlush();
         GaBIEn.vopeks.putFlushTask();
         /*
          * Big explanation of how the threading works here:
          * So the original idea was to use lockCanvas as the lock, but it doesn't actually work that way.
          * So doing the waitingFrames from JSE, but with added spice.
          */
-        waitingFrames.acquireUninterruptibly();
-        // Grab these from the last frame.
-        wantedBackBufferW = wantedBackBufferWSetAsync;
-        wantedBackBufferH = wantedBackBufferHSetAsync;
+        // Ensure the buffers are the right size.
+        int bW = backBufferI.getWidth();
+        int bH = backBufferI.getHeight();
+        if (isFirstFrame) {
+            // Synchronous, so that the first flush always sets up the correct w/h for the game thread.
+            int[] backBufferDownload = dlIA.acquire(bW, bH);
+            backBufferI.getPixels(backBufferDownload);
+            doFlushLoop(backBufferDownload, bW, bH);
+            dlIA.release(backBufferDownload);
+            isFirstFrame = false;
+        } else {
+            int[] backBufferDownload = dlIA.acquire(bW, bH);
+            backBufferI.getPixelsAsync(backBufferDownload, () -> {
+                doFlushLoop(backBufferDownload, bW, bH);
+                dlIA.release(backBufferDownload);
+            });
+        }
+        // So the timeline is a bit weird here.
+        // Hypothetically an infinitely-fast readPixels could lock this first, but it won't.
         AndroidPortGlobals.mainActivityLock.lock();
         try {
+            // These are set from within mainActivityLock, so...
+            wantedBackBufferW = wantedBackBufferWSetAsync;
+            wantedBackBufferH = wantedBackBufferHSetAsync;
             peripherals.gdUpdateTextboxHoldingMALock();
         } finally {
             AndroidPortGlobals.mainActivityLock.unlock();
         }
-        // Ensure the buffers are the right size.
-        int expectedSize = backBufferI.getWidth() * backBufferI.getHeight();
-        if (backBufferDownload.length != expectedSize)
-            backBufferDownload = new int[expectedSize];
-        int bW = backBufferI.getWidth();
-        int bH = backBufferI.getHeight();
-        backBufferI.getPixelsAsync(backBufferDownload, () -> {
-            doFlushLoop(bW, bH);
-            waitingFrames.release();
-        });
-        if (isFirstFrame) {
-            // This is so that the first flush always sets up the correct w/h for the game thread.
-            // It has no other use.
-            waitingFrames.acquireUninterruptibly();
-            wantedBackBufferW = wantedBackBufferWSetAsync;
-            wantedBackBufferH = wantedBackBufferHSetAsync;
-            waitingFrames.release();
-            isFirstFrame = false;
-        }
     }
-    private void doFlushLoop(int bW, int bH) {
+    private void doFlushLoop(int[] backBufferDownload, int bW, int bH) {
         while (true) {
             AndroidPortGlobals.mainActivityLock.lock();
-            try {
-                MainActivity last = AndroidPortGlobals.mainActivity;
-                if (last != null) {
-                    try {
-                        SurfaceHolder sh = last.mySurface.getHolder();
-                        if (sh != null) {
-                            Canvas c = sh.lockCanvas();
-                            if (c != null) {
-                                flushWithLockedCanvas(sh, c, bW, bH);
-                                return;
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            MainActivity last = AndroidPortGlobals.mainActivity;
+            if (last != null) {
+                // Transfer locks.
+                try {
+                    last.surfaceLock.lock();
+                } finally {
+                    AndroidPortGlobals.mainActivityLock.unlock();
                 }
-            } finally {
+                // We're now holding surfaceLock and not holding the MAL.
+                // So flush() code can do its thing.
+                try {
+                    SurfaceHolder sh = last.mySurface.getHolder();
+                    if (sh != null) {
+                        Canvas c = sh.lockCanvas();
+                        if (c != null) {
+                            flushWithLockedCanvas(sh, c, backBufferDownload, bW, bH);
+                            return;
+                        }
+                    }
+                } catch (Throwable e) {
+                } finally {
+                    last.surfaceLock.unlock();
+                }
+            } else {
                 AndroidPortGlobals.mainActivityLock.unlock();
             }
             try {
@@ -116,7 +121,7 @@ public class GrInDriver implements IGrInDriver {
         }
 
     }
-    private void flushWithLockedCanvas(SurfaceHolder sh, Canvas c, int bW, int bH) {
+    private void flushWithLockedCanvas(SurfaceHolder sh, Canvas c, int[] backBufferDownload, int bW, int bH) {
         Rect r = sh.getSurfaceFrame();
         
         wantedBackBufferWSetAsync = r.width();
@@ -153,5 +158,20 @@ public class GrInDriver implements IGrInDriver {
     @Override
     public int estimateUIScaleTenths() {
         return Math.max(10, Math.min(wantedBackBufferW, wantedBackBufferH) / 30);
+    }
+
+    private class DLIAPair extends WSIDownloadPair<int[]> {
+        public DLIAPair(String n) {
+            super(n, 2);
+        }
+
+        @Override
+        public boolean bufferMatchesSize(int[] buffer, int width, int height) {
+            return buffer.length == (width * height);
+        }
+        @Override
+        public int[] genBuffer(int width, int height) {
+            return new int[width * height];
+        }
     }
 }

@@ -7,6 +7,8 @@
 
 package gabien;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -17,6 +19,11 @@ import android.view.Window;
 public class MainActivity extends Activity {
 	public TextboxImplObject myTIO;
     public SurfaceView mySurface;
+    // Once you have the MainActivity (using mainActivityLock) you can transfer to this lock.
+    // By transferring to this lock you can avoid holding up stuff using the mainActivityLock while doing stuff with the surface.
+    // It's very important to hold that precise order, though. Never lock the surfaceLock first.
+    // Otherwise deadlocks are possible.
+    public final ReentrantLock surfaceLock = new ReentrantLock();
 
     @Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -31,29 +38,32 @@ public class MainActivity extends Activity {
         surfaceview.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View arg0, MotionEvent arg1) {
+                GrInDriver theMainWindow = AndroidPortGlobals.theMainWindow;
+                if (theMainWindow == null)
+                    return true;
                 int acto = arg1.getAction();
                 int act = (acto & MotionEvent.ACTION_MASK);
                 // ACTION_POINTER_INDEX_MASK
                 int ptrI = (acto >> 8) & 0xFF;
                 switch (act) {
                     case MotionEvent.ACTION_DOWN:
-                        mapToArea(AndroidPortGlobals.theMainWindow, true, arg1, 0);
+                        mapToArea(theMainWindow, true, arg1, 0);
                         break;
                     case MotionEvent.ACTION_POINTER_DOWN:
-                        mapToArea(AndroidPortGlobals.theMainWindow, true, arg1, ptrI);
+                        mapToArea(theMainWindow, true, arg1, ptrI);
                         break;
                     case MotionEvent.ACTION_MOVE:
                         for (int i = 0; i < arg1.getPointerCount(); i++)
-                            mapToArea(AndroidPortGlobals.theMainWindow, true, arg1, i);
+                            mapToArea(theMainWindow, true, arg1, i);
                         break;
                     case MotionEvent.ACTION_POINTER_UP:
-                        mapToArea(AndroidPortGlobals.theMainWindow, false, arg1, ptrI);
+                        mapToArea(theMainWindow, false, arg1, ptrI);
                         break;
                     // Sent "when the last pointer leaves the screen".
                     // I hope you aren't lying.
                     case MotionEvent.ACTION_UP:
-                        mapToArea(AndroidPortGlobals.theMainWindow, false, arg1, 0);
-                        AndroidPortGlobals.theMainWindow.peripherals.gdResetPointers();
+                        mapToArea(theMainWindow, false, arg1, 0);
+                        theMainWindow.peripherals.gdResetPointers();
                         break;
                 }
                 return true;
@@ -93,8 +103,10 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         // remove self so we don't raise the dead
         AndroidPortGlobals.mainActivityLock.lock();
+        surfaceLock.lock();
         if (AndroidPortGlobals.mainActivity == this)
             AndroidPortGlobals.mainActivity = null;
+        surfaceLock.unlock();
         AndroidPortGlobals.mainActivityLock.unlock();
         // then call super
         super.onDestroy();

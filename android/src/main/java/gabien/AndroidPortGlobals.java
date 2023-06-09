@@ -23,7 +23,7 @@ public class AndroidPortGlobals {
     /**
      * This is the rendering surface. It also contains the GameThread-side peripheral code.
      */
-    public static final GrInDriver theMainWindow = new GrInDriver(800, 600);
+    public static GrInDriver theMainWindow;
     /**
      * The activity can't be *completely* destroyed while a lock is held.
      * This is important as it ensures we don't keep any undead Activities around.

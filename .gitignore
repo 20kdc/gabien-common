@@ -15,6 +15,7 @@
 !uslx/src/**
 !uslx/timelogger-to-chrome.lua
 !uslx/timelogger-view
+!uslx/timelogger-view-android
 !uslx/timelogger.md
 
 !media
