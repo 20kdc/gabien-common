@@ -7,6 +7,7 @@
 package gabien.vopeks;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.IImage;
 import gabien.natives.BadGPU;
@@ -41,10 +42,16 @@ public class VopeksImage implements IImage {
     public final int width, height;
 
     /**
+     * ID for debugging.
+     */
+    public final @NonNull String debugId;
+
+    /**
      * Creates a new VopeksImage.
      */
-    public VopeksImage(Vopeks vopeks, int w, int h, int[] init) {
+    public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
         this.vopeks = vopeks;
+        debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         vopeks.putTask((instance) -> {
             // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
             // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
@@ -52,6 +59,11 @@ public class VopeksImage implements IImage {
         });
         width = w;
         height = h;
+    }
+
+    @Override
+    public String toString() {
+        return debugId;
     }
 
     @Override

@@ -68,7 +68,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         public IImage getIImage() {
             synchronized (this) {
                 if (renderUpload == null)
-                    renderUpload = render.upload();
+                    renderUpload = render.upload("Text");
                 return renderUpload;
             }
         }

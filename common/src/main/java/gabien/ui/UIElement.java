@@ -23,6 +23,11 @@ import java.util.LinkedList;
  * Redesigned on February 16th, 2018.
  */
 public abstract class UIElement {
+    /**
+     * Just so that this doesn't have to be repeated a thousand times...
+     */
+    public static final UILayer[] LAYERS = new UILayer[] {UILayer.Clear, UILayer.Base, UILayer.Content};
+
     private Rect elementBounds = Rect.ZERO;
 
     private UIElement parent;
@@ -106,7 +111,27 @@ public abstract class UIElement {
     }
 
     public abstract void update(double deltaTime, boolean selected, IPeripherals peripherals);
-    public abstract void render(IGrDriver igd);
+
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer == UILayer.Content)
+            render(igd);
+    }
+
+    public final void renderAllLayers(IGrDriver igd) {
+        for (UILayer layer : LAYERS)
+            renderLayer(igd, layer);
+    }
+
+    /**
+     * DO NOT CALL THIS ANYMORE. Call one of:
+     * 1. renderLayer
+     * 2. renderAllLayers
+     * DEPENDING ON USECASE.
+     * You're still okay to override this if you want to draw on the Content layer.
+     */
+    protected void render(IGrDriver igd) {
+        // Nothing here!
+    }
 
     /**
      * How you should call runLayout.
@@ -232,13 +257,23 @@ public abstract class UIElement {
         private UIElement[] cachedAllElements;
         private boolean allElementsChanged = true;
         private boolean released = false;
+        private final boolean panelScissors;
 
         public UIPanel() {
-
+            this(false);
         }
 
         public UIPanel(int w, int h) {
+            this(false, w, h);
+        }
+
+        public UIPanel(boolean scissors) {
+            panelScissors = scissors;
+        }
+
+        public UIPanel(boolean scissors, int w, int h) {
             super(w, h);
+            panelScissors = scissors;
         }
 
         private void recacheElements() {
@@ -314,7 +349,7 @@ public abstract class UIElement {
         }
 
         @Override
-        public void render(IGrDriver igd) {
+        public void renderLayer(IGrDriver igd, UILayer layer) {
             if (released)
                 throw new RuntimeException("Trying to use released panel.");
             // javac appears to be having conflicting memories.
@@ -322,9 +357,20 @@ public abstract class UIElement {
             // this.elementBounds: invalid (access error)
             // myself.elementBounds: ok
             recacheElements();
-            for (UIElement uie : cachedAllElements)
-                if (uie.visibleFlag)
-                    scissoredRender(uie, igd);
+            if (panelScissors) {
+                for (UIElement uie : cachedAllElements)
+                    if (uie.visibleFlag)
+                        unscissoredRender(uie, igd, layer);
+            } else {
+                for (UIElement uie : cachedAllElements)
+                    if (uie.visibleFlag)
+                        scissoredRender(uie, igd, layer);
+            }
+        }
+
+        @Override
+        protected final void render(IGrDriver igd) {
+            // Disabled to stop shenanigans
         }
 
         @Override
@@ -335,7 +381,25 @@ public abstract class UIElement {
                 uie.setAttachedToRoot(attached);
         }
 
-        public static void scissoredRender(UIElement uie, IGrDriver igd) {
+        public static void unscissoredRender(UIElement uie, IGrDriver igd, UILayer layer) {
+            int x = uie.elementBounds.x;
+            int y = uie.elementBounds.y;
+
+            int[] localBuffer = igd.getLocalST();
+            int osTX = localBuffer[0];
+            int osTY = localBuffer[1];
+
+            localBuffer[0] += x;
+            localBuffer[1] += y;
+            igd.updateST();
+            uie.renderLayer(igd, layer);
+
+            localBuffer[0] = osTX;
+            localBuffer[1] = osTY;
+            igd.updateST();
+        }
+
+        public static void scissoredRender(UIElement uie, IGrDriver igd, UILayer layer) {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
             // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
@@ -365,7 +429,7 @@ public abstract class UIElement {
             localBuffer[4] = Math.max(left, right);
             localBuffer[5] = Math.max(top, bottom);
             igd.updateST();
-            uie.render(igd);
+            uie.renderLayer(igd, layer);
 
             localBuffer[0] = osTX;
             localBuffer[1] = osTY;
@@ -472,8 +536,13 @@ public abstract class UIElement {
         }
 
         @Override
-        public void render(IGrDriver igd) {
-            currentElement.render(igd);
+        public void renderLayer(IGrDriver igd, UILayer layer) {
+            currentElement.renderLayer(igd, layer);
+        }
+
+        @Override
+        protected final void render(IGrDriver igd) {
+            // Disabled to stop shenanigans
         }
 
         @Override

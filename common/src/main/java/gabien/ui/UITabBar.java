@@ -61,78 +61,87 @@ public class UITabBar extends UIElement.UIPanel {
     }
 
     @Override
-    public void render(IGrDriver igd) {
-        super.render(igd);
-        Size bounds = getSize();
-        boolean willUpdateLater = parentView.handleIncoming();
-
-        UIBorderedElement.drawBorder(igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
-
-        HashSet<Tab> outgoingTabs2 = outgoingTabs;
-        outgoingTabs = new HashSet<Tab>();
-        for (Tab w : tabs) {
-            boolean reqU = w.contents.requestsUnparenting();
-            if (outgoingTabs2.contains(w) || reqU) {
-                willUpdateLater = true;
-                outgoingTabs2.add(w);
-                parentView.handleClosedUserTab(w, reqU);
-            }
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        super.renderLayer(igd, layer);
+        if (layer == UILayer.Base) {
+            Size bounds = getSize();
+            UIBorderedElement.drawBorder(igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
         }
-        if (parentView.selectedTab != null)
-            if (outgoingTabs2.contains(parentView.selectedTab))
-                findReplacementTab();
-        tabs.removeAll(outgoingTabs2);
+        if (layer == UILayer.Content) {
+            boolean willUpdateLater = parentView.handleIncoming();
 
-        if (willUpdateLater)
-            parentView.runLayout();
-
-        for (int pass = 0; pass < (((draggingTabs.size() > 0) && canDragTabs) ? 2 : 1); pass++) {
-            int pos = getScrollOffsetX();
-            boolean toggle = false;
+            HashSet<Tab> outgoingTabs2 = outgoingTabs;
+            outgoingTabs = new HashSet<Tab>();
             for (Tab w : tabs) {
-                // This is used for all rendering.
-                int theDisplayOX = pos;
-                int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
-                int base = toggle ? 9 : 8;
-                if (parentView.selectedTab == w)
-                    base = 10;
-                toggle = !toggle;
-
-                // Decide against rendering
-                boolean shouldRender = true;
-                if (pass == 0) {
-                    if (draggingTabs.containsKey(w))
-                        shouldRender = false;
-                } else {
-                    IPointerReceiver.RelativeResizePointerReceiver rrpr = draggingTabs.get(w);
-                    if (rrpr != null) {
-                        theDisplayOX = rrpr.lastSize.width;
-                    } else {
-                        shouldRender = false;
-                    }
+                boolean reqU = w.contents.requestsUnparenting();
+                if (outgoingTabs2.contains(w) || reqU) {
+                    willUpdateLater = true;
+                    outgoingTabs2.add(w);
+                    parentView.handleClosedUserTab(w, reqU);
                 }
-                if (!shouldRender) {
-                    pos += tabW;
-                    continue;
-                }
-
-                if (UIBorderedElement.getMoveDownFlag(base)) {
-                    int[] localST = igd.getLocalST();
-                    int oldTY = localST[1];
-                    int oldCD = localST[5];
-                    localST[5] = Math.min(localST[5], localST[1] + effectiveHeight);
-                    localST[1] += effectiveHeight / 8;
-                    igd.updateST();
-                    drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w);
-                    localST[1] = oldTY;
-                    localST[5] = oldCD;
-                    igd.updateST();
-                } else {
-                    drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w);
-                }
-
-                pos += tabW;
             }
+            if (parentView.selectedTab != null)
+                if (outgoingTabs2.contains(parentView.selectedTab))
+                    findReplacementTab();
+            tabs.removeAll(outgoingTabs2);
+
+            if (willUpdateLater)
+                parentView.runLayout();
+        }
+        if (layer == UILayer.Base)
+            renderTabPass(igd, false, true, false);
+        if (layer == UILayer.Content) {
+            renderTabPass(igd, false, false, true);
+            if ((draggingTabs.size() > 0) && canDragTabs)
+                renderTabPass(igd, true, true, true);
+        }
+    }
+    private void renderTabPass(IGrDriver igd, boolean isRenderingDraggedTabs, boolean enBack, boolean enFore) {
+        int pos = getScrollOffsetX();
+        boolean toggle = false;
+        for (Tab w : tabs) {
+            // This is used for all rendering.
+            int theDisplayOX = pos;
+            int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
+            int base = toggle ? 9 : 8;
+            if (parentView.selectedTab == w)
+                base = 10;
+            toggle = !toggle;
+
+            // Decide against rendering
+            boolean shouldRender = true;
+            if (!isRenderingDraggedTabs) {
+                if (draggingTabs.containsKey(w))
+                    shouldRender = false;
+            } else {
+                IPointerReceiver.RelativeResizePointerReceiver rrpr = draggingTabs.get(w);
+                if (rrpr != null) {
+                    theDisplayOX = rrpr.lastSize.width;
+                } else {
+                    shouldRender = false;
+                }
+            }
+            if (!shouldRender) {
+                pos += tabW;
+                continue;
+            }
+
+            if (UIBorderedElement.getMoveDownFlag(base)) {
+                int[] localST = igd.getLocalST();
+                int oldTY = localST[1];
+                int oldCD = localST[5];
+                localST[5] = Math.min(localST[5], localST[1] + effectiveHeight);
+                localST[1] += effectiveHeight / 8;
+                igd.updateST();
+                drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
+                localST[1] = oldTY;
+                localST[5] = oldCD;
+                igd.updateST();
+            } else {
+                drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
+            }
+
+            pos += tabW;
         }
     }
 
@@ -327,27 +336,33 @@ public class UITabBar extends UIElement.UIPanel {
     }
 
     public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab) {
+        drawTab(border, x, y, w, h, igd, text, tab, true, true);
+    }
+    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab, boolean enBack, boolean enFore) {
         int margin = h / 8;
         int textHeight = h - (margin * 2);
         int tabExMargin = margin + (margin / 2);
         int tabIcoMargin = h / 4;
 
-        UIBorderedElement.drawBorder(igd, border, margin, x, y, w, h);
+        if (enBack)
+            UIBorderedElement.drawBorder(igd, border, margin, x, y, w, h);
 
-        tab.titleTextCache.text = text;
-        tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(border);
-        tab.titleTextCache.font = FontManager.getFontForText(text, textHeight);
-        tab.titleTextCache.update();
-        tab.titleTextCache.getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
-
-        int icoBack = h;
-        for (TabIcon i : tab.icons) {
-            // sometimes too bright, deal with that
-            int size = h - (tabIcoMargin * 2);
-            int subMargin = tabIcoMargin / 2;
-            igd.clearRect(0, 0, 0, x + w - ((icoBack - tabIcoMargin) + subMargin), y + tabIcoMargin - subMargin, size + (subMargin * 2), size + (subMargin * 2));
-            i.draw(igd, x + w - (icoBack - tabIcoMargin), y + tabIcoMargin, size);
-            icoBack += h;
+        if (enFore) {
+            tab.titleTextCache.text = text;
+            tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(border);
+            tab.titleTextCache.font = FontManager.getFontForText(text, textHeight);
+            tab.titleTextCache.update();
+            tab.titleTextCache.getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
+    
+            int icoBack = h;
+            for (TabIcon i : tab.icons) {
+                // sometimes too bright, deal with that
+                int size = h - (tabIcoMargin * 2);
+                int subMargin = tabIcoMargin / 2;
+                igd.clearRect(0, 0, 0, x + w - ((icoBack - tabIcoMargin) + subMargin), y + tabIcoMargin - subMargin, size + (subMargin * 2), size + (subMargin * 2));
+                i.draw(igd, x + w - (icoBack - tabIcoMargin), y + tabIcoMargin, size);
+                icoBack += h;
+            }
         }
     }
 

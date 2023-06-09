@@ -170,18 +170,25 @@ public class UILabel extends UIBorderedElement {
         }
     }
 
+    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache) {
+        return drawLabel(igd, wid, ox, oy, string, mode, height, cache, true, true);
+    }
+
     // NOTE: Assumes the label is already formatted accordingly.
     // If not, expect it to go off the right of the screen if need be.
     // If you want multiline support, use a Contents instance.
-    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache) {
+    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache, boolean enBack, boolean enFore) {
         int h = UIBorderedElement.getRecommendedBorderWidth(height);
         int h2 = height + (h * 2) - (height / 8);
-        UIBorderedElement.drawBorder(igd, mode + 2, h, ox, oy, wid, h2);
-        cache.font = FontManager.getFontForText(string, height);
-        cache.blackText = UIBorderedElement.getBlackTextFlag(mode + 2);
-        cache.text = string;
-        cache.update();
-        cache.getChunk().renderRoot(igd, ox + h, oy + h);
+        if (enBack)
+            UIBorderedElement.drawBorder(igd, mode + 2, h, ox, oy, wid, h2);
+        if (enFore) {
+            cache.font = FontManager.getFontForText(string, height);
+            cache.blackText = UIBorderedElement.getBlackTextFlag(mode + 2);
+            cache.text = string;
+            cache.update();
+            cache.getChunk().renderRoot(igd, ox + h, oy + h);
+        }
         return wid;
     }
 }

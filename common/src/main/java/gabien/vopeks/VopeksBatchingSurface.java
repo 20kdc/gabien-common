@@ -40,7 +40,7 @@ public class VopeksBatchingSurface extends VopeksImage {
      * Creates a new texture for rendering, and possibly initializes it.
      */
     public VopeksBatchingSurface(Vopeks vopeks, int w, int h, int[] init) {
-        super(vopeks, w, h, init);
+        super(vopeks, null, w, h, init);
         halfWF = w / 2.0f;
         halfHF = h / 2.0f;
     }
@@ -73,6 +73,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             if (tex != null)
                 tex.batchReference(this);
             currentBatch = batchPool.get();
+            currentBatch.cropEssential = cropEssential;
             if (cropEssential) {
                 currentBatch.cropL = cropL;
                 currentBatch.cropU = cropU;
@@ -189,6 +190,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             element.cropU = 0;
             element.cropW = 0;
             element.cropH = 0;
+            element.cropEssential = false;
             element.vertexCount = 0;
             element.blendMode = BlendMode.None;
             element.tilingMode = TilingMode.None;
@@ -241,6 +243,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         TilingMode tilingMode = TilingMode.None;
         IImage tex;
         float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
+        boolean cropEssential;
 
         @Override
         public void run(Instance instance) {
@@ -271,7 +274,7 @@ public class VopeksBatchingSurface extends VopeksImage {
                     // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropW + "," + cropH + " -> " + this.cropL + "," + this.cropU + "," + this.cropW + "," + this.cropH);
                     return false;
                 }
-            } else {
+            } else if (this.cropEssential) {
                 int cropR = cropL + cropW;
                 int cropD = cropU + cropH;
                 int tCropR = this.cropL + this.cropW;

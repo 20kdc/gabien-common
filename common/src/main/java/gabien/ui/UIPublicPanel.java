@@ -36,13 +36,16 @@ public class UIPublicPanel extends UIElement.UIPanel {
     }
 
     @Override
-    public void render(IGrDriver igd) {
-        if (baseImage != null) {
-            Size bounds = getSize();
-            if (!imageScale) {
-                igd.blitImage(imageX, imageY, bounds.width, bounds.height, 0, 0, baseImage);
-            } else {
-                igd.blitScaledImage(imageX, imageY, imageSW, imageSH, 0, 0, bounds.width, bounds.height, baseImage);
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        // Luckily, it doesn't need to be on any layer lower than Legacy.
+        if (layer == UILayer.Content) {
+            if (baseImage != null) {
+                Size bounds = getSize();
+                if (!imageScale) {
+                    igd.blitImage(imageX, imageY, bounds.width, bounds.height, 0, 0, baseImage);
+                } else {
+                    igd.blitScaledImage(imageX, imageY, imageSW, imageSH, 0, 0, bounds.width, bounds.height, baseImage);
+                }
             }
         }
         super.render(igd);

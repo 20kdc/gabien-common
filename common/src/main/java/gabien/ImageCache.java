@@ -24,7 +24,7 @@ final class ImageCache {
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
         } else {
-            resImg = img.upload();
+            resImg = img.upload("ImageCache:" + ki);
         }
         loadedImages.put(ki, resImg);
         return resImg;
@@ -48,7 +48,7 @@ final class ImageCache {
                     data[i] = 0;
                 }
             }
-            resImg = GaBIEn.createImage(data, img.getWidth(), img.getHeight());
+            resImg = GaBIEn.createImage("ImageCache:" + ki, data, img.getWidth(), img.getHeight());
         }
         loadedImages.put(ki, resImg);
         return resImg;

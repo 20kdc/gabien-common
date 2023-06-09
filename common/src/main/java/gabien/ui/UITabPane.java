@@ -83,10 +83,12 @@ public class UITabPane extends UIElement.UIPanel {
     }
 
     @Override
-    public void render(IGrDriver igd) {
-        super.render(igd);
-        Size bounds = getSize();
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        super.renderLayer(igd, layer);
+        if (layer != UILayer.Content)
+            return;
         if (selectedTab == null) {
+            Size bounds = getSize();
             int w = bounds.width / 8;
             int h = (bounds.height - tabOverheadHeight) / 8;
             int lw = bounds.width - (w * 7);

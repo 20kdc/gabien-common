@@ -118,7 +118,9 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     @Override
-    public final void render(IGrDriver igd) {
+    public final void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer != UILayer.Base && layer != UILayer.Content)
+            return;
         Size s = getSize();
         boolean black = getBorderFlag2(borderType, ThemingCentral.BF_LIGHTBKG);
         if (getBorderFlag2(borderType, ThemingCentral.BF_MOVEDOWN)) {
@@ -126,14 +128,23 @@ public abstract class UIBorderedElement extends UIElement {
             int oldTY = localST[1];
             localST[1] += getBorderWidth();
             igd.updateST();
-            drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
-            renderContents(black, igd);
+            if (layer == UILayer.Base)
+                drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
+            else if (layer == UILayer.Content)
+                renderContents(black, igd);
             localST[1] = oldTY;
             igd.updateST();
         } else {
-            drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
-            renderContents(black, igd);
+            if (layer == UILayer.Base)
+                drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
+            else if (layer == UILayer.Content)
+                renderContents(black, igd);
         }
+    }
+
+    @Override
+    protected final void render(IGrDriver igd) {
+        // Disabled to stop shenanigans
     }
 
     @Override

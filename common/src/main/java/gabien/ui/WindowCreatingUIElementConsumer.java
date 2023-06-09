@@ -99,7 +99,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             aw.peripherals.clearOffset();
             UIBorderedElement.drawBorder(backbuffer, 5, 0, 0, 0, cw, ch);
             aw.ue.update(dT, true, aw.peripherals);
-            aw.ue.render(backbuffer);
+            aw.ue.renderAllLayers(backbuffer);
 
             // Handles the global click/drag/release cycle
 

@@ -212,7 +212,7 @@ public class GaBIEn {
 
     public static IImage getErrorImage() {
         if (errorImage == null) {
-            errorImage = createImage(new int[] {
+            errorImage = createImage("getErrorImage", new int[] {
                     0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
                     0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
                     0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
@@ -227,11 +227,15 @@ public class GaBIEn {
     }
 
     public static IImage createImage(@NonNull int[] colours, int width, int height) {
+        return createImage(null, colours, width, height);
+    }
+
+    public static IImage createImage(@Nullable String debugId, @NonNull int[] colours, int width, int height) {
         if (width <= 0)
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksImage(GaBIEn.vopeks, width, height, colours);
+        return new VopeksImage(GaBIEn.vopeks, debugId, width, height, colours);
     }
 
     public static IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {

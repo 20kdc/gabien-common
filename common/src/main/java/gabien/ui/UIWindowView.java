@@ -321,7 +321,8 @@ public class UIWindowView extends UIElement {
             boolean winSelected = parent.selectedWindow == this;
             UITabBar.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), this);
 
-            UIPanel.scissoredRender(contents, igd);
+            for (UILayer layer : UIElement.LAYERS)
+                UIPanel.scissoredRender(contents, igd, layer);
         }
 
         @Override
@@ -418,7 +419,8 @@ public class UIWindowView extends UIElement {
 
         @Override
         public void render(IGrDriver igd) {
-            UIPanel.scissoredRender(uie, igd);
+            for (UILayer layer : UIElement.LAYERS)
+                UIPanel.scissoredRender(uie, igd, layer);
         }
 
         @Override

@@ -8,6 +8,7 @@
 package gabien;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * This image is backed by whatever resource is necessary for the WSI side of gabien.
@@ -45,12 +46,19 @@ public interface IWSIImage {
     @NonNull byte[] createPNG();
 
     /**
-     * Uploads an image to IImage (to be backed by BadGPU in future)
+     * Uploads an image to the GPU, creating an IImage.
      */
     default @NonNull IImage upload() {
+        return upload(null);
+    }
+
+    /**
+     * Uploads an image to the GPU, creating an IImage.
+     */
+    default @NonNull IImage upload(@Nullable String debugId) {
         int[] tmp = new int[getWidth() * getHeight()];
         getPixels(tmp);
-        return GaBIEn.createImage(tmp, getWidth(), getHeight());
+        return GaBIEn.createImage(debugId, tmp, getWidth(), getHeight());
     }
 
     interface RW extends IWSIImage {

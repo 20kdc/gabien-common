@@ -92,19 +92,36 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         }
         x += localST[0];
         y += localST[1];
+        // Do the CPU scissor dance, but only to work out if cropping is essential.
+        // It usually isn't, and we save a ton of batches by making use of this.
+        boolean isCropEssential = false;
+        int cR = x + w;
+        int cD = y + h;
+        int srcR = srcx + srcw;
+        int srcD = srcy + srch;
+        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        if (x < scL)
+            isCropEssential = true;
+        else if (y < scU)
+            isCropEssential = true;
+        else if (cR > scR)
+            isCropEssential = true;
+        else if (cD > scD)
+            isCropEssential = true;
+        // End
         float srcWF = i.getWidth();
         float srcHF = i.getHeight();
         float s0 = srcx / srcWF;
-        float s1 = (srcx + srcw) / srcWF;
+        float s1 = srcR / srcWF;
         float t0 = srcy / srcHF;
-        float t1 = (srcy + srch) / srcHF;
-        batchStartGroupScA(true, 6, blendSub, tiling, i);
-        batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
-        batchWrite(x + w, y    , s1, t0, 1, 1, 1, 1);
-        batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
-        batchWrite(x    , y    , s0, t0, 1, 1, 1, 1);
-        batchWrite(x + w, y + h, s1, t1, 1, 1, 1, 1);
-        batchWrite(x    , y + h, s0, t1, 1, 1, 1, 1);
+        float t1 = srcD / srcHF;
+        batchStartGroupScA(isCropEssential, 6, blendSub, tiling, i);
+        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
+        batchWrite(cR, y , s1, t0, 1, 1, 1, 1);
+        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
+        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
+        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
+        batchWrite(x , cD, s0, t1, 1, 1, 1, 1);
     }
 
     @Override
