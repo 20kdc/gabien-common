@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.backendhelp.WSIDownloadPair;
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 import gabien.uslx.append.TimeLogger;
@@ -20,7 +21,6 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Random;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -48,16 +48,13 @@ class GrInDriver implements IGrInDriver {
 
     public BufferedImage frontBuffer;
     public int wantedBackBufferW, wantedBackBufferH;
-    private int[] backBufferDownload = new int[0];
-    private AWTWSIImage backBufferDownloadWSI = new AWTWSIImage(new int[0], 0, 0);
+
+    private final DLIAPair dlIA;
+    private final DLBIPair dlBI;
 
     public final KeyListener commonKeyListener;
 
     Random fuzzer = new Random();
-
-    private Semaphore waitingFrames = new Semaphore(1);
-
-    public final @Nullable TimeLogger.Source timeLoggerWSI1Task, timeLoggerWSI2Task, timeLoggerWSI3Task;
 
     @SuppressWarnings("serial")
     public GrInDriver(String name, WindowSpecs ws, int rw, int rh) {
@@ -248,9 +245,8 @@ class GrInDriver implements IGrInDriver {
                 gd.setFullScreenWindow(frame);
         }
 
-        timeLoggerWSI1Task = TimeLogger.optSource(GaBIEn.timeLogger, name + "_wsiSetPixels");
-        timeLoggerWSI2Task = TimeLogger.optSource(GaBIEn.timeLogger, name + "_wsiBlit");
-        timeLoggerWSI3Task = TimeLogger.optSource(GaBIEn.timeLogger, name + "_wsiAcquire");
+        dlIA = new DLIAPair(name + ".dlIA");
+        dlBI = new DLBIPair(name + ".dlBI");
 
         GaBIEnImpl.activeDriverLock.lock();
         GaBIEnImpl.activeDrivers.add(this);
@@ -275,41 +271,19 @@ class GrInDriver implements IGrInDriver {
         }
 
         GaBIEn.vopeks.putFlushTask();
-        // This stops backBufferDownload being active for more than one download.
+
         // To avoid deadlock, we don't want to be locked while doing waitingFrames
-        if (timeLoggerWSI3Task != null) {
-            try (TimeLogger.Source src = timeLoggerWSI3Task.open()) {
-                waitingFrames.acquireUninterruptibly();
-            }
-        } else {
-            waitingFrames.acquireUninterruptibly();
-        }
+        final int[] ia = dlIA.acquire(backBuffer.getWidth(), backBuffer.getHeight());
 
         synchronized (this) {
-            // Ensure the buffers are the right size.
-            if (backBufferDownloadWSI.getWidth() != backBuffer.getWidth() || backBufferDownloadWSI.getHeight() != backBuffer.getHeight()) {
-                backBufferDownload = new int[backBuffer.getWidth() * backBuffer.getHeight()];
-                backBufferDownloadWSI = new AWTWSIImage(backBufferDownload, backBuffer.getWidth(), backBuffer.getHeight());
-            }
             // Transfer.
-            if (timeLoggerWSI1Task != null) {
-                backBuffer.getPixelsAsync(backBufferDownload, () -> {
-                    try (TimeLogger.Source src = timeLoggerWSI1Task.open()) {
-                        backBufferDownloadWSI.setPixels(backBufferDownload);
-                    }
-                    try (TimeLogger.Source src = timeLoggerWSI2Task.open()) {
-                        drawBackBufferToFrontBuffer(backBufferDownloadWSI);
-                    }
-                    waitingFrames.release();
-                });
-            } else {
-                backBuffer.getPixelsAsync(backBufferDownload, () -> {
-                    backBufferDownloadWSI.setPixels(backBufferDownload);
-                    drawBackBufferToFrontBuffer(backBufferDownloadWSI);
-                    waitingFrames.release();
-                });
-            }
-    
+            backBuffer.getPixelsAsync(ia, () -> {
+                final AWTWSIImage bi = dlBI.acquire(backBuffer.getWidth(), backBuffer.getHeight());
+                bi.setPixels(ia);
+                dlIA.release(ia);
+                drawBackBufferToFrontBuffer(bi);
+                dlBI.release(bi);
+            });    
             wantedBackBufferW = panel.getWidth() / sc;
             wantedBackBufferH = panel.getHeight() / sc;
         }
@@ -404,5 +378,35 @@ class GrInDriver implements IGrInDriver {
         if (currentEditingSession != null)
             currentEditingSession.endSession();
         return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, multiLine, textHeight, fun);
+    }
+
+    private class DLIAPair extends WSIDownloadPair<int[]> {
+        public DLIAPair(String n) {
+            super(n);
+        }
+
+        @Override
+        public boolean bufferMatchesSize(int[] buffer, int width, int height) {
+            return buffer.length == (width * height);
+        }
+        @Override
+        public int[] genBuffer(int width, int height) {
+            return new int[width * height];
+        }
+    }
+
+    private class DLBIPair extends WSIDownloadPair<AWTWSIImage> {
+        public DLBIPair(String n) {
+            super(n);
+        }
+
+        @Override
+        public boolean bufferMatchesSize(AWTWSIImage buffer, int width, int height) {
+            return buffer.getWidth() == width && buffer.getHeight() == height;
+        }
+        @Override
+        public AWTWSIImage genBuffer(int width, int height) {
+            return new AWTWSIImage(null, width, height);
+        }
     }
 }

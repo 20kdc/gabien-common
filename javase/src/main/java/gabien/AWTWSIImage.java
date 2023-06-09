@@ -30,14 +30,15 @@ public class AWTWSIImage implements IWSIImage.RW {
         bufWR = bi.getRaster();
     }
 
-    public AWTWSIImage(@NonNull int[] colours, int width, int height) {
+    public AWTWSIImage(@Nullable int[] colours, int width, int height) {
         if (width <= 0 || height <= 0) {
             buf = null;
             bufWR = null;
         } else {
             buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
             bufWR = buf.getRaster();
-            bufWR.setDataElements(0, 0, width, height, colours);
+            if (colours != null)
+                bufWR.setDataElements(0, 0, width, height, colours);
         }
     }
 
