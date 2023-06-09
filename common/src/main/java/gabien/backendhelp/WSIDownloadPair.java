@@ -20,16 +20,45 @@ import gabien.uslx.append.TimeLogger;
  */
 public abstract class WSIDownloadPair<T> {
     private final @Nullable TimeLogger.Source timeLoggerAcquire;
-    private final ArrayBlockingQueue<T> queue = new ArrayBlockingQueue<>(2);
+    private final @Nullable TimeLogger.Source[] timeLoggerHeld;
+    private final @Nullable Object[] canon;
+    private final ArrayBlockingQueue<T> queue;
 
-    public WSIDownloadPair(String n) {
-        timeLoggerAcquire = TimeLogger.optSource(GaBIEn.timeLogger, n + ".ACQ");
+    public WSIDownloadPair(String n, int capacity) {
         try {
-            queue.put(genBuffer(0, 0));
-            queue.put(genBuffer(0, 0));
+            queue = new ArrayBlockingQueue<>(capacity);
+            timeLoggerAcquire = TimeLogger.optSource(GaBIEn.timeLogger, n + ".ACQ");
+            if (GaBIEn.timeLogger != null) {
+                timeLoggerHeld = new TimeLogger.Source[capacity];
+                canon = new Object[capacity];
+                for (int i = 0; i < capacity; i++) {
+                    timeLoggerHeld[i] = TimeLogger.optSource(GaBIEn.timeLogger, n + "." + i + ".HLD");
+                    T gen = genBuffer(0, 0);
+                    canon[i] = gen;
+                    queue.put(gen);
+                }
+            } else {
+                timeLoggerHeld = null;
+                canon = null;
+                for (int i = 0; i < capacity; i++)
+                    queue.put(genBuffer(0, 0));
+            }
         } catch (InterruptedException ie) {
             throw new RuntimeException(ie);
         }
+    }
+
+    private int indexOf(T res) {
+        int foundIndex = -1;
+        for (int i = 0; i < canon.length; i++) {
+            if (canon[i] == res) {
+                foundIndex = i;
+                break;
+            }
+        }
+        if (foundIndex == -1)
+            throw new RuntimeException("Contaminant in queue not supposed to be there");
+        return foundIndex;
     }
 
     public final T acquire(int width, int height) {
@@ -39,12 +68,19 @@ public abstract class WSIDownloadPair<T> {
                 try (TimeLogger.Source src = timeLoggerAcquire.open()) {
                     res = queue.take();
                 }
+                int foundIndex = indexOf(res);
+                timeLoggerHeld[foundIndex].open();
+                // Replace the buffer if it doesn't match the width/height.
+                if (!bufferMatchesSize(res, width, height)) {
+                    res = genBuffer(width, height);
+                    canon[foundIndex] = res;
+                }
             } else {
                 res = queue.take();
+                // Replace the buffer if it doesn't match the width/height.
+                if (!bufferMatchesSize(res, width, height))
+                    res = genBuffer(width, height);
             }
-            // Replace the buffer if it doesn't match the width/height.
-            if (!bufferMatchesSize(res, width, height))
-                res = genBuffer(width, height);
             return res;
         } catch (InterruptedException ie) {
             throw new RuntimeException(ie);
@@ -53,6 +89,10 @@ public abstract class WSIDownloadPair<T> {
 
     public final void release(T buffer) {
         try {
+            if (timeLoggerHeld != null) {
+                int foundIndex = indexOf(buffer);
+                timeLoggerHeld[foundIndex].close();
+            }
             queue.put(buffer);
         } catch (InterruptedException ie) {
             throw new RuntimeException(ie);

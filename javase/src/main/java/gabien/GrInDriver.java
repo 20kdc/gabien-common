@@ -10,11 +10,8 @@ package gabien;
 import gabien.backendhelp.WSIDownloadPair;
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
-import gabien.uslx.append.TimeLogger;
 
 import javax.swing.*;
-
-import org.eclipse.jdt.annotation.Nullable;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -268,43 +265,44 @@ class GrInDriver implements IGrInDriver {
         synchronized (this) {
             if (peripherals instanceof MobilePeripherals)
                 ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame(backBuffer);
+            wantedBackBufferW = panel.getWidth() / sc;
+            wantedBackBufferH = panel.getHeight() / sc;
         }
 
+        backBuffer.batchFlush();
         GaBIEn.vopeks.putFlushTask();
 
         // To avoid deadlock, we don't want to be locked while doing waitingFrames
         final int[] ia = dlIA.acquire(backBuffer.getWidth(), backBuffer.getHeight());
 
-        synchronized (this) {
-            // Transfer.
-            backBuffer.getPixelsAsync(ia, () -> {
-                final AWTWSIImage bi = dlBI.acquire(backBuffer.getWidth(), backBuffer.getHeight());
-                bi.setPixels(ia);
-                dlIA.release(ia);
-                drawBackBufferToFrontBuffer(bi);
-                dlBI.release(bi);
-            });    
-            wantedBackBufferW = panel.getWidth() / sc;
-            wantedBackBufferH = panel.getHeight() / sc;
-        }
+        // Transfer.
+        backBuffer.getPixelsAsync(ia, () -> {
+            final AWTWSIImage bi = dlBI.acquire(backBuffer.getWidth(), backBuffer.getHeight());
+            bi.setPixels(ia);
+            dlIA.release(ia);
+            drawBackBufferToFrontBuffer(bi);
+            dlBI.release(bi);
+        });    
     }
 
-    private synchronized void drawBackBufferToFrontBuffer(IWSIImage wsi) {
-        final int panelW = panel.getWidth();
-        final int panelH = panel.getHeight();
-        // Update frontBuffer for slowpaint, then perform fastpaint
-        BufferedImage backBufferBI = ((AWTWSIImage) wsi).buf;
-        // Resize maybe needed?
-        if ((frontBuffer.getWidth() != panelW) || (frontBuffer.getHeight() != panelH))
-            if ((panelW != 0) && (panelH != 0))
-                frontBuffer = new BufferedImage(panelW, panelH, BufferedImage.TYPE_INT_RGB);
-        Graphics fbG = frontBuffer.getGraphics();
-        fbG.setColor(panel.getBackground());
-        fbG.fillRect(0, 0, frontBuffer.getWidth(), frontBuffer.getHeight());
-        if (backBufferBI != null)
-            fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
-
-        drawFrontBuffer(panel.getGraphics());
+    private void drawBackBufferToFrontBuffer(IWSIImage wsi) {
+        synchronized (this) {
+            final int panelW = panel.getWidth();
+            final int panelH = panel.getHeight();
+            // Update frontBuffer for slowpaint, then perform fastpaint
+            BufferedImage backBufferBI = ((AWTWSIImage) wsi).buf;
+            // Resize maybe needed?
+            if ((frontBuffer.getWidth() != panelW) || (frontBuffer.getHeight() != panelH))
+                if ((panelW != 0) && (panelH != 0))
+                    frontBuffer = new BufferedImage(panelW, panelH, BufferedImage.TYPE_INT_RGB);
+            Graphics fbG = frontBuffer.getGraphics();
+            if (backBufferBI != null)
+                fbG.drawImage(backBufferBI, 0, 0, backBufferBI.getWidth() * sc, backBufferBI.getHeight() * sc, null);
+        }
+        // little break here so that a waiting flush() can run housekeeping
+        synchronized (this) {
+            drawFrontBuffer(panel.getGraphics());
+        }
     }
 
     private synchronized void drawFrontBuffer(Graphics pg) {
@@ -382,7 +380,9 @@ class GrInDriver implements IGrInDriver {
 
     private class DLIAPair extends WSIDownloadPair<int[]> {
         public DLIAPair(String n) {
-            super(n);
+            // Any more than this and the lag becomes very obvious.
+            // Remember, as long as vopeks_main is saturated, we're at our limit.
+            super(n, 3);
         }
 
         @Override
@@ -397,7 +397,7 @@ class GrInDriver implements IGrInDriver {
 
     private class DLBIPair extends WSIDownloadPair<AWTWSIImage> {
         public DLBIPair(String n) {
-            super(n);
+            super(n, 1);
         }
 
         @Override
