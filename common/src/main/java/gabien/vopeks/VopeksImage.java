@@ -71,7 +71,7 @@ public class VopeksImage implements IVopeksSurfaceHolder {
         batchFlush();
         vopeks.putTask((instance) -> {
             texture.readPixels(0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0);
-            onDone.run();
+            vopeks.putCallback(onDone);
         });
     }
 

@@ -264,6 +264,7 @@ class GrInDriver implements IGrInDriver {
                 ((MobilePeripherals) peripherals).mobilePeripheralsFinishFrame(backBuffer);
         }
 
+        GaBIEn.vopeks.putFlushTask();
         // This stops backBufferDownload being active for more than one download.
         // To avoid deadlock, we don't want to be locked while doing waitingFrames
         waitingFrames.acquireUninterruptibly();

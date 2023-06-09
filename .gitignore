@@ -22,6 +22,7 @@
 
 !common
 !common/
+!common/vopeks.md
 !common/src
 !common/src/
 !common/src/**

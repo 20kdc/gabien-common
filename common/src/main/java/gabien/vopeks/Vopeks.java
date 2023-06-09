@@ -9,6 +9,7 @@ package gabien.vopeks;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import gabien.natives.BadGPU;
+import gabien.uslx.append.EmptyLambdas;
 
 /**
  * New renderers always have to be named in silly ways, right?
@@ -20,7 +21,9 @@ import gabien.natives.BadGPU;
 public final class Vopeks {
     private final int TASK_QUEUE_SIZE = 65536;
     public final Thread vopeksThread;
+    public final Thread vopeksCBThread;
     private final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
+    private final ArrayBlockingQueue<Runnable> cbQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
     public final VopeksFloatPool floatPool = new VopeksFloatPool();
     private volatile boolean shutdown;
 
@@ -41,9 +44,25 @@ public final class Vopeks {
             }
         };
         vopeksThread.start();
+        vopeksCBThread = new Thread("VOPEKS Callback Thread") {
+            @Override
+            public void run() {
+                while (!shutdown) {
+                    try {
+                        cbQueue.take().run();
+                    } catch (Throwable t) {
+                        System.err.println("Exception in VOPEKS Callback:");
+                        t.printStackTrace();
+                    }
+                }
+            }
+        };
+        vopeksCBThread.start();
     }
 
     public void putTask(ITask object) {
+        if (shutdown)
+            return;
         try {
             taskQueue.put(object);
         } catch (InterruptedException ie) {
@@ -51,10 +70,33 @@ public final class Vopeks {
         }
     }
 
+    public void putCallback(Runnable object) {
+        if (shutdown)
+            return;
+        try {
+            cbQueue.put(object);
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
+        }
+    }
+
+    public void putFlushTask() {
+        putTask((instance) -> {
+            instance.flush();
+        });
+    }
+
     public void shutdown() {
         // Start shutdown, then wake up the thread.
         shutdown = true;
         taskQueue.add((instance) -> {});
+        cbQueue.add(EmptyLambdas.emptyRunnable);
+        try {
+            vopeksThread.join();
+        } catch (InterruptedException ie) {}
+        try {
+            vopeksCBThread.join();
+        } catch (InterruptedException ie) {}
     }
 
     public static interface ITask {
