@@ -23,6 +23,8 @@ import gabien.uslx.append.TimeLogger;
  */
 public final class Vopeks {
     private final int TASK_QUEUE_SIZE = 65536;
+    private int tasksBetweenFlushes = 0;
+
     public final @Nullable TimeLogger timeLogger;
     public final @Nullable TimeLogger.Source timeLoggerReadPixelsTask;
     public final Thread vopeksThread;
@@ -44,6 +46,8 @@ public final class Vopeks {
                     while (!shutdown) {
                         try {
                             ITask task = taskQueue.take();
+                            // intentionally limited to this path
+                            tasksBetweenFlushes++;
                             try (TimeLogger.Source vs2 = vs.open()) {
                                 task.run(instance);
                             }
@@ -119,6 +123,10 @@ public final class Vopeks {
 
     public void putFlushTask() {
         putTask((instance) -> {
+            if (tasksBetweenFlushes > 0) {
+                System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
+                tasksBetweenFlushes = 0;
+            }
             instance.flush();
         });
     }
