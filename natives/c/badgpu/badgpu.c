@@ -10,75 +10,7 @@
  */
 
 #include "badgpu_internal.h"
-
-// Tokens
-
-// Luckily, these are equal between their regular and suffixed versions.
-#define GL_FRAMEBUFFER 0x8D40
-#define GL_RENDERBUFFER 0x8D41
-#define GL_DEPTH24_STENCIL8 0x88F0
-#define GL_COLOR_ATTACHMENT0 0x8CE0
-#define GL_DEPTH_ATTACHMENT 0x8D00
-#define GL_STENCIL_ATTACHMENT 0x8D20
-#define GL_TEXTURE_2D 0x0DE1
-
-#define GL_UNSIGNED_BYTE 0x1401
-#define GL_UNSIGNED_SHORT 0x1403
-#define GL_FLOAT 0x1406
-
-#define GL_VERTEX_ARRAY 0x8074
-#define GL_COLOR_ARRAY 0x8076
-#define GL_TEXTURE_COORD_ARRAY 0x8078
-
-#define GL_ALPHA 0x1906
-#define GL_RGB 0x1907
-#define GL_RGBA 0x1908
-#define GL_LUMINANCE 0x1909
-#define GL_LUMINANCE_ALPHA 0x190A
-
-#define GL_ALPHA_TEST 0x0BC0
-#define GL_STENCIL_TEST 0x0B90
-#define GL_DEPTH_TEST 0x0B71
-#define GL_SCISSOR_TEST 0x0C11
-#define GL_CULL_FACE 0x0B44
-
-#define GL_FRONT 0x0404
-#define GL_BACK 0x0405
-
-#define GL_DEPTH_BUFFER_BIT 0x00000100
-#define GL_STENCIL_BUFFER_BIT 0x00000400
-#define GL_COLOR_BUFFER_BIT 0x00004000
-
-#define GL_NEAREST 0x2600
-#define GL_LINEAR 0x2601
-#define GL_NEAREST_MIPMAP_NEAREST 0x2700
-#define GL_LINEAR_MIPMAP_LINEAR 0x2703
-#define GL_REPEAT 0x2901
-#define GL_CLAMP_TO_EDGE 0x812F
-#define GL_TEXTURE_MAG_FILTER 0x2800
-#define GL_TEXTURE_MIN_FILTER 0x2801
-#define GL_TEXTURE_WRAP_S 0x2802
-#define GL_TEXTURE_WRAP_T 0x2803
-
-#define GL_MODELVIEW 0x1700
-#define GL_PROJECTION 0x1701
-#define GL_TEXTURE 0x1702
-
-#define GL_POLYGON_OFFSET_FILL 0x8037
-
-#define GL_BLEND 0x0BE2
-
-#define GL_CW 0x0900
-#define GL_CCW 0x0901
-
-#define GL_TEXTURE0 0x84C0
-
-#define GL_EXTENSIONS 0x1F03
-#define GL_DONT_CARE 0x1100
-#define GL_DEBUG_SOURCE_THIRD_PARTY 0x8249
-#define GL_DEBUG_TYPE_OTHER 0x8251
-#define GL_DEBUG_SEVERITY_NOTIFICATION 0x826B
-#define GL_DEBUG_OUTPUT 0x92E0
+#include "badgpu_glbind.h"
 
 // Types
 
@@ -97,63 +29,7 @@ typedef struct BADGPUInstancePriv {
     uint32_t fbo;
     // wsi stuff
     void * eglDisplay, * eglContext, * eglConfig;
-    // gl
-    int32_t (KHRABI *glGetError)();
-    void (KHRABI *glEnable)(int32_t);
-    void (KHRABI *glDisable)(int32_t);
-    void (KHRABI *glEnableClientState)(int32_t);
-    void (KHRABI *glDisableClientState)(int32_t);
-    void (KHRABI *glGenTextures)(int32_t, uint32_t *);
-    void (KHRABI *glDeleteTextures)(int32_t, uint32_t *);
-    void (KHRABI *glStencilMask)(int32_t);
-    void (KHRABI *glColorMask)(unsigned char, unsigned char, unsigned char, unsigned char);
-    void (KHRABI *glDepthMask)(unsigned char);
-    void (KHRABI *glScissor)(int32_t, int32_t, int32_t, int32_t);
-    void (KHRABI *glViewport)(int32_t, int32_t, int32_t, int32_t);
-    void (KHRABI *glClearColor)(float, float, float, float);
-    void (KHRABI *glClearDepthf)(float);
-    void (KHRABI *glDepthRangef)(float, float);
-    void (KHRABI *glPolygonOffset)(float, float);
-    void (KHRABI *glPointSize)(float);
-    void (KHRABI *glLineWidth)(float);
-    void (KHRABI *glClearStencil)(int32_t);
-    void (KHRABI *glClear)(int32_t);
-    void (KHRABI *glReadPixels)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, void *);
-    void (KHRABI *glBindTexture)(int32_t, uint32_t);
-    void (KHRABI *glTexImage2D)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, const void *);
-    void (KHRABI *glTexParameteri)(int32_t, int32_t, int32_t);
-    void (KHRABI *glDrawArrays)(int32_t, int32_t, int32_t);
-    void (KHRABI *glDrawElements)(int32_t, int32_t, int32_t, const void *);
-    void (KHRABI *glVertexPointer)(int32_t, int32_t, int32_t, const void *);
-    void (KHRABI *glColorPointer)(int32_t, int32_t, int32_t, const void *);
-    void (KHRABI *glTexCoordPointer)(int32_t, int32_t, int32_t, const void *);
-    void (KHRABI *glMatrixMode)(int32_t);
-    void (KHRABI *glLoadMatrixf)(const float *);
-    void (KHRABI *glLoadIdentity)();
-    void (KHRABI *glAlphaFunc)(int32_t, float);
-    void (KHRABI *glFrontFace)(int32_t);
-    void (KHRABI *glCullFace)(int32_t);
-    void (KHRABI *glDepthFunc)(int32_t);
-    void (KHRABI *glStencilFunc)(int32_t, int32_t, int32_t);
-    void (KHRABI *glStencilOp)(int32_t, int32_t, int32_t);
-    void (KHRABI *glColor4f)(float, float, float, float);
-    void (KHRABI *glMultiTexCoord4f)(int32_t, float, float, float, float);
-    const char * (KHRABI *glGetString)(int32_t);
-    void (KHRABI *glFlush)();
-    void (KHRABI *glFinish)();
-    // Desktop/Non-Desktop variable area
-    void (KHRABI *glBlendFuncSeparate)(int32_t, int32_t, int32_t, int32_t);
-    void (KHRABI *glBlendEquationSeparate)(int32_t, int32_t);
-    void (KHRABI *glGenFramebuffers)(int32_t, uint32_t *);
-    void (KHRABI *glDeleteFramebuffers)(int32_t, uint32_t *);
-    void (KHRABI *glGenRenderbuffers)(int32_t, uint32_t *);
-    void (KHRABI *glDeleteRenderbuffers)(int32_t, uint32_t *);
-    void (KHRABI *glRenderbufferStorage)(int32_t, int32_t, int32_t, int32_t);
-    void (KHRABI *glBindFramebuffer)(int32_t, uint32_t);
-    void (KHRABI *glFramebufferRenderbuffer)(int32_t, int32_t, int32_t, uint32_t);
-    void (KHRABI *glFramebufferTexture2D)(int32_t, int32_t, int32_t, uint32_t, int32_t);
-    void (KHRABI *glGenerateMipmap)(int32_t);
-    void (KHRABI *glBindRenderbuffer)(int32_t, uint32_t);
+    BADGPUGLBind gl;
 } BADGPUInstancePriv;
 #define BG_INSTANCE(x) ((BADGPUInstancePriv *) (x))
 
@@ -213,7 +89,7 @@ static BADGPUBool badgpuBChk(BADGPUInstancePriv * bi, const char * location) {
 static void destroyInstance(BADGPUObject obj) {
     BADGPUInstancePriv * bi = BG_INSTANCE(obj);
     if (badgpuBChk(bi, "destroyInstance")) {
-        bi->glDeleteFramebuffers(1, &bi->fbo);
+        bi->gl.DeleteFramebuffers(1, &bi->fbo);
         badgpu_wsiCtxStopCurrent(bi->ctx);
         badgpu_destroyWsiCtx(bi->ctx);
         free(obj);
@@ -223,7 +99,7 @@ static void destroyInstance(BADGPUObject obj) {
 static BADGPUBool badgpuChkInnards(BADGPUInstancePriv * bi, const char * location) {
     BADGPUBool ok = 1;
     while (1) {
-        int err = bi->glGetError();
+        int err = bi->gl.GetError();
         if (!err)
             break;
         if (bi->canPrintf)
@@ -279,90 +155,16 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
         return NULL;
     }
     bi->isBound = 1;
-    // Function bind
-#define CHKGLFN(fn) \
-if (!(bi->fn)) { \
-    badgpu_destroyWsiCtx(bi->ctx); \
-    if (error) \
-        *error = "Failed to bind function: " #fn; \
-    free(bi); \
-    return NULL; \
-}
-#define BINDGLFN(fn) bi->fn = badgpu_wsiCtxGetProcAddress(bi->ctx, #fn); \
-CHKGLFN(fn)
-#define BINDGLFN2(fn, ext) bi->fn = badgpu_wsiCtxGetProcAddress(bi->ctx, #fn #ext); \
-CHKGLFN(fn)
-    BINDGLFN(glGetError);
-    BINDGLFN(glEnable);
-    BINDGLFN(glDisable);
-    BINDGLFN(glEnableClientState);
-    BINDGLFN(glDisableClientState);
-    BINDGLFN(glGenTextures);
-    BINDGLFN(glDeleteTextures);
-    BINDGLFN(glStencilMask);
-    BINDGLFN(glColorMask);
-    BINDGLFN(glDepthMask);
-    BINDGLFN(glScissor);
-    BINDGLFN(glViewport);
-    BINDGLFN(glClearColor);
-    BINDGLFN(glClearDepthf);
-    BINDGLFN(glDepthRangef);
-    BINDGLFN(glPolygonOffset);
-    BINDGLFN(glPointSize);
-    BINDGLFN(glLineWidth);
-    BINDGLFN(glClearStencil);
-    BINDGLFN(glClear);
-    BINDGLFN(glReadPixels);
-    BINDGLFN(glBindTexture);
-    BINDGLFN(glTexImage2D);
-    BINDGLFN(glTexParameteri);
-    BINDGLFN(glDrawArrays);
-    BINDGLFN(glDrawElements);
-    BINDGLFN(glVertexPointer);
-    BINDGLFN(glColorPointer);
-    BINDGLFN(glTexCoordPointer);
-    BINDGLFN(glMatrixMode);
-    BINDGLFN(glLoadMatrixf);
-    BINDGLFN(glLoadIdentity);
-    BINDGLFN(glAlphaFunc);
-    BINDGLFN(glFrontFace);
-    BINDGLFN(glCullFace);
-    BINDGLFN(glDepthFunc);
-    BINDGLFN(glStencilFunc);
-    BINDGLFN(glStencilOp);
-    BINDGLFN(glColor4f);
-    BINDGLFN(glMultiTexCoord4f);
-    BINDGLFN(glGetString);
-    BINDGLFN(glFlush);
-    BINDGLFN(glFinish);
-    if (desktopExt) {
-        BINDGLFN2(glBlendFuncSeparate, EXT);
-        BINDGLFN2(glBlendEquationSeparate, EXT);
-        BINDGLFN2(glGenFramebuffers, EXT);
-        BINDGLFN2(glDeleteFramebuffers, EXT);
-        BINDGLFN2(glGenRenderbuffers, EXT);
-        BINDGLFN2(glDeleteRenderbuffers, EXT);
-        BINDGLFN2(glRenderbufferStorage, EXT);
-        BINDGLFN2(glBindFramebuffer, EXT);
-        BINDGLFN2(glFramebufferRenderbuffer, EXT);
-        BINDGLFN2(glFramebufferTexture2D, EXT);
-        BINDGLFN2(glGenerateMipmap, EXT);
-        BINDGLFN2(glBindRenderbuffer, EXT);
-    } else {
-        BINDGLFN2(glBlendFuncSeparate, OES);
-        BINDGLFN2(glBlendEquationSeparate, OES);
-        BINDGLFN2(glGenFramebuffers, OES);
-        BINDGLFN2(glDeleteFramebuffers, OES);
-        BINDGLFN2(glGenRenderbuffers, OES);
-        BINDGLFN2(glDeleteRenderbuffers, OES);
-        BINDGLFN2(glRenderbufferStorage, OES);
-        BINDGLFN2(glBindFramebuffer, OES);
-        BINDGLFN2(glFramebufferRenderbuffer, OES);
-        BINDGLFN2(glFramebufferTexture2D, OES);
-        BINDGLFN2(glGenerateMipmap, OES);
-        BINDGLFN2(glBindRenderbuffer, OES);
+    const char * failedFn = badgpu_glBind(bi->ctx, &bi->gl, desktopExt);
+    if (failedFn) {
+        badgpu_destroyWsiCtx(bi->ctx);
+        if (error)
+            *error = failedFn;
+        free(bi);
+        return NULL;
     }
-    const char * ext = bi->glGetString(GL_EXTENSIONS);
+
+    const char * ext = bi->gl.GetString(GL_EXTENSIONS);
     if (bi->canPrintf) {
         if (ext) {
             printf("BADGPU: GL Extensions: %s\n", ext);
@@ -374,7 +176,7 @@ CHKGLFN(fn)
         const char * exCheck = strstr(ext, "GL_KHR_debug");
         if (exCheck && ((exCheck[12] == 0) || (exCheck[12] == ' '))) {
             printf("BADGPU: KHR_debug detected, testing...\n");
-            bi->glEnable(GL_DEBUG_OUTPUT);
+            bi->gl.Enable(GL_DEBUG_OUTPUT);
             void (KHRABI *glDebugMessageControl)(int32_t, int32_t, int32_t, int32_t, const int32_t *, int32_t) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageControl");
             if (glDebugMessageControl)
                 glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, 1);
@@ -386,8 +188,8 @@ CHKGLFN(fn)
                 glDebugMessageInsert(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, -1, "BADGPU GL Debug Test Message");
         }
     }
-    bi->glGenFramebuffers(1, &bi->fbo);
-    bi->glBindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
+    bi->gl.GenFramebuffers(1, &bi->fbo);
+    bi->gl.BindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
     if (!badgpuChk(bi, "badgpuNewInstance", 1)) {
         badgpuUnref((BADGPUInstance) bi);
         if (error)
@@ -404,7 +206,7 @@ BADGPU_EXPORT const char * badgpuGetMetaInfo(BADGPUInstance instance,
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     if (!badgpuBChk(bi, "badgpuGetMetaInfo"))
         return NULL;
-    return bi->glGetString(mi);
+    return bi->gl.GetString(mi);
 }
 
 BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance) {
@@ -441,7 +243,7 @@ BADGPU_EXPORT void badgpuFlushInstance(BADGPUInstance instance) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     if (!badgpuBChk(bi, "badgpuFlushInstance"))
         return;
-    bi->glFlush();
+    bi->gl.Flush();
 }
 
 BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance) {
@@ -450,7 +252,7 @@ BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     if (!badgpuBChk(bi, "badgpuFinishInstance"))
         return;
-    bi->glFinish();
+    bi->gl.Finish();
 }
 
 // FBM
@@ -467,20 +269,20 @@ static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffe
         return 0;
     if (!badgpuBChk(*bi, "fbSetup"))
         return 0;
-    (*bi)->glBindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
+    (*bi)->gl.BindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
     // badgpuChk(*bi, "fbSetup1", 0);
     if (sTex) {
-        (*bi)->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
+        (*bi)->gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
     } else {
-        (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
+        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
     }
     // badgpuChk(*bi, "fbSetup2", 0);
     if (sDS) {
-        (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
-        (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
+        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
+        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
     } else {
-        (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
-        (*bi)->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
+        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
     }
     return badgpuChk(*bi, "fbSetup", 1);
 }
@@ -491,7 +293,7 @@ static void destroyTexture(BADGPUObject obj) {
     BADGPUTexturePriv * tex = BG_TEXTURE(obj);
     if (!badgpuBChk(tex->i, "destroyTexture"))
         return;
-    tex->i->glDeleteTextures(1, &tex->tex);
+    tex->i->gl.DeleteTextures(1, &tex->tex);
     badgpuChk(tex->i, "destroyTexture", 0);
     badgpuUnref((BADGPUObject) tex->i);
     free(tex);
@@ -542,10 +344,10 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     badgpu_initObj((BADGPUObject) tex, destroyTexture);
 
     tex->i = BG_INSTANCE(badgpuRef(instance));
-    bi->glGenTextures(1, &tex->tex);
+    bi->gl.GenTextures(1, &tex->tex);
 
-    bi->glBindTexture(GL_TEXTURE_2D, tex->tex);
-    bi->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    bi->gl.BindTexture(GL_TEXTURE_2D, tex->tex);
+    bi->gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     if (tmpBuf)
         free(tmpBuf);
 
@@ -560,7 +362,7 @@ static void destroyDSBuffer(BADGPUObject obj) {
     BADGPUDSBufferPriv * ds = BG_DSBUFFER(obj);
     if (!badgpuBChk(ds->i, "destroyDSBuffer"))
         return;
-    ds->i->glDeleteRenderbuffers(1, &ds->rbo);
+    ds->i->gl.DeleteRenderbuffers(1, &ds->rbo);
     badgpuChk(ds->i, "destroyDSBuffer", 0);
     badgpuUnref((BADGPUObject) ds->i);
     free(ds);
@@ -589,9 +391,9 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
     badgpu_initObj((BADGPUObject) ds, destroyDSBuffer);
 
     ds->i = BG_INSTANCE(badgpuRef(instance));
-    bi->glGenRenderbuffers(1, &ds->rbo);
-    bi->glBindRenderbuffer(GL_RENDERBUFFER, ds->rbo);
-    bi->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    bi->gl.GenRenderbuffers(1, &ds->rbo);
+    bi->gl.BindRenderbuffer(GL_RENDERBUFFER, ds->rbo);
+    bi->gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 
     if (!badgpuChk(bi, "badgpuNewDSBuffer", 1)) {
         badgpuUnref((BADGPUDSBuffer) ds);
@@ -606,8 +408,8 @@ BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture) {
     BADGPUTexturePriv * tex = BG_TEXTURE(texture);
     if (!badgpuBChk(tex->i, "badgpuGenerateMipmap"))
         return 0;
-    tex->i->glBindTexture(GL_TEXTURE_2D, tex->tex);
-    tex->i->glGenerateMipmap(GL_TEXTURE_2D);
+    tex->i->gl.BindTexture(GL_TEXTURE_2D, tex->tex);
+    tex->i->gl.GenerateMipmap(GL_TEXTURE_2D);
     return badgpuChk(tex->i, "badgpuGenerateMipmap", 0);
 }
 
@@ -625,10 +427,10 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
         return badgpuErr(bi, "badgpuReadPixels: data == NULL for non-zero area");
 
     if (fmt == BADGPUTextureLoadFormat_RGBA8888) {
-        bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        bi->gl.ReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
     } else if (fmt == BADGPUTextureLoadFormat_ARGBI32) {
         // special fast-path because profiling said so
-        bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        bi->gl.ReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
         badgpuPixelsConvertRGBA8888ToARGBI32InPlace(width, height, data);
     } else {
         uint32_t sz = badgpuPixelsSize(BADGPUTextureLoadFormat_RGBA8888, width, height);
@@ -637,7 +439,7 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
         void * tmpBuf = malloc(sz);
         if (!tmpBuf)
             return badgpuErr(bi, "badgpuReadPixels: Unable to allocate conversion buffer.");
-        bi->glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmpBuf);
+        bi->gl.ReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmpBuf);
         badgpuPixelsConvert(BADGPUTextureLoadFormat_RGBA8888, fmt, width, height, tmpBuf, data);
         free(tmpBuf);
     }
@@ -652,7 +454,7 @@ static inline BADGPUBool drawingCmdSetup(
 ) {
     if (!fbSetup(sTexture, sDSBuffer, bi))
         return 0;
-    (*bi)->glColorMask(
+    (*bi)->gl.ColorMask(
         (sFlags & BADGPUSessionFlags_MaskR) ? 1 : 0,
         (sFlags & BADGPUSessionFlags_MaskG) ? 1 : 0,
         (sFlags & BADGPUSessionFlags_MaskB) ? 1 : 0,
@@ -661,14 +463,14 @@ static inline BADGPUBool drawingCmdSetup(
     // OPT: If we don't have a DSBuffer we don't need to setup the mask for it.
     if (sDSBuffer) {
         // StencilAll is deliberately at bottom of flags for this
-        (*bi)->glStencilMask(sFlags & BADGPUSessionFlags_StencilAll);
-        (*bi)->glDepthMask((sFlags & BADGPUSessionFlags_MaskDepth) ? 1 : 0);
+        (*bi)->gl.StencilMask(sFlags & BADGPUSessionFlags_StencilAll);
+        (*bi)->gl.DepthMask((sFlags & BADGPUSessionFlags_MaskDepth) ? 1 : 0);
     }
     if (sFlags & BADGPUSessionFlags_Scissor) {
-        (*bi)->glEnable(GL_SCISSOR_TEST);
-        (*bi)->glScissor(sScX, sScY, sScWidth, sScHeight);
+        (*bi)->gl.Enable(GL_SCISSOR_TEST);
+        (*bi)->gl.Scissor(sScX, sScY, sScWidth, sScHeight);
     } else {
-        (*bi)->glDisable(GL_SCISSOR_TEST);
+        (*bi)->gl.Disable(GL_SCISSOR_TEST);
     }
     return 1;
 }
@@ -682,22 +484,22 @@ BADGPU_EXPORT BADGPUBool badgpuDrawClear(
         return 0;
     int32_t cFlags = 0;
     if (sFlags & BADGPUSessionFlags_MaskRGBA) {
-        bi->glClearColor(cR, cG, cB, cA);
+        bi->gl.ClearColor(cR, cG, cB, cA);
         cFlags |= GL_COLOR_BUFFER_BIT;
     }
     // OPT: If we don't have a DSBuffer we don't need to setup the clear for it.
     if (sDSBuffer) {
         if (sFlags & BADGPUSessionFlags_MaskDepth) {
-            bi->glClearDepthf(depth);
+            bi->gl.ClearDepthf(depth);
             cFlags |= GL_DEPTH_BUFFER_BIT;
         }
         if (sFlags & BADGPUSessionFlags_StencilAll) {
-            bi->glClearStencil(stencil);
+            bi->gl.ClearStencil(stencil);
             cFlags |= GL_STENCIL_BUFFER_BIT;
         }
     }
     if (cFlags)
-        bi->glClear(cFlags);
+        bi->gl.Clear(cFlags);
     return badgpuChk(bi, "badgpuDrawClear", 0);
 }
 
@@ -781,33 +583,33 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         return badgpuErr(bi, "badgpuDrawGeom: vTCD out of range");
 
     // Vertex Shader
-    bi->glMatrixMode(GL_PROJECTION);
-    if (!matrixA) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixA);
-    bi->glMatrixMode(GL_MODELVIEW);
-    if (!matrixB) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixB);
+    bi->gl.MatrixMode(GL_PROJECTION);
+    if (!matrixA) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixA);
+    bi->gl.MatrixMode(GL_MODELVIEW);
+    if (!matrixB) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixB);
 
     // DepthRange/Viewport
-    bi->glViewport(vX, vY, vW, vH);
+    bi->gl.Viewport(vX, vY, vW, vH);
 
     // Fragment Shader
     if (texture) {
-        bi->glEnable(GL_TEXTURE_2D);
-        bi->glBindTexture(GL_TEXTURE_2D, BG_TEXTURE(texture)->tex);
-        bi->glMatrixMode(GL_TEXTURE);
-        if (!matrixT) bi->glLoadIdentity(); else bi->glLoadMatrixf((void *) matrixT);
+        bi->gl.Enable(GL_TEXTURE_2D);
+        bi->gl.BindTexture(GL_TEXTURE_2D, BG_TEXTURE(texture)->tex);
+        bi->gl.MatrixMode(GL_TEXTURE);
+        if (!matrixT) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixT);
 
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (flags & BADGPUDrawFlags_WrapS) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (flags & BADGPUDrawFlags_WrapT) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        bi->gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (flags & BADGPUDrawFlags_WrapS) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        bi->gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (flags & BADGPUDrawFlags_WrapT) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 
         int32_t minFilter = ((flags & BADGPUDrawFlags_Mipmap) ?
             ((flags & BADGPUDrawFlags_MinLinear) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
             :
             ((flags & BADGPUDrawFlags_MinLinear) ? GL_LINEAR : GL_NEAREST)
         );
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-        bi->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (flags & BADGPUDrawFlags_MagLinear) ? GL_LINEAR : GL_NEAREST);
+        bi->gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+        bi->gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (flags & BADGPUDrawFlags_MagLinear) ? GL_LINEAR : GL_NEAREST);
     } else {
-        bi->glDisable(GL_TEXTURE_2D);
+        bi->gl.Disable(GL_TEXTURE_2D);
     }
 
     // OPT: Depth and stencil test are force-disabled by GL if we have no d/s.
@@ -815,102 +617,102 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     //  both)
     // That in mind, skip anything we dare to.
     if (sDSBuffer) {
-        bi->glDepthRangef(depthN, depthF);
+        bi->gl.DepthRangef(depthN, depthF);
 
         // PolygonOffset
-        bi->glEnable(GL_POLYGON_OFFSET_FILL);
-        bi->glPolygonOffset(poFactor, poUnits);
+        bi->gl.Enable(GL_POLYGON_OFFSET_FILL);
+        bi->gl.PolygonOffset(poFactor, poUnits);
 
         // Stencil Test
         if (flags & BADGPUDrawFlags_StencilTest) {
-            bi->glEnable(GL_STENCIL_TEST);
+            bi->gl.Enable(GL_STENCIL_TEST);
             // no conversion as values deliberately match
-            bi->glStencilFunc(stFunc, stRef, stMask);
-            bi->glStencilOp(stSF, stDF, stDP);
+            bi->gl.StencilFunc(stFunc, stRef, stMask);
+            bi->gl.StencilOp(stSF, stDF, stDP);
         } else {
-            bi->glDisable(GL_STENCIL_TEST);
+            bi->gl.Disable(GL_STENCIL_TEST);
         }
 
         // Depth Test
         if (flags & BADGPUDrawFlags_DepthTest) {
-            bi->glEnable(GL_DEPTH_TEST);
+            bi->gl.Enable(GL_DEPTH_TEST);
             // no conversion as values deliberately match
-            bi->glDepthFunc(dtFunc);
+            bi->gl.DepthFunc(dtFunc);
         } else {
-            bi->glDisable(GL_DEPTH_TEST);
+            bi->gl.Disable(GL_DEPTH_TEST);
         }
     }
 
     // Misc. Flags Stuff
-    bi->glFrontFace((flags & BADGPUDrawFlags_FrontFaceCW) ? GL_CW : GL_CCW);
+    bi->gl.FrontFace((flags & BADGPUDrawFlags_FrontFaceCW) ? GL_CW : GL_CCW);
 
     if (flags & BADGPUDrawFlags_CullFace) {
-        bi->glEnable(GL_CULL_FACE);
-        bi->glCullFace((flags & BADGPUDrawFlags_CullFaceFront) ? GL_FRONT : GL_BACK);
+        bi->gl.Enable(GL_CULL_FACE);
+        bi->gl.CullFace((flags & BADGPUDrawFlags_CullFaceFront) ? GL_FRONT : GL_BACK);
     } else {
-        bi->glDisable(GL_CULL_FACE);
+        bi->gl.Disable(GL_CULL_FACE);
     }
 
     // Blending
     if (flags & BADGPUDrawFlags_Blend) {
-        bi->glEnable(GL_BLEND);
-        bi->glBlendFuncSeparate(
+        bi->gl.Enable(GL_BLEND);
+        bi->gl.BlendFuncSeparate(
             convertBlendWeight((blendProgram >> 24) & 077),  // RGB S
             convertBlendWeight((blendProgram >> 18) & 077),  // RGB D
             convertBlendWeight((blendProgram >>  9) & 077),  // A   S
             convertBlendWeight((blendProgram >>  3) & 077)); // A   D
-        bi->glBlendEquationSeparate(
+        bi->gl.BlendEquationSeparate(
             convertBlendOp((blendProgram >> 15) & 07),
             convertBlendOp(blendProgram & 07));
     } else {
-        bi->glDisable(GL_BLEND);
+        bi->gl.Disable(GL_BLEND);
     }
 
     // Vertex Loader
     if (pType == BADGPUPrimitiveType_Points) {
-        bi->glPointSize(plSize);
+        bi->gl.PointSize(plSize);
     } else if (pType == BADGPUPrimitiveType_Lines) {
-        bi->glLineWidth(plSize);
+        bi->gl.LineWidth(plSize);
     }
 
-    bi->glEnableClientState(GL_VERTEX_ARRAY);
-    bi->glVertexPointer(vPosD, GL_FLOAT, 0, vPos);
+    bi->gl.EnableClientState(GL_VERTEX_ARRAY);
+    bi->gl.VertexPointer(vPosD, GL_FLOAT, 0, vPos);
     if (vCol) {
         if (flags & BADGPUDrawFlags_FreezeColour) {
-            bi->glDisableClientState(GL_COLOR_ARRAY);
-            bi->glColor4f(vCol[0], vCol[1], vCol[2], vCol[3]);
+            bi->gl.DisableClientState(GL_COLOR_ARRAY);
+            bi->gl.Color4f(vCol[0], vCol[1], vCol[2], vCol[3]);
         } else {
-            bi->glEnableClientState(GL_COLOR_ARRAY);
-            bi->glColorPointer(4, GL_FLOAT, 0, vCol);
+            bi->gl.EnableClientState(GL_COLOR_ARRAY);
+            bi->gl.ColorPointer(4, GL_FLOAT, 0, vCol);
         }
     } else {
-        bi->glDisableClientState(GL_COLOR_ARRAY);
-        bi->glColor4f(1, 1, 1, 1);
+        bi->gl.DisableClientState(GL_COLOR_ARRAY);
+        bi->gl.Color4f(1, 1, 1, 1);
     }
     if (vTC) {
         if (flags & BADGPUDrawFlags_FreezeTC) {
-            bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+            bi->gl.DisableClientState(GL_TEXTURE_COORD_ARRAY);
             if (vTCD == 4) {
-                bi->glMultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], vTC[2], vTC[3]);
+                bi->gl.MultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], vTC[2], vTC[3]);
             } else if (vTCD == 3) {
-                bi->glMultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], vTC[2], 1.0f);
+                bi->gl.MultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], vTC[2], 1.0f);
             } else {
-                bi->glMultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], 0.0f, 1.0f);
+                bi->gl.MultiTexCoord4f(GL_TEXTURE0, vTC[0], vTC[1], 0.0f, 1.0f);
             }
         } else {
-            bi->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-            bi->glTexCoordPointer(vTCD, GL_FLOAT, 0, vTC);
+            bi->gl.EnableClientState(GL_TEXTURE_COORD_ARRAY);
+            bi->gl.TexCoordPointer(vTCD, GL_FLOAT, 0, vTC);
         }
     } else {
-        bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        bi->glMultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
+        bi->gl.DisableClientState(GL_TEXTURE_COORD_ARRAY);
+        bi->gl.MultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
     }
 
     // Actual Draw
     if (indices) {
-        bi->glDrawElements(pType, iCount, GL_UNSIGNED_SHORT, indices + iStart);
+        bi->gl.DrawElements(pType, iCount, GL_UNSIGNED_SHORT, indices + iStart);
     } else {
-        bi->glDrawArrays(pType, iStart, iCount);
+        bi->gl.DrawArrays(pType, iStart, iCount);
     }
     return badgpuChk(bi, "badgpuDrawGeom", 0);
 }
@@ -959,38 +761,38 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
     if (!badgpuBChk(bi, "badgpuResetGLState"))
         return 0;
 
-    bi->glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    bi->glColorMask(1, 1, 1, 1);
-    bi->glStencilMask(-1);
-    bi->glDepthMask(1);
-    bi->glDisable(GL_SCISSOR_TEST);
+    bi->gl.BindFramebuffer(GL_FRAMEBUFFER, 0);
+    bi->gl.ColorMask(1, 1, 1, 1);
+    bi->gl.StencilMask(-1);
+    bi->gl.DepthMask(1);
+    bi->gl.Disable(GL_SCISSOR_TEST);
 
-    bi->glMatrixMode(GL_PROJECTION);
-    bi->glLoadIdentity();
-    bi->glMatrixMode(GL_TEXTURE);
-    bi->glLoadIdentity();
-    bi->glMatrixMode(GL_MODELVIEW);
-    bi->glLoadIdentity();
+    bi->gl.MatrixMode(GL_PROJECTION);
+    bi->gl.LoadIdentity();
+    bi->gl.MatrixMode(GL_TEXTURE);
+    bi->gl.LoadIdentity();
+    bi->gl.MatrixMode(GL_MODELVIEW);
+    bi->gl.LoadIdentity();
 
-    bi->glDisable(GL_TEXTURE_2D);
-    bi->glBindTexture(GL_TEXTURE_2D, 0);
+    bi->gl.Disable(GL_TEXTURE_2D);
+    bi->gl.BindTexture(GL_TEXTURE_2D, 0);
 
-    bi->glDepthRangef(0, 1);
+    bi->gl.DepthRangef(0, 1);
 
-    bi->glDisable(GL_POLYGON_OFFSET_FILL);
-    bi->glDisable(GL_STENCIL_TEST);
-    bi->glDisable(GL_DEPTH_TEST);
+    bi->gl.Disable(GL_POLYGON_OFFSET_FILL);
+    bi->gl.Disable(GL_STENCIL_TEST);
+    bi->gl.Disable(GL_DEPTH_TEST);
 
-    bi->glFrontFace(GL_CCW);
-    bi->glDisable(GL_CULL_FACE);
+    bi->gl.FrontFace(GL_CCW);
+    bi->gl.Disable(GL_CULL_FACE);
 
-    bi->glDisable(GL_BLEND);
+    bi->gl.Disable(GL_BLEND);
 
-    bi->glDisableClientState(GL_VERTEX_ARRAY);
-    bi->glDisableClientState(GL_COLOR_ARRAY);
-    bi->glColor4f(1, 1, 1, 1);
-    bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    bi->glMultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
+    bi->gl.DisableClientState(GL_VERTEX_ARRAY);
+    bi->gl.DisableClientState(GL_COLOR_ARRAY);
+    bi->gl.Color4f(1, 1, 1, 1);
+    bi->gl.DisableClientState(GL_TEXTURE_COORD_ARRAY);
+    bi->gl.MultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
 
     return badgpuChk(bi, "badgpuResetGLState", 0);
 }
