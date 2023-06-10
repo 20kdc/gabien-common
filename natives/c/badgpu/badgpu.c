@@ -27,6 +27,7 @@ typedef struct BADGPUInstancePriv {
     int backendCheckAggressive;
     int canPrintf;
     uint32_t fbo;
+    uint32_t fboBoundTex, fboBoundDS;
     // wsi stuff
     void * eglDisplay, * eglContext, * eglConfig;
     BADGPUGLBind gl;
@@ -190,6 +191,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     }
     bi->gl.GenFramebuffers(1, &bi->fbo);
     bi->gl.BindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
+    // Not yet setup, so fboBoundTex/fboBoundDS being 0 is correct
     if (!badgpuChk(bi, "badgpuNewInstance", 1)) {
         badgpuUnref((BADGPUInstance) bi);
         if (error)
@@ -257,34 +259,46 @@ BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance) {
 
 // FBM
 
-static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** bi) {
+static inline BADGPUBool fbSetup(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer, BADGPUInstancePriv ** biR) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(sTexture);
     BADGPUDSBufferPriv * sDS = BG_DSBUFFER(sDSBuffer);
+    BADGPUInstancePriv * bi = NULL;
     if (sTex)
-        *bi = sTex->i;
+        bi = sTex->i;
     if (sDS)
-        *bi = sDS->i;
+        bi = sDS->i;
+    *biR = bi;
     // Sadly, can't report this if it happens
-    if (!*bi)
+    if (!bi)
         return 0;
-    if (!badgpuBChk(*bi, "fbSetup"))
+    if (!badgpuBChk(bi, "fbSetup"))
         return 0;
-    (*bi)->gl.BindFramebuffer(GL_FRAMEBUFFER, (*bi)->fbo);
+    bi->gl.BindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
     // badgpuChk(*bi, "fbSetup1", 0);
-    if (sTex) {
-        (*bi)->gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
-    } else {
-        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
+    // OPT:
+    //  JUST TO BE CLEAR.
+    //  JUST TO BE ABSOLUTELY CLEAR.
+    //  PERFORMING NO-OP FBO ATTACHMENT REBINDS; YES, EVEN ONES THAT JUST REBIND AN ATTACHMENT TO EXACTLY WHAT IT WAS;
+    //  WILL CAUSE THE ARM MALI DRIVERS TO RELOCATE YOUR SKELETON OUTSIDE OF YOUR BODY.
+    //  HARDWARE DETAILS:
+    //   ARM
+    //   Mali-T830
+    //   OpenGL ES-CM 1.1 v1.r20p0-01rel0.9a7fca3 f7dd712a473937294a8ae24b1
+    if (sTex && (bi->fboBoundTex != sTex->tex)) {
+        bi->gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, sTex->tex, 0);
+        bi->fboBoundTex = sTex->tex;
+    } else if ((!sTex) && (bi->fboBoundTex != 0)) {
+        bi->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
+        bi->fboBoundTex = 0;
     }
     // badgpuChk(*bi, "fbSetup2", 0);
-    if (sDS) {
-        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
-        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sDS->rbo);
-    } else {
-        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
-        (*bi)->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+    uint32_t newRBO = sDS ? sDS->rbo : 0;
+    if (bi->fboBoundDS != newRBO) {
+        bi->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, newRBO);
+        bi->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, newRBO);
+        bi->fboBoundDS = newRBO;
     }
-    return badgpuChk(*bi, "fbSetup", 1);
+    return badgpuChk(bi, "fbSetup", 1);
 }
 
 // Texture/2D Buffer Management
@@ -293,6 +307,11 @@ static void destroyTexture(BADGPUObject obj) {
     BADGPUTexturePriv * tex = BG_TEXTURE(obj);
     if (!badgpuBChk(tex->i, "destroyTexture"))
         return;
+    // make SURE it's not bound to our FBO
+    tex->i->gl.BindFramebuffer(GL_FRAMEBUFFER, tex->i->fbo);
+    tex->i->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
+    tex->i->fboBoundTex = 0;
+    // continue
     tex->i->gl.DeleteTextures(1, &tex->tex);
     badgpuChk(tex->i, "destroyTexture", 0);
     badgpuUnref((BADGPUObject) tex->i);
@@ -362,6 +381,12 @@ static void destroyDSBuffer(BADGPUObject obj) {
     BADGPUDSBufferPriv * ds = BG_DSBUFFER(obj);
     if (!badgpuBChk(ds->i, "destroyDSBuffer"))
         return;
+    // make SURE it's not bound to our FBO
+    ds->i->gl.BindFramebuffer(GL_FRAMEBUFFER, ds->i->fbo);
+    ds->i->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
+    ds->i->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+    ds->i->fboBoundDS = 0;
+    // continue
     ds->i->gl.DeleteRenderbuffers(1, &ds->rbo);
     badgpuChk(ds->i, "destroyDSBuffer", 0);
     badgpuUnref((BADGPUObject) ds->i);
