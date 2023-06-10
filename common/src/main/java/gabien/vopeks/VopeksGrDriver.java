@@ -72,13 +72,13 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s1 = srcR / srcWF;
         float t0 = srcy / srcHF;
         float t1 = srcD / srcHF;
-        batchStartGroupScA(false, 6, blendSub, tiling, i);
-        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
-        batchWrite(cR, y , s1, t0, 1, 1, 1, 1);
-        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
-        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
-        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
-        batchWrite(x , cD, s0, t1, 1, 1, 1, 1);
+        batchStartGroupScA(false, false, 6, blendSub, tiling, i);
+        batchWriteXYST(x , y , s0, t0);
+        batchWriteXYST(cR, y , s1, t0);
+        batchWriteXYST(cR, cD, s1, t1);
+        batchWriteXYST(x , y , s0, t0);
+        batchWriteXYST(cR, cD, s1, t1);
+        batchWriteXYST(x , cD, s0, t1);
     }
 
     @Override
@@ -116,13 +116,13 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s1 = srcR / srcWF;
         float t0 = srcy / srcHF;
         float t1 = srcD / srcHF;
-        batchStartGroupScA(isCropEssential, 6, blendSub, tiling, i);
-        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
-        batchWrite(cR, y , s1, t0, 1, 1, 1, 1);
-        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
-        batchWrite(x , y , s0, t0, 1, 1, 1, 1);
-        batchWrite(cR, cD, s1, t1, 1, 1, 1, 1);
-        batchWrite(x , cD, s0, t1, 1, 1, 1, 1);
+        batchStartGroupScA(false, isCropEssential, 6, blendSub, tiling, i);
+        batchWriteXYST(x , y , s0, t0);
+        batchWriteXYST(cR, y , s1, t0);
+        batchWriteXYST(cR, cD, s1, t1);
+        batchWriteXYST(x , y , s0, t0);
+        batchWriteXYST(cR, cD, s1, t1);
+        batchWriteXYST(x , cD, s0, t1);
     }
 
     @Override
@@ -175,13 +175,13 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchStartGroupScA(true, 6, blendSub, TilingMode.None, i);
-        batchWrite(p00X, p00Y, s0, t0, 1, 1, 1, 1);
-        batchWrite(p10X, p10Y, s1, t0, 1, 1, 1, 1);
-        batchWrite(p11X, p11Y, s1, t1, 1, 1, 1, 1);
-        batchWrite(p00X, p00Y, s0, t0, 1, 1, 1, 1);
-        batchWrite(p11X, p11Y, s1, t1, 1, 1, 1, 1);
-        batchWrite(p01X, p01Y, s0, t1, 1, 1, 1, 1);
+        batchStartGroupScA(false, true, 6, blendSub, TilingMode.None, i);
+        batchWriteXYST(p00X, p00Y, s0, t0);
+        batchWriteXYST(p10X, p10Y, s1, t0);
+        batchWriteXYST(p11X, p11Y, s1, t1);
+        batchWriteXYST(p00X, p00Y, s0, t0);
+        batchWriteXYST(p11X, p11Y, s1, t1);
+        batchWriteXYST(p01X, p01Y, s0, t1);
     }
 
     @Override
@@ -227,21 +227,21 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchStartGroupScA(false, 6, BlendMode.Normal, TilingMode.None, null);
-        batchWrite(x , y , 0, 0, rF, gF, bF, aF);
-        batchWrite(cR, y , 0, 0, rF, gF, bF, aF);
-        batchWrite(cR, cD, 0, 0, rF, gF, bF, aF);
-        batchWrite(x , y , 0, 0, rF, gF, bF, aF);
-        batchWrite(cR, cD, 0, 0, rF, gF, bF, aF);
-        batchWrite(x , cD, 0, 0, rF, gF, bF, aF);
+        batchStartGroupScA(true, false, 6, BlendMode.Normal, TilingMode.None, null);
+        batchWriteXYRGBA(x , y , rF, gF, bF, aF);
+        batchWriteXYRGBA(cR, y , rF, gF, bF, aF);
+        batchWriteXYRGBA(cR, cD, rF, gF, bF, aF);
+        batchWriteXYRGBA(x , y , rF, gF, bF, aF);
+        batchWriteXYRGBA(cR, cD, rF, gF, bF, aF);
+        batchWriteXYRGBA(x , cD, rF, gF, bF, aF);
     }
 
     /**
      * batchStartGroup but aware of scissoring
      */
-    public void batchStartGroupScA(boolean essential, int vertices, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+    public void batchStartGroupScA(boolean hasColours, boolean cropEssential, int vertices, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
         int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
-        batchStartGroup(vertices, essential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex);
+        batchStartGroup(vertices, hasColours, cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex);
     }
 
     @Override

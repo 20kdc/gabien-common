@@ -51,7 +51,7 @@ public class VopeksBatchingSurface extends VopeksImage {
      * This will actually begin a new batch, so make sure you're sure!
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      */
-    public void batchStartGroup(int vertices, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+    public void batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -66,7 +66,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         if (currentBatch != null)
             if ((currentBatch.vertexCount + vertices) > MAX_VERTICES_IN_BATCH)
                 batchFlush();
-        if (currentBatch == null || !currentBatch.matchesState(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex)) {
+        if (currentBatch == null || !currentBatch.matchesState(hasColours, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex)) {
             batchFlush();
             // Setup the reference.
             // Note that we only have to worry about this at the start of a batch.
@@ -74,6 +74,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             if (tex != null)
                 tex.batchReference(this);
             currentBatch = batchPool.get();
+            currentBatch.hasColours = hasColours;
             currentBatch.cropEssential = cropEssential;
             if (cropEssential) {
                 currentBatch.cropL = cropL;
@@ -156,11 +157,26 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     /**
-     * Writes a vertex to the batcher.
+     * Writes a texCoorded vertex to the batcher.
      * For ease of use, X/Y coordinates are converted to the -1 to 1 representation here.
      * ST would be converted but might be useful to have the ability to introduce epsilon margins.
      */
-    public void batchWrite(float x, float y, float s, float t, float r, float g, float b, float a) {
+    public void batchWriteXYST(float x, float y, float s, float t) {
+        int vertexBase2 = currentBatch.vertexCount * 2;
+        stagingV[vertexBase2] = (x - halfWF) / halfWF;
+        stagingV[vertexBase2 + 1] = (y - halfHF) / halfHF;
+        if (currentBatch.tex != null) {
+            stagingT[vertexBase2] = s;
+            stagingT[vertexBase2 + 1] = t;
+        }
+        currentBatch.vertexCount++;
+    }
+
+    /**
+     * Writes a vertex to the batcher.
+     * For ease of use, X/Y coordinates are converted to the -1 to 1 representation here.
+     */
+    public void batchWriteXYRGBA(float x, float y, float r, float g, float b, float a) {
         int vertexBase2 = currentBatch.vertexCount * 2;
         int vertexBase4 = currentBatch.vertexCount * 4;
         stagingV[vertexBase2] = (x - halfWF) / halfWF;
@@ -169,10 +185,6 @@ public class VopeksBatchingSurface extends VopeksImage {
         stagingC[vertexBase4 + 1] = g;
         stagingC[vertexBase4 + 2] = b;
         stagingC[vertexBase4 + 3] = a;
-        if (currentBatch.tex != null) {
-            stagingT[vertexBase2] = s;
-            stagingT[vertexBase2 + 1] = t;
-        }
         currentBatch.vertexCount++;
     }
 
@@ -200,6 +212,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             element.verticesOfs = 0;
             element.coloursOfs = 0;
             element.texCoordsOfs = 0;
+            element.hasColours = false;
         }
     }
 
@@ -244,6 +257,7 @@ public class VopeksBatchingSurface extends VopeksImage {
         TilingMode tilingMode = TilingMode.None;
         IImage tex;
         float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
+        boolean hasColours;
         boolean cropEssential;
 
         @Override
@@ -260,7 +274,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             BadGPUUnsafe.drawGeomNoDS(texture.pointer, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
                     cropL, cropU, cropW, cropH,
                     drawFlags,
-                    2, megabuffer, verticesOfs, megabuffer, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
+                    2, megabuffer, verticesOfs, hasColours ? megabuffer : null, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
                     BadGPU.PrimitiveType.Triangles.value, 1,
                     0, vertexCount, null, 0,
                     null, 0, null, 0,
@@ -272,7 +286,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             batchPool.finish(this);
         }
 
-        public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+        public boolean matchesState(boolean cropEssential, boolean hasColours, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
             if (cropEssential) {
                 if (cropL != this.cropL || cropU != this.cropU || cropW != this.cropW || cropH != this.cropH) {
                     // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropW + "," + cropH + " -> " + this.cropL + "," + this.cropU + "," + this.cropW + "," + this.cropH);
@@ -287,6 +301,10 @@ public class VopeksBatchingSurface extends VopeksImage {
                     // System.out.println("break batch: SCO on a non-essential crop");
                     return false;
                 }
+            }
+            if (hasColours != this.hasColours) {
+                // System.out.println("break batch: hasColours: " + hasColours + " -> " + this.hasColours);
+                return false;
             }
             if (blendMode != this.blendMode) {
                 // System.out.println("break batch: blendMode: " + blendMode + " -> " + this.blendMode);

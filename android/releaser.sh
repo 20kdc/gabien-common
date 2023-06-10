@@ -23,7 +23,7 @@ unzip -o ../target/gabien-android-0.666-SNAPSHOT.jar &&
 cd .. &&
 # Merge in everything, run d8
 cp -r "${5:-/dev/null}"/* staging/ &&
-$ANDROID_BT/d8 --lib $ANDROID_JAR --output staging2 `find staging | grep '\.class$'` &&
+$ANDROID_BT/d8 --release --lib $ANDROID_JAR --output staging2 `find staging | grep '\.class$'` &&
 $ANDROID_BT/aapt p -f -I $ANDROID_JAR -M AndroidManifest.xml -S res -A staging/assets -F result.apk &&
 cd staging2 &&
 $ANDROID_BT/aapt a ../result.apk classes.dex &&

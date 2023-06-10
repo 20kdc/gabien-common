@@ -13,7 +13,11 @@ for p in permissions:gmatch("[^,]+") do
 end
 print(" <application")
 print("  android:hardwareAccelerated=\"true\"")
-print("  android:debuggable=\"true\"")
+-- Sadly, Android takes permission to debug to mean SLOW THIS DOWN.
+-- Not that it's documented in the manifest documentation, noooo.
+-- You have to go to JNI Tips, where it will happily THEN tell you that enabling this activates CheckJNI.
+-- What insanity.
+--print("  android:debuggable=\"true\"")
 print("  android:icon=\"@drawable/icon\"")
 print("  android:label=\"@string/app_name\"")
 print("  android:theme=\"@style/AppTheme\">")
