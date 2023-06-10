@@ -7,8 +7,6 @@
 
 package gabien.natives;
 
-import java.util.concurrent.Semaphore;
-
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -41,10 +39,6 @@ public abstract class BadGPU extends BadGPUEnum {
      * Manages transfer of the BadGPU instance between threads.
      */
     private static final class TransferImpl extends ThreadOwned {
-        /**
-         * Shared semaphore so we never ever perform OTR from >1 place at a time.
-         */
-        private Semaphore otrSemaphore = new Semaphore(1);
         private final long instance;
         private volatile boolean shutdown;
 
@@ -178,17 +172,8 @@ public abstract class BadGPU extends BadGPUEnum {
             res = BadGPUUnsafe.newDSBuffer(pointer, width, height);
             return res == 0 ? null : new DSBuffer(this, res);
         }
-
-        public boolean supportsOffThread() {
-            // not strictly necessary but good practice
-            syncObject.assertBound();
-            if (!valid)
-                throw new InvalidatedPointerException(this);
-            return BadGPUUnsafe.supportsOffThread(pointer);
-        }
     }
     public static final class Texture extends Ref {
-        private Semaphore otrSemaphore = new Semaphore(1);
         private Texture(Ref i, long l) {
             super(i, l);
         }
@@ -221,31 +206,6 @@ public abstract class BadGPU extends BadGPUEnum {
             readPixelsChecks(x, y, width, height, fmt, dataOfs * 4, data.length * 4);
             return BadGPUUnsafe.readPixelsI(pointer, x, y, width, height, fmt.value, data, dataOfs);
         }
-        // Off-thread read ops use the OTR semaphores.
-        public boolean readPixelsOffThread(int x, int y, int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
-            if (width == 0 || height == 0)
-                return true;
-            if (data == null)
-                throw new IllegalArgumentException("data must not be null.");
-            readPixelsBoundsChecks(x, y, width, height, fmt, dataOfs, data.length);
-            syncObjectInternal.otrSemaphore.acquireUninterruptibly();
-            otrSemaphore.acquireUninterruptibly();
-            boolean res = BadGPUUnsafe.readPixelsOffThreadB(pointer, x, y, width, height, fmt.value, data, dataOfs);
-            otrSemaphore.release();
-            syncObjectInternal.otrSemaphore.release();
-            return res;
-        }
-        public boolean readPixelsOffThread(int x, int y, int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
-            if (width == 0 || height == 0)
-                return true;
-            if (data == null)
-                throw new IllegalArgumentException("data must not be null.");
-            readPixelsBoundsChecks(x, y, width, height, fmt, dataOfs * 4, data.length * 4);
-            otrSemaphore.acquireUninterruptibly();
-            boolean res = BadGPUUnsafe.readPixelsOffThreadI(pointer, x, y, width, height, fmt.value, data, dataOfs);
-            otrSemaphore.release();
-            return res;
-        }
         // Common bounds checks etc. for readPixels
         private static void readPixelsBoundsChecks(int x, int y, int width, int height, TextureLoadFormat fmt, int dataOfs, int dataLen) {
             if (width >= 32768 || height >= 32768 || width < 1 || height < 1)
@@ -257,13 +217,6 @@ public abstract class BadGPU extends BadGPUEnum {
                 throw new IllegalArgumentException("Offset not within buffer.");
             if ((dataLen - dataOfs) < size)
                 throw new IllegalArgumentException("Region not within buffer.");
-        }
-        // Special dispose since we have our own OTR semaphore
-        @Override
-        public void dispose() {
-            otrSemaphore.acquireUninterruptibly();
-            super.dispose();
-            otrSemaphore.release();
         }
     }
     public static final class DSBuffer extends Ref {

@@ -9,7 +9,7 @@ package gabien.natives;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.24.0
+ * VERSION: 0.25.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
@@ -54,10 +54,6 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean generateMipmap(long texture);
     public static native boolean readPixelsB(long texture, int x, int y, int width, int height, int fmt, byte[] data, int dataOfs);
     public static native boolean readPixelsI(long texture, int x, int y, int width, int height, int fmt, int[] data, int dataOfs);
-    // OTR
-    public static native boolean supportsOffThread(long instance);
-    public static native boolean readPixelsOffThreadB(long texture, int x, int y, int width, int height, int fmt, byte[] data, int dataOfs);
-    public static native boolean readPixelsOffThreadI(long texture, int x, int y, int width, int height, int fmt, int[] data, int dataOfs);
     // DC
     public static native boolean drawClear(
         long sTexture, long sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,

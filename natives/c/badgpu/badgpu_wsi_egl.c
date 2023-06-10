@@ -12,7 +12,6 @@ struct BADGPUWSICtx {
     void * eglLibrary;
     void * dsp;
     void * ctx;
-    void * ctxOTR;
     void * (KHRABI *eglGetDisplay)(void *);
     unsigned int (KHRABI *eglInitialize)(void *, int32_t *, int32_t *);
     unsigned int (KHRABI *eglChooseConfig)(void *, int32_t *, void *, int32_t, int32_t *);
@@ -35,9 +34,8 @@ static const char * locations[] = {
     NULL
 };
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
     *expectDesktopExtensions = 0;
-    *supportsOTR = 1;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -79,17 +77,14 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     *eglConfig = config;
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create EGL context");
-    ctx->ctxOTR = ctx->eglCreateContext(ctx->dsp, config, ctx->ctx, attribs2);
-    if (!ctx->ctxOTR)
-        *supportsOTR = 0;
     return ctx;
 }
 
-BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx, int otr) {
-    return ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, otr ? ctx->ctxOTR : ctx->ctx) != 0;
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
+    return ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx) != 0;
 }
 
-void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx, int otr) {
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
     ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, NULL);
 }
 
@@ -102,8 +97,6 @@ void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
         return;
     if (ctx->ctx)
         ctx->eglDestroyContext(ctx->dsp, ctx->ctx);
-    if (ctx->ctxOTR)
-        ctx->eglDestroyContext(ctx->dsp, ctx->ctxOTR);
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
     if (ctx->eglLibrary)

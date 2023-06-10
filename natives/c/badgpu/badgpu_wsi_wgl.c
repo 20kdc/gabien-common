@@ -20,9 +20,8 @@ static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err)
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
     *expectDesktopExtensions = 1;
-    *supportsOTR = 0;
     *eglDisplay = 0;
     *eglContext = 0;
     *eglConfig = 0;
@@ -64,11 +63,11 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     return ctx;
 }
 
-BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx, int otr) {
+BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
     return wglMakeCurrent(ctx->hdc, ctx->ctx) != 0;
 }
 
-void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx, int otr) {
+void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
     wglMakeCurrent(NULL, NULL);
 }
 

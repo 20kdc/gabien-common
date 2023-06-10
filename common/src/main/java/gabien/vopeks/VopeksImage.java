@@ -14,7 +14,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
-import gabien.natives.BadGPUEnum.TextureLoadFormat;
+import gabien.uslx.append.TimeLogger;
 
 /**
  * Here goes nothing.
@@ -88,8 +88,27 @@ public class VopeksImage implements IImage {
     }
 
     @Override
-    public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
-        vopeks.asyncReadPixels(this, 0, 0, width, height, TextureLoadFormat.ARGBI32, buffer, 0, onDone);
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
+        vopeks.putTask((instance) -> {
+            try (TimeLogger.Source src = TimeLogger.optOpen(vopeks.timeLoggerReadPixelsTask)) {
+                BadGPU.Texture texture = getTextureFromTask();
+                if (texture != null)
+                    texture.readPixels(x, y, w, h, format, data, dataOfs);
+            }
+            vopeks.putCallback(onDone);
+        });
+    }
+
+    @Override
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone) {
+        vopeks.putTask((instance) -> {
+            try (TimeLogger.Source src = TimeLogger.optOpen(vopeks.timeLoggerReadPixelsTask)) {
+                BadGPU.Texture texture = getTextureFromTask();
+                if (texture != null)
+                    texture.readPixels(x, y, w, h, format, data, dataOfs);
+            }
+            vopeks.putCallback(onDone);
+        });
     }
 
     @Override

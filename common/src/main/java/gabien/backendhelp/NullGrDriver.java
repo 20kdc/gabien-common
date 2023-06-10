@@ -10,6 +10,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
 
 /**
@@ -27,7 +28,12 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] buffer, int bufferOfs, @NonNull Runnable onDone) {
+        onDone.run();
+    }
+
+    @Override
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] buffer, int bufferOfs, @NonNull Runnable onDone) {
         onDone.run();
     }
 

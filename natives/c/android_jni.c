@@ -50,7 +50,6 @@ static const float textureData[] = {
 void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64_t texture, int64_t surface, int32_t width, int32_t height) {
     void * eglDisplay = badgpuGetEGLDisplay((void *) instance);
     void * eglContext = badgpuGetEGLContext((void *) instance);
-    eglMakeCurrent(eglDisplay, NULL, NULL, NULL);
     eglMakeCurrent(eglDisplay, (void *) surface, (void *) surface, eglContext);
 
     badgpuResetGLState((void *) instance);

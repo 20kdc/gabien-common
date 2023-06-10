@@ -13,6 +13,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPUUnsafe;
+import gabien.natives.BadGPUEnum.TextureLoadFormat;
 
 /**
  * An image. All IImages that are not IGrDrivers must be immutable.
@@ -63,7 +65,18 @@ public interface IImage {
     /**
      * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
      */
-    void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone);
+    default void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+        final int w = getWidth();
+        final int h = getHeight();
+        getPixelsAsync(0, 0, w, h, TextureLoadFormat.RGBA8888, buffer, 0, () -> {
+            // If it gets here, it's in-bounds.
+            BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(w, h, buffer, 0);
+            onDone.run();
+        });
+    }
+
+    void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone);
+    void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone);
 
     /**
      * Downloads an IImage (presumably from the GPU) to the CPU as an IWSIImage.

@@ -10,7 +10,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.TimeLogger;
@@ -32,13 +31,10 @@ public final class Vopeks {
     public final @Nullable TimeLogger.Source timeLoggerFinishTask;
     public final Thread vopeksThread;
     public final CallbackRunner vopeksCBThread;
-    public final CallbackRunner vopeksOTRThread;
     private final ArrayBlockingQueue<ITask> taskQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
     private final ArrayBlockingQueue<Runnable> cbQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
-    private final ArrayBlockingQueue<Runnable> otrQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
     public final VopeksFloatPool floatPool = new VopeksFloatPool();
     private volatile boolean shutdownPrimary;
-    private volatile boolean otrOK;
 
     public Vopeks(final int newInstanceFlags, @Nullable TimeLogger timeLogger) {
         this.timeLogger = timeLogger;
@@ -49,9 +45,6 @@ public final class Vopeks {
             @Override
             public void run() {
                 BadGPU.Instance instance = BadGPU.newInstance(newInstanceFlags);
-                otrOK = instance.supportsOffThread();
-                if (!otrOK)
-                    vopeksOTRThread.shutdown = true;
                 if (timeLogger != null) {
                     TimeLogger.Source vs = timeLogger.newSource("vopeks_main");
                     while (!shutdownPrimary) {
@@ -81,10 +74,8 @@ public final class Vopeks {
             }
         };
         vopeksCBThread = new CallbackRunner("VOPEKS Callback Thread", cbQueue);
-        vopeksOTRThread = new CallbackRunner("VOPEKS OTR Thread", otrQueue);
         vopeksThread.start();
         vopeksCBThread.start();
-        vopeksOTRThread.start();
     }
 
     public void putTask(ITask object) {
@@ -94,88 +85,6 @@ public final class Vopeks {
             taskQueue.put(object);
         } catch (InterruptedException ie) {
             ie.printStackTrace();
-        }
-    }
-
-    /**
-     * Performs an asynchronous int readPixels.
-     */
-    public void asyncReadPixels(IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, int[] data, int dataOfs, Runnable onDone) {
-        image.batchFlush();
-        if (vopeksOTRThread.shutdown || !otrOK) {
-            // OTR not initialized yet or impossible, use traditional approach
-            putTask((instance) -> {
-                try (TimeLogger.Source src = TimeLogger.optOpen(timeLoggerReadPixelsTask)) {
-                    BadGPU.Texture texture = image.getTextureFromTask();
-                    if (texture != null)
-                        texture.readPixels(x, y, w, h, format, data, dataOfs);
-                }
-                putCallback(onDone);
-            });
-        } else {
-            // OTR OK. Do shenanigans.
-            putTask((instance) -> {
-                // Ensure any outstanding GL operations are finished.
-                try (TimeLogger.Source src = TimeLogger.optOpen(timeLoggerFinishTask)) {
-                    instance.finish();
-                }
-                image.otrLock();
-                BadGPU.Texture texture = image.getTextureFromTask();
-                try {
-                    otrQueue.put(() -> {
-                        try (TimeLogger.Source src = TimeLogger.optOpen(timeLoggerReadPixelsTask)) {
-                            if (texture != null)
-                                texture.readPixelsOffThread(x, y, w, h, format, data, dataOfs);
-                        }
-                        image.otrUnlock();
-                        putCallback(onDone);
-                    });
-                } catch (InterruptedException e) {
-                    image.otrUnlock();
-                    e.printStackTrace();
-                }
-            });
-        }
-    }
-
-    /**
-     * Performs an asynchronous byte readPixels.
-     */
-    public void asyncReadPixels(IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, byte[] data, int dataOfs, Runnable onDone) {
-        image.batchFlush();
-        if (vopeksOTRThread.shutdown || !otrOK) {
-            // OTR not initialized yet or impossible, use traditional approach
-            putTask((instance) -> {
-                try (TimeLogger.Source src = TimeLogger.optOpen(timeLoggerReadPixelsTask)) {
-                    BadGPU.Texture texture = image.getTextureFromTask();
-                    if (texture != null)
-                        texture.readPixels(x, y, w, h, format, data, dataOfs);
-                }
-                putCallback(onDone);
-            });
-        } else {
-            // OTR OK. Do shenanigans.
-            putTask((instance) -> {
-                // Ensure any outstanding GL operations are finished.
-                try (TimeLogger.Source src = TimeLogger.optOpen(timeLoggerFinishTask)) {
-                    instance.finish();
-                }
-                image.otrLock();
-                BadGPU.Texture texture = image.getTextureFromTask();
-                try {
-                    otrQueue.put(() -> {
-                        try (TimeLogger.Source src = TimeLogger.optOpen(timeLoggerReadPixelsTask)) {
-                            if (texture != null)
-                                texture.readPixelsOffThread(x, y, w, h, format, data, dataOfs);
-                        }
-                        image.otrUnlock();
-                        putCallback(onDone);
-                    });
-                } catch (InterruptedException e) {
-                    image.otrUnlock();
-                    e.printStackTrace();
-                }
-            });
         }
     }
 
@@ -225,7 +134,6 @@ public final class Vopeks {
         // Start shutdown, then wake up the thread.
         shutdownPrimary = true;
         vopeksCBThread.shutdown = true;
-        vopeksOTRThread.shutdown = true;
         try {
             taskQueue.put((instance) -> {});
             vopeksThread.join();
@@ -233,10 +141,6 @@ public final class Vopeks {
         try {
             cbQueue.put(EmptyLambdas.emptyRunnable);
             vopeksCBThread.join();
-        } catch (InterruptedException ie) {}
-        try {
-            otrQueue.put(EmptyLambdas.emptyRunnable);
-            vopeksOTRThread.join();
         } catch (InterruptedException ie) {}
     }
 

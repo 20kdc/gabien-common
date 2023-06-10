@@ -128,6 +128,7 @@ public class GrInDriver implements IGrInDriver {
                         return;
                     }
                 } catch (Throwable e) {
+                    e.printStackTrace();
                 } finally {
                     last.surfaceLock.unlock();
                 }
@@ -135,7 +136,7 @@ public class GrInDriver implements IGrInDriver {
                 AndroidPortGlobals.mainActivityLock.unlock();
             }
             try {
-                Thread.sleep(100);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
