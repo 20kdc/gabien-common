@@ -88,5 +88,10 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
         long texture, float[] matrixT, int matrixTOfs,
         int blendProgram
     );
+
+    // Android magic
+    public static native long ANDcreateEGLSurface(long instance, Object window);
+    public static native void ANDdestroyEGLSurface(long instance, long surface);
+    public static native void ANDblitToSurface(long instance, long texture, long surface, int width, int height);
 }
 

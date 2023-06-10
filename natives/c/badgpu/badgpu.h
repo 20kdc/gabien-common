@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.23.0`
+ * Version: `0.24.0`
  *
  * ## Formatting Policy
  *
@@ -1212,6 +1212,61 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
 );
 
 #undef BADGPU_SESSIONFLAGS
+
+/*
+ * ## Integration
+ *
+ * BadGPU avoids WSI. \
+ * It tends to be hard to port, particularly to Mac. \
+ * However, in the case of Android, the performance problems of not having it
+ *  got so bad that something had to be done.
+ *
+ * That in mind, the following functions allow access to certain EGL values in
+ *  BadGPU. Obviously, this is dependent on the instance being EGL-based.
+ *
+ * This allows just enough flexibility to build a WSI layer... if you have to.
+ */
+
+/*
+ * ### `badgpuResetGLState`
+ *
+ * Resets GL state to try and keep interacting code consistent.
+ *
+ * This acts like a drawing command, but only shuffles around internal state.
+ *
+ * As such it returns 1 on success and 0 on failure.
+ */
+BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance);
+
+/*
+ * ### `badgpuGetEGLDisplay`
+ *
+ * Returns the `EGLDisplay`, or `NULL` if none.
+ */
+BADGPU_EXPORT void * badgpuGetEGLDisplay(BADGPUInstance instance);
+
+/*
+ * ### `badgpuGetEGLContext`
+ *
+ * Returns the `EGLContext`, or `NULL` if none.
+ */
+BADGPU_EXPORT void * badgpuGetEGLContext(BADGPUInstance instance);
+
+/*
+ * ### `badgpuGetEGLConfig`
+ *
+ * Returns the `EGLConfig`, or `NULL` if none.
+ */
+BADGPU_EXPORT void * badgpuGetEGLConfig(BADGPUInstance instance);
+
+/*
+ * ### `badgpuGetGLTexture`
+ *
+ * Returns the texture ID. Does not have a proper invalid value, so will return
+ *  0 if not relevant. Will always be valid if EGL values are valid.
+ */
+BADGPU_EXPORT uint32_t badgpuGetGLTexture(BADGPUTexture texture);
+
 
 #endif
 

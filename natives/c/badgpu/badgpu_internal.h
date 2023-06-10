@@ -80,7 +80,7 @@ typedef struct BADGPUWSICtx * BADGPUWSICtx;
 
 // Creates a new WSICtx.
 // "OTR" is a second context which is created for the off-thread retrieval stuff.
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR);
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR, void ** eglDisplay, void ** eglContext, void ** eglConfig);
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx, int otr);
 void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx, int otr);
 // Warning: Must be made current first!

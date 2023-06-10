@@ -7,23 +7,27 @@
 
 package gabien;
 
-import android.graphics.Canvas;
-import android.graphics.Paint;
+import java.util.concurrent.Semaphore;
+
 import android.graphics.Rect;
+import android.view.Surface;
 import android.view.SurfaceHolder;
-import gabien.backendhelp.WSIDownloadPair;
+import gabien.natives.BadGPU;
+import gabien.natives.BadGPUUnsafe;
 import gabien.uslx.append.TimeLogger;
 
 public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;
     public boolean wantsShutdown = false;
     public Rect displayArea = new Rect(0, 0, 1, 1);
-    public int wantedBackBufferW, wantedBackBufferH;
-    public int wantedBackBufferWSetAsync, wantedBackBufferHSetAsync;
-    public boolean isFirstFrame = true;
-    private DLIAPair dlIA = new DLIAPair("Android");
-    private Paint globalPaint = new Paint();
+    public int wantedBackBufferW, wantedBackBufferH, wantedBackBufferWSetAsync, wantedBackBufferHSetAsync;
     private final TimeLogger.Source timeLoggerGameThread = TimeLogger.optSource(GaBIEn.timeLogger, "GameThread");
+    private final TimeLogger.Source timeLoggerAndroidFlip = TimeLogger.optSource(GaBIEn.timeLogger, "AndroidFlip");
+    public Semaphore waitingFrames = new Semaphore(1);
+    public boolean isFirstFrame = true;
+
+    private Surface currentEGLSurfaceJ = null;
+    private long currentEGLSurface = 0;
 
     public GrInDriver(int w, int h) {
         wantedBackBufferW = w;
@@ -52,42 +56,38 @@ public class GrInDriver implements IGrInDriver {
     @Override
     public void flush(IImage backBufferI) {
         timeLoggerGameThread.close();
-        /*
-         * Big explanation of how the threading works here:
-         * So the original idea was to use lockCanvas as the lock, but it doesn't actually work that way.
-         * So doing the waitingFrames from JSE, but with added spice.
-         */
-        // Ensure the buffers are the right size.
-        int bW = backBufferI.getWidth();
-        int bH = backBufferI.getHeight();
+
+        waitingFrames.acquireUninterruptibly();
+        timeLoggerAndroidFlip.open();
+        GaBIEn.vopeks.putTask((instance) -> {
+            try {
+                doFlushLoop(instance, backBufferI);
+            } finally {
+                timeLoggerAndroidFlip.close();
+                waitingFrames.release();
+            }
+        });
         if (isFirstFrame) {
-            // Synchronous, so that the first flush always sets up the correct w/h for the game thread.
-            int[] backBufferDownload = dlIA.acquire(bW, bH);
-            backBufferI.getPixels(backBufferDownload);
-            doFlushLoop(backBufferDownload, bW, bH);
-            dlIA.release(backBufferDownload);
+            // Ensure the actual surface dimensions are here
+            waitingFrames.acquireUninterruptibly();
+            waitingFrames.release();
             isFirstFrame = false;
-        } else {
-            int[] backBufferDownload = dlIA.acquire(bW, bH);
-            backBufferI.getPixelsAsync(backBufferDownload, () -> {
-                doFlushLoop(backBufferDownload, bW, bH);
-                dlIA.release(backBufferDownload);
-            });
         }
+        wantedBackBufferW = wantedBackBufferWSetAsync;
+        wantedBackBufferH = wantedBackBufferHSetAsync;
+
         // So the timeline is a bit weird here.
-        // Hypothetically an infinitely-fast readPixels could lock this first, but it won't.
         AndroidPortGlobals.mainActivityLock.lock();
         try {
+            displayArea = new Rect(0, 0, backBufferI.getWidth(), backBufferI.getHeight());
             // These are set from within mainActivityLock, so...
-            wantedBackBufferW = wantedBackBufferWSetAsync;
-            wantedBackBufferH = wantedBackBufferHSetAsync;
             peripherals.gdUpdateTextboxHoldingMALock();
         } finally {
             AndroidPortGlobals.mainActivityLock.unlock();
         }
         timeLoggerGameThread.open();
     }
-    private void doFlushLoop(int[] backBufferDownload, int bW, int bH) {
+    private void doFlushLoop(BadGPU.Instance instance, IImage backBufferI) {
         while (true) {
             AndroidPortGlobals.mainActivityLock.lock();
             MainActivity last = AndroidPortGlobals.mainActivity;
@@ -102,12 +102,30 @@ public class GrInDriver implements IGrInDriver {
                 // So flush() code can do its thing.
                 try {
                     SurfaceHolder sh = last.mySurface.getHolder();
+                    Rect surfaceFrame = sh.getSurfaceFrame();
+                    int w = surfaceFrame.width();
+                    int h = surfaceFrame.height();
+                    wantedBackBufferWSetAsync = w;
+                    wantedBackBufferHSetAsync = h;
                     if (sh != null) {
-                        Canvas c = sh.lockCanvas();
-                        if (c != null) {
-                            flushWithLockedCanvas(sh, c, backBufferDownload, bW, bH);
+                        BadGPU.Texture tex = backBufferI.getTextureFromTask();
+                        // oops, no texture!
+                        if (tex == null)
                             return;
+                        Surface ns = sh.getSurface();
+                        if (ns != currentEGLSurfaceJ) {
+                            //if (currentEGLSurface != 0)
+                            //    BadGPUUnsafe.ANDdestroyEGLSurface(instance.pointer, currentEGLSurface);
+                            currentEGLSurfaceJ = ns;
+                            currentEGLSurface = BadGPUUnsafe.ANDcreateEGLSurface(instance.pointer, ns);
+                            System.out.println("Created surface: " + currentEGLSurface);
                         }
+                        if (currentEGLSurface != 0) {
+                            System.out.println("Blitting to surface...");
+                            BadGPUUnsafe.ANDblitToSurface(instance.pointer, tex.pointer, currentEGLSurface, w, h);
+                            System.out.println("...done!");
+                        }
+                        return;
                     }
                 } catch (Throwable e) {
                 } finally {
@@ -122,29 +140,6 @@ public class GrInDriver implements IGrInDriver {
                 e.printStackTrace();
             }
         }
-
-    }
-    private void flushWithLockedCanvas(SurfaceHolder sh, Canvas c, int[] backBufferDownload, int bW, int bH) {
-        Rect r = sh.getSurfaceFrame();
-        
-        wantedBackBufferWSetAsync = r.width();
-        wantedBackBufferHSetAsync = r.height();
-
-        /*
-        int letterboxing2 = 0;
-        double realAspectRatio = bW / (double) bH;
-        int goodWidth = (int)(realAspectRatio * r.height());
-        // work out letterboxing from widths
-        int letterboxing = (r.width() - goodWidth) / 2;
-        displayArea = new Rect(letterboxing, letterboxing2, r.width() - letterboxing, r.height() - letterboxing2);
-        */
-
-        // currently ignoring the whole scaling thing so that this works w/ acceptable perf maybe
-        displayArea = new Rect(0, 0, bW, bH);
-        if (bW != 0 && bH != 0)
-            c.drawBitmap(backBufferDownload, 0, bW, 0, 0, bW, bH, true, globalPaint);
-
-        sh.unlockCanvasAndPost(c);
     }
 
     @Override
@@ -161,20 +156,5 @@ public class GrInDriver implements IGrInDriver {
     @Override
     public int estimateUIScaleTenths() {
         return Math.max(10, Math.min(wantedBackBufferW, wantedBackBufferH) / 30);
-    }
-
-    private class DLIAPair extends WSIDownloadPair<int[]> {
-        public DLIAPair(String n) {
-            super(n, 2);
-        }
-
-        @Override
-        public boolean bufferMatchesSize(int[] buffer, int width, int height) {
-            return buffer.length == (width * height);
-        }
-        @Override
-        public int[] genBuffer(int width, int height) {
-            return new int[width * height];
-        }
     }
 }

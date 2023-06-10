@@ -96,6 +96,9 @@ typedef struct BADGPUInstancePriv {
     int canPrintf;
     int supportsOTR;
     uint32_t fbo, fboOTR;
+    // wsi stuff
+    void * eglDisplay, * eglContext, * eglConfig;
+    // gl
     int32_t (KHRABI *glGetError)();
     void (KHRABI *glEnable)(int32_t);
     void (KHRABI *glDisable)(int32_t);
@@ -262,7 +265,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     bi->canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
     badgpu_initObj((BADGPUObject) bi, destroyInstance);
     int desktopExt;
-    bi->ctx = badgpu_newWsiCtx(error, &desktopExt, &bi->supportsOTR);
+    bi->ctx = badgpu_newWsiCtx(error, &desktopExt, &bi->supportsOTR, &bi->eglDisplay, &bi->eglContext, &bi->eglConfig);
     if (!bi->ctx) {
         free(bi);
         // error provided by badgpu_newWsiCtx
@@ -999,5 +1002,67 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     BADGPUCompare_Always, 0, 0, 0, 0,
     blendProgram
     );
+}
+
+BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+
+    if (!badgpuBChk(bi, "badgpuResetGLState"))
+        return 0;
+
+    bi->glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    bi->glColorMask(1, 1, 1, 1);
+    bi->glStencilMask(-1);
+    bi->glDepthMask(1);
+    bi->glDisable(GL_SCISSOR_TEST);
+
+    bi->glMatrixMode(GL_PROJECTION);
+    bi->glLoadIdentity();
+    bi->glMatrixMode(GL_TEXTURE);
+    bi->glLoadIdentity();
+    bi->glMatrixMode(GL_MODELVIEW);
+    bi->glLoadIdentity();
+
+    bi->glDisable(GL_TEXTURE_2D);
+    bi->glBindTexture(GL_TEXTURE_2D, 0);
+
+    bi->glDepthRangef(0, 1);
+
+    bi->glDisable(GL_POLYGON_OFFSET_FILL);
+    bi->glDisable(GL_STENCIL_TEST);
+    bi->glDisable(GL_DEPTH_TEST);
+
+    bi->glFrontFace(GL_CCW);
+    bi->glDisable(GL_CULL_FACE);
+
+    bi->glDisable(GL_BLEND);
+
+    bi->glDisableClientState(GL_VERTEX_ARRAY);
+    bi->glDisableClientState(GL_COLOR_ARRAY);
+    bi->glColor4f(1, 1, 1, 1);
+    bi->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    bi->glMultiTexCoord4f(GL_TEXTURE0, 0, 0, 0, 1);
+
+    return badgpuChk(bi, "badgpuResetGLState", 0);
+}
+
+BADGPU_EXPORT void * badgpuGetEGLDisplay(BADGPUInstance instance) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    return bi->eglDisplay;
+}
+
+BADGPU_EXPORT void * badgpuGetEGLContext(BADGPUInstance instance) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    return bi->eglContext;
+}
+
+BADGPU_EXPORT void * badgpuGetEGLConfig(BADGPUInstance instance) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    return bi->eglConfig;
+}
+
+BADGPU_EXPORT uint32_t badgpuGetGLTexture(BADGPUTexture texture) {
+    BADGPUTexturePriv * sTex = BG_TEXTURE(texture);
+    return sTex->tex;
 }
 

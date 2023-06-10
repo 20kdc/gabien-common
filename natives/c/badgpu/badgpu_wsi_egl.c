@@ -35,7 +35,7 @@ static const char * locations[] = {
     NULL
 };
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, int * supportsOTR, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
     *expectDesktopExtensions = 0;
     *supportsOTR = 1;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
@@ -59,6 +59,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     ctx->dsp = ctx->eglGetDisplay(NULL);
     if (!ctx->dsp)
         return badgpu_newWsiCtxError(error, "Could not create EGLDisplay");
+    *eglDisplay = ctx->dsp;
     if (!ctx->eglInitialize(ctx->dsp, NULL, NULL))
         return badgpu_newWsiCtxError(error, "Could not initialize EGL");
     void * config;
@@ -74,6 +75,8 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         0x3038
     };
     ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribs2);
+    *eglContext = ctx->ctx;
+    *eglConfig = config;
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create EGL context");
     ctx->ctxOTR = ctx->eglCreateContext(ctx->dsp, config, ctx->ctx, attribs2);
