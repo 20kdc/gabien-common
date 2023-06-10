@@ -47,10 +47,15 @@ static const float textureData[] = {
     0, 0
 };
 
-void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64_t texture, int64_t surface, int32_t width, int32_t height) {
+void J_BADGPU(ANDoverrideSurface)(void * env, void * self, int64_t instance, int64_t surface) {
     void * eglDisplay = badgpuGetEGLDisplay((void *) instance);
     void * eglContext = badgpuGetEGLContext((void *) instance);
     eglMakeCurrent(eglDisplay, (void *) surface, (void *) surface, eglContext);
+}
+
+void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64_t texture, int64_t surface, int32_t width, int32_t height) {
+    void * eglDisplay = badgpuGetEGLDisplay((void *) instance);
+    void * eglContext = badgpuGetEGLContext((void *) instance);
 
     badgpuResetGLState((void *) instance);
     glViewport(0, 0, width, height);
@@ -68,8 +73,6 @@ void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     eglSwapBuffers(eglDisplay, (void *) surface);
-    // Alright, we're done here.
-    eglMakeCurrent(eglDisplay, NULL, NULL, eglContext);
 }
 
 #endif

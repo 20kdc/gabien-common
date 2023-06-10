@@ -10,6 +10,7 @@ package gabien;
 import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.Context;
+import android.view.Surface;
 
 /**
  * Created on 27th July 2022 (past midnight so "sort of" 28th)
@@ -33,4 +34,25 @@ public class AndroidPortGlobals {
      * This is the activity. Careful with this, use mainActivityLock.
      */
     public static MainActivity mainActivity;
+    /**
+     * Debug flag.
+     */
+    public static boolean debugFlag = false;
+    /**
+     * This is a dedicated lock tied to the SurfaceHolder apparatus.
+     */
+    public static final ReentrantLock surfaceLock = new ReentrantLock();
+    /**
+     * Current surface. Secured by surfaceLock.
+     */
+    public static volatile Surface surface;
+    /**
+     * Flag used to indicate EGLWSI must be reset.
+     * The actual Surface object seems to get reused, so this is how MainActivity has to notify GrInDriver.
+     */
+    public static volatile boolean mustResetEGLWSI = true;
+    /**
+     * Width and height of surface.
+     */
+    public static volatile int surfaceWidth, surfaceHeight;
 }

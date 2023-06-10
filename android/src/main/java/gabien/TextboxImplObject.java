@@ -125,7 +125,8 @@ public class TextboxImplObject implements ITextboxImplementation {
                 if (inTextboxMode)
                     return;
                 inTextboxMode = true;
-                System.out.println("TextBox is going active.");
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("TextBox is going active.");
                 mainActivity.setContentView(host);
                 mainActivity.runOnUiThread(new Runnable() {
                     @Override
@@ -150,7 +151,8 @@ public class TextboxImplObject implements ITextboxImplementation {
                 if (!inTextboxMode)
                     return;
                 inTextboxMode = false;
-                System.out.println("TextBox is going inactive.");
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("TextBox is going inactive.");
                 mainActivity.setContentView(mainActivity.mySurface);
             }
         });

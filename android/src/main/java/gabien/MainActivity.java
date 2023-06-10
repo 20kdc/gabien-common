@@ -7,11 +7,12 @@
 
 package gabien;
 
-import java.util.concurrent.locks.ReentrantLock;
+import java.io.File;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
@@ -19,15 +20,18 @@ import android.view.Window;
 public class MainActivity extends Activity {
 	public TextboxImplObject myTIO;
     public SurfaceView mySurface;
-    // Once you have the MainActivity (using mainActivityLock) you can transfer to this lock.
-    // By transferring to this lock you can avoid holding up stuff using the mainActivityLock while doing stuff with the surface.
-    // It's very important to hold that precise order, though. Never lock the surfaceLock first.
-    // Otherwise deadlocks are possible.
-    public final ReentrantLock surfaceLock = new ReentrantLock();
 
     @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// THIS IS THE VERY FIRST CODE THAT RUNS!
+		// Therefore:
+		// + gabien MAY OR MAY NOT have been setup yet
+		// + We need to setup the debug flag for all other debug logging
+		AndroidPortGlobals.debugFlag = new File("/sdcard/gabien_android_enable_debug").exists();
+		//
+		if (AndroidPortGlobals.debugFlag)
+		    System.out.println(" ~~~ onCreate ~~~ ");
 		// Just get this over with as early as possible
 		// (we need it for assets)
 		if (AndroidPortGlobals.applicationContext == null)
@@ -81,12 +85,48 @@ public class MainActivity extends Activity {
                 owner.peripherals.gdPushEvent(mode, arg1.getPointerId(ptrI), (int) x, (int) y);
             }
         });
+        SurfaceHolder sh = surfaceview.getHolder();
+        sh.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("surfaceChanged...");
+                AndroidPortGlobals.surfaceLock.lock();
+                AndroidPortGlobals.mustResetEGLWSI = true;
+                AndroidPortGlobals.surface = holder.getSurface();
+                AndroidPortGlobals.surfaceWidth = width;
+                AndroidPortGlobals.surfaceHeight = height;
+                AndroidPortGlobals.surfaceLock.unlock();
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("surfaceChanged [OK]");
+            }
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("surfaceCreated");
+            }
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("surfaceDestroyed...");
+                AndroidPortGlobals.surfaceLock.lock();
+                AndroidPortGlobals.mustResetEGLWSI = true;
+                AndroidPortGlobals.surface = null;
+                AndroidPortGlobals.surfaceLock.unlock();
+                if (AndroidPortGlobals.debugFlag)
+                    System.out.println("surfaceDestroyed [OK]");
+            }
+        });
 		setContentView(surfaceview);
 		myTIO = new TextboxImplObject(this);
 		mySurface = surfaceview;
+        if (AndroidPortGlobals.debugFlag)
+            System.out.println("onCreate: Updating mainActivity...");
         AndroidPortGlobals.mainActivityLock.lock();
         AndroidPortGlobals.mainActivity = this;
         AndroidPortGlobals.mainActivityLock.unlock();
+        if (AndroidPortGlobals.debugFlag)
+            System.out.println("onCreate: Updated mainActivity");
         GameThread.ensureStartedFromUIThread();
 	}
 
@@ -103,10 +143,8 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         // remove self so we don't raise the dead
         AndroidPortGlobals.mainActivityLock.lock();
-        surfaceLock.lock();
         if (AndroidPortGlobals.mainActivity == this)
             AndroidPortGlobals.mainActivity = null;
-        surfaceLock.unlock();
         AndroidPortGlobals.mainActivityLock.unlock();
         // then call super
         super.onDestroy();

@@ -11,7 +11,6 @@ import java.util.concurrent.Semaphore;
 
 import android.graphics.Rect;
 import android.view.Surface;
-import android.view.SurfaceHolder;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.uslx.append.TimeLogger;
@@ -20,20 +19,17 @@ public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;
     public boolean wantsShutdown = false;
     public Rect displayArea = new Rect(0, 0, 1, 1);
-    public int wantedBackBufferW, wantedBackBufferH, wantedBackBufferWSetAsync, wantedBackBufferHSetAsync;
+    public int wantedBackBufferW, wantedBackBufferH;
     private final TimeLogger.Source timeLoggerGameThread = TimeLogger.optSource(GaBIEn.timeLogger, "GameThread");
     private final TimeLogger.Source timeLoggerAndroidFlip = TimeLogger.optSource(GaBIEn.timeLogger, "AndroidFlip");
     public Semaphore waitingFrames = new Semaphore(1);
-    public boolean isFirstFrame = true;
 
-    private Surface currentEGLSurfaceJ = null;
+    // Accessed only from VOPEKS thread
     private long currentEGLSurface = 0;
 
     public GrInDriver(int w, int h) {
         wantedBackBufferW = w;
         wantedBackBufferH = h;
-        wantedBackBufferWSetAsync = w;
-        wantedBackBufferHSetAsync = h;
         peripherals = new Peripherals(this);
         timeLoggerGameThread.open();
     }
@@ -55,11 +51,12 @@ public class GrInDriver implements IGrInDriver {
 
     @Override
     public void flush(IImage backBufferI) {
+        backBufferI.batchFlush();
         timeLoggerGameThread.close();
 
         waitingFrames.acquireUninterruptibly();
-        timeLoggerAndroidFlip.open();
         GaBIEn.vopeks.putTask((instance) -> {
+            timeLoggerAndroidFlip.open();
             try {
                 doFlushLoop(instance, backBufferI);
             } finally {
@@ -67,14 +64,12 @@ public class GrInDriver implements IGrInDriver {
                 waitingFrames.release();
             }
         });
-        if (isFirstFrame) {
-            // Ensure the actual surface dimensions are here
-            waitingFrames.acquireUninterruptibly();
-            waitingFrames.release();
-            isFirstFrame = false;
+        AndroidPortGlobals.surfaceLock.lock();
+        if (AndroidPortGlobals.surface != null) {
+            wantedBackBufferW = AndroidPortGlobals.surfaceWidth;
+            wantedBackBufferH = AndroidPortGlobals.surfaceHeight;
         }
-        wantedBackBufferW = wantedBackBufferWSetAsync;
-        wantedBackBufferH = wantedBackBufferHSetAsync;
+        AndroidPortGlobals.surfaceLock.unlock();
 
         // So the timeline is a bit weird here.
         AndroidPortGlobals.mainActivityLock.lock();
@@ -89,51 +84,43 @@ public class GrInDriver implements IGrInDriver {
     }
     private void doFlushLoop(BadGPU.Instance instance, IImage backBufferI) {
         while (true) {
-            AndroidPortGlobals.mainActivityLock.lock();
-            MainActivity last = AndroidPortGlobals.mainActivity;
-            if (last != null) {
-                // Transfer locks.
-                try {
-                    last.surfaceLock.lock();
-                } finally {
-                    AndroidPortGlobals.mainActivityLock.unlock();
-                }
-                // We're now holding surfaceLock and not holding the MAL.
-                // So flush() code can do its thing.
-                try {
-                    SurfaceHolder sh = last.mySurface.getHolder();
-                    Rect surfaceFrame = sh.getSurfaceFrame();
-                    int w = surfaceFrame.width();
-                    int h = surfaceFrame.height();
-                    wantedBackBufferWSetAsync = w;
-                    wantedBackBufferHSetAsync = h;
-                    if (sh != null) {
-                        BadGPU.Texture tex = backBufferI.getTextureFromTask();
-                        // oops, no texture!
-                        if (tex == null)
-                            return;
-                        Surface ns = sh.getSurface();
-                        if (ns != currentEGLSurfaceJ) {
-                            //if (currentEGLSurface != 0)
-                            //    BadGPUUnsafe.ANDdestroyEGLSurface(instance.pointer, currentEGLSurface);
-                            currentEGLSurfaceJ = ns;
-                            currentEGLSurface = BadGPUUnsafe.ANDcreateEGLSurface(instance.pointer, ns);
-                            System.out.println("Created surface: " + currentEGLSurface);
-                        }
-                        if (currentEGLSurface != 0) {
-                            System.out.println("Blitting to surface...");
-                            BadGPUUnsafe.ANDblitToSurface(instance.pointer, tex.pointer, currentEGLSurface, w, h);
-                            System.out.println("...done!");
-                        }
+            AndroidPortGlobals.surfaceLock.lock();
+            try {
+                Surface surface = AndroidPortGlobals.surface;
+                if (surface != null) {
+                    BadGPU.Texture tex = backBufferI.getTextureFromTask();
+                    // oops, no texture!
+                    if (tex == null)
                         return;
+                    if (!surface.isValid()) {
+                        if (AndroidPortGlobals.debugFlag)
+                            System.out.println("Surface invalid, waiting...");
+                        continue;
                     }
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                } finally {
-                    last.surfaceLock.unlock();
+                    if (AndroidPortGlobals.mustResetEGLWSI) {
+                        AndroidPortGlobals.mustResetEGLWSI = false;
+                        if (currentEGLSurface != 0)
+                            BadGPUUnsafe.ANDdestroyEGLSurface(instance.pointer, currentEGLSurface);
+                        currentEGLSurface = BadGPUUnsafe.ANDcreateEGLSurface(instance.pointer, surface);
+                        BadGPUUnsafe.ANDoverrideSurface(instance.pointer, currentEGLSurface);
+                        if (AndroidPortGlobals.debugFlag)
+                            System.out.println("Created surface: " + currentEGLSurface);
+                    }
+                    if (currentEGLSurface != 0) {
+                        System.out.println("Blitting to surface...");
+                        BadGPUUnsafe.ANDblitToSurface(instance.pointer, tex.pointer, currentEGLSurface, AndroidPortGlobals.surfaceWidth, AndroidPortGlobals.surfaceHeight);
+                        if (AndroidPortGlobals.debugFlag)
+                            System.out.println("...done!");
+                    }
+                    return;
+                } else {
+                    if (AndroidPortGlobals.debugFlag)
+                        System.out.println("Surface null, waiting...");
                 }
-            } else {
-                AndroidPortGlobals.mainActivityLock.unlock();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            } finally {
+                AndroidPortGlobals.surfaceLock.unlock();
             }
             try {
                 Thread.sleep(500);
