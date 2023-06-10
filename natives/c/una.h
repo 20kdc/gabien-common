@@ -7,13 +7,8 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#include "badgpu/badgpu.h"
+// So we have printf, etc.
+#include "badgpu/badgpu_internal.h"
 
 #define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x
 #define J_LOADER(x) Java_gabien_natives_Loader_ ## x
