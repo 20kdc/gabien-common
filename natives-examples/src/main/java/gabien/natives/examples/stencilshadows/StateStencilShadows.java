@@ -22,6 +22,7 @@ import gabien.natives.examples.U;
  * Created 11th June, 2023.
  */
 public class StateStencilShadows extends State {
+    public static final boolean DEBUGBASICS = false;
     final STHCameraSetup cam;
     final LinkedList<STHTriangle> tris = new LinkedList<>();
     float rX = 0;
@@ -29,7 +30,7 @@ public class StateStencilShadows extends State {
     public StateStencilShadows(IMain m) {
         super(m);
         cam = new STHCameraSetup(m.getInstance());
-        if (true) {
+        if (!DEBUGBASICS) {
             try {
                 BufferedReader br = new BufferedReader(new InputStreamReader(U.class.getResourceAsStream("shadowing.obj"), StandardCharsets.UTF_8));
                 LinkedList<Float> vX = new LinkedList<>();
