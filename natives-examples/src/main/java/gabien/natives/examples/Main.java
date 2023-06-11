@@ -52,7 +52,11 @@ public class Main implements IMain {
     public boolean[] keysEvent = new boolean[7];
     public boolean[] keys = new boolean[7];
 
+    public long lastFrameTS;
+    public long thisFrameTS;
+
     public Main() {
+        lastFrameTS = System.currentTimeMillis();
         instance = BadGPU.newInstance(BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.CanPrintf);
         instanceLock = new ThreadOwned.Locked(instance.syncObject);
         try (ThreadOwned.Locked tmp = instanceLock) {
@@ -102,6 +106,8 @@ public class Main implements IMain {
                         //System.out.println("from TT");
                         System.out.println("RX:" + (tB - tA));
                         // continue...
+                        lastFrameTS = thisFrameTS;
+                        thisFrameTS = System.currentTimeMillis();
                         currentState.frame(screen1, currentBufferWidth, currentBufferHeight);
                         instance.flush();
                     }
@@ -117,8 +123,15 @@ public class Main implements IMain {
     }
 
     @Override
+    public float getDeltaTime() {
+        return (thisFrameTS - lastFrameTS) / 1000f;
+    }
+
+    @Override
     public void setState(State state) {
         currentState = state;
+        for (int i = 0; i < keysEvent.length; i++)
+            keysEvent[i] = false;
     }
 
     @Override
@@ -233,12 +246,18 @@ public class Main implements IMain {
         });
         Runnable r = new Runnable() {
             long lastFrameTime = 0;
+            double lastFPS = 0;
             @Override
             public void run() {
-                // ensure a frame has completed before continuing...
-                long thisFrameTime = System.currentTimeMillis();
-                System.out.println("FT:" + (thisFrameTime - lastFrameTime));
+                // timing & stuff
+                long thisFrameTime = System.nanoTime();
+                long diff = thisFrameTime - lastFrameTime;
                 lastFrameTime = thisFrameTime;
+                double toFPS = 1.0d / (diff / 1000000000d);
+                // average in carefully
+                lastFPS = ((lastFPS * 9) + toFPS) / 10;
+                w.setTitle("FPS: " + ((int) lastFPS));
+                // ensure a frame has completed before continuing...
                 m.frameCompleteSemaphore.acquireUninterruptibly();
                 // this means the game thread is now waiting for us to schedule a new frame
                 int cw = canvas.getWidth();

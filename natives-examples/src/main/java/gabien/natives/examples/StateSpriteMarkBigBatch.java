@@ -13,15 +13,12 @@ import gabien.natives.BadGPU.Texture;
 /**
  * Created 3rd June 2023.
  */
-public class StateSpriteMarkBigBatch extends State {
-    public SpriteMarkSimulator sms = new SpriteMarkSimulator(100);
-    final BadGPU.Texture cached;
+public class StateSpriteMarkBigBatch extends StateSpriteMarkBase {
     private float[] vtxBuf = new float[65536];
     private float[] tcBuf = new float[65536];
 
     public StateSpriteMarkBigBatch(IMain m) {
         super(m);
-        cached = U.loadTex(m.getInstance(), "img.png");
     }
 
     private int putVertex(int vtxPtr, float x, float y, float u, float v) {
@@ -62,14 +59,7 @@ public class StateSpriteMarkBigBatch extends State {
     }
 
     @Override
-    public void frame(Texture screen, int w, int h) {
-        if (main.getKeyEvent(Main.KEY_W))
-            sms.resize(sms.x.length + 100);
-        if (main.getKeyEvent(Main.KEY_S))
-            sms.resize(sms.x.length - 100);
-        System.out.println("capacity: " + sms.x.length);
-        sms.iterate();
-        BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
+    public void actualImplementation(Texture screen, int w, int h) {
         int spriteStart = 0;
         int sprites = sms.x.length;
         while (sprites >= 2000) {

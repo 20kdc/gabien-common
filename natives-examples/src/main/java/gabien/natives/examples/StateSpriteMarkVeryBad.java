@@ -13,9 +13,7 @@ import gabien.natives.BadGPU.Texture;
 /**
  * Created 3rd June 2023.
  */
-public class StateSpriteMarkVeryBad extends State {
-    public SpriteMarkSimulator sms = new SpriteMarkSimulator(100);
-    final BadGPU.Texture cached;
+public class StateSpriteMarkVeryBad extends StateSpriteMarkBase {
     public static final float[] spriteVertexData = {
             -0.01f, -0.01f, 0, 1,
              0.01f, -0.01f, 0, 1,
@@ -39,18 +37,10 @@ public class StateSpriteMarkVeryBad extends State {
 
     public StateSpriteMarkVeryBad(IMain m) {
         super(m);
-        cached = U.loadTex(m.getInstance(), "img.png");
     }
 
     @Override
-    public void frame(Texture screen, int w, int h) {
-        if (main.getKeyEvent(Main.KEY_W))
-            sms.resize(sms.x.length + 100);
-        if (main.getKeyEvent(Main.KEY_S))
-            sms.resize(sms.x.length - 100);
-        System.out.println("capacity: " + sms.x.length);
-        sms.iterate();
-        BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
+    public void actualImplementation(Texture screen, int w, int h) {
         for (int i = 0; i < sms.x.length; i++) {
             tmpMatrix[12] = sms.x[i];
             tmpMatrix[13] = sms.y[i];

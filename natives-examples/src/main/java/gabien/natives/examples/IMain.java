@@ -25,4 +25,5 @@ public interface IMain {
     public static final int KEY_SPACE = 6;
     boolean getKey(int keyID);
     boolean getKeyEvent(int keyID);
+    float getDeltaTime();
 }

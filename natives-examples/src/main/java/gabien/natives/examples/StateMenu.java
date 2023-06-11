@@ -9,46 +9,57 @@ package gabien.natives.examples;
 
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
+import gabien.natives.examples.stencilshadows.StateStencilShadows;
 
 /**
  * Created 30th May, 2023
  */
 public class StateMenu extends State {
-    float tx = 0;
-    final BadGPU.Texture cached;
+    final BadGPU.Texture cachedHeaderText;
+    BadGPU.Texture cachedCurrentText;
+    final Class<?>[] options = {
+            StateSpriteMarkVeryBad.class,
+            StateSpriteMarkBigBatch.class,
+            StateStencilShadows.class
+    };
+    int optionId;
 
     public StateMenu(IMain m) {
         super(m);
-        cached = U.loadTex(m.getInstance(), "img.png");
+        cachedHeaderText = U.drawText(main.getInstance(), "A/D to select, Z to confirm");
+        updateOpt();
+    }
+
+    private void updateOpt() {
+        cachedCurrentText = U.drawText(main.getInstance(), options[optionId].getSimpleName());
     }
 
     @Override
     public void frame(Texture screen, int w, int h) {
-        if (main.getKeyEvent(IMain.KEY_SPACE)) {
-            main.setState(new StateSpriteMarkVeryBad(main));
+        if (main.getKeyEvent(IMain.KEY_Z)) {
+            try {
+                main.setState((State) options[optionId].getConstructor(IMain.class).newInstance(main));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            return;
+        }
+        if (main.getKeyEvent(IMain.KEY_A)) {
+            optionId--;
+            if (optionId < 0)
+                optionId = options.length - 1;
+            updateOpt();
             return;
         }
         if (main.getKeyEvent(IMain.KEY_D)) {
-            main.setState(new StateSpriteMarkBigBatch(main));
+            optionId++;
+            if (optionId >= options.length)
+                optionId = 0;
+            updateOpt();
             return;
         }
-        tx += 0.01f;
         BadGPU.drawClear(screen, null, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0);
-        U.texRctImm(screen, 0, 0, w, h, cached);
-        U.texRctImm(screen, 0, 0, 320, 200, cached);
-        U.triImm(screen, w, h,
-                0, -1,
-                1, 0, 0,
-                1, 1,
-                0, 1, 0,
-                -1, 1,
-                0, 0, 1);
-        U.triImm(screen, w, h,
-                0, -1,
-                1, 0, 0,
-                (float) Math.sin(tx), 0,
-                1, 1, 0,
-                -1, 1,
-                0, 0, 1);
+        U.texRctImm(screen, 0, 0, U.TEXTBUF_W, U.TEXTBUF_H, cachedHeaderText);
+        U.texRctImm(screen, 0, U.TEXTBUF_H, U.TEXTBUF_W, U.TEXTBUF_H, cachedCurrentText);
     }
 }

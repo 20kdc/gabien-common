@@ -164,7 +164,7 @@ public abstract class BadGPU extends BadGPUEnum {
                 throw new InvalidatedPointerException(this);
         }
 
-        public @Nullable DSBuffer newDSBuffer(long instance, int width, int height) {
+        public @Nullable DSBuffer newDSBuffer(int width, int height) {
             long res;
             syncObject.assertBound();
             if (!valid)
