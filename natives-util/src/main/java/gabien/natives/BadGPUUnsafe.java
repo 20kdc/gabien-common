@@ -89,6 +89,6 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native long ANDcreateEGLSurface(long instance, Object window);
     public static native void ANDdestroyEGLSurface(long instance, long surface);
     public static native void ANDoverrideSurface(long instance, long surface);
-    public static native void ANDblitToSurface(long instance, long texture, long surface, int width, int height);
+    public static native void ANDblitToSurface(long instance, long texture, long surface, int width, int height, float s0, float t0, float s1, float t1);
 }
 

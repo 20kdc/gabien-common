@@ -108,7 +108,7 @@ public class GrInDriver implements IGrInDriver {
                     }
                     if (currentEGLSurface != 0) {
                         System.out.println("Blitting to surface...");
-                        BadGPUUnsafe.ANDblitToSurface(instance.pointer, tex.pointer, currentEGLSurface, AndroidPortGlobals.surfaceWidth, AndroidPortGlobals.surfaceHeight);
+                        BadGPUUnsafe.ANDblitToSurface(instance.pointer, tex.pointer, currentEGLSurface, AndroidPortGlobals.surfaceWidth, AndroidPortGlobals.surfaceHeight, 0, 1, 1, 0);
                         if (AndroidPortGlobals.debugFlag)
                             System.out.println("...done!");
                     }

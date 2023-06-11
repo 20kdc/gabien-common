@@ -38,14 +38,6 @@ static const float vertexData[] = {
      1,  1,
     -1,  1
 };
-static const float textureData[] = {
-    0, 1,
-    1, 1,
-    1, 0,
-    0, 1,
-    1, 0,
-    0, 0
-};
 
 void J_BADGPU(ANDoverrideSurface)(void * env, void * self, int64_t instance, int64_t surface) {
     void * eglDisplay = badgpuGetEGLDisplay((void *) instance);
@@ -53,7 +45,16 @@ void J_BADGPU(ANDoverrideSurface)(void * env, void * self, int64_t instance, int
     eglMakeCurrent(eglDisplay, (void *) surface, (void *) surface, eglContext);
 }
 
-void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64_t texture, int64_t surface, int32_t width, int32_t height) {
+void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64_t texture, int64_t surface, int32_t width, int32_t height, float s0, float t0, float s1, float t1) {
+    float textureData[] = {
+        s0, t0,
+        s1, t0,
+        s1, t1,
+        s0, t0,
+        s1, t1,
+        s0, t1
+    };
+
     void * eglDisplay = badgpuGetEGLDisplay((void *) instance);
     void * eglContext = badgpuGetEGLContext((void *) instance);
 

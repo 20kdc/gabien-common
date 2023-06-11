@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.25.0`
+ * Version: `0.25.1`
  *
  * ## Formatting Policy
  *
@@ -248,6 +248,25 @@ typedef struct BADGPUVector {
 typedef struct BADGPUMatrix {
     BADGPUVector x, y, z, w;
 } BADGPUMatrix;
+
+/*
+ * ## Coordinate System, Rasterization, Etc.
+ *
+ * All BadGPU rules are reflections of underlying OpenGL rules. \
+ * However, there are some elements worth noting to prevent confusion:
+ *
+ * 1. OpenGL textures, and therefore BadGPU textures, are "officially" submitted
+ *     bottom-to-top. However, by the same metric, texture coordinate T=0 is
+ *     the "bottom" of the texture. In practice, sending textures top-to-bottom
+ *     results in T=0 being the top and T=1 being the bottom, which is easier to
+ *     understand from a 2D developer's perspective. The orientation of your
+ *     textures is therefore a matter of personal opinion.
+ * 2. OpenGL window coordinates work the same way, and they map to texture
+ *     coordinates via the expression `(w + 1) / 2`.
+ * 3. An interesting property of this is that your application can choose Y
+ *     orientation, as long as it is consistent about it and doesn't have to
+ *     present any of the unflipped results to external WSI.
+ */
 
 /*
  * ## Object Management
