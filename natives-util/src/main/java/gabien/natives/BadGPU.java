@@ -14,7 +14,7 @@ import gabien.uslx.append.ThreadOwned;
 
 /**
  * Safe wrapper for BadGPU.
- * VERSION: 0.21.0
+ * VERSION: 0.26.0
  * Created 30th May, 2023.
  */
 public abstract class BadGPU extends BadGPUEnum {

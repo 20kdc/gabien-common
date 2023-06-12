@@ -9,7 +9,7 @@ package gabien.natives;
 
 /**
  * Finally, what this project needed.
- * VERSION: 0.25.0
+ * VERSION: 0.26.0
  * Created 29th May, 2023.
  */
 public abstract class BadGPUUnsafe extends BadGPUEnum {
