@@ -116,15 +116,4 @@ public interface IImage {
      * This can return null if the texture is empty (0 width, 0 height).
      */
     @Nullable BadGPU.Texture getTextureFromTask();
-
-    /**
-     * Locks the OTR lock.
-     * The image promises to not allow rendering commands to be submitted to the GL writing to this image until unlocked.
-     */
-    void otrLock();
-
-    /**
-     * Unlocks the OTR lock.
-     */
-    void otrUnlock();
 }

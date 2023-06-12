@@ -47,12 +47,6 @@ public class VopeksImage implements IImage {
     public final @NonNull String debugId;
 
     /**
-     * Confirms the image isn't engaged in OTR.
-     * We need to "ping this"
-     */
-    private final Semaphore imageOTRActivity = new Semaphore(1);
-
-    /**
      * Creates a new VopeksImage.
      */
     public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
@@ -109,16 +103,6 @@ public class VopeksImage implements IImage {
             }
             vopeks.putCallback(onDone);
         });
-    }
-
-    @Override
-    public void otrLock() {
-        imageOTRActivity.acquireUninterruptibly();
-    }
-
-    @Override
-    public void otrUnlock() {
-        imageOTRActivity.release();
     }
 
     @Override
