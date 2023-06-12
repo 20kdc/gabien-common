@@ -6,8 +6,6 @@
  */
 package gabien.vopeks;
 
-import java.util.concurrent.Semaphore;
-
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 

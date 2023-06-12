@@ -274,7 +274,6 @@ public class VopeksBatchingSurface extends VopeksImage {
 
             drawFlags |= tilingMode.value;
 
-            otrLock();
             BadGPUUnsafe.drawGeomNoDS(texture.pointer, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
                     cropL, cropU, cropW, cropH,
                     drawFlags,
@@ -286,7 +285,6 @@ public class VopeksBatchingSurface extends VopeksImage {
                     tx2, null, 0,
                     null, 0, alphaComp, 0,
                     blendMode.blendProgram);
-            otrUnlock();
             vopeks.floatPool.finish(megabuffer);
             batchPool.finish(this);
         }
