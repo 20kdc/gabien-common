@@ -57,13 +57,14 @@ public class STHTriangle {
         copyABC();
         BadGPU.drawGeom(setup.backBuffer, setup.dsBuffer,
                 BadGPU.SessionFlags.MaskDepth, 0, 0, 0, 0,
-                BadGPU.DrawFlags.DepthTest,
+                0,
                 3, internalVertexBuffer, 0, null, 0, 2, null, 0,
                 PrimitiveType.Triangles, 0,
                 0, 3, null, 0,
-                setup.matrix, 0, null, 0,
+                setup.matrix, 0,
                 0, 0, setup.bW, setup.bH,
                 null, null, 0,
+                null, 0, BadGPU.Compare.Always, 0,
                 BadGPU.Compare.Always, 0, 0,
                 BadGPU.StencilOp.Keep, BadGPU.StencilOp.Keep, BadGPU.StencilOp.Keep,
                 BadGPU.Compare.LEqual, 0, 1, 0, 0,
@@ -108,14 +109,15 @@ public class STHTriangle {
         for (int i = 0; i < 2; i++)
             BadGPU.drawGeom(setup.backBuffer, setup.dsBuffer,
                     BadGPU.SessionFlags.StencilAll, 0, 0, 0, 0,
-                    BadGPU.DrawFlags.DepthTest | BadGPU.DrawFlags.StencilTest |
+                    BadGPU.DrawFlags.StencilTest |
                     BadGPU.DrawFlags.CullFace | (i == 0 ? BadGPU.DrawFlags.CullFaceFront : 0),
                     3, internalVertexBuffer, 0, null, 0, 2, null, 0,
                     PrimitiveType.Triangles, 0,
                     0, stencilVertices.length, stencilVertices, 0,
-                    setup.matrix, 0, null, 0,
+                    setup.matrix, 0,
                     0, 0, setup.bW, setup.bH,
                     null, null, 0,
+                    null, 0, BadGPU.Compare.Always, 0,
                     BadGPU.Compare.Always, 0, 0,
                     BadGPU.StencilOp.Keep, BadGPU.StencilOp.Keep, i == 0 ? BadGPU.StencilOp.Dec : BadGPU.StencilOp.Inc,
                     BadGPU.Compare.Less, 0, 1, 0, 0,
@@ -137,14 +139,15 @@ public class STHTriangle {
         internalColourBuffer[3] = 1;
         BadGPU.drawGeom(setup.backBuffer, setup.dsBuffer,
                 BadGPU.SessionFlags.MaskRGBA, 0, 0, 0, 0,
-                BadGPU.DrawFlags.DepthTest | BadGPU.DrawFlags.StencilTest |
+                BadGPU.DrawFlags.StencilTest |
                 BadGPU.DrawFlags.FreezeColour | BadGPU.DrawFlags.Blend,
                 3, internalVertexBuffer, 0, internalColourBuffer, 0, 2, null, 0,
                 PrimitiveType.Triangles, 0,
                 0, 3, null, 0,
-                setup.matrix, 0, null, 0,
+                setup.matrix, 0,
                 0, 0, setup.bW, setup.bH,
                 null, null, 0,
+                null, 0, BadGPU.Compare.Always, 0,
                 BadGPU.Compare.Equal, 128, 255,
                 BadGPU.StencilOp.Keep, BadGPU.StencilOp.Keep, BadGPU.StencilOp.Keep,
                 BadGPU.Compare.Equal, 0, 1, 0, 0,

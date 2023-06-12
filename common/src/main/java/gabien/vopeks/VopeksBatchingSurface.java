@@ -264,9 +264,13 @@ public class VopeksBatchingSurface extends VopeksImage {
         public void run(Instance instance) {
             BadGPU.Texture tx = tex != null ? tex.getTextureFromTask() : null;
             long tx2 = tx != null ? tx.pointer : 0;
+            int alphaComp = BadGPU.Compare.Always.value;
             int drawFlags = 0;
             if (blendMode != BlendMode.None)
                 drawFlags |= BadGPU.DrawFlags.Blend;
+            // In the normal blend mode, an alpha of 0 leads to a NOP, so discard those pixels.
+            if (blendMode == BlendMode.Normal)
+                alphaComp = BadGPU.Compare.Greater.value;
 
             drawFlags |= tilingMode.value;
 
@@ -277,9 +281,10 @@ public class VopeksBatchingSurface extends VopeksImage {
                     2, megabuffer, verticesOfs, hasColours ? megabuffer : null, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
                     BadGPU.PrimitiveType.Triangles.value, 1,
                     0, vertexCount, null, 0,
-                    null, 0, null, 0,
+                    null, 0,
                     0, 0, width, height,
                     tx2, null, 0,
+                    null, 0, alphaComp, 0,
                     blendMode.blendProgram);
             otrUnlock();
             vopeks.floatPool.finish(megabuffer);

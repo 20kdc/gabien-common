@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.25.1`
+ * Version: `0.26.0`
  *
  * ## Formatting Policy
  *
@@ -33,10 +33,8 @@
  * Semantic versioning 2.0.0 is in use here.
  *
  * However, this is a specification with a C header, and thus not a piece of
- *  software in itself.
- *
- * This means essentially all non-comment changes are of _Minor_ severity or
- *  greater.
+ *  software in itself, so essentially all non-comment changes are of _Minor_
+ *  severity or greater.
  *
  * + When the C content (not comments) of the specification changes, a _Minor_
  *    or _Major_ version increment _must_ be made as appropriate.
@@ -52,18 +50,16 @@
  *    the behaviour of the reference implementation, and not cause undue version
  *    drama for any hypothetical working applications over a spec change with
  *    zero effective impact on said applications.)
- * + Whenever possible, a single version of this specification must be
+ * + Whenever possible, a single version of this specification should be
  *     resolvable to a single Git commit.
- * + If at all possible, version `1.0.0` will be the last version of
- *    this specification.
- *   + Failing this, it will be the last update to the _Major_ and _Minor_
- *      versions of the specification.
- *     + Failing this, it will be the last update to the _Major_ version of
- *        this specification. Any new drawing capabilities (such as, say, opt-in
- *        support for ES2 shaders) will be implemented as additional calls.
- *       + In the event of a catastrophic failure of future versions, at a bare
- *          minimum, all versions of this specification past `1.0.0` *must*
- *          remain compatible with the last patch version of the `1.0.x` series.
+ * + If at all possible, version `1.0.0` will be the last update to the _Major_
+ *    and _Minor_ versions of the specification.
+ *   + Failing this, it will be the last update to the _Major_ version of
+ *      this specification. Any new drawing capabilities (such as, say, opt-in
+ *      support for ES2 shaders) will be implemented as additional calls.
+ *     + In the event of a catastrophic failure of future versions, at a bare
+ *        minimum, all versions of this specification past `1.0.0` *must*
+ *        remain compatible with the last patch version of the `1.0.x` series.
  *
  * ## Design Policy
  *
@@ -152,9 +148,33 @@
  *  simply not supporting WSI. BadGPU can't directly draw onto the screen.
  *
  * This allows BadGPU to be used seamlessly with any windowing/drawing framework
- *  at some performance cost (which I consider an acceptable loss given the
- *  reliability and portability benefits of reducing per-platform code), while
- *  still not losing as much performance as software rendering.
+ *  at some performance cost, while still not losing as much performance as
+ *  software rendering.
+ *
+ * Rationale:
+ *
+ * Apple makes WSI... bad. To get as far as I did required digging up the old
+ *  tome known as the *CGL Reference*. Luckily, that part doesn't require the
+ *  horror known as Objective-C. Lowest common denominator logic says that
+ *  no WSI for Apple means no WSI for anyone. However, the integration functions
+ *  exist so that some WSI can be 'added on' for Android, where performance is
+ *  otherwise unusably low.
+ *
+ * In terms of API design, BadGPU owes some credit to WebGPU, but avoids the
+ *  heavy use of structs for binding reasons, and removes explicit render pass
+ *  objects.
+ *
+ * BadGPU isn't thread-safe per-se, outside of instances being isolated.
+ *
+ * Unlike WebGPU, BadGPU does not try to provide absolute memory safety
+ *  assurance, but does at least make a good-faith effort to prevent crashes in
+ *  favour of failure.
+ *
+ * In particular, if an implementation vendor _knows_ an operation will crash,
+ *  the implementation _must not_ perform the operation, instead returning
+ *  whatever failure indicator is appropriate.
+ *
+ * ### Functionality
  *
  * For portability reasons, BadGPU is designed to target the subset of
  *  functionality common between three separate versions of OpenGL:
@@ -162,7 +182,7 @@
  * + OpenGL 1.1 +
  *    `EXT_blend_subtract`, `EXT_blend_func_separate`,
  *    `EXT_framebuffer_object`
- * + OpenGL ES 1.0 Common +
+ * + OpenGL ES 1.1 Common +
  *    `OES_blend_subtract`, `OES_blend_func_separate`,
  *    `OES_framebuffer_object`, `OES_texture_npot`
  * + OpenGL ES 2.0 with shader compiler and `OES_texture_npot`
@@ -181,15 +201,17 @@
  * As such, the pipeline is essentially that of OpenGL ES 2, but with a lot of
  *  the options cut out and with fixed-function parts inserted where necessary.
  *
+ * I considered PBuffers, but they're an excellent way to force you to deal with
+ *  heavy WSI. Don't PBuffer.
+ *
  * In terms of API design, BadGPU owes some credit to Vulkan and WebGPU, mostly
  *  the latter, but avoids the heavy use of structs for binding reasons.
  * (The reference BadGPU implementation will have built-in JNI support.)
  *
  * Like WebGPU, to which the API design owes some credit, BadGPU does not
- *  support the reuse of serieses of commands.
- *
- * Unlike WebGPU, BadGPU is an immediate API; it is not possible to cancel a
- *  command, there's no buffer recording.
+ *  support the reuse of serieses of commands, but unlike it, BadGPU is an
+ *  immediate API; it is not possible to cancel a command, there's no buffer
+ *  recording.
  *
  * Unlike OpenGL, BadGPU tries to be as stateless as possible.
  *
@@ -835,7 +857,7 @@ typedef enum BADGPUDrawFlags {
     // Changes culling to cull the front face rather than the back.
     BADGPUDrawFlags_CullFaceFront = 4,
     BADGPUDrawFlags_StencilTest = 8,
-    BADGPUDrawFlags_DepthTest = 16,
+    // Flag 16 unused
     BADGPUDrawFlags_Blend = 32,
     // Flag 64 still unused
     // Colour array only has to be one element long, and that's the only colour.
@@ -1074,15 +1096,23 @@ typedef enum BADGPUBlendWeight {
  *  values 0 to 65535. \
  * `iCount` must not be below 0 or above 65536.
  *
- * `matrixA` and / or `matrixB` can be `NULL`. In this case, they are
- *  effectively identity. \
- * Otherwise, see `BADGPUMatrix`.
+ * `mvMatrix` can be `NULL`. In this case, it is effectively identity. \
+ * Otherwise, see `BADGPUMatrix`. \
+ * It is worth noting that this is formally the `GL_MODELVIEW` matrix by OpenGL
+ *  rules, which changes how it interacts with other features; mainly it ensures
+ *  that this matrix counts as a modification to the input vertices.
  *
  * `vX`, `vY`, `vW`, `vH` make up the viewport.
  *
  * `texture` is multiplied with the vertex colours. \
  * (If `NULL`, then the vertex colours are used as-is.) \
  * The texture coordinates are multiplied with the texture coordinate matrix.
+ *
+ * `clipPlane` specifies a clip plane, or can be `NULL` to disable it. \
+ * Clip planes are in the space after transformation by the matrix, but before
+ *  the perspective divide.
+ *
+ * `atFunc` and `atRef` specify the alpha test.
  *
  * `stFunc`, `stRef`, and `stMask` are used for the stencil test. \
  * This `stMask` is for the test; the mask used for writing is the session's
@@ -1104,23 +1134,33 @@ typedef enum BADGPUBlendWeight {
  *
  * Some specific included functionality, and why:
  *
- * + 4D vertex support had to be included for software TnL. The matrices can't
- *    really be used in this situation due to a lack of W input; see why TCs
- *    aren't 4D for why that makes them effectively useless.
+ * + 4D vertex support had to be included for software TnL.
  * + The ability to change vertex and TC dimension counts is important because
  *    the amount of memory used by batches can get rather high, and associated
  *    vertex loading costs can also get rather high.
  *
  * Some specific missing functionality, and why:
  *
- * + Lighting isn't a thing because it's annoying for ES2. \
- *   And it's per-vertex, so you don't really get anything out of it. \
- *   If you really want this, do it on the CPU or something.
- * + The alpha test was removed because it's annoying for ES2 and buggy on some
- *    hardware (can't be trusted on Ironlake, for example).
+ * + Lighting isn't a thing for several reasons:
+ *   + It's annoying for ES2.
+ *   + It's per-vertex, so you don't really get anything out of it. \
+ *     If you really want this, do it on the CPU or something.
+ *   + Trusting mobile GPU vendors to implement that convoluted mess correctly
+ *      is certainly a test of faith... Not one I'd take.
  * + Specifying integer vertex/TCs is more trouble than it is worth.
  *   There may be merit to specifying colours as RGBA bytes, but it would make
  *    some pretty useful stuff have to go onto a slowpath if actually used.
+ * + The projection matrix was removed because the driver simply does the work
+ *    on-CPU these days anyway. It doesn't even bother to ask if the work really
+ *    has to be done on that HW, it's all done in the state tracker. \
+ *   The modelview matrix was chosen as the surviving one, as it's a natural
+ *    extension of the vertices, and the clip plane would act weird otherwise.
+ * + Flat-shading makes no sense without lighting.
+ * + The `MULTISAMPLE` and `POINT_SPRITE_OES` enables are a mess.
+ * + Logic ops aren't in ES2.
+ * + Dithering is left at whatever state the GL leaves it in, which should be
+ *    enabled according to specification. There's no reason anyone would ever
+ *    want to disable it, especially given hardware and driver variance exists.
  */
 BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPU_SESSIONFLAGS,
@@ -1132,18 +1172,19 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
-    const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
+    const BADGPUMatrix * mvMatrix,
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    const float * clipPlane, BADGPUCompare atFunc, float atRef,
     // Stencil Test
     BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
     // Depth Test / DepthRange / PolygonOffset
     BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
     // Blending
-    int32_t blendProgram
+    uint32_t blendProgram
 );
 
 /*
@@ -1184,13 +1225,14 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
-    const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
+    const BADGPUMatrix * mvMatrix,
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    const float * clipPlane, BADGPUCompare atFunc, float atRef,
     // Blending
-    int32_t blendProgram
+    uint32_t blendProgram
 );
 
 #undef BADGPU_SESSIONFLAGS

@@ -67,7 +67,6 @@ public class BadGPUEnum {
         public static final int CullFace = 2;
         public static final int CullFaceFront = 4;
         public static final int StencilTest = 8;
-        public static final int DepthTest = 16;
         public static final int Blend = 32;
         public static final int FreezeColor = 128;
         public static final int FreezeColour = 128;

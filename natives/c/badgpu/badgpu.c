@@ -578,18 +578,19 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
-    const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
+    const BADGPUMatrix * mvMatrix,
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    const float * clipPlane, BADGPUCompare atFunc, float atRef,
     // Stencil Test
     BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
     BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
     // Depth Test / DepthRange / PolygonOffset
     BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
     // Blending
-    int32_t blendProgram
+    uint32_t blendProgram
 ) {
     BADGPUInstancePriv * bi;
     if (!drawingCmdSetup(BADGPU_SESSIONFLAGS_PASSTHROUGH, &bi))
@@ -608,10 +609,8 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         return badgpuErr(bi, "badgpuDrawGeom: vTCD out of range");
 
     // Vertex Shader
-    bi->gl.MatrixMode(GL_PROJECTION);
-    if (!matrixA) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixA);
     bi->gl.MatrixMode(GL_MODELVIEW);
-    if (!matrixB) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixB);
+    if (!mvMatrix) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) mvMatrix);
 
     // DepthRange/Viewport
     bi->gl.Viewport(vX, vY, vW, vH);
@@ -637,6 +636,28 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         bi->gl.Disable(GL_TEXTURE_2D);
     }
 
+    if (clipPlane) {
+        bi->gl.Enable(GL_CLIP_PLANE0);
+        if (bi->gl.ClipPlanef) {
+            bi->gl.ClipPlanef(GL_CLIP_PLANE0, clipPlane);
+        } else {
+            double tmp[4];
+            tmp[0] = clipPlane[0]; tmp[1] = clipPlane[1]; tmp[2] = clipPlane[2]; tmp[3] = clipPlane[3];
+            bi->gl.ClipPlane(GL_CLIP_PLANE0, tmp);
+        }
+    } else {
+        bi->gl.Disable(GL_CLIP_PLANE0);
+    }
+
+    // Alpha Test
+    if (atFunc != BADGPUCompare_Always) {
+        bi->gl.Enable(GL_ALPHA_TEST);
+        // no conversion as values deliberately match
+        bi->gl.AlphaFunc(atFunc, atRef);
+    } else {
+        bi->gl.Disable(GL_ALPHA_TEST);
+    }
+
     // OPT: Depth and stencil test are force-disabled by GL if we have no d/s.
     // (ES1.1 4.1.5 Stencil Test, 4.1.6 Depth Buffer Test, last paragraph of
     //  both)
@@ -659,7 +680,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
         }
 
         // Depth Test
-        if (flags & BADGPUDrawFlags_DepthTest) {
+        if (dtFunc != BADGPUCompare_Always) {
             bi->gl.Enable(GL_DEPTH_TEST);
             // no conversion as values deliberately match
             bi->gl.DepthFunc(dtFunc);
@@ -754,13 +775,14 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     BADGPUPrimitiveType pType, float plSize,
     uint32_t iStart, uint32_t iCount, const uint16_t * indices,
     // Vertex Shader
-    const BADGPUMatrix * matrixA, const BADGPUMatrix * matrixB,
+    const BADGPUMatrix * mvMatrix,
     // Viewport
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     // Fragment Shader
     BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    const float * clipPlane, BADGPUCompare atFunc, float atRef,
     // Blending
-    int32_t blendProgram
+    uint32_t blendProgram
 ) {
     return badgpuDrawGeom(
     sTexture, NULL,
@@ -770,9 +792,10 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
     vPosD, vPos, vCol, vTCD, vTC,
     pType, plSize,
     iStart, iCount, indices,
-    matrixA, matrixB,
+    mvMatrix,
     vX, vY, vW, vH,
     texture, matrixT,
+    clipPlane, atFunc, atRef,
     BADGPUCompare_Always, 0, 0,
     BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Keep,
     BADGPUCompare_Always, 0, 0, 0, 0,
@@ -801,6 +824,9 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
 
     bi->gl.Disable(GL_TEXTURE_2D);
     bi->gl.BindTexture(GL_TEXTURE_2D, 0);
+
+    bi->gl.Disable(GL_CLIP_PLANE0);
+    bi->gl.Disable(GL_ALPHA_TEST);
 
     bi->gl.DepthRangef(0, 1);
 

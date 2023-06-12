@@ -52,9 +52,10 @@ public class StateSpriteMarkBigBatch extends StateSpriteMarkBase {
                 4, vtxBuf, 0, null, 0, 4, tcBuf, 0,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, vtxPtr / 4, null, 0,
-                null, 0, null, 0,
+                null, 0,
                 0, 0, w, h,
                 cached, null, 0,
+                null, 0, BadGPU.Compare.Always, 0,
                 0);
     }
 

@@ -266,7 +266,7 @@ public abstract class BadGPU extends BadGPUEnum {
     }
     private static void checkVL(int flags, int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
             int iStart, int iCount, short[] indices, int indicesOfs,
-            float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs, float[] matrixT, int matrixTOfs) {
+            float[] matrixA, int matrixAOfs, float[] clipPlane, int clipPlaneOfs, float[] matrixT, int matrixTOfs) {
         if (vPosD < 2 || vPosD > 4)
             throw new IllegalArgumentException("vPosD out of range");
         if (vTCD < 2 || vTCD > 4)
@@ -293,9 +293,9 @@ public abstract class BadGPU extends BadGPUEnum {
         if (matrixA != null)
             if (matrixAOfs < 0 || (matrixAOfs + 16) > matrixA.length)
                 throw new IllegalArgumentException("matrixA out of bounds");
-        if (matrixB != null)
-            if (matrixBOfs < 0 || (matrixBOfs + 16) > matrixB.length)
-                throw new IllegalArgumentException("matrixB out of bounds");
+        if (clipPlane != null)
+            if (clipPlaneOfs < 0 || (clipPlaneOfs + 4) > clipPlane.length)
+                throw new IllegalArgumentException("clipPlane out of bounds");
         if (matrixT != null)
             if (matrixTOfs < 0 || (matrixTOfs + 16) > matrixT.length)
                 throw new IllegalArgumentException("matrixT out of bounds");
@@ -306,9 +306,10 @@ public abstract class BadGPU extends BadGPUEnum {
         int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         PrimitiveType pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
+        float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
         @Nullable Texture texture, float[] matrixT, int matrixTOfs,
+        float[] clipPlane, int clipPlaneOfs, Compare atFunc, float atRef,
         Compare stFunc, int stRef, int stMask,
         StencilOp stSF, StencilOp stDF, StencilOp stDP,
         Compare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
@@ -324,7 +325,7 @@ public abstract class BadGPU extends BadGPUEnum {
         // actual parameter checking
         checkVL(flags, vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 iStart, iCount, indices, indicesOfs,
-                matrixA, matrixAOfs, matrixB, matrixBOfs, matrixT, matrixTOfs);
+                matrixA, matrixAOfs, clipPlane, clipPlaneOfs, matrixT, matrixTOfs);
         // continue
         syncObj.assertBound();
         if (sTexture != null && !sTexture.valid)
@@ -339,9 +340,10 @@ public abstract class BadGPU extends BadGPUEnum {
                 vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 pType.value, plSize,
                 iStart, iCount, indices, indicesOfs,
-                matrixA, matrixAOfs, matrixB, matrixBOfs,
+                matrixA, matrixAOfs,
                 vX, vY, vW, vH,
                 texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
+                clipPlane, clipPlaneOfs, atFunc.value, atRef,
                 stFunc.value, stRef, stMask,
                 stSF.value, stDF.value, stDP.value,
                 dtFunc.value, depthN, depthF, poFactor, poUnits,
@@ -353,9 +355,10 @@ public abstract class BadGPU extends BadGPUEnum {
         int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         PrimitiveType pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
+        float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
         @Nullable Texture texture, float[] matrixT, int matrixTOfs,
+        float[] clipPlane, int clipPlaneOfs, Compare atFunc, float atRef,
         int blendProgram
     ) {
         if (sTexture == null)
@@ -365,7 +368,7 @@ public abstract class BadGPU extends BadGPUEnum {
         // actual parameter checking
         checkVL(flags, vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 iStart, iCount, indices, indicesOfs,
-                matrixA, matrixAOfs, matrixB, matrixBOfs, matrixT, matrixTOfs);
+                matrixA, matrixAOfs, clipPlane, clipPlaneOfs, matrixT, matrixTOfs);
         // continue
         sTexture.syncObject.assertBound();
         if (!sTexture.valid)
@@ -378,9 +381,10 @@ public abstract class BadGPU extends BadGPUEnum {
                 vPosD, vPos, vPosOfs, vCol, vColOfs, vTCD, vTC, vTCOfs,
                 pType.value, plSize,
                 iStart, iCount, indices, indicesOfs,
-                matrixA, matrixAOfs, matrixB, matrixBOfs,
+                matrixA, matrixAOfs,
                 vX, vY, vW, vH,
                 texture != null ? texture.pointer : 0, matrixT, matrixTOfs,
+                clipPlane, clipPlaneOfs, atFunc.value, atRef,
                 blendProgram);
     }
 }

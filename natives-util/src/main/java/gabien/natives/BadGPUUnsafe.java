@@ -65,9 +65,10 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
         int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         int pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
+        float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
         long texture, float[] matrixT, int matrixTOfs,
+        float[] clipPlane, int clipPlaneOfs, int atFunc, float atRef,
         int stFunc, int stRef, int stMask,
         int stSF, int stDF, int stDP,
         int dtFunc, float depthN, float depthF, float poFactor, float poUnits,
@@ -79,9 +80,10 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
         int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
         int pType, float plSize,
         int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs, float[] matrixB, int matrixBOfs,
+        float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
         long texture, float[] matrixT, int matrixTOfs,
+        float[] clipPlane, int clipPlaneOfs, int atFunc, float atRef,
         int blendProgram
     );
 

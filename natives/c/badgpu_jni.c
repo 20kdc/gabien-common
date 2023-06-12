@@ -148,9 +148,10 @@ unsigned char J_BADGPU(drawGeom)(void * env, void * self,
     int32_t vPosD, JNIBA_ARG(vPos), JNIBA_ARG(vCol), int32_t vTCD, JNIBA_ARG(vTC),
     int32_t pType, float plSize,
     int32_t iStart, int32_t iCount, JNIBA_ARG(indices),
-    JNIBA_ARG(matrixA), JNIBA_ARG(matrixB),
+    JNIBA_ARG(mvMatrix),
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     int64_t texture, JNIBA_ARG(matrixT),
+    JNIBA_ARG(clipPlane), int32_t atFunc, float atRef,
     int32_t stFunc, int32_t stRef, int32_t stMask,
     int32_t stSF, int32_t stDF, int32_t stDP,
     int32_t dtFunc, float depthN, float depthF, float poFactor, float poUnits,
@@ -160,26 +161,27 @@ unsigned char J_BADGPU(drawGeom)(void * env, void * self,
     JNIFA_L(vCol);
     JNIFA_L(vTC);
     JNISA_L(indices);
-    JNIFA_L(matrixA);
-    JNIFA_L(matrixB);
+    JNIFA_L(mvMatrix);
     JNIFA_L(matrixT);
+    JNIFA_L(clipPlane);
     BADGPUBool res = badgpuDrawGeom(
         JSESS_CALL,
         flags,
         vPosD, (void *) vPos, (void *) vCol, vTCD, (void *) vTC,
         pType, plSize,
         iStart, iCount, (void *) indices,
-        (void *) matrixA, (void *) matrixB,
+        (void *) mvMatrix,
         vX, vY, vW, vH,
         C_PTR(texture), (void *) matrixT,
+        clipPlane, atFunc, atRef,
         stFunc, stRef, stMask,
         stSF, stDF, stDP,
         dtFunc, depthN, depthF, poFactor, poUnits,
         blendProgram
     );
+    JNIFA_R(clipPlane, JNI_ABORT);
     JNIFA_R(matrixT, JNI_ABORT);
-    JNIFA_R(matrixB, JNI_ABORT);
-    JNIFA_R(matrixA, JNI_ABORT);
+    JNIFA_R(mvMatrix, JNI_ABORT);
     JNISA_R(indices, JNI_ABORT);
     JNIFA_R(vTC, JNI_ABORT);
     JNIFA_R(vCol, JNI_ABORT);
@@ -193,32 +195,34 @@ unsigned char J_BADGPU(drawGeomNoDS)(void * env, void * self,
     int32_t vPosD, JNIBA_ARG(vPos), JNIBA_ARG(vCol), int32_t vTCD, JNIBA_ARG(vTC),
     int32_t pType, float plSize,
     int32_t iStart, int32_t iCount, JNIBA_ARG(indices),
-    JNIBA_ARG(matrixA), JNIBA_ARG(matrixB),
+    JNIBA_ARG(mvMatrix),
     int32_t vX, int32_t vY, int32_t vW, int32_t vH,
     int64_t texture, JNIBA_ARG(matrixT),
+    JNIBA_ARG(clipPlane), int32_t atFunc, float atRef,
     int32_t blendProgram
 ) {
     JNIFA_L(vPos);
     JNIFA_L(vCol);
     JNIFA_L(vTC);
     JNISA_L(indices);
-    JNIFA_L(matrixA);
-    JNIFA_L(matrixB);
+    JNIFA_L(mvMatrix);
     JNIFA_L(matrixT);
+    JNIFA_L(clipPlane);
     BADGPUBool res = badgpuDrawGeomNoDS(
         C_PTR(sTexture), sFlags, sScX, sScY, sScWidth, sScHeight,
         flags,
         vPosD, (void *) vPos, (void *) vCol, vTCD, (void *) vTC,
         pType, plSize,
         iStart, iCount, (void *) indices,
-        (void *) matrixA, (void *) matrixB,
+        (void *) mvMatrix,
         vX, vY, vW, vH,
         C_PTR(texture), (void *) matrixT,
+        clipPlane, atFunc, atRef,
         blendProgram
     );
+    JNIFA_R(clipPlane, JNI_ABORT);
     JNIFA_R(matrixT, JNI_ABORT);
-    JNIFA_R(matrixB, JNI_ABORT);
-    JNIFA_R(matrixA, JNI_ABORT);
+    JNIFA_R(mvMatrix, JNI_ABORT);
     JNISA_R(indices, JNI_ABORT);
     JNIFA_R(vTC, JNI_ABORT);
     JNIFA_R(vCol, JNI_ABORT);

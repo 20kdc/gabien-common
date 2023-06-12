@@ -90,9 +90,10 @@ public class U {
                 4, data, 0, data, 12, 4, null, 0,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, 3, null, 0,
-                null, 0, null, 0,
+                null, 0,
                 0, 0, w, h,
                 null, null, 0,
+                null, 0, BadGPU.Compare.Always, 0,
                 0);
     }
     public static void texRctImm(Texture screen, int i, int j, int w, int h, Texture cached) {
@@ -102,9 +103,10 @@ public class U {
                 2, rectV, 0, null, 0, 2, rectTC, 0,
                 BadGPU.PrimitiveType.Triangles, 0,
                 0, 6, rectIndices, 0,
-                null, 0, null, 0,
+                null, 0,
                 i, j, w, h,
                 cached, null, 0,
+                null, 0, BadGPU.Compare.Always, 0,
                 BLEND_STANDARD);
     }
 }

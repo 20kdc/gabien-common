@@ -79,6 +79,8 @@
 #define GL_DEBUG_SEVERITY_NOTIFICATION 0x826B
 #define GL_DEBUG_OUTPUT 0x92E0
 
+#define GL_CLIP_PLANE0 0x3000
+
 typedef struct BADGPUGLBind {
     int32_t (KHRABI *GetError)();
     void (KHRABI *Enable)(int32_t);
@@ -136,6 +138,9 @@ typedef struct BADGPUGLBind {
     void (KHRABI *FramebufferTexture2D)(int32_t, int32_t, int32_t, uint32_t, int32_t);
     void (KHRABI *GenerateMipmap)(int32_t);
     void (KHRABI *BindRenderbuffer)(int32_t, uint32_t);
+    // Variant-dependent
+    void (KHRABI *ClipPlane)(int32_t, const double *);
+    void (KHRABI *ClipPlanef)(int32_t, const float *);
 } BADGPUGLBind;
 
 // returns failed function name, if any

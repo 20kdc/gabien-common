@@ -133,11 +133,12 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
         BADGPUPrimitiveType_Triangles, 1,
         0, 18, indices,
         // Vertex Shader
-        &matrix, NULL,
+        &matrix,
         // Viewport
         0, 0, w, h,
         // Fragment Shader
         NULL, NULL,
+        NULL, BADGPUCompare_Always, 0,
         // Blending
         0
     );
@@ -186,11 +187,12 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
         BADGPUPrimitiveType_Triangles, 1,
         0, 6, NULL,
         // Vertex Shader
-        NULL, NULL,
+        NULL,
         // Viewport
         0, 0, w, h,
         // Fragment Shader
         texSrc, &matrix,
+        NULL, BADGPUCompare_Always, 0,
         // Blending
         0
     );

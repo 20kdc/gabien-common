@@ -49,9 +49,10 @@ public class StateSpriteMarkVeryBad extends StateSpriteMarkBase {
                     4, spriteVertexData, 0, null, 0, 4, spriteTCData, 0,
                     BadGPU.PrimitiveType.Triangles, 0,
                     0, 6, spriteIndices, 0,
-                    tmpMatrix, 0, null, 0,
+                    tmpMatrix, 0,
                     0, 0, w, h,
                     cached, null, 0,
+                    null, 0, BadGPU.Compare.Always, 0,
                     0);
         }
     }

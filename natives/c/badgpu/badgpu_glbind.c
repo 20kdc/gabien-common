@@ -76,6 +76,8 @@ CHKGLFN(fn)
         BINDGLFN2(FramebufferTexture2D, EXT);
         BINDGLFN2(GenerateMipmap, EXT);
         BINDGLFN2(BindRenderbuffer, EXT);
+        // Variant-dependent
+        BINDGLFN(ClipPlane);
     } else {
         BINDGLFN2(BlendFuncSeparate, OES);
         BINDGLFN2(BlendEquationSeparate, OES);
@@ -89,6 +91,8 @@ CHKGLFN(fn)
         BINDGLFN2(FramebufferTexture2D, OES);
         BINDGLFN2(GenerateMipmap, OES);
         BINDGLFN2(BindRenderbuffer, OES);
+        // Variant-dependent
+        BINDGLFN(ClipPlanef);
     }
     return NULL;
 }
