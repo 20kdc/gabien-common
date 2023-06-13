@@ -12,6 +12,7 @@ struct BADGPUWSICtx {
     void * eglLibrary;
     void * dsp;
     void * ctx;
+    void * srf;
     void * (KHRABI *eglGetDisplay)(void *);
     unsigned int (KHRABI *eglInitialize)(void *, int32_t *, int32_t *);
     unsigned int (KHRABI *eglChooseConfig)(void *, int32_t *, void *, int32_t, int32_t *);
@@ -20,6 +21,8 @@ struct BADGPUWSICtx {
     unsigned int (KHRABI *eglMakeCurrent)(void *, void *, void *, void *);
     unsigned int (KHRABI *eglDestroyContext)(void *, void *);
     unsigned int (KHRABI *eglTerminate)(void *);
+    void * (KHRABI *eglCreatePbufferSurface)(void *, void *, int32_t *);
+    unsigned int (KHRABI *eglDestroySurface)(void *, void *);
 };
 
 static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err) {
@@ -33,6 +36,14 @@ static const char * locations[] = {
     "libEGL.so", // Android needs this
     NULL
 };
+
+// Yes, it's backwards.
+#define EGL_HEIGHT 0x3056
+#define EGL_WIDTH 0x3057
+
+#define EGL_RENDERABLE_TYPE 0x3040
+#define EGL_OPENGL_ES_BIT 0x0001
+#define EGL_NONE 0x3038
 
 BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
     *expectDesktopExtensions = 0;
@@ -54,6 +65,8 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     ctx->eglMakeCurrent = badgpu_dlSym2(ctx->eglLibrary, "eglMakeCurrent", "EGL_MakeCurrent");
     ctx->eglDestroyContext = badgpu_dlSym2(ctx->eglLibrary, "eglDestroyContext", "EGL_DestroyContext");
     ctx->eglTerminate = badgpu_dlSym2(ctx->eglLibrary, "eglTerminate", "EGL_Terminate");
+    ctx->eglCreatePbufferSurface = badgpu_dlSym2(ctx->eglLibrary, "eglCreatePbufferSurface", "EGL_CreatePbufferSurface");
+    ctx->eglDestroySurface = badgpu_dlSym2(ctx->eglLibrary, "eglDestroySurface", "EGL_DestroySurface");
     ctx->dsp = ctx->eglGetDisplay(NULL);
     if (!ctx->dsp)
         return badgpu_newWsiCtxError(error, "Could not create EGLDisplay");
@@ -62,17 +75,32 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         return badgpu_newWsiCtxError(error, "Could not initialize EGL");
     void * config;
     int32_t attribs[] = {
-        0x3038
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES_BIT,
+        EGL_NONE
     };
     int32_t configCount;
     if (!ctx->eglChooseConfig(ctx->dsp, attribs, &config, 1, &configCount))
         return badgpu_newWsiCtxError(error, "Failed to choose EGL config");
     if (!configCount)
         return badgpu_newWsiCtxError(error, "No EGL configs");
-    int32_t attribs2[] = {
-        0x3038
+    // Android 10 doesn't support surfaceless GLESv1 contexts.
+    // This codepath is optional, as it's a compatibility workaround anyway.
+    // We don't actually use this surface for anything except to keep Android happy.
+    if (ctx->eglCreatePbufferSurface) {
+        int32_t attribsS[] = {
+            EGL_WIDTH, 1,
+            EGL_HEIGHT, 1,
+            EGL_NONE
+        };
+        ctx->srf = ctx->eglCreatePbufferSurface(ctx->dsp, config, attribsS);
+    }
+    // If we don't manage to create the PBuffer, then march on regardless.
+    // The system may still support surfaceless contexts.
+    // Finally, make the context.
+    int32_t attribsCtx[] = {
+        EGL_NONE
     };
-    ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribs2);
+    ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribsCtx);
     *eglContext = ctx->ctx;
     *eglConfig = config;
     if (!ctx->ctx)
@@ -81,7 +109,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
 }
 
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
-    return ctx->eglMakeCurrent(ctx->dsp, NULL, NULL, ctx->ctx) != 0;
+    return ctx->eglMakeCurrent(ctx->dsp, ctx->srf, ctx->srf, ctx->ctx) != 0;
 }
 
 void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
@@ -97,6 +125,8 @@ void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
         return;
     if (ctx->ctx)
         ctx->eglDestroyContext(ctx->dsp, ctx->ctx);
+    if (ctx->srf)
+        ctx->eglDestroySurface(ctx->dsp, ctx->srf);
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
     if (ctx->eglLibrary)

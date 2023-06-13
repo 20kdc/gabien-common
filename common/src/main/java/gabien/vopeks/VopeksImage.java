@@ -82,7 +82,7 @@ public class VopeksImage implements IImage {
     @Override
     public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
         vopeks.putTask((instance) -> {
-            try (TimeLogger.Source src = TimeLogger.optOpen(vopeks.timeLoggerReadPixelsTask)) {
+            try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
                 BadGPU.Texture texture = getTextureFromTask();
                 if (texture != null)
                     texture.readPixels(x, y, w, h, format, data, dataOfs);
@@ -94,7 +94,7 @@ public class VopeksImage implements IImage {
     @Override
     public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone) {
         vopeks.putTask((instance) -> {
-            try (TimeLogger.Source src = TimeLogger.optOpen(vopeks.timeLoggerReadPixelsTask)) {
+            try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
                 BadGPU.Texture texture = getTextureFromTask();
                 if (texture != null)
                     texture.readPixels(x, y, w, h, format, data, dataOfs);

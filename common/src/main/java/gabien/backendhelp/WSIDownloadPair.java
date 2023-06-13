@@ -65,11 +65,11 @@ public abstract class WSIDownloadPair<T> {
         try {
             T res;
             if (timeLoggerAcquire != null) {
-                try (TimeLogger.Source src = timeLoggerAcquire.open()) {
+                try (TimeLogger.Source src = TimeLogger.open(timeLoggerAcquire)) {
                     res = queue.take();
                 }
                 int foundIndex = indexOf(res);
-                timeLoggerHeld[foundIndex].open();
+                TimeLogger.open(timeLoggerHeld[foundIndex]);
                 // Replace the buffer if it doesn't match the width/height.
                 if (!bufferMatchesSize(res, width, height)) {
                     res = genBuffer(width, height);
@@ -91,7 +91,7 @@ public abstract class WSIDownloadPair<T> {
         try {
             if (timeLoggerHeld != null) {
                 int foundIndex = indexOf(buffer);
-                timeLoggerHeld[foundIndex].close();
+                TimeLogger.close(timeLoggerHeld[foundIndex]);
             }
             queue.put(buffer);
         } catch (InterruptedException ie) {

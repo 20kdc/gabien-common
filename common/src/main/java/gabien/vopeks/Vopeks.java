@@ -52,7 +52,7 @@ public final class Vopeks {
                             ITask task = taskQueue.take();
                             // intentionally limited to this path
                             tasksBetweenFlushes++;
-                            try (TimeLogger.Source vs2 = vs.open()) {
+                            try (TimeLogger.Source vs2 = TimeLogger.open(vs)) {
                                 task.run(instance);
                             }
                         } catch (Throwable t) {
@@ -101,7 +101,7 @@ public final class Vopeks {
     public void putFlushTask() {
         if (timeLoggerFlushTask != null) {
             putTask((instance) -> {
-                try (TimeLogger.Source src = timeLoggerFlushTask.open()) {
+                try (TimeLogger.Source src = TimeLogger.open(timeLoggerFlushTask)) {
                     if (tasksBetweenFlushes > 0) {
                         System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
                         tasksBetweenFlushes = 0;
@@ -119,7 +119,7 @@ public final class Vopeks {
     public void putFinishTask() {
         if (timeLoggerFinishTask != null) {
             putTask((instance) -> {
-                try (TimeLogger.Source src = timeLoggerFinishTask.open()) {
+                try (TimeLogger.Source src = TimeLogger.open(timeLoggerFinishTask)) {
                     instance.finish();
                 }
             });
@@ -164,7 +164,7 @@ public final class Vopeks {
                 while (!shutdown) {
                     try {
                         Runnable task = queue.take();
-                        try (TimeLogger.Source vs2 = vs.open()) {
+                        try (TimeLogger.Source vs2 = TimeLogger.open(vs)) {
                             task.run();
                         }
                     } catch (Throwable t) {

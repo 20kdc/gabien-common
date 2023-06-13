@@ -46,10 +46,22 @@ public final class TimeLogger implements AutoCloseable {
         return logger.newSource(name);
     }
 
-    public static @Nullable Source optOpen(@Nullable Source src) {
+    /**
+     * Opens a Source. Importantly, this returns null if the source is null.
+     */
+    public static @Nullable Source open(@Nullable Source src) {
         if (src == null)
             return null;
         return src.open();
+    }
+
+    /**
+     * Closes a Source. Importantly, this returns null if the source is null.
+     */
+    public static void close(@Nullable Source src) {
+        if (src == null)
+            return;
+        src.close();
     }
 
     private synchronized void event(int type, int sourceID, @Nullable String addendum, long now) {
@@ -93,7 +105,7 @@ public final class TimeLogger implements AutoCloseable {
             this.id = id;
         }
 
-        public Source open() {
+        private Source open() {
             try {
                 long now = System.nanoTime();
                 queue.put(() -> event(1, id, null, now));
@@ -103,6 +115,12 @@ public final class TimeLogger implements AutoCloseable {
             return this;
         }
 
+        /**
+         * This is marked as deprecated so that you never directly call it.
+         * Use TimeLogger.close instead as this will perform a null check.
+         * Alternatively, use via try-with-resources (which is why this method exists).
+         */
+        @Deprecated
         @Override
         public void close() {
             try {

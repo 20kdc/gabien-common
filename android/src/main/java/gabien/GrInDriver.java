@@ -9,6 +9,8 @@ package gabien;
 
 import java.util.concurrent.Semaphore;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import android.graphics.Rect;
 import android.view.Surface;
 import gabien.natives.BadGPU;
@@ -20,8 +22,8 @@ public class GrInDriver implements IGrInDriver {
     public boolean wantsShutdown = false;
     public Rect displayArea = new Rect(0, 0, 1, 1);
     public int wantedBackBufferW, wantedBackBufferH;
-    private final TimeLogger.Source timeLoggerGameThread = TimeLogger.optSource(GaBIEn.timeLogger, "GameThread");
-    private final TimeLogger.Source timeLoggerAndroidFlip = TimeLogger.optSource(GaBIEn.timeLogger, "AndroidFlip");
+    private final @Nullable TimeLogger.Source timeLoggerGameThread = TimeLogger.optSource(GaBIEn.timeLogger, "GameThread");
+    private final @Nullable TimeLogger.Source timeLoggerAndroidFlip = TimeLogger.optSource(GaBIEn.timeLogger, "AndroidFlip");
     public Semaphore waitingFrames = new Semaphore(1);
 
     // Accessed only from VOPEKS thread
@@ -31,7 +33,7 @@ public class GrInDriver implements IGrInDriver {
         wantedBackBufferW = w;
         wantedBackBufferH = h;
         peripherals = new Peripherals(this);
-        timeLoggerGameThread.open();
+        TimeLogger.open(timeLoggerGameThread);
     }
 
     @Override
@@ -52,15 +54,15 @@ public class GrInDriver implements IGrInDriver {
     @Override
     public void flush(IImage backBufferI) {
         backBufferI.batchFlush();
-        timeLoggerGameThread.close();
+        TimeLogger.close(timeLoggerGameThread);
 
         waitingFrames.acquireUninterruptibly();
         GaBIEn.vopeks.putTask((instance) -> {
-            timeLoggerAndroidFlip.open();
+            TimeLogger.open(timeLoggerAndroidFlip);
             try {
                 doFlushLoop(instance, backBufferI);
             } finally {
-                timeLoggerAndroidFlip.close();
+                TimeLogger.close(timeLoggerAndroidFlip);
                 waitingFrames.release();
             }
         });
@@ -80,7 +82,7 @@ public class GrInDriver implements IGrInDriver {
         } finally {
             AndroidPortGlobals.mainActivityLock.unlock();
         }
-        timeLoggerGameThread.open();
+        TimeLogger.open(timeLoggerGameThread);
     }
     private void doFlushLoop(BadGPU.Instance instance, IImage backBufferI) {
         while (true) {
@@ -107,7 +109,8 @@ public class GrInDriver implements IGrInDriver {
                             System.out.println("Created surface: " + currentEGLSurface);
                     }
                     if (currentEGLSurface != 0) {
-                        System.out.println("Blitting to surface...");
+                        if (AndroidPortGlobals.debugFlag)
+                            System.out.println("Blitting to surface...");
                         BadGPUUnsafe.ANDblitToSurface(instance.pointer, tex.pointer, currentEGLSurface, AndroidPortGlobals.surfaceWidth, AndroidPortGlobals.surfaceHeight, 0, 1, 1, 0);
                         if (AndroidPortGlobals.debugFlag)
                             System.out.println("...done!");
