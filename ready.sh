@@ -6,7 +6,7 @@
 
 # Ensures gabien-common is ready for use in a release.
 
-mvn clean &&
-mvn package -DskipTests &&
-mvn install
+mvn clean -q &&
+mvn package -q -DskipTests &&
+mvn install -q
 

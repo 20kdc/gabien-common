@@ -25,7 +25,7 @@ mkdir -p staging staging2 &&
 
 # Extract JAR contents to staging directory
 cd staging &&
-unzip -o ../target/gabien-android-0.666-SNAPSHOT.jar &&
+unzip -q -o ../target/gabien-android-0.666-SNAPSHOT.jar &&
 cd .. &&
 # Merge in everything, run d8
 cp -r "${5:-/dev/null}"/* staging/ &&
@@ -38,5 +38,6 @@ $ANDROID_BT/aapt a ../result.apk classes.dex &&
 # keytool -genkeypair -keyalg RSA -validity 36500
 # Need to override jarsigner breaking things for no reason
 export JAVA_TOOL_OPTIONS="-Djava.security.properties=../java.security"
+stripzip ../result.apk 1> /dev/null 2> /dev/null
 jarsigner -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey &&
 echo "Okay"
