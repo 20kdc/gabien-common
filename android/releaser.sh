@@ -5,7 +5,7 @@
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
 # Just a boring releaser helper script.
-# name, package, version-name, version-code, app-staging, icon, permissions
+# name, package, version-name, version-code, app-jar, icon, permissions
 
 # Expects ANDROID_JAR_D8, ANDROID_JAR_AAPT and ANDROID_BT as environment variables
 # Values should be something like:
@@ -17,27 +17,24 @@
 
 cp "$6" res/drawable/icon.png
 lua compile-manifest.lua "$2" "$3" "$4" "$7" > AndroidManifest.xml
-echo "<resources><string name=\"app_name\">$1</string></resources>" > res/values/strings.xml &&
+echo "<resources><string name=\"app_name\">$1</string></resources>" > res/values/strings.xml || exit
 
-mkdir -p staging staging2 &&
-rm -rf staging staging2 &&
-mkdir -p staging staging2 &&
+mkdir -p staging staging2 || exit
+rm -rf staging staging2 || exit
+mkdir -p staging staging2 || exit
 
 # Extract JAR contents to staging directory
-cd staging &&
-unzip -q -o ../target/gabien-android-0.666-SNAPSHOT.jar &&
-cd .. &&
+unzip -q -o $5 -d staging || exit
 # Merge in everything, run d8
-cp -r "${5:-/dev/null}"/* staging/ &&
-$ANDROID_BT/d8 --release --lib $ANDROID_JAR_D8 --output staging2 `find staging | grep '\.class$'` &&
-$ANDROID_BT/aapt p -f -I $ANDROID_JAR_AAPT -M AndroidManifest.xml -S res -A staging/assets -F result.apk &&
-cd staging2 &&
-$ANDROID_BT/aapt a ../result.apk classes.dex &&
+$ANDROID_BT/d8 --release --lib $ANDROID_JAR_D8 --output staging2 `find staging | grep '\.class$'` || exit
+$ANDROID_BT/aapt p -f -I $ANDROID_JAR_AAPT -M AndroidManifest.xml -S res -A staging/assets -F result.apk || exit
+cd staging2 || exit
+$ANDROID_BT/aapt a ../result.apk classes.dex || exit
 # Obviously, I'll move this stuff into a config file or something if I ever release to the real Play Store - and will change my keystore
 # For making debug keys that'll probably live longer than me:
 # keytool -genkeypair -keyalg RSA -validity 36500
 # Need to override jarsigner breaking things for no reason
 export JAVA_TOOL_OPTIONS="-Djava.security.properties=../java.security"
 stripzip ../result.apk 1> /dev/null 2> /dev/null
-jarsigner -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey &&
+jarsigner -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey || exit
 echo "Okay"
