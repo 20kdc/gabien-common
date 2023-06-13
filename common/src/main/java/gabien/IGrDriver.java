@@ -18,9 +18,9 @@ public interface IGrDriver extends IImage {
     int getHeight();
 
     // Basic blit operations.
-    void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i);
-    void blitTiledImage(int x, int y, int w, int h, IImage cachedTile);
-    void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i);
+    void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IImage i);
+    void blitTiledImage(float x, float y, float w, float h, IImage cachedTile);
+    void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IImage i);
 
     /**
      * These two operations can be considered the logical basis of all the blit-series operations in IGrDriver.
@@ -30,16 +30,16 @@ public interface IGrDriver extends IImage {
      * Firstly, the image is placed as if no rotation were involved.
      * Then the destination is rotated anticlockwise by angle degrees.
      */
-    void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i);
-    void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub);
+    void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i);
+    void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, boolean blendSub);
 
     void clearAll(int i, int i0, int i1);
 
-    default void clearRect(int r, int g, int b, int x, int y, int width, int height) {
+    default void clearRect(int r, int g, int b, float x, float y, float width, float height) {
         clearRectAlpha(r, g, b, 255, x, y, width, height);
     }
 
-    void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height);
+    void clearRectAlpha(int r, int g, int b, int a, float x, float y, float width, float height);
 
     /**
      * Stop all drawing operations. Makes an OsbDriver unusable.

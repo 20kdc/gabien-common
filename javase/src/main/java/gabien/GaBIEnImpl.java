@@ -120,9 +120,9 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public IWSIImage getImage(String a, boolean res) {
+    public @Nullable IWSIImage decodeWSIImage(@NonNull InputStream a) {
         try {
-            BufferedImage bi = ImageIO.read(res ? getResource(a) : GaBIEn.getInFile(a));
+            BufferedImage bi = ImageIO.read(a);
             if (bi.getType() == BufferedImage.TYPE_INT_ARGB)
                 return new AWTWSIImage(bi);
             int[] tmp = new int[bi.getWidth() * bi.getHeight()];

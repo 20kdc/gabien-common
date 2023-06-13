@@ -29,23 +29,23 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
+    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IImage i) {
         blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BlendMode.Normal);
     }
 
     @Override
-    public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
+    public void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
         blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BlendMode.Normal);
     }
 
-    public synchronized void blitImage(int srcx, int srcy, int w, int h, int x, int y, IImage i, TilingMode tiling, BlendMode blendSub) {
+    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IImage i, TilingMode tiling, BlendMode blendSub) {
         x += localST[0];
         y += localST[1];
         // CPU scissor
-        int cR = x + w;
-        int cD = y + h;
-        int srcR = srcx + w;
-        int srcD = srcy + h;
+        float cR = x + w;
+        float cD = y + h;
+        float srcR = srcx + w;
+        float srcD = srcy + h;
         int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
         if (x < scL) {
             srcx += scL - x;
@@ -82,11 +82,11 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
+    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IImage i) {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BlendMode.Normal);
     }
 
-    public synchronized void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int w, int h, IImage i, TilingMode tiling, BlendMode blendSub) {
+    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IImage i, TilingMode tiling, BlendMode blendSub) {
         if (srcw == w && srch == h) {
             blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
             return;
@@ -96,10 +96,10 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         // Do the CPU scissor dance, but only to work out if cropping is essential.
         // It usually isn't, and we save a ton of batches by making use of this.
         boolean isCropEssential = false;
-        int cR = x + w;
-        int cD = y + h;
-        int srcR = srcx + srcw;
-        int srcD = srcy + srch;
+        float cR = x + w;
+        float cD = y + h;
+        float srcR = srcx + srcw;
+        float srcD = srcy + srch;
         int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
         if (x < scL)
             isCropEssential = true;
@@ -126,16 +126,16 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i) {
+    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i) {
         blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BlendMode.Normal);
     }
 
     @Override
-    public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
+    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, boolean blendSub) {
         blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BlendMode.Subtractive : BlendMode.Additive);
     }
 
-    public synchronized void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, BlendMode blendSub) {
+    public synchronized void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, BlendMode blendSub) {
         if (angle == 0) {
             blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, blendSub);
             return;
@@ -202,12 +202,12 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public synchronized void clearRectAlpha(int r, int g, int b, int a, int x, int y, int w, int h) {
+    public synchronized void clearRectAlpha(int r, int g, int b, int a, float x, float y, float w, float h) {
         x += localST[0];
         y += localST[1];
         // CPU scissor
-        int cR = x + w;
-        int cD = y + h;
+        float cR = x + w;
+        float cD = y + h;
         int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
         if (x < scL)
             x = scL;

@@ -5,7 +5,6 @@
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
 # Just a boring releaser helper script.
-# name, package, version-name, version-code, app-jar, icon, permissions
 
 # Expects ANDROID_JAR_D8, ANDROID_JAR_AAPT and ANDROID_BT as environment variables
 # Values should be something like:
@@ -14,6 +13,32 @@
 # export ANDROID_JAR_AAPT=/home/20kdc/Android/Sdk/platforms/android-25/android.jar
 # In a perfect world, these would all be SDK-relative paths.
 # But Android keeps shuffling around stuff, so what works at one point may not work if, say, android-7/android.jar is dropped.
+
+if [ "$#" -ne 7 ]; then
+ echo "releaser.sh NAME PACKAGE VERSION_NAME VERSION_CODE APP_JAR ICON PERMISSIONS"
+ exit 1
+fi
+
+if [ ! -e "$ANDROID_JAR_D8" ]; then
+ echo "ANDROID_JAR_D8 (android.jar file for D8) not set or doesn't exist."
+ echo "Value: $ANDROID_JAR_D8"
+ echo "Example: $HOME/Android/Sdk/platforms/android-7/android.jar"
+ exit 1
+fi
+
+if [ ! -e "$ANDROID_JAR_AAPT" ]; then
+ echo "ANDROID_JAR_AAPT (android.jar file for AAPT) not set or doesn't exist."
+ echo "Value: $ANDROID_JAR_AAPT"
+ echo "Example: $HOME/Android/Sdk/platforms/android-25/android.jar"
+ exit 1
+fi
+
+if [ ! -e "$ANDROID_BT" ]; then
+ echo "ANDROID_BT (Android SDK build-tools directory) not set or doesn't exist."
+ echo "Value: $ANDROID_BT"
+ echo "Example: $HOME/Android/Sdk/platforms/android-7/android.jar"
+ exit 1
+fi
 
 cp "$6" res/drawable/icon.png
 lua compile-manifest.lua "$2" "$3" "$4" "$7" > AndroidManifest.xml

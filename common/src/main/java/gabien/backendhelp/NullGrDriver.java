@@ -38,27 +38,27 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitImage(int srcx, int srcy, int srcw, int srch, int x, int y, IImage i) {
+    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IImage i) {
 
     }
 
     @Override
-    public void blitTiledImage(int x, int y, int w, int h, IImage cachedTile) {
+    public void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
 
     }
 
     @Override
-    public void blitScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, IImage i) {
+    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IImage i) {
 
     }
 
     @Override
-    public void blitRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i) {
+    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i) {
 
     }
 
     @Override
-    public void blendRotatedScaledImage(int srcx, int srcy, int srcw, int srch, int x, int y, int acw, int ach, int angle, IImage i, boolean blendSub) {
+    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, boolean blendSub) {
 
     }
 
@@ -68,7 +68,7 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void clearRectAlpha(int r, int g, int b, int a, int x, int y, int width, int height) {
+    public void clearRectAlpha(int r, int g, int b, int a, float x, float y, float width, float height) {
 
     }
 

@@ -19,7 +19,7 @@ final class ImageCache {
         String ki = a + "_N_N_N" + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IWSIImage img = GaBIEn.internal.getImage(a, res);
+        IWSIImage img = GaBIEn.internal.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
@@ -34,7 +34,7 @@ final class ImageCache {
         String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IWSIImage img = GaBIEn.internal.getImage(a, res);
+        IWSIImage img = GaBIEn.internal.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();

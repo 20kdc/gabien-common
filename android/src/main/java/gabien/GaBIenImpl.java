@@ -7,9 +7,12 @@
 
 package gabien;
 
+import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import gabien.backendhelp.EmulatedFileBrowser;
 import gabien.backendhelp.WindowMux;
 import gabien.text.IFixedSizeFont;
@@ -35,10 +38,7 @@ public final class GaBIenImpl implements IGaBIEn {
     	GaBIEn.mutableDataFS = new JavaIOFSBackend() {
     	    @Override
     	    public File asFile(String fileName) {
-    	        File f = new File(fileName);
-    	        if (f.isAbsolute())
-    	            return f;
-    	        return new File("/sdcard", fileName);
+    	        return mutablePathToFile(fileName);
     	    }
     	};
     	// Use these "key files" to control startup. Only their existence matters, contents don't.
@@ -47,6 +47,16 @@ public final class GaBIenImpl implements IGaBIEn {
     	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
     	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
+    }
+
+    /**
+     * This is the central controller of where the "current directory" is.
+     */
+    public static File mutablePathToFile(String fileName) {
+        File f = new File(fileName);
+        if (f.isAbsolute())
+            return f;
+        return new File("/sdcard", fileName);
     }
 
     @Override
@@ -75,7 +85,23 @@ public final class GaBIenImpl implements IGaBIEn {
 
     @Override
     public boolean tryStartTextEditor(String fpath) {
-        // Maybe autodetect OI Notepad for this.
+        final File target = mutablePathToFile(fpath);
+        AndroidPortGlobals.mainActivityLock.lock();
+        final Context appCtx = AndroidPortGlobals.applicationContext;
+        AndroidPortGlobals.mainActivity.runOnUiThread(() -> {
+            try {
+                Uri uri = Uri.fromFile(target);
+                Intent intent = new Intent(Intent.ACTION_EDIT);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.setDataAndType(uri, "text/plain");
+                appCtx.startActivity(intent);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        AndroidPortGlobals.mainActivityLock.unlock();
+        // this doesn't usually *really* work, because of "security" features
+        // there's no good workaround for this, only various levels of bad
         return false;
     }
 
@@ -90,19 +116,17 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public IWSIImage getImage(String a, boolean res) {
+    public IWSIImage decodeWSIImage(@NonNull InputStream a) {
         try {
-            Bitmap b = BitmapFactory.decodeStream(res ? getResource(a) : GaBIEn.getInFile(a));
+            Bitmap b = BitmapFactory.decodeStream(a);
             int w = b.getWidth();
             int h = b.getHeight();
             int[] data = new int[w * h];
             b.getPixels(data, 0, w, 0, 0, w, h);
             return new WSIImageDriver(data, w, h);
         } catch (Exception e) {
-            System.err.println("During getImage " + a + " (" + res + "):");
-            e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     public boolean singleWindowApp() {

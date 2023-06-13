@@ -317,6 +317,9 @@ public class GaBIEn {
         mutableDataFS.mkdirs(s);
     }
 
+    /**
+     * Attempts to start a text editor. Returns false on failure.
+     */
     public static boolean tryStartTextEditor(String fpath) {
         return internal.tryStartTextEditor(fpath);
     }

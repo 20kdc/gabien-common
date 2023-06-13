@@ -41,13 +41,10 @@ public interface IGaBIEn {
     void ensureQuit();
 
     /**
-     * Get an image. The GaBIEn version of this method is cached.
-     * Notably, the image format supports ARGB.
-     * The colour-keying is just because it's simpler to make assets that way.
-     * 'res' should use GaBIEnImpl.getResource, otherwise GaBIEnImpl.getFile
+     * Decodes an image from an InputStream.
      * On error, this version of the function should return null.
      */
-    IWSIImage getImage(String a, boolean res);
+    @Nullable IWSIImage decodeWSIImage(@NonNull InputStream a);
 
     // Make a WSI image from a buffer.
     // Note that the colours are 0xAARRGGBB.
