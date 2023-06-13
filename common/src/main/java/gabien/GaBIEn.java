@@ -121,12 +121,13 @@ public class GaBIEn {
 
     public static void ensureQuit() {
         try {
-            timeLogger.close();
+            vopeks.shutdown();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         try {
-            vopeks.shutdown();
+            if (timeLogger != null)
+                timeLogger.close();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
