@@ -54,6 +54,7 @@
 !android/src/**
 !android/*.lua
 !android/*.sh
+!android/java.security
 
 !natives
 !natives/

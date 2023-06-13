@@ -42,15 +42,23 @@ done
 # ANDROID IS REALLY REALLY WEIRD
 echo THE ANDROID BUILDS
 doAndroidBuild() {
-echo $1
-zig cc -target $1 -flto -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so $2/liblog.so $2/libEGL.so $2/libandroid.so $2/libGLESv1_CM.so -I $3
+echo $1 zig
+zig cc -target $1 -flto -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so $2/liblog.so $2/libandroid.so $2/libEGL.so $2/libGLESv1_CM.so -I $3
+}
+doAndroidBuildGCC() {
+echo $1 gcc
+$2 -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM -Wint-to-pointer-cast-off
 }
 # in theory, we shouldn't be using API level 9 libraries, but you need to use those to get access to ANativeWindow_fromSurface in the NDK.
 # assume it's a packaging error or something. if it isn't, then it isn't.
-doAndroidBuild arm-linux-android /media/modus/External2/android-ndk-r9d/platforms/android-9/arch-arm/usr/lib /media/modus/External2/android-ndk-r9d/platforms/android-9/arch-arm/usr/include
-doAndroidBuild aarch64-linux-android /media/modus/External2/android-ndk-r12b/platforms/android-21/arch-arm64/usr/lib /media/modus/External2/android-ndk-r9d/platforms/android-9/arch-arm/usr/include
-doAndroidBuild x86-linux-android /media/modus/External2/android-ndk-r9d/platforms/android-9/arch-x86/usr/lib /media/modus/External2/android-ndk-r9d/platforms/android-9/arch-arm/usr/include
-doAndroidBuild x86_64-linux-android /media/modus/External2/android-ndk-r12b/platforms/android-21/arch-x86_64/usr/lib64 /media/modus/External2/android-ndk-r9d/platforms/android-9/arch-arm/usr/include
+NDK_PLATFORM9=/media/modus/External2/android-ndk-r9d/platforms/android-9
+NDK_PLATFORM21=/media/modus/External2/android-ndk-r12b/platforms/android-21
+NDK_ARM_GCC=/media/modus/External2/android-ndk-r9d/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc
+# this PARTICULAR ONE crashes Zig's clang for some reason
+doAndroidBuildGCC arm-linux-android $NDK_ARM_GCC $NDK_PLATFORM9/arch-arm
+doAndroidBuild aarch64-linux-android $NDK_PLATFORM21/arch-arm64/usr/lib    $NDK_PLATFORM21/arch-arm64/usr/include
+doAndroidBuild x86-linux-android     $NDK_PLATFORM9/arch-x86/usr/lib       $NDK_PLATFORM9/arch-x86/usr/include
+doAndroidBuild x86_64-linux-android  $NDK_PLATFORM21/arch-x86_64/usr/lib64 $NDK_PLATFORM21/arch-x86_64/usr/include
 echo THE ANDROID BUILDS ARE OVER NOW
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
 # ideally, would do the BSDs, but no libc and can't override

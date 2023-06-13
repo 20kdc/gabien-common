@@ -10,6 +10,7 @@
 // WSICTX
 struct BADGPUWSICtx {
     void * eglLibrary;
+    void * glLibrary;
     void * dsp;
     void * ctx;
     void * srf;
@@ -31,9 +32,15 @@ static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err)
     return 0;
 }
 
-static const char * locations[] = {
+static const char * locationsEGL[] = {
     "libEGL.so.1",
     "libEGL.so", // Android needs this
+    NULL
+};
+
+static const char * locationsGLES1[] = {
+    "libGLESv1_CM.so.1",
+    "libGLESv1_CM.so",
     NULL
 };
 
@@ -52,9 +59,12 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
     // Can't guarantee a link to EGL, so we have to do it the *hard* way
-    ctx->eglLibrary = badgpu_dlOpen(locations, "BADGPU_EGL_LIBRARY");
+    ctx->eglLibrary = badgpu_dlOpen(locationsEGL, "BADGPU_EGL_LIBRARY");
     if (!ctx->eglLibrary)
         return badgpu_newWsiCtxError(error, "Could not open EGL");
+    // Try this. If it fails it fails; don't worry about it too much.
+    // Older Android versions require you do this to get core symbols.
+    ctx->glLibrary = badgpu_dlOpen(locationsGLES1, "BADGPU_GLES1_LIBRARY");
     // Under extreme circumstances, we need to be able to link to the ANGLE libGLES2 binary directly.
     // The symbol names are different but the ABI is completely identical.
     ctx->eglGetDisplay = badgpu_dlSym2(ctx->eglLibrary, "eglGetDisplay", "EGL_GetDisplay");
@@ -117,7 +127,10 @@ void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
 }
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
-    return ctx->eglGetProcAddress(proc);
+    void * main = ctx->eglGetProcAddress(proc);
+    if (ctx->glLibrary && !main)
+        return badgpu_dlSym(ctx->glLibrary, proc);
+    return main;
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
@@ -129,6 +142,8 @@ void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
         ctx->eglDestroySurface(ctx->dsp, ctx->srf);
     if (ctx->dsp)
         ctx->eglTerminate(ctx->dsp);
+    if (ctx->glLibrary)
+        badgpu_dlClose(ctx->glLibrary);
     if (ctx->eglLibrary)
         badgpu_dlClose(ctx->eglLibrary);
     free(ctx);

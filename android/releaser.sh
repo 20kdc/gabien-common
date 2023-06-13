@@ -7,7 +7,13 @@
 # Just a boring releaser helper script.
 # name, package, version-name, version-code, app-staging, icon, permissions
 
-# Expects ANDROID_JAR and ANDROID_BT as environment variables
+# Expects ANDROID_JAR_D8, ANDROID_JAR_AAPT and ANDROID_BT as environment variables
+# Values should be something like:
+# export ANDROID_BT=/home/20kdc/Android/Sdk/build-tools/30.0.3
+# export ANDROID_JAR_D8=/home/20kdc/Android/Sdk/platforms/android-7/android.jar
+# export ANDROID_JAR_AAPT=/home/20kdc/Android/Sdk/platforms/android-25/android.jar
+# In a perfect world, these would all be SDK-relative paths.
+# But Android keeps shuffling around stuff, so what works at one point may not work if, say, android-7/android.jar is dropped.
 
 cp "$6" res/drawable/icon.png
 lua compile-manifest.lua "$2" "$3" "$4" "$7" > AndroidManifest.xml
@@ -23,12 +29,14 @@ unzip -o ../target/gabien-android-0.666-SNAPSHOT.jar &&
 cd .. &&
 # Merge in everything, run d8
 cp -r "${5:-/dev/null}"/* staging/ &&
-$ANDROID_BT/d8 --release --lib $ANDROID_JAR --output staging2 `find staging | grep '\.class$'` &&
-$ANDROID_BT/aapt p -f -I $ANDROID_JAR -M AndroidManifest.xml -S res -A staging/assets -F result.apk &&
+$ANDROID_BT/d8 --release --lib $ANDROID_JAR_D8 --output staging2 `find staging | grep '\.class$'` &&
+$ANDROID_BT/aapt p -f -I $ANDROID_JAR_AAPT -M AndroidManifest.xml -S res -A staging/assets -F result.apk &&
 cd staging2 &&
 $ANDROID_BT/aapt a ../result.apk classes.dex &&
 # Obviously, I'll move this stuff into a config file or something if I ever release to the real Play Store - and will change my keystore
 # For making debug keys that'll probably live longer than me:
 # keytool -genkeypair -keyalg RSA -validity 36500
-jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey &&
+# Need to override jarsigner breaking things for no reason
+export JAVA_TOOL_OPTIONS="-Djava.security.properties=../java.security"
+jarsigner -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey &&
 echo "Okay"

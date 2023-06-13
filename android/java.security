@@ -1,0 +1,4 @@
+# override because old Android can't handle the new algorithms.
+# what idiot did this? if I'm specifying SHA1 then I EXPECT TO SIGN WITH SHA1.
+# R48 releases have probably been crippled for years because of this, bloody hell...
+jdk.jar.disabledAlgorithms=
