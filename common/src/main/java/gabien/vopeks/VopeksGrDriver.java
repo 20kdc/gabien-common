@@ -49,7 +49,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, ITexRegion i, TilingMode tiling, int blendSub) {
         if ((trs[2] != 1) || (trs[3] != 1)) {
             // scaling is in use, slowpath this
-            blitScaledImage(srcx, srcy, w, h, x, y, w, h, i);
+            blitScaledImageForced(srcx, srcy, w, h, x, y, w, h, i, tiling, blendSub);
             return;
         }
         // scaling not in use, so don't apply it
