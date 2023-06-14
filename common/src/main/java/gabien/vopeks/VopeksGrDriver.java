@@ -105,11 +105,11 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         blitScaledImageForced(srcx, srcy, srcw, srch, x, y, w, h, i, tiling, blendSub);
     }
 
-    private float trsX(float x) {
+    private final float trsX(float x) {
         return trs[0] + (x * trs[2]);
     }
 
-    private float trsY(float y) {
+    private final float trsY(float y) {
         return trs[1] + (y * trs[3]);
     }
 
