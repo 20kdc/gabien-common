@@ -6,6 +6,10 @@
  */
 package gabien.vopeks;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.GaBIEn;
 import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.natives.BadGPU;
@@ -23,23 +27,23 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksGrDriver(Vopeks vopeks, int w, int h, int[] init) {
-        super(vopeks, w, h, init);
+    public VopeksGrDriver(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
+        super(vopeks, id, w, h, init);
         localST[4] = width;
         localST[5] = height;
     }
 
     @Override
     public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i) {
-        blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BlendMode.Normal);
+        blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BLEND_NORMAL);
     }
 
     @Override
     public void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
-        blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BlendMode.Normal);
+        blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BLEND_NORMAL);
     }
 
-    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, ITexRegion i, TilingMode tiling, BlendMode blendSub) {
+    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, ITexRegion i, TilingMode tiling, int blendSub) {
         x += localST[0];
         y += localST[1];
         // CPU scissor
@@ -82,10 +86,10 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
 
     @Override
     public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i) {
-        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BlendMode.Normal);
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BLEND_NORMAL);
     }
 
-    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, ITexRegion i, TilingMode tiling, BlendMode blendSub) {
+    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, ITexRegion i, TilingMode tiling, int blendSub) {
         if (srcw == w && srch == h) {
             blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
             return;
@@ -123,16 +127,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i) {
-        blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BlendMode.Normal);
-    }
-
-    @Override
-    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, boolean blendSub) {
-        blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BlendMode.Subtractive : BlendMode.Additive);
-    }
-
-    public synchronized void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, BlendMode blendSub) {
+    public synchronized void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, int blendSub) {
         if (angle == 0) {
             blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, blendSub);
             return;
@@ -222,7 +217,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchStartGroupScA(true, false, 6, BlendMode.Normal, TilingMode.None, null);
+        batchStartGroupScA(true, false, 6, BLEND_NORMAL, TilingMode.None, null);
         batchWriteXYRGBA(x , y , rF, gF, bF, aF);
         batchWriteXYRGBA(cR, y , rF, gF, bF, aF);
         batchWriteXYRGBA(cR, cD, rF, gF, bF, aF);
@@ -234,7 +229,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     /**
      * batchStartGroup but aware of scissoring
      */
-    public void batchStartGroupScA(boolean hasColours, boolean cropEssential, int vertices, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+    public void batchStartGroupScA(boolean hasColours, boolean cropEssential, int vertices, int blendMode, TilingMode tilingMode, IImage tex) {
         int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
         batchStartGroup(vertices, hasColours, cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex);
     }
@@ -251,5 +246,26 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
 
     @Override
     public void updateST() {
+    }
+
+    @Override
+    @Nullable
+    public BadGPU.Texture releaseTextureCustodyFromTask() {
+        BadGPU.Texture tex = texture;
+        texture = null;
+        return tex;
+    }
+
+    @Override
+    @NonNull
+    public synchronized IImage convertToImmutable(@Nullable String debugId) {
+        batchFlush();
+        VopeksImage res = new VopeksImage(GaBIEn.vopeks, debugId, getWidth(), getHeight(), (consumer) -> {
+            GaBIEn.vopeks.putTask((instance) -> {
+                consumer.accept(releaseTextureCustodyFromTask());
+            });
+        });
+        shutdown();
+        return res;
     }
 }

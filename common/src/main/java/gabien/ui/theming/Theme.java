@@ -24,7 +24,7 @@ import gabien.ui.UIBorderedElement;
  */
 public class Theme {
     public int id = 0;
-    public final int[] borderFlags = new int[UIBorderedElement.BORDER_TYPES];
+    public final RegularBorder[] border = new RegularBorder[UIBorderedElement.BORDER_TYPES];
     public static final String[] borderTypeNames = new String[] {
         "btn",
         "btnP",
@@ -50,6 +50,11 @@ public class Theme {
         return new DatumKVDHVisitor<Theme, ThemingResCtx>(Theme.handlersThemeKV, theme, resCtx) {
             @Override
             public void visitEnd(DatumSrcLoc srcLoc) {
+                // finish off theme setup...
+                for (int i = 0; i < theme.border.length; i++)
+                    if (theme.border[i] == null)
+                        throw new RuntimeException("Border missing: " + borderTypeNames[i]);
+                // and return
                 parent.visitTree(theme, srcLoc);
             }
         };
@@ -81,7 +86,9 @@ public class Theme {
                                     throw new RuntimeException("Unrecognized flag " + flg);
                                 }
                             }
-                            theme.borderFlags[borderType] = res;
+                            RegularBorder rb = new RegularBorder();
+                            rb.flags = res;
+                            theme.border[borderType] = rb;
                         } else {
                             throw new RuntimeException("Unrecognized element in themes.scm: " + obj);
                         }

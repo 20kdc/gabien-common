@@ -7,6 +7,7 @@
 package gabien.backend;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.IGrDriver;
 import gabien.IImage;
@@ -54,13 +55,7 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i) {
-
-    }
-
-    @Override
-    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, boolean blendSub) {
-
+    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, int blendSub) {
     }
 
     @Override
@@ -102,6 +97,18 @@ public class NullGrDriver implements IGrDriver {
 
     @Override
     public Texture getTextureFromTask() {
+        return null;
+    }
+
+    @Override
+    @NonNull
+    public IImage convertToImmutable(@Nullable String debugId) {
+        return this;
+    }
+
+    @Override
+    @Nullable
+    public Texture releaseTextureCustodyFromTask() {
         return null;
     }
 }

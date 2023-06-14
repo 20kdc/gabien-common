@@ -9,13 +9,13 @@ package gabien.vopeks;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
-import gabien.natives.BadGPUEnum.BlendOp;
-import gabien.natives.BadGPUEnum.BlendWeight;
 import gabien.uslx.append.ObjectPool;
 import gabien.vopeks.Vopeks.ITask;
 
@@ -40,8 +40,8 @@ public class VopeksBatchingSurface extends VopeksImage {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksBatchingSurface(Vopeks vopeks, int w, int h, int[] init) {
-        super(vopeks, null, w, h, init);
+    public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
+        super(vopeks, id, w, h, init);
         halfWF = w / 2.0f;
         halfHF = h / 2.0f;
     }
@@ -51,7 +51,7 @@ public class VopeksBatchingSurface extends VopeksImage {
      * This will actually begin a new batch, so make sure you're sure!
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      */
-    public void batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+    public void batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, IImage tex) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -205,7 +205,7 @@ public class VopeksBatchingSurface extends VopeksImage {
             element.cropH = 0;
             element.cropEssential = false;
             element.vertexCount = 0;
-            element.blendMode = BlendMode.None;
+            element.blendMode = IGrDriver.BLEND_NONE;
             element.tilingMode = TilingMode.None;
             element.tex = null;
             element.megabuffer = null;
@@ -213,27 +213,6 @@ public class VopeksBatchingSurface extends VopeksImage {
             element.coloursOfs = 0;
             element.texCoordsOfs = 0;
             element.hasColours = false;
-        }
-    }
-
-    public enum BlendMode {
-        None(0),
-        Normal(BadGPU.blendProgram(
-            BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add,
-            BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add
-        )),
-        Additive(BadGPU.blendProgram(
-            BlendWeight.One, BlendWeight.One, BlendOp.Add,
-            BlendWeight.Zero, BlendWeight.One, BlendOp.Add
-        )),
-        Subtractive(BadGPU.blendProgram(
-            BlendWeight.One, BlendWeight.One, BlendOp.ReverseSub,
-            BlendWeight.Zero, BlendWeight.One, BlendOp.Add
-        ));
-        public final int blendProgram;
-
-        BlendMode(int bp) {
-            blendProgram = bp;
         }
     }
 
@@ -253,7 +232,7 @@ public class VopeksBatchingSurface extends VopeksImage {
     private class Batch implements ITask {
         int cropL, cropU, cropW, cropH;
         int vertexCount;
-        BlendMode blendMode = BlendMode.None;
+        int blendMode = IGrDriver.BLEND_NONE;
         TilingMode tilingMode = TilingMode.None;
         IImage tex;
         float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
@@ -262,14 +241,19 @@ public class VopeksBatchingSurface extends VopeksImage {
 
         @Override
         public void run(Instance instance) {
+            if (texture == null) {
+                System.err.println("VopeksBatchingSurface: Texture disappeared from " + VopeksBatchingSurface.this + ". Someone try something silly?");
+                return;
+            }
+
             BadGPU.Texture tx = tex != null ? tex.getTextureFromTask() : null;
             long tx2 = tx != null ? tx.pointer : 0;
             int alphaComp = BadGPU.Compare.Always.value;
             int drawFlags = 0;
-            if (blendMode != BlendMode.None)
+            if (blendMode != IGrDriver.BLEND_NONE)
                 drawFlags |= BadGPU.DrawFlags.Blend;
             // In the normal blend mode, an alpha of 0 leads to a NOP, so discard those pixels.
-            if (blendMode == BlendMode.Normal)
+            if (blendMode == IGrDriver.BLEND_NORMAL)
                 alphaComp = BadGPU.Compare.Greater.value;
 
             drawFlags |= tilingMode.value;
@@ -284,12 +268,12 @@ public class VopeksBatchingSurface extends VopeksImage {
                     0, 0, width, height,
                     tx2, null, 0,
                     null, 0, alphaComp, 0,
-                    blendMode.blendProgram);
+                    blendMode);
             vopeks.floatPool.finish(megabuffer);
             batchPool.finish(this);
         }
 
-        public boolean matchesState(boolean cropEssential, boolean hasColours, int cropL, int cropU, int cropW, int cropH, BlendMode blendMode, TilingMode tilingMode, IImage tex) {
+        public boolean matchesState(boolean cropEssential, boolean hasColours, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, IImage tex) {
             if (cropEssential) {
                 if (cropL != this.cropL || cropU != this.cropU || cropW != this.cropW || cropH != this.cropH) {
                     // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropW + "," + cropH + " -> " + this.cropL + "," + this.cropU + "," + this.cropW + "," + this.cropH);

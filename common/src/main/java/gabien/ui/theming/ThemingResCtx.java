@@ -8,6 +8,7 @@ package gabien.ui.theming;
 
 import java.util.HashMap;
 
+import gabien.IImage;
 import gabien.datum.DatumODec1Visitor;
 import gabien.datum.DatumODecVisitor;
 
@@ -17,10 +18,15 @@ import gabien.datum.DatumODecVisitor;
  */
 class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
     public final HashMap<String, Object> resources = new HashMap<>();
+    public final IImage image;
 
     static final HashMap<String, DatumODecVisitor.Handler<ThemingResCtx>> handlers = new HashMap<>();
     static {
         handlers.put("theme", Theme.handler);
+    }
+
+    public ThemingResCtx(IImage img) {
+        image = img;
     }
 
     @Override

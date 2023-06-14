@@ -42,12 +42,18 @@ public class TexRegion implements ITexRegion {
 
     @Override
     public float getT(float x, float y) {
-        return base.getS(this.x + x, this.y + y);
+        return base.getT(this.x + x, this.y + y);
     }
 
     @Override
     @NonNull
     public IImage getSurface() {
         return base.getSurface();
+    }
+
+    @Override
+    @NonNull
+    public TexRegion subRegion(float x, float y, float w, float h) {
+        return new TexRegion(base, this.x + x, this.y + y, w, h);
     }
 }

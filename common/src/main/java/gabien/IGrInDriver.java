@@ -168,6 +168,6 @@ public interface IGrInDriver {
                 return backBuffer;
             backBuffer.shutdown();
         }
-        return GaBIEn.makeOffscreenBuffer(w, h);
+        return GaBIEn.makeOffscreenBuffer(w, h, "BackBuffer:" + this);
     }
 }

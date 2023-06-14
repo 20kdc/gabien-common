@@ -9,7 +9,10 @@ package gabien.ui.theming;
 import java.io.InputStreamReader;
 
 import gabien.GaBIEn;
+import gabien.IImage;
 import gabien.datum.*;
+import gabien.ui.Rect;
+import gabien.ui.UIBorderedElement;
 
 /**
  * This is holding all the stuff that's being pulled out of UIBorderedElement.
@@ -26,10 +29,19 @@ public class ThemingCentral {
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
     public static final Theme[] themes = new Theme[4];
+    public static IImage themesImg;
+
+    /**
+     * It might be nice to do theme inheritance.
+     */
+    public static Theme getGlobalTheme() {
+        return themes[UIBorderedElement.borderTheme];
+    }
 
     public static void setupAssets() {
         try {
-            ThemingResCtx resCtx = new ThemingResCtx();
+            themesImg = GaBIEn.getImageEx("themes.png", false, true);
+            ThemingResCtx resCtx = new ThemingResCtx(themesImg);
 
             // Read in resources
             InputStreamReader themesISR = GaBIEn.getTextResource("themes.scm");
@@ -45,5 +57,37 @@ public class ThemingCentral {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        for (int borderTheme = 0; borderTheme < UIBorderedElement.BORDER_THEMES; borderTheme++) {
+            Theme theme = themes[borderTheme];
+            for (int borderType = 0; borderType < UIBorderedElement.BORDER_TYPES; borderType++) {
+                int baseX = borderType * 12;
+                int baseY = borderTheme * 18;
+                RegularBorder border = theme.border[borderType];
+                Rect outerRegion, innerRegion;
+
+                outerRegion = new Rect(baseX, baseY, 3, 3);
+                innerRegion = new Rect(1, 1, 1, 1);
+                border.w1 = new EightPatch(themesImg, outerRegion, innerRegion);
+
+                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
+                innerRegion = new Rect(2, 2, 2, 2);
+                border.w2 = new EightPatch(themesImg, outerRegion, innerRegion);
+
+                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
+                innerRegion = new Rect(3, 3, 0, 0);
+                border.w3 = new EightPatch(themesImg, outerRegion, innerRegion);
+
+                outerRegion = new Rect(baseX, baseY + 6, 12, 12);
+                innerRegion = new Rect(4, 4, 4, 4);
+                border.w4 = new EightPatch(themesImg, outerRegion, innerRegion);
+                // Extract tile
+                border.tile = themesImg.copy(borderType * 12, (borderTheme * 18) + 6, 12, 12);
+                // Setup stretch areas
+                border.stretchC1 = themesImg.subRegion(baseX + 1, baseY + 1, 1, 1);
+                border.stretchC2 = themesImg.subRegion(baseX + 8, baseY + 2, 2, 2);
+                border.stretchC4 = themesImg.subRegion(baseX + 4, baseY + 10, 4, 4);
+            }
+        }
+
     }
 }

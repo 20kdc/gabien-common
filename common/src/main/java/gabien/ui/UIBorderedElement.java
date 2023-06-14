@@ -8,7 +8,7 @@
 package gabien.ui;
 
 import gabien.*;
-import gabien.ui.theming.EightPatch;
+import gabien.ui.theming.IBorder;
 import gabien.ui.theming.ThemingCentral;
 
 /**
@@ -19,16 +19,6 @@ public abstract class UIBorderedElement extends UIElement {
     public static int borderTheme = 0;
     public static final int BORDER_THEMES = 4;
     public static final int BORDER_TYPES = 14;
-
-    private static IImage cachedTheme = null;
-
-    private static int lastCachedThemeTiles = -1;
-    private static IImage[] cachedThemeTiles;
-
-    private static EightPatch[] borderW1 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
-    private static EightPatch[] borderW2 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
-    private static EightPatch[] borderW3 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
-    private static EightPatch[] borderW4 = new EightPatch[BORDER_TYPES * BORDER_THEMES];
 
     public int borderType;
     private int borderWidth;
@@ -46,39 +36,6 @@ public abstract class UIBorderedElement extends UIElement {
         borderType = bt;
         borderWidth = bw;
         calcContentsRelativeInputBounds();
-    }
-
-    /**
-     * Internal use only please
-     */
-    public static void setupAssets() {
-        cachedTheme = GaBIEn.getImageEx("themes.png", false, true);
-        lastCachedThemeTiles = -1;
-        int index = 0;
-        for (int i = 0; i < BORDER_TYPES; i++) {
-            for (int j = 0; j < BORDER_THEMES; j++) {
-                int baseX = i * 12;
-                int baseY = j * 18;
-                Rect outerRegion, innerRegion;
-
-                outerRegion = new Rect(baseX, baseY, 3, 3);
-                innerRegion = new Rect(1, 1, 1, 1);
-                borderW1[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
-
-                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
-                innerRegion = new Rect(2, 2, 2, 2);
-                borderW2[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
-
-                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
-                innerRegion = new Rect(3, 3, 0, 0);
-                borderW3[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
-
-                outerRegion = new Rect(baseX, baseY + 6, 12, 12);
-                innerRegion = new Rect(4, 4, 4, 4);
-                borderW4[index] = new EightPatch(cachedTheme, outerRegion, innerRegion);
-                index++;
-            }
-        }
     }
 
     public static int getRecommendedBorderWidth(int textHeight) {
@@ -158,20 +115,12 @@ public abstract class UIBorderedElement extends UIElement {
     public abstract void renderContents(boolean drawBlack, IGrDriver igd);
     public abstract void updateContents(double deltaTime, boolean selected, IPeripherals peripherals);
 
+    public static boolean getBlackTextFlagWindowRoot() {
+        return getBlackTextFlag(5);
+    }
+
     public static boolean getMoveDownFlag(int base) {
         return getBorderFlag2(base, ThemingCentral.BF_MOVEDOWN);
-    }
-
-    public static boolean getClearFlag(int base) {
-        return getBorderFlag2(base, ThemingCentral.BF_CLEAR);
-    }
-
-    public static boolean getTiledFlag(int base) {
-        return getBorderFlag2(base, ThemingCentral.BF_TILED);
-    }
-
-    public static boolean getBlackTextFlagWindowRoot() {
-        return getBorderFlag2(5, ThemingCentral.BF_LIGHTBKG);
     }
 
     public static boolean getBlackTextFlag(int i) {
@@ -179,81 +128,13 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     private static boolean getBorderFlag2(int borderType, int flag) {
-        return (ThemingCentral.themes[borderTheme].borderFlags[borderType] & flag) != 0;
+        return ((IBorder) ThemingCentral.getGlobalTheme().border[borderType]).getFlag(flag);
     }
 
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, Rect where) {
         drawBorder(igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
     }
     public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
-        // This variable dates back to when this class did its own rendering.
-        // This has been preserved.
-        int chunkSize;
-        if (getTiledFlag(borderType)) {
-            // Bite the bullet - user *wants* tiling
-            if (lastCachedThemeTiles != borderTheme)
-                cachedThemeTiles = null;
-            if (cachedThemeTiles == null) {
-                cachedThemeTiles = new IImage[BORDER_TYPES];
-                lastCachedThemeTiles = borderTheme;
-            }
-            if (cachedThemeTiles[borderType] == null) {
-                // Extract tile
-                IGrDriver osb = GaBIEn.makeOffscreenBuffer(12, 12);
-                osb.blitImage(borderType * 12, (borderTheme * 18) + 6, 12, 12, 0, 0, cachedTheme);
-                cachedThemeTiles[borderType] = GaBIEn.createImage(osb.getPixels(), 12, 12);
-                osb.shutdown();
-            }
-            igd.blitTiledImage(x, y, w, h, cachedThemeTiles[borderType]);
-            // Entire highres border space is reserved for tiling pattern.
-            // Try to make the most of lowres? :(
-            chunkSize = 3;
-            if (borderWidth != 0)
-                borderWidth = ensureBWV(Math.max(borderWidth, 3), chunkSize);
-        } else {
-            int eBorderWidth = borderWidth;
-            if (borderWidth == 0)
-                eBorderWidth = Math.min(w, h);
-            int baseX = borderType * 12;
-            int baseY = borderTheme * 18;
-            chunkSize = 1;
-            if (eBorderWidth >= 2) {
-                baseX += 6;
-                chunkSize = 2;
-            }
-            if (eBorderWidth >= 4) {
-                baseX -= 6;
-                baseY += 6;
-                chunkSize = 4;
-            }
-
-            borderWidth = ensureBWV(borderWidth, chunkSize);
-
-            if (getClearFlag(borderType)) {
-                igd.clearRect(0, 0, 0, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2));
-            } else {
-                igd.blitScaledImage(baseX + chunkSize, baseY + chunkSize, chunkSize, chunkSize, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), cachedTheme);
-            }
-        }
-
-        if (borderWidth <= 0)
-            return;
-        EightPatch borderAsset;
-        if (chunkSize == 1) {
-            borderAsset = borderW1[(borderType * BORDER_THEMES) + borderTheme];
-        } else if (chunkSize == 2) {
-            borderAsset = borderW2[(borderType * BORDER_THEMES) + borderTheme];
-        } else if (chunkSize == 3) {
-            borderAsset = borderW3[(borderType * BORDER_THEMES) + borderTheme];
-        } else {
-            borderAsset = borderW4[(borderType * BORDER_THEMES) + borderTheme];
-        }
-        borderAsset.draw(igd, borderWidth, borderWidth, borderWidth, borderWidth, x, y, w, h);
-    }
-
-    private static int ensureBWV(int borderWidth, int chunk) {
-        if (borderWidth > chunk)
-            return ((borderWidth + 2) / chunk) * chunk;
-        return borderWidth;
+        ((IBorder) ThemingCentral.getGlobalTheme().border[borderType]).draw(igd, borderWidth, x, y, w, h);
     }
 }

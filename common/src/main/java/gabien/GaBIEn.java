@@ -14,7 +14,6 @@ import gabien.backend.NullGrDriver;
 import gabien.natives.BadGPU;
 import gabien.render.IWSIImage;
 import gabien.text.IFixedSizeFont;
-import gabien.ui.UIBorderedElement;
 import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
@@ -151,13 +150,23 @@ public class GaBIEn {
         return internalWindowing.makeGrIn(name, w, h, specs);
     }
 
-    // Note: The buffer does not have an alpha channel.
+    /**
+     * Creates an offscreen RGBA buffer.
+     */
     public static IGrDriver makeOffscreenBuffer(int width, int height) {
+        return makeOffscreenBuffer(width, height, null);
+    }
+
+    /**
+     * Creates an offscreen RGBA buffer.
+     * This variant has a debug ID.
+     */
+    public static IGrDriver makeOffscreenBuffer(int width, int height, @Nullable String id) {
         if (width <= 0)
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksGrDriver(GaBIEn.vopeks, width, height, null);
+        return new VopeksGrDriver(GaBIEn.vopeks, id, width, height, null);
     }
 
     // This has to at least support JPGs, PNGs and BMPs.
@@ -424,7 +433,6 @@ public class GaBIEn {
             newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
         vopeks = new Vopeks(newInstanceFlags, timeLogger);
         FontManager.setupFonts();
-        UIBorderedElement.setupAssets();
         ThemingCentral.setupAssets();
     }
 }
