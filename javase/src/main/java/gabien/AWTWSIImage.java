@@ -16,6 +16,8 @@ import javax.imageio.ImageIO;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.render.IWSIImage;
+
 /**
  * Copied from AWTImage and OsbDriverCore 7th June 2023.
  */

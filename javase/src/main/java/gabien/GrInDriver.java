@@ -7,7 +7,8 @@
 
 package gabien;
 
-import gabien.backendhelp.WSIDownloadPair;
+import gabien.backend.WSIDownloadPair;
+import gabien.render.IWSIImage;
 import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 

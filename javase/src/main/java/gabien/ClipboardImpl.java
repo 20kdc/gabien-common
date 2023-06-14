@@ -9,6 +9,8 @@ package gabien;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 
+import gabien.backend.IGaBIEnClipboard;
+
 public class ClipboardImpl implements IGaBIEnClipboard {
 
     @Override

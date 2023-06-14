@@ -15,6 +15,8 @@ import org.eclipse.jdt.annotation.Nullable;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
+import gabien.render.ITexRegion;
+import gabien.render.IWSIImage;
 
 /**
  * An image. All IImages that are not IGrDrivers must be immutable.
@@ -28,7 +30,7 @@ import gabien.natives.BadGPUEnum.TextureLoadFormat;
  * On the 7th June, 2023, it became IVopeksSurfaceHolder.
  * Now it's 9th June 2023. Vopeks is pretty much certain; we're not going back, so everything was merged.
  */
-public interface IImage {
+public interface IImage extends ITexRegion {
     /**
      * Gets the width of the image.
      */
@@ -38,6 +40,16 @@ public interface IImage {
      * Gets the height of the image.
      */
     int getHeight();
+
+    @Override
+    default float getRegionWidth() {
+        return getWidth();
+    }
+
+    @Override
+    default float getRegionHeight() {
+        return getHeight();
+    }
 
     /**
      * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
@@ -55,7 +67,7 @@ public interface IImage {
      * This may be slow, because processing may not have finished on the image yet.
      */
     default void getPixels(@NonNull int[] buffer) {
-        batchFlush();
+        getSurface().batchFlush();
         Semaphore sm = new Semaphore(1);
         sm.acquireUninterruptibly();
         getPixelsAsync(buffer, () -> sm.release());
@@ -116,4 +128,20 @@ public interface IImage {
      * This can return null if the texture is empty (0 width, 0 height).
      */
     @Nullable BadGPU.Texture getTextureFromTask();
+
+    @Override
+    default float getS(float x, float y) {
+        return x / getWidth();
+    }
+
+    @Override
+    default float getT(float x, float y) {
+        return y / getHeight();
+    }
+
+    @Override
+    @NonNull
+    default IImage getSurface() {
+        return this;
+    }
 }

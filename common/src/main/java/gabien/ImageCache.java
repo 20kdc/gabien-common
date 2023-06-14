@@ -8,6 +8,8 @@ package gabien;
 
 import java.util.HashMap;
 
+import gabien.render.IWSIImage;
+
 /**
  * Getting this code put here.
  * Created 16th February 2023.

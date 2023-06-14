@@ -13,6 +13,7 @@ import java.io.InputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.render.IWSIImage;
 import gabien.text.IFixedSizeFont;
 
 /**

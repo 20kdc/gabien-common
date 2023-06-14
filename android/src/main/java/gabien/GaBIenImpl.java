@@ -13,8 +13,9 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import gabien.backendhelp.EmulatedFileBrowser;
-import gabien.backendhelp.WindowMux;
+import gabien.backend.EmulatedFileBrowser;
+import gabien.backend.WindowMux;
+import gabien.render.IWSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.vfs.impl.*;
 

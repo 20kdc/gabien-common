@@ -10,8 +10,8 @@ package gabien;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-import gabien.backendhelp.EmulatedFileBrowser;
-import gabien.backendhelp.WindowMux;
+import gabien.backend.EmulatedFileBrowser;
+import gabien.backend.WindowMux;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
 
 abstract class Main {

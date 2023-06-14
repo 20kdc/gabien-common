@@ -8,7 +8,7 @@ package gabien.text;
 
 import gabien.IGrDriver;
 import gabien.IImage;
-import gabien.IWSIImage;
+import gabien.render.IWSIImage;
 
 /**
  * Font rendering is the big trouble-causer.

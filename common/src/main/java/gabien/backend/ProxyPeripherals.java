@@ -4,75 +4,46 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-package gabien.backendhelp;
+package gabien.backend;
 
 import java.util.HashSet;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.IDesktopPeripherals;
+import gabien.IPeripherals;
 import gabien.ITextEditingSession;
-import gabien.ui.IPointer;
 import gabien.uslx.append.*;
+import gabien.ui.IPointer;
 
 /**
  * Created on 05/03/2020.
  */
-public class DeadDesktopPeripherals implements IDesktopPeripherals {
-    public static final DeadDesktopPeripherals INSTANCE = new DeadDesktopPeripherals(); 
+public class ProxyPeripherals<T extends IPeripherals> implements IPeripherals {
+    public T target;
 
     @Override
     public void performOffset(int x, int y) {
+        target.performOffset(x, y);
     }
 
     @Override
     public void clearOffset() {
+        target.clearOffset();
     }
 
     @Override
     public HashSet<IPointer> getActivePointers() {
-        return new HashSet<IPointer>();
+        return target.getActivePointers();
     }
 
     @Override
     public void clearKeys() {
-        
+        target.clearKeys();
     }
 
     @Override
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
-        return new DeadTextEditingSession();
+        return target.openTextEditingSession(text, multiLine, textHeight, feedback);
     }
-
-    @Override
-    public int getMouseX() {
-        return 0;
-    }
-
-    @Override
-    public int getMouseY() {
-        return 0;
-    }
-
-    @Override
-    public int getMousewheelBuffer() {
-        return 0;
-    }
-
-    @Override
-    public boolean isKeyDown(int key) {
-        return false;
-    }
-
-    @Override
-    public boolean isKeyJustPressed(int key) {
-        return false;
-    }
-
-    @Override
-    public HashSet<Integer> activeKeys() {
-        return new HashSet<Integer>();
-    }
-
 }

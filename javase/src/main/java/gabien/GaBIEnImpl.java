@@ -7,6 +7,9 @@
 
 package gabien;
 
+import gabien.backend.IGaBIEnFileBrowser;
+import gabien.backend.IGaBIEnMultiWindow;
+import gabien.render.IWSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.append.*;
 

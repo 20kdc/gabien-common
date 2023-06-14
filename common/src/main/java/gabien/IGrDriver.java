@@ -7,6 +7,8 @@
 
 package gabien;
 
+import gabien.render.ITexRegion;
+
 /**
  * Represents a buffer that can be drawn to.
  * Created on 04/06/17.
@@ -18,9 +20,9 @@ public interface IGrDriver extends IImage {
     int getHeight();
 
     // Basic blit operations.
-    void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IImage i);
+    void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i);
     void blitTiledImage(float x, float y, float w, float h, IImage cachedTile);
-    void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IImage i);
+    void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i);
 
     /**
      * These two operations can be considered the logical basis of all the blit-series operations in IGrDriver.
@@ -30,8 +32,8 @@ public interface IGrDriver extends IImage {
      * Firstly, the image is placed as if no rotation were involved.
      * Then the destination is rotated anticlockwise by angle degrees.
      */
-    void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i);
-    void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, boolean blendSub);
+    void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i);
+    void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, boolean blendSub);
 
     void clearAll(int i, int i0, int i1);
 

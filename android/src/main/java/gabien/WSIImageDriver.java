@@ -8,6 +8,7 @@
 package gabien;
 
 import android.graphics.*;
+import gabien.render.IWSIImage;
 
 import java.io.ByteArrayOutputStream;
 

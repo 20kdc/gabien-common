@@ -10,6 +10,7 @@ import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
+import gabien.render.ITexRegion;
 
 /**
  * Here goes nothing.
@@ -29,7 +30,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IImage i) {
+    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i) {
         blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BlendMode.Normal);
     }
 
@@ -38,7 +39,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BlendMode.Normal);
     }
 
-    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IImage i, TilingMode tiling, BlendMode blendSub) {
+    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, ITexRegion i, TilingMode tiling, BlendMode blendSub) {
         x += localST[0];
         y += localST[1];
         // CPU scissor
@@ -66,27 +67,25 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         if ((cR <= x) || (cD <= y))
             return;
         // The rest
-        float srcWF = i.getWidth();
-        float srcHF = i.getHeight();
-        float s0 = srcx / srcWF;
-        float s1 = srcR / srcWF;
-        float t0 = srcy / srcHF;
-        float t1 = srcD / srcHF;
-        batchStartGroupScA(false, false, 6, blendSub, tiling, i);
-        batchWriteXYST(x , y , s0, t0);
-        batchWriteXYST(cR, y , s1, t0);
-        batchWriteXYST(cR, cD, s1, t1);
-        batchWriteXYST(x , y , s0, t0);
-        batchWriteXYST(cR, cD, s1, t1);
-        batchWriteXYST(x , cD, s0, t1);
+        float s00 = i.getS(srcx, srcy), t00 = i.getT(srcx, srcy);
+        float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
+        float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
+        float s11 = i.getS(srcR, srcD), t11 = i.getT(srcR, srcD);
+        batchStartGroupScA(false, false, 6, blendSub, tiling, i.getSurface());
+        batchWriteXYST(x , y , s00, t00);
+        batchWriteXYST(cR, y , s10, t10);
+        batchWriteXYST(cR, cD, s11, t11);
+        batchWriteXYST(x , y , s00, t00);
+        batchWriteXYST(cR, cD, s11, t11);
+        batchWriteXYST(x , cD, s01, t01);
     }
 
     @Override
-    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IImage i) {
+    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i) {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BlendMode.Normal);
     }
 
-    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IImage i, TilingMode tiling, BlendMode blendSub) {
+    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, ITexRegion i, TilingMode tiling, BlendMode blendSub) {
         if (srcw == w && srch == h) {
             blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
             return;
@@ -110,32 +109,30 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         else if (cD > scD)
             isCropEssential = true;
         // End
-        float srcWF = i.getWidth();
-        float srcHF = i.getHeight();
-        float s0 = srcx / srcWF;
-        float s1 = srcR / srcWF;
-        float t0 = srcy / srcHF;
-        float t1 = srcD / srcHF;
-        batchStartGroupScA(false, isCropEssential, 6, blendSub, tiling, i);
-        batchWriteXYST(x , y , s0, t0);
-        batchWriteXYST(cR, y , s1, t0);
-        batchWriteXYST(cR, cD, s1, t1);
-        batchWriteXYST(x , y , s0, t0);
-        batchWriteXYST(cR, cD, s1, t1);
-        batchWriteXYST(x , cD, s0, t1);
+        float s00 = i.getS(srcx, srcy), t00 = i.getT(srcx, srcy);
+        float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
+        float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
+        float s11 = i.getS(srcR, srcD), t11 = i.getT(srcR, srcD);
+        batchStartGroupScA(false, isCropEssential, 6, blendSub, tiling, i.getSurface());
+        batchWriteXYST(x , y , s00, t00);
+        batchWriteXYST(cR, y , s10, t10);
+        batchWriteXYST(cR, cD, s11, t11);
+        batchWriteXYST(x , y , s00, t00);
+        batchWriteXYST(cR, cD, s11, t11);
+        batchWriteXYST(x , cD, s01, t01);
     }
 
     @Override
-    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i) {
+    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i) {
         blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BlendMode.Normal);
     }
 
     @Override
-    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, boolean blendSub) {
+    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, boolean blendSub) {
         blendRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BlendMode.Subtractive : BlendMode.Additive);
     }
 
-    public synchronized void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, BlendMode blendSub) {
+    public synchronized void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, BlendMode blendSub) {
         if (angle == 0) {
             blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, blendSub);
             return;
@@ -143,12 +140,12 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         x += localST[0];
         y += localST[1];
         // Calculate texture coordinates
-        float srcWF = i.getWidth();
-        float srcHF = i.getHeight();
-        float s0 = srcx / srcWF;
-        float s1 = (srcx + srcw) / srcWF;
-        float t0 = srcy / srcHF;
-        float t1 = (srcy + srch) / srcHF;
+        float srcD = srcy + srch;
+        float srcR = srcx + srch;
+        float s00 = i.getS(srcx, srcy), t00 = i.getT(srcx, srcy);
+        float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
+        float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
+        float s11 = i.getS(srcR, srcD), t11 = i.getT(srcR, srcD);
         // Calculate regular coordinates
         // Note the change of the sign. This was tested against the R48 graphics test sheet.
         double angleInRadians = Math.toRadians(-angle);
@@ -175,13 +172,13 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchStartGroupScA(false, true, 6, blendSub, TilingMode.None, i);
-        batchWriteXYST(p00X, p00Y, s0, t0);
-        batchWriteXYST(p10X, p10Y, s1, t0);
-        batchWriteXYST(p11X, p11Y, s1, t1);
-        batchWriteXYST(p00X, p00Y, s0, t0);
-        batchWriteXYST(p11X, p11Y, s1, t1);
-        batchWriteXYST(p01X, p01Y, s0, t1);
+        batchStartGroupScA(false, true, 6, blendSub, TilingMode.None, i.getSurface());
+        batchWriteXYST(p00X, p00Y, s00, t00);
+        batchWriteXYST(p10X, p10Y, s10, t10);
+        batchWriteXYST(p11X, p11Y, s11, t11);
+        batchWriteXYST(p00X, p00Y, s00, t00);
+        batchWriteXYST(p11X, p11Y, s11, t11);
+        batchWriteXYST(p01X, p01Y, s01, t01);
     }
 
     @Override

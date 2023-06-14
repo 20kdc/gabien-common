@@ -9,6 +9,7 @@ package gabien;
 // WARNING! I am fully aware this is deprecated.
 // However, we target API level 9. Deal with it.
 import android.text.ClipboardManager;
+import gabien.backend.IGaBIEnClipboard;
 import android.content.Context;
 
 @SuppressWarnings("deprecation")

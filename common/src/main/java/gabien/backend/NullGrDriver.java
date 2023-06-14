@@ -4,7 +4,7 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-package gabien.backendhelp;
+package gabien.backend;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -12,6 +12,7 @@ import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
+import gabien.render.ITexRegion;
 
 /**
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
@@ -38,7 +39,7 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IImage i) {
+    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i) {
 
     }
 
@@ -48,17 +49,17 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IImage i) {
+    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i) {
 
     }
 
     @Override
-    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i) {
+    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i) {
 
     }
 
     @Override
-    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IImage i, boolean blendSub) {
+    public void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, boolean blendSub) {
 
     }
 
