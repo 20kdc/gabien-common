@@ -22,15 +22,18 @@ import gabien.render.ITexRegion;
  * Created 7th June, 2023.
  */
 public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
-    public final int[] localST = new int[6];
+    public final int[] scissor = new int[4];
+    public final float[] trs = new float[4];
 
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
     public VopeksGrDriver(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
         super(vopeks, id, w, h, init);
-        localST[4] = width;
-        localST[5] = height;
+        trs[2] = 1;
+        trs[3] = 1;
+        scissor[2] = width;
+        scissor[3] = height;
     }
 
     @Override
@@ -44,14 +47,19 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, ITexRegion i, TilingMode tiling, int blendSub) {
-        x += localST[0];
-        y += localST[1];
+        if ((trs[2] != 1) || (trs[3] != 1)) {
+            // scaling is in use, slowpath this
+            blitScaledImage(srcx, srcy, w, h, x, y, w, h, i);
+            return;
+        }
+        // scaling not in use, so don't apply it
+        x += trs[0]; y += trs[1];
         // CPU scissor
         float cR = x + w;
         float cD = y + h;
         float srcR = srcx + w;
         float srcD = srcy + h;
-        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
         if (x < scL) {
             srcx += scL - x;
             x = scL;
@@ -94,8 +102,20 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
             blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
             return;
         }
-        x += localST[0];
-        y += localST[1];
+        blitScaledImageForced(srcx, srcy, srcw, srch, x, y, w, h, i, tiling, blendSub);
+    }
+
+    private float trsX(float x) {
+        return trs[0] + (x * trs[2]);
+    }
+
+    private float trsY(float y) {
+        return trs[1] + (y * trs[3]);
+    }
+
+    public synchronized void blitScaledImageForced(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, ITexRegion i, TilingMode tiling, int blendSub) {
+        // Translate coordinates
+        x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // Do the CPU scissor dance, but only to work out if cropping is essential.
         // It usually isn't, and we save a ton of batches by making use of this.
         boolean isCropEssential = false;
@@ -103,7 +123,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float cD = y + h;
         float srcR = srcx + srcw;
         float srcD = srcy + srch;
-        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
         if (x < scL)
             isCropEssential = true;
         else if (y < scU)
@@ -132,8 +152,8 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
             blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, blendSub);
             return;
         }
-        x += localST[0];
-        y += localST[1];
+        // We don't bother with regular coordinate translation here, because it wouldn't work for scaling.
+        // Instead coordinate translation is done during final point calculation.
         // Calculate texture coordinates
         float srcD = srcy + srch;
         float srcR = srcx + srch;
@@ -148,15 +168,15 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         double sin = Math.sin(angleInRadians);
         // Cosine. Can be considered xBasis.x.
         double cos = Math.cos(angleInRadians);
-        // Calculate basics
+        // Calculate basics. Coordinate translation happens here.
         float acw2 = acw / 2f;
         float ach2 = ach / 2f;
-        float centreX = x + acw2;
-        float centreY = y + ach2;
-        float xBasisX = (float) (cos * acw2);
-        float xBasisY = (float) (sin * acw2);
-        float yBasisX = (float) (-sin * ach2);
-        float yBasisY = (float) (cos * ach2);
+        float centreX = trsX(x + acw2);
+        float centreY = trsY(y + ach2);
+        float xBasisX = (float) (cos * acw2 * trs[2]);
+        float xBasisY = (float) (sin * acw2 * trs[3]);
+        float yBasisX = (float) (-sin * ach2 * trs[2]);
+        float yBasisY = (float) (cos * ach2 * trs[3]);
         // Calculate points
         float p00X = centreX - (xBasisX + yBasisX);
         float p00Y = centreY - (xBasisY + yBasisY);
@@ -179,28 +199,25 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     @Override
     public synchronized void clearAll(int i, int i0, int i1) {
         batchFlush();
-        int cropL = localST[2];
-        int cropU = localST[3];
-        int cropR = localST[4];
-        int cropD = localST[5];
-        int cropW = cropR - cropL;
-        int cropH = cropD - cropU;
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
+        int cropW = scR - scL;
+        int cropH = scD - scU;
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
             BadGPUUnsafe.drawClear(texture.pointer, 0,
-                    BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, cropL, cropU, cropW, cropH,
+                    BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, scL, scU, cropW, cropH,
                     i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
         });
     }
 
     @Override
     public synchronized void clearRectAlpha(int r, int g, int b, int a, float x, float y, float w, float h) {
-        x += localST[0];
-        y += localST[1];
+        // Translate coordinates
+        x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // CPU scissor
         float cR = x + w;
         float cD = y + h;
-        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
         if (x < scL)
             x = scL;
         if (y < scU)
@@ -230,7 +247,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
      * batchStartGroup but aware of scissoring
      */
     public void batchStartGroupScA(boolean hasColours, boolean cropEssential, int vertices, int blendMode, TilingMode tilingMode, IImage tex) {
-        int scL = localST[2], scU = localST[3], scR = localST[4], scD = localST[5];
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
         batchStartGroup(vertices, hasColours, cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex);
     }
 
@@ -240,12 +257,15 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public int[] getLocalST() {
-        return localST;
+    @NonNull
+    public float[] getTRS() {
+        return trs;
     }
 
     @Override
-    public void updateST() {
+    @NonNull
+    public int[] getScissor() {
+        return scissor;
     }
 
     @Override

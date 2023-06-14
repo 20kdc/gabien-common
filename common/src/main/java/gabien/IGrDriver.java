@@ -78,11 +78,62 @@ public interface IGrDriver extends IImage {
      */
     void shutdown();
 
-    // Gets the local ST buffer, in the order: translateX, translateY, cropL, cropU, cropR, cropD
+    // Gets the local scissor buffer, in the order: cropL, cropU, cropR, cropD
     // The crop coordinates are independent of the translation coordinates.
-    int[] getLocalST();
-    // Propagates changes to the local ST buffer (changes only take effect from this point on)
-    void updateST();
+    @NonNull int[] getScissor();
+
+    // Gets the local translate/scale buffer, in the order: tX, tY, sX, sY
+    // The translation is independent of the scale.
+    /**
+     * Gets the local translate/scale buffer, in the order: tX, tY, sX, sY
+     * The translation is independent of the scale.
+     */
+    @NonNull float[] getTRS();
+
+    /**
+     * Translates TRS X, dependent on scale.
+     * Returns old value.
+     */
+    default float trsTXS(float x) {
+        float[] tmp = getTRS();
+        float old = tmp[0];
+        tmp[0] += x * tmp[2];
+        return old;
+    }
+
+    /**
+     * Translates TRS Y, dependent on scale.
+     * Returns old value.
+     */
+    default float trsTYS(float y) {
+        float[] tmp = getTRS();
+        float old = tmp[1];
+        tmp[1] += y * tmp[3];
+        return old;
+    }
+
+    /**
+     * Restores TRS X.
+     */
+    default void trsTXE(float x) {
+        getTRS()[0] = x;
+    }
+
+    /**
+     * Restores TRS Y.
+     */
+    default void trsTYE(float y) {
+        getTRS()[1] = y;
+    }
+
+    /**
+     * Restores TRS Y.
+     */
+    default void trsTXYE(float x, float y) {
+        float[] tmp = getTRS();
+        tmp[0] = x;
+        tmp[1] = y;
+    }
 
     /**
      * Ok, so this is a particularly evil little call.

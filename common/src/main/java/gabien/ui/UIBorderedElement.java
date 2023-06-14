@@ -81,16 +81,12 @@ public abstract class UIBorderedElement extends UIElement {
         Size s = getSize();
         boolean black = getBorderFlag2(borderType, ThemingCentral.BF_LIGHTBKG);
         if (getBorderFlag2(borderType, ThemingCentral.BF_MOVEDOWN)) {
-            int[] localST = igd.getLocalST();
-            int oldTY = localST[1];
-            localST[1] += getBorderWidth();
-            igd.updateST();
+            float oty = igd.trsTYS(getBorderWidth());
             if (layer == UILayer.Base)
                 drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
             else if (layer == UILayer.Content)
                 renderContents(black, igd);
-            localST[1] = oldTY;
-            igd.updateST();
+            igd.trsTYE(oty);
         } else {
             if (layer == UILayer.Base)
                 drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);

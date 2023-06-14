@@ -19,6 +19,7 @@ import gabien.render.ITexRegion;
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
  */
 public class NullGrDriver implements IGrDriver {
+    public final float[] trs = new float[] {0, 0, 1, 1};
     @Override
     public int getWidth() {
         return 0;
@@ -74,13 +75,15 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public int[] getLocalST() {
-        return new int[6];
+    @NonNull
+    public int[] getScissor() {
+        return new int[4];
     }
 
     @Override
-    public void updateST() {
-
+    @NonNull
+    public float[] getTRS() {
+        return trs;
     }
 
     @Override

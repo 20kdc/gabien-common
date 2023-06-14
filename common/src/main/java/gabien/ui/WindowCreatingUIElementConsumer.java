@@ -91,14 +91,16 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             if (needResize)
                 aw.ue.setForcedBounds(null, new Rect(0, 0, cw, ch));
             // Init ST & draw
-            int[] sti = backbuffer.getLocalST();
+            float[] trs = backbuffer.getTRS();
+            trs[0] = 0;
+            trs[1] = 0;
+            trs[2] = 1;
+            trs[3] = 1;
+            int[] sti = backbuffer.getScissor();
             sti[0] = 0;
             sti[1] = 0;
-            sti[2] = 0;
-            sti[3] = 0;
-            sti[4] = cw;
-            sti[5] = ch;
-            backbuffer.updateST();
+            sti[2] = cw;
+            sti[3] = ch;
             aw.peripherals.clearOffset();
             UIBorderedElement.drawBorder(backbuffer, 5, 0, 0, 0, cw, ch);
             aw.ue.update(dT, true, aw.peripherals);

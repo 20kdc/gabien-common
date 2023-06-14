@@ -127,16 +127,14 @@ public class UITabBar extends UIElement.UIPanel {
             }
 
             if (UIBorderedElement.getMoveDownFlag(base)) {
-                int[] localST = igd.getLocalST();
-                int oldTY = localST[1];
-                int oldCD = localST[5];
-                localST[5] = Math.min(localST[5], localST[1] + effectiveHeight);
-                localST[1] += effectiveHeight / 8;
-                igd.updateST();
+                float[] trs = igd.getTRS();
+                int[] scissor = igd.getScissor();
+                float oldTY = igd.trsTYS(effectiveHeight / 8);
+                int oldCD = scissor[3];
+                scissor[3] = (int) Math.min(scissor[3], oldTY + (effectiveHeight * trs[3]));
                 drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
-                localST[1] = oldTY;
-                localST[5] = oldCD;
-                igd.updateST();
+                igd.trsTYE(oldTY);
+                scissor[3] = oldCD;
             } else {
                 drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
             }

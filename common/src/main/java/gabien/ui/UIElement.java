@@ -385,18 +385,16 @@ public abstract class UIElement {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
 
-            int[] localBuffer = igd.getLocalST();
-            int osTX = localBuffer[0];
-            int osTY = localBuffer[1];
+            float[] trs = igd.getTRS();
+            float osTX = trs[0];
+            float osTY = trs[1];
 
-            localBuffer[0] += x;
-            localBuffer[1] += y;
-            igd.updateST();
+            trs[0] += x;
+            trs[1] += y;
             uie.renderLayer(igd, layer);
 
-            localBuffer[0] = osTX;
-            localBuffer[1] = osTY;
-            igd.updateST();
+            trs[0] = osTX;
+            trs[1] = osTY;
         }
 
         public static void scissoredRender(UIElement uie, IGrDriver igd, UILayer layer) {
@@ -409,35 +407,39 @@ public abstract class UIElement {
             int right = left + uie.elementBounds.width;
             int bottom = top + uie.elementBounds.height;
 
-            int[] localBuffer = igd.getLocalST();
-            int osTX = localBuffer[0];
-            int osTY = localBuffer[1];
-            int osLeft = localBuffer[2];
-            int osTop = localBuffer[3];
-            int osRight = localBuffer[4];
-            int osBottom = localBuffer[5];
+            float[] trs = igd.getTRS();
+            int[] scissor = igd.getScissor();
+            float osTX = trs[0];
+            float osTY = trs[1];
+            float osSX = trs[2];
+            float osSY = trs[3];
+            int osLeft = scissor[0];
+            int osTop = scissor[1];
+            int osRight = scissor[2];
+            int osBottom = scissor[3];
 
-            left = Math.max(osTX + left, Math.max(osLeft, 0));
-            top = Math.max(osTY + top, Math.max(osTop, 0));
-            right = Math.min(osTX + right, osRight);
-            bottom = Math.min(osTY + bottom, osBottom);
+            float scaledX = x * osSX;
+            float scaledY = y * osSY;
 
-            localBuffer[0] += x;
-            localBuffer[1] += y;
-            localBuffer[2] = left;
-            localBuffer[3] = top;
-            localBuffer[4] = Math.max(left, right);
-            localBuffer[5] = Math.max(top, bottom);
-            igd.updateST();
+            left = (int) Math.max(osTX + scaledX, Math.max(osLeft, 0));
+            top = (int) Math.max(osTY + scaledY, Math.max(osTop, 0));
+            right = (int) Math.min(osTX + (right * osSX), osRight);
+            bottom = (int) Math.min(osTY + (bottom * osSY), osBottom);
+
+            trs[0] += scaledX;
+            trs[1] += scaledY;
+            scissor[0] = left;
+            scissor[1] = top;
+            scissor[2] = Math.max(left, right);
+            scissor[3] = Math.max(top, bottom);
             uie.renderLayer(igd, layer);
 
-            localBuffer[0] = osTX;
-            localBuffer[1] = osTY;
-            localBuffer[2] = osLeft;
-            localBuffer[3] = osTop;
-            localBuffer[4] = osRight;
-            localBuffer[5] = osBottom;
-            igd.updateST();
+            trs[0] = osTX;
+            trs[1] = osTY;
+            scissor[0] = osLeft;
+            scissor[1] = osTop;
+            scissor[2] = osRight;
+            scissor[3] = osBottom;
         }
 
         // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
