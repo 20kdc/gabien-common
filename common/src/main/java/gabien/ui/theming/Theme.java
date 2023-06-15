@@ -66,15 +66,28 @@ public final class Theme {
     }
 
     /**
+     * Internal mutable set.
+     * Other functions use this to implement the immutable return-altered-version functions.
+     */
+    private void set(String key, Object obj) {
+        for (Theme.Attr<?> s : allBI) {
+            if (s.id.equals(key)) {
+                @SuppressWarnings("unchecked")
+                final Theme.Attr<Object> target = (Theme.Attr<Object>) s;
+                target.set(this, obj);
+                return;
+            }
+        }
+        // Custom attribute
+        values.put(key, obj);
+    }
+
+    /**
      * Replaces the given entry.
      */
     public Theme with(String id, @Nullable Object replacement) {
         Theme modified = new Theme(this);
-        if (replacement == null) {
-            modified.values.remove(id);
-        } else {
-            modified.values.put(id, replacement);
-        }
+        modified.set(id, modified);
         return modified;
     }
 
@@ -150,18 +163,8 @@ public final class Theme {
                     return resCtx.genVisitor((obj, ctx) -> {
                         theme = new Theme((Theme) obj);
                     }, null);
-                for (Theme.Attr<?> s : allBI) {
-                    if (s.id.equals(key)) {
-                        @SuppressWarnings("unchecked")
-                        final Theme.Attr<Object> target = (Theme.Attr<Object>) s;
-                        return resCtx.genVisitor((obj, ctx) -> {
-                            target.set(theme, obj);
-                        }, null);
-                    }
-                }
-                // Custom attribute
                 return resCtx.genVisitor((obj, ctx) -> {
-                    theme.values.put(key, obj);
+                    theme.set(key, obj);
                 }, null);
             }
 

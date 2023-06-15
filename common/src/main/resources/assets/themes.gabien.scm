@@ -7,31 +7,32 @@
 ; Defines border flags, border types, and image regions.
 ; Border flags are: moveDown, clear, lightBkg
 
-iThemes (img "themes.png")
+iThemes? (img "themes.png")
 
 ; Define each individual theme as a region of the main PNG file.
 
-iT0 (reg iThemes (rect 0  0 168 18))
-iT1 (reg iThemes (rect 0 18 168 18))
-iT2 (reg iThemes (rect 0 36 168 18))
-iT3 (reg iThemes (rect 0 54 168 18))
+iT0? (reg iThemes (rect 0  0 168 18))
+iT1? (reg iThemes (rect 0 18 168 18))
+iT2? (reg iThemes (rect 0 36 168 18))
+iT3? (reg iThemes (rect 0 54 168 18))
 
-rB0  (rect   0 0 12 18)
-rB1  (rect  12 0 12 18)
-rB2  (rect  24 0 12 18)
-rB3  (rect  36 0 12 18)
-rB4  (rect  48 0 12 18)
-rB5  (rect  60 0 12 18)
-rB6  (rect  72 0 12 18)
-rB7  (rect  84 0 12 18)
-rB8  (rect  96 0 12 18)
-rB9  (rect 108 0 12 18)
-rB10 (rect 120 0 12 18)
-rB11 (rect 132 0 12 18)
-rB12 (rect 144 0 12 18)
-rB13 (rect 156 0 12 18)
+rB0?  (rect   0 0 12 18)
+rB1?  (rect  12 0 12 18)
+rB2?  (rect  24 0 12 18)
+rB3?  (rect  36 0 12 18)
+rB4?  (rect  48 0 12 18)
+rB5?  (rect  60 0 12 18)
+rB6?  (rect  72 0 12 18)
+rB7?  (rect  84 0 12 18)
+rB8?  (rect  96 0 12 18)
+rB9?  (rect 108 0 12 18)
+rB10? (rect 120 0 12 18)
+rB11? (rect 132 0 12 18)
+rB12? (rect 144 0 12 18)
+rB13? (rect 156 0 12 18)
 
-t0 (theme
+t0? (theme
+	parent tRoot
 	btn (border
 		(reg iT0 rB0)
 	)
@@ -80,7 +81,8 @@ t0 (theme
 	)
 )
 
-t1 (theme
+t1? (theme
+	parent tRoot
 	btn (border
 		(reg iT1 rB0)
 		tiled
@@ -137,7 +139,8 @@ t1 (theme
 	)
 )
 
-t2 (theme
+t2? (theme
+	parent tRoot
 	btn (border
 		(reg iT2 rB0)
 		tiled lightBkg
@@ -195,7 +198,8 @@ t2 (theme
 	)
 )
 
-t3 (theme
+t3? (theme
+	parent tRoot
 	btn (border
 		(reg iT3 rB0)
 	)

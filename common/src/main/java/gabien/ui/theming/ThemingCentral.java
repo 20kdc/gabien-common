@@ -32,10 +32,14 @@ public class ThemingCentral {
             ThemingResCtx resCtx = new ThemingResCtx();
 
             String[] files = {
-                "themes.pre.scm",
-                "themes.scm",
-                "themes.app.scm",
-                "themes.post.scm"
+                    "themes.gabien.init.scm",
+                    "themes.gabien.init.aux.scm",
+                    "themes.app.pre.scm",
+                    "themes.app.pre.aux.scm",
+                    "themes.gabien.scm",
+                    "themes.gabien.aux.scm",
+                    "themes.app.post.scm",
+                    "themes.app.post.aux.scm"
             };
             for (String file : files) {
                 try {
