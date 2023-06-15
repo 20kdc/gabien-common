@@ -13,7 +13,7 @@ package gabien.ui;
  * Created on 10th February 2018.
  */
 public class MTIntersector {
-    public static MTIntersector singleton = new MTIntersector();
+    public static MTIntersector INSTANCE = new MTIntersector();
     private ThreadLocal<Intersector> intersect = new ThreadLocal<Intersector>();
     private MTIntersector() {
 
