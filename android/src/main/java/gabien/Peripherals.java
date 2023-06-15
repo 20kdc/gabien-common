@@ -30,6 +30,7 @@ public class Peripherals implements IPeripherals {
 
     public ReentrantLock pointersLock = new ReentrantLock();
     public HashSet<UPointer> pointersThatWePretendDoNotExist = new HashSet<UPointer>();
+    public HashSet<UPointer> pointersJustDown = new HashSet<UPointer>();
     public HashMap<Integer, UPointer> pointersMap = new HashMap<Integer, UPointer>();
 
     public TextEditingSession currentTextEditingSession;
@@ -59,6 +60,8 @@ public class Peripherals implements IPeripherals {
         pointersLock.lock();
         HashSet<IPointer> r = new HashSet<IPointer>(pointersMap.values());
         r.removeAll(pointersThatWePretendDoNotExist);
+        r.addAll(pointersJustDown);
+        pointersJustDown.clear();
         pointersLock.unlock();
         return r;
     }
@@ -67,6 +70,7 @@ public class Peripherals implements IPeripherals {
     public void clearKeys() {
         pointersLock.lock();
         pointersThatWePretendDoNotExist.addAll(pointersMap.values());
+        pointersJustDown.clear();
         pointersLock.unlock();
         if (currentTextEditingSession != null)
             currentTextEditingSession.endSession();
@@ -85,6 +89,8 @@ public class Peripherals implements IPeripherals {
     public void gdResetPointers() {
         pointersLock.lock();
         pointersMap.clear();
+        // we do *NOT* clear pointersJustDown; this is called when the last pointer goes up,
+        //  but app has not necessarily ack'd it yet
         pointersLock.unlock();
     }
 
@@ -99,6 +105,7 @@ public class Peripherals implements IPeripherals {
             if (up == null) {
                 up = new UPointer();
                 pointersMap.put(pointerId, up);
+                pointersJustDown.add(up);
             }
             up.actualX = x;
             up.actualY = y;

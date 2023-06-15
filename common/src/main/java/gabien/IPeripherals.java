@@ -22,12 +22,17 @@ public interface IPeripherals {
     void performOffset(int x, int y);
     void clearOffset();
 
-    // NOTE REGARDING THIS:
-    // When a pointer ought to be created, it MUST STAY AROUND for at least until one of these calls occurs.
+    /**
+     * NOTE REGARDING THIS:
+     * When a pointer ought to be created, it MUST STAY AROUND for at least until one of these calls occurs.
+     * This also implies this call is not pure; it mutates the list by removing pointers that have been lost.
+     */
     HashSet<IPointer> getActivePointers();
 
-    // This will clear all key-related buffers.
-    // This includes maintained textboxes and the mouse.
+    /**
+     * This will clear all key-related buffers.
+     * This includes maintained textboxes and the mouse.
+     */
     void clearKeys();
 
     /**
