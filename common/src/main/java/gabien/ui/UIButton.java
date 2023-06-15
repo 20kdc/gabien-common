@@ -9,6 +9,7 @@ package gabien.ui;
 
 
 import gabien.IPeripherals;
+import gabien.ui.theming.Theme;
 
 /**
  * This was actually a totally different class at one point.
@@ -22,7 +23,7 @@ public abstract class UIButton<ThisClass extends UIButton<?>> extends UIBordered
     public boolean toggle = false;
 
     public UIButton(int bw) {
-        super(0, bw);
+        super(Theme.B_BTN, bw);
     }
 
     @SuppressWarnings("unchecked")
@@ -39,7 +40,7 @@ public abstract class UIButton<ThisClass extends UIButton<?>> extends UIBordered
             if (pressedTime <= 0)
                 state = false;
         }
-        borderType = state ? 1 : 0;
+        setBorderType(state ? Theme.B_BTNP : Theme.B_BTN);
     }
 
     @Override

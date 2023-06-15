@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.*;
+import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 import gabien.ui.theming.ThemingCentral;
 
@@ -18,22 +19,23 @@ import gabien.ui.theming.ThemingCentral;
 public abstract class UIBorderedElement extends UIElement {
     public static final int BORDER_TYPES = 14;
 
-    public int borderType;
+    private Theme.Attr<IBorder> borderType;
     private int borderWidth;
 
     private Rect contentsRelativeInputBounds;
+    private IBorder border;
 
-    public UIBorderedElement(int bt, int bw) {
+    public UIBorderedElement(Theme.Attr<IBorder> bt, int bw) {
         borderType = bt;
         borderWidth = bw;
-        calcContentsRelativeInputBounds();
+        updateBorder();
     }
 
-    public UIBorderedElement(int bt, int bw, int w, int h) {
+    public UIBorderedElement(Theme.Attr<IBorder> bt, int bw, int w, int h) {
         super(w + (bw * 2), h + (bw * 2));
         borderType = bt;
         borderWidth = bw;
-        calcContentsRelativeInputBounds();
+        updateBorder();
     }
 
     public static int getRecommendedBorderWidth(int textHeight) {
@@ -53,11 +55,24 @@ public abstract class UIBorderedElement extends UIElement {
         return borderWidth;
     }
 
-    private void calcContentsRelativeInputBounds() {
+    public void setBorderType(Theme.Attr<IBorder> bt) {
+        borderType = bt;
+        updateBorder();
+    }
+
+    @Override
+    public void onThemeChanged() {
+        updateBorder();
+    }
+
+    private void updateBorder() {
+        border = borderType.get(this);
+        updateContentsRelativeInputBounds();
+    }
+    private void updateContentsRelativeInputBounds() {
         int bw = borderWidth;
         int bwy = bw;
-        Theme theme = getTheme();
-        if (getBorderFlag2(theme, borderType, ThemingCentral.BF_MOVEDOWN))
+        if (border.getFlag(ThemingCentral.BF_MOVEDOWN))
             bwy *= 2;
         Size sz = getSize();
         contentsRelativeInputBounds = new Rect(-bw, -bwy, sz.width, sz.height);
@@ -70,7 +85,7 @@ public abstract class UIBorderedElement extends UIElement {
     @Override
     public void runLayout() {
         super.runLayout();
-        calcContentsRelativeInputBounds();
+        updateContentsRelativeInputBounds();
     }
 
     @Override
@@ -78,18 +93,17 @@ public abstract class UIBorderedElement extends UIElement {
         if (layer != UILayer.Base && layer != UILayer.Content)
             return;
         Size s = getSize();
-        Theme theme = getTheme();
-        boolean black = getBorderFlag2(theme, borderType, ThemingCentral.BF_LIGHTBKG);
-        if (getBorderFlag2(theme, borderType, ThemingCentral.BF_MOVEDOWN)) {
+        boolean black = border.getFlag(ThemingCentral.BF_LIGHTBKG);
+        if (border.getFlag(ThemingCentral.BF_MOVEDOWN)) {
             float oty = igd.trsTYS(getBorderWidth());
             if (layer == UILayer.Base)
-                drawBorder(theme, igd, borderType, borderWidth, 0, 0, s.width, s.height);
+                border.draw(igd, borderWidth, 0, 0, s.width, s.height);
             else if (layer == UILayer.Content)
                 renderContents(black, igd);
             igd.trsTYE(oty);
         } else {
             if (layer == UILayer.Base)
-                drawBorder(theme, igd, borderType, borderWidth, 0, 0, s.width, s.height);
+                border.draw(igd, borderWidth, 0, 0, s.width, s.height);
             else if (layer == UILayer.Content)
                 renderContents(black, igd);
         }
@@ -112,25 +126,25 @@ public abstract class UIBorderedElement extends UIElement {
     public abstract void updateContents(double deltaTime, boolean selected, IPeripherals peripherals);
 
     public static boolean getBlackTextFlagWindowRoot(Theme theme) {
-        return getBlackTextFlag(theme, 5);
+        return getBlackTextFlag(theme, Theme.B_WINDOW);
     }
 
-    public static boolean getMoveDownFlag(Theme theme, int base) {
-        return getBorderFlag2(theme, base, ThemingCentral.BF_MOVEDOWN);
+    public static boolean getMoveDownFlag(Theme theme, Theme.Attr<IBorder> borderType) {
+        return getBorderFlag2(theme, borderType, ThemingCentral.BF_MOVEDOWN);
     }
 
-    public static boolean getBlackTextFlag(Theme theme, int i) {
-        return getBorderFlag2(theme, i, ThemingCentral.BF_LIGHTBKG);
+    public static boolean getBlackTextFlag(Theme theme, Theme.Attr<IBorder> borderType) {
+        return getBorderFlag2(theme, borderType, ThemingCentral.BF_LIGHTBKG);
     }
 
-    private static boolean getBorderFlag2(Theme theme, int borderType, int flag) {
-        return theme.getBorder(borderType).getFlag(flag);
+    private static boolean getBorderFlag2(Theme theme, Theme.Attr<IBorder> borderType, int flag) {
+        return borderType.get(theme).getFlag(flag);
     }
 
-    public static void drawBorder(Theme theme, IGrDriver igd, int borderType, int borderWidth, Rect where) {
+    public static void drawBorder(Theme theme, IGrDriver igd, Theme.Attr<IBorder> borderType, int borderWidth, Rect where) {
         drawBorder(theme, igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
     }
-    public static void drawBorder(Theme theme, IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
-        theme.getBorder(borderType).draw(igd, borderWidth, x, y, w, h);
+    public static void drawBorder(Theme theme, IGrDriver igd, Theme.Attr<IBorder> borderType, int borderWidth, int x, int y, int w, int h) {
+        borderType.get(theme).draw(igd, borderWidth, x, y, w, h);
     }
 }

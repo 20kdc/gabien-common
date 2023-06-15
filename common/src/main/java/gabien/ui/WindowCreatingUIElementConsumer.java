@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.*;
+import gabien.ui.theming.Theme;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -103,7 +104,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             sti[2] = cw;
             sti[3] = ch;
             aw.peripherals.clearOffset();
-            UIBorderedElement.drawBorder(aw.ue.getTheme(), backbuffer, 5, 0, 0, 0, cw, ch);
+            UIBorderedElement.drawBorder(aw.ue.getTheme(), backbuffer, Theme.B_WINDOW, 0, 0, 0, cw, ch);
             aw.ue.update(dT, true, aw.peripherals);
             aw.ue.renderAllLayers(backbuffer);
 

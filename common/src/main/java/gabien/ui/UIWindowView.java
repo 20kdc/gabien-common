@@ -318,10 +318,10 @@ public class UIWindowView extends UIElement {
             Rect b = contents.getParentRelativeBounds();
 
             Theme theme = contents.getTheme();
-            UIBorderedElement.drawBorder(theme, igd, 5, parent.sizerVisual, b.x - parent.sizerVisual, b.y - (windowFrameHeight + parent.sizerVisual), b.width + (parent.sizerVisual * 2), b.height + (windowFrameHeight + (parent.sizerVisual * 2)));
+            UIBorderedElement.drawBorder(theme, igd, Theme.B_WINDOW, parent.sizerVisual, b.x - parent.sizerVisual, b.y - (windowFrameHeight + parent.sizerVisual), b.width + (parent.sizerVisual * 2), b.height + (windowFrameHeight + (parent.sizerVisual * 2)));
 
             boolean winSelected = parent.selectedWindow == this;
-            UITabBar.drawTab(theme, winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), this);
+            UITabBar.drawTab(theme, winSelected ? Theme.B_TITLESEL : Theme.B_TITLE, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), this);
 
             for (UILayer layer : UIElement.LAYERS)
                 UIPanel.scissoredRender(contents, igd, layer);

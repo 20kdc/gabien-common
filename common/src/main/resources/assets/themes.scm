@@ -69,10 +69,10 @@ t0 (theme
 	tabSel (border
 		(reg iT0 rB10)
 	)
-	i11 (border
+	title (border
 		(reg iT0 rB11)
 	)
-	i12 (border
+	titleSel (border
 		(reg iT0 rB12)
 	)
 	r48Overlay (border
@@ -124,11 +124,11 @@ t1 (theme
 		(reg iT1 rB10)
 		tiled
 	)
-	i11 (border
+	title (border
 		(reg iT1 rB11)
 		tiled
 	)
-	i12 (border
+	titleSel (border
 		(reg iT1 rB12)
 		tiled
 	)
@@ -182,11 +182,11 @@ t2 (theme
 		(reg iT2 rB10)
 		tiled lightBkg
 	)
-	i11 (border
+	title (border
 		(reg iT2 rB11)
 		tiled lightBkg
 	)
-	i12 (border
+	titleSel (border
 		(reg iT2 rB12)
 		tiled lightBkg
 	)
@@ -232,10 +232,10 @@ t3 (theme
 	tabSel (border
 		(reg iT3 rB10)
 	)
-	i11 (border
+	title (border
 		(reg iT3 rB11)
 	)
-	i12 (border
+	titleSel (border
 		(reg iT3 rB12)
 	)
 	r48Overlay (border

@@ -31,29 +31,29 @@ public class ThemingCentral {
         try {
             ThemingResCtx resCtx = new ThemingResCtx();
 
-            try {
-                // Read in override file
-                InputStreamReader themesISR = GaBIEn.getTextResource("themes.override.scm");
-                if (themesISR != null) {
-                    new DatumReaderTokenSource("themes.override.scm", themesISR).visit(new DatumKVDVisitor() {
-                        @Override
-                        public DatumVisitor handle(String key) {
-                            return resCtx.genVisitor(resCtx, key);
-                        }
-                    });
+            String[] files = {
+                "themes.pre.scm",
+                "themes.scm",
+                "themes.app.scm",
+                "themes.post.scm"
+            };
+            for (String file : files) {
+                try {
+                    // Read in override file
+                    InputStreamReader themesISR = GaBIEn.getTextResource(file);
+                    if (themesISR != null) {
+                        new DatumReaderTokenSource(file, themesISR).visit(new DatumKVDVisitor() {
+                            @Override
+                            public DatumVisitor handle(String key) {
+                                return resCtx.genVisitor(resCtx, key);
+                            }
+                        });
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
-            } catch (Exception ex) {
-                ex.printStackTrace();
             }
 
-            // Read in resources
-            InputStreamReader themesISR = GaBIEn.getTextResource("themes.scm");
-            new DatumReaderTokenSource("themes.scm", themesISR).visit(new DatumKVDVisitor() {
-                @Override
-                public DatumVisitor handle(String key) {
-                    return resCtx.genVisitor(resCtx, key);
-                }
-            });
             // Grab resources
             for (int i = 0; i < BORDER_THEMES; i++) {
                 Theme tx = (Theme) resCtx.resources.get("t" + i);

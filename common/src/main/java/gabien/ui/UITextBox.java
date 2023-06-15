@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.IPeripherals;
 import gabien.ITextEditingSession;
+import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
 
 // This serves a dual purpose:
@@ -29,7 +30,7 @@ public class UITextBox extends UILabel {
 
     public UITextBox(String text, int h) {
         super(text, h);
-        borderType = 3;
+        setBorderType(Theme.B_TEXTBOX);
     }
 
     public UITextBox setMultiLine() {
@@ -84,7 +85,7 @@ public class UITextBox extends UILabel {
             // restore text from backup
             text = textCStr;
         }
-        borderType = selected ? 4 : 3;
+        setBorderType(selected ? Theme.B_TEXTBOXF : Theme.B_TEXTBOX);
         super.updateContents(deltaTime, selected, peripherals);
     }
 

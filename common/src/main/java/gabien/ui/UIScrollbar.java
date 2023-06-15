@@ -14,6 +14,7 @@ import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.IPeripherals;
 import gabien.text.SimpleImageGridFont;
+import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 
 /**
@@ -63,7 +64,7 @@ public class UIScrollbar extends UIElement {
         carriageBorder = barSize / 8;
         int carriageLength = barLength - (barSize * 2);
         carriageMargin = carriageBorder;
-        if (UIBorderedElement.getMoveDownFlag(getTheme(), 7))
+        if (UIBorderedElement.getMoveDownFlag(getTheme(), Theme.B_SBNUB))
             carriageMargin = 0;
 
         nubSize = barSize - (carriageMargin * 2);
@@ -109,7 +110,7 @@ public class UIScrollbar extends UIElement {
         drawNPB(theme, igd, positiveButtonTimer, boxPositive, vertical ? 7 : 14);
         if (boxCarriage != null) {
             // Carriage
-            UIBorderedElement.drawBorder(theme, igd, 6, carriageBorder, boxCarriage);
+            UIBorderedElement.drawBorder(theme, igd, Theme.B_SBTRAY, carriageBorder, boxCarriage);
             // Nub
             int nubX = boxCarriageFloor.x;
             int nubY = boxCarriageFloor.y;
@@ -120,13 +121,13 @@ public class UIScrollbar extends UIElement {
                 nubX += nubPoint;
             }
 
-            UIBorderedElement.drawBorder(theme, igd, 7, nubBorder, nubX, nubY, nubSize, nubSize);
+            UIBorderedElement.drawBorder(theme, igd, Theme.B_SBNUB, nubBorder, nubX, nubY, nubSize, nubSize);
         }
     }
 
     private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, int bump) {
         boolean down = timer > 0;
-        int borderId = down ? 1 : 0;
+        Theme.Attr<IBorder> borderId = down ? Theme.B_BTNP : Theme.B_BTN;
         SimpleImageGridFont fontF = (SimpleImageGridFont) FontManager.getInternalFontFor(8);
         IImage font = UIBorderedElement.getBlackTextFlag(theme, borderId) ? fontF.fontBlack : fontF.fontWhite;
         int iconSize = 7;

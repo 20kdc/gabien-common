@@ -97,9 +97,13 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
 
     @Override
     public void accept(Object value, String context) {
-        // Skip already defined resources; this allows for user overrides that alter variables that then alter other stuff
-        if (resources.containsKey(context))
-            return;
+        if (context.endsWith("?")) {
+            context = context.substring(0, context.length() - 1);
+            // Skip already defined resources.
+            // This allows for user overrides that alter variables that then alter other stuff.
+            if (resources.containsKey(context))
+                return;
+        }
         resources.put(context, value);
     }
 

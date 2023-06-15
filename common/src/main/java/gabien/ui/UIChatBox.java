@@ -12,6 +12,7 @@ import gabien.IDesktopPeripherals;
 import gabien.IGrInDriver;
 import gabien.IPeripherals;
 import gabien.ITextEditingSession;
+import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
 
 /**
@@ -27,7 +28,7 @@ public class UIChatBox extends UILabel {
 
     public UIChatBox(String text, int h) {
         super(text, h);
-        borderType = 3;
+        setBorderType(Theme.B_TEXTBOX);
     }
 
     @Override
@@ -70,7 +71,7 @@ public class UIChatBox extends UILabel {
                 }
             }
         }
-        borderType = selected ? 4 : 3;
+        setBorderType(selected ? Theme.B_TEXTBOXF : Theme.B_TEXTBOX);
         super.updateContents(deltaTime, selected, peripherals);
     }
 

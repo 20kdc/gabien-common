@@ -10,6 +10,7 @@ package gabien.ui;
 import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.text.TextTools;
+import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 
 import java.util.HashSet;
@@ -67,7 +68,7 @@ public class UITabBar extends UIElement.UIPanel {
         Theme theme = getTheme();
         if (layer == UILayer.Base) {
             Size bounds = getSize();
-            UIBorderedElement.drawBorder(theme, igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
+            UIBorderedElement.drawBorder(theme, igd, Theme.B_TABA, 0, 0, 0, bounds.width, effectiveHeight);
         }
         if (layer == UILayer.Content) {
             boolean willUpdateLater = parentView.handleIncoming();
@@ -105,9 +106,9 @@ public class UITabBar extends UIElement.UIPanel {
             // This is used for all rendering.
             int theDisplayOX = pos;
             int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
-            int base = toggle ? 9 : 8;
+            Theme.Attr<IBorder> base = toggle ? Theme.B_TABB : Theme.B_TABA;
             if (parentView.selectedTab == w)
-                base = 10;
+                base = Theme.B_TABSEL;
             toggle = !toggle;
 
             // Decide against rendering
@@ -335,10 +336,10 @@ public class UITabBar extends UIElement.UIPanel {
         return h + ((h / 8) * 2);
     }
 
-    public static void drawTab(Theme theme, int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab) {
+    public static void drawTab(Theme theme, Theme.Attr<IBorder> border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab) {
         drawTab(theme, border, x, y, w, h, igd, text, tab, true, true);
     }
-    public static void drawTab(Theme theme, int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab, boolean enBack, boolean enFore) {
+    public static void drawTab(Theme theme, Theme.Attr<IBorder> border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab, boolean enBack, boolean enFore) {
         int margin = h / 8;
         int textHeight = h - (margin * 2);
         int tabExMargin = margin + (margin / 2);
