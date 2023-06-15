@@ -11,6 +11,7 @@ import gabien.GaBIEn;
 import gabien.IDesktopPeripherals;
 import gabien.IGrInDriver;
 import gabien.IPeripherals;
+import gabien.IPointer;
 import gabien.ITextEditingSession;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;

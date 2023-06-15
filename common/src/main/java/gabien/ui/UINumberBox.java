@@ -8,6 +8,7 @@
 package gabien.ui;
 
 import gabien.IPeripherals;
+import gabien.IPointer;
 import gabien.ITextEditingSession;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;

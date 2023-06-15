@@ -9,7 +9,6 @@ package gabien;
 
 import gabien.uslx.append.*;
 import gabien.text.IFixedSizeFont;
-import gabien.ui.IPointer;
 
 import java.util.HashSet;
 import java.util.LinkedList;

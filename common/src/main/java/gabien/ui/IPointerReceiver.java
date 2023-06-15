@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.IPointer;
 import gabien.uslx.append.*;
 
 /**

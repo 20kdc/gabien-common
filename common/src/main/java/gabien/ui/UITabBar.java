@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.FontManager;
 import gabien.IGrDriver;
+import gabien.IPointer;
 import gabien.text.TextTools;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;

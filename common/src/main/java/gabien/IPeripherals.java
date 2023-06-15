@@ -8,7 +8,6 @@
 package gabien;
 
 import gabien.uslx.append.*;
-import gabien.ui.IPointer;
 
 import java.util.HashSet;
 

@@ -13,6 +13,7 @@ import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.IPeripherals;
+import gabien.IPointer;
 import gabien.text.SimpleImageGridFont;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;

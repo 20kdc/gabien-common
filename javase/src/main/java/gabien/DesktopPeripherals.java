@@ -7,7 +7,6 @@
 
 package gabien;
 
-import gabien.ui.IPointer;
 import gabien.uslx.append.*;
 
 import java.util.HashMap;

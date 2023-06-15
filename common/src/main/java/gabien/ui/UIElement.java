@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.IGrDriver;
 import gabien.IPeripherals;
+import gabien.IPointer;
 
 import java.util.LinkedList;
 

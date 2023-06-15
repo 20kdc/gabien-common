@@ -12,9 +12,9 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.IPeripherals;
+import gabien.IPointer;
 import gabien.ITextEditingSession;
 import gabien.uslx.append.*;
-import gabien.ui.IPointer;
 
 /**
  * Created on 05/03/2020.
