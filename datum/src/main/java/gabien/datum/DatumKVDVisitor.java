@@ -35,4 +35,10 @@ public abstract class DatumKVDVisitor extends DatumEncodingProxyVisitor {
     }
 
     public abstract DatumVisitor handle(String key);
+
+    @Override
+    public void visitEnd(DatumSrcLoc loc) {
+        if (!readingKey)
+            throw new RuntimeException("Can't visit end in the middle of reading a value @ " + loc);
+    }
 }

@@ -7,70 +7,142 @@
 ; Still, the border flags are saner now.
 ; Border flags are: moveDown, clear, tiled, lightBkg
 t0 (theme
-	btn ()
-	btnP (moveDown)
-	label ()
-	textBox ()
-	textBoxF ()
-	window (clear)
-	sbTray (tiled)
-	sbNub (tiled)
-	tabA ()
-	tabB ()
-	tabSel ()
-	i11 ()
-	i12 ()
-	r48Overlay ()
+	btn (borderR
+	)
+	btnP (borderR
+		moveDown #t
+	)
+	label (borderR
+	)
+	textBox (borderR
+	)
+	textBoxF (borderR
+	)
+	window (borderR
+		clear #t
+	)
+	sbTray (borderT
+	)
+	sbNub (borderT
+	)
+	tabA (borderR
+	)
+	tabB (borderR
+	)
+	tabSel (borderR
+	)
+	i11 (borderR
+	)
+	i12 (borderR
+	)
+	r48Overlay (borderR
+	)
 )
 
 t1 (theme
-	btn (tiled)
-	btnP (tiled moveDown)
-	label (tiled)
-	textBox (tiled)
-	textBoxF (tiled)
-	window (tiled)
-	sbTray ()
-	sbNub (tiled)
-	tabA (tiled)
-	tabB (tiled)
-	tabSel (tiled)
-	i11 (tiled)
-	i12 (tiled)
-	r48Overlay ()
+	btn (borderT
+	)
+	btnP (borderT
+		moveDown #t
+	)
+	label (borderT
+	)
+	textBox (borderT
+	)
+	textBoxF (borderT
+	)
+	window (borderT
+	)
+	sbTray (borderR
+	)
+	sbNub (borderT
+	)
+	tabA (borderT
+	)
+	tabB (borderT
+	)
+	tabSel (borderT
+	)
+	i11 (borderT
+	)
+	i12 (borderT
+	)
+	r48Overlay (borderR
+	)
 )
 
 t2 (theme
-	btn (tiled lightBkg)
-	btnP (tiled moveDown lightBkg)
-	label (tiled lightBkg)
-	textBox (tiled lightBkg)
-	textBoxF (tiled lightBkg)
-	window (tiled lightBkg)
-	sbTray (lightBkg)
-	sbNub (tiled lightBkg)
-	tabA (tiled lightBkg)
-	tabB (tiled lightBkg)
-	tabSel (tiled lightBkg)
-	i11 (tiled lightBkg)
-	i12 (tiled lightBkg)
-	r48Overlay ()
+	btn (borderT
+		lightBkg #t
+	)
+	btnP (borderT
+		moveDown #t lightBkg #t
+	)
+	label (borderT
+		lightBkg #t
+	)
+	textBox (borderT
+		lightBkg #t
+	)
+	textBoxF (borderT
+		lightBkg #t
+	)
+	window (borderT
+		lightBkg #t
+	)
+	sbTray (borderR
+		lightBkg #t
+	)
+	sbNub (borderT
+		lightBkg #t
+	)
+	tabA (borderT
+		lightBkg #t
+	)
+	tabB (borderT
+		lightBkg #t
+	)
+	tabSel (borderT
+		lightBkg #t
+	)
+	i11 (borderT
+		lightBkg #t
+	)
+	i12 (borderT
+		lightBkg #t
+	)
+	r48Overlay (borderR
+	)
 )
 
 t3 (theme
-	btn ()
-	btnP ()
-	label ()
-	textBox ()
-	textBoxF ()
-	window (clear)
-	sbTray (tiled)
-	sbNub (tiled)
-	tabA ()
-	tabB ()
-	tabSel ()
-	i11 ()
-	i12 ()
-	r48Overlay ()
+	btn (borderR
+	)
+	btnP (borderR
+	)
+	label (borderR
+	)
+	textBox (borderR
+	)
+	textBoxF (borderR
+	)
+	window (borderR
+		clear #t
+	)
+	sbTray (borderT
+	)
+	sbNub (borderT
+	)
+	tabA (borderR
+	)
+	tabB (borderR
+	)
+	tabSel (borderR
+	)
+	i11 (borderR
+	)
+	i12 (borderR
+	)
+	r48Overlay (borderR
+	)
 )
-

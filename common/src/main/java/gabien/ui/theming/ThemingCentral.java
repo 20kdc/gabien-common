@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import gabien.GaBIEn;
 import gabien.IImage;
 import gabien.datum.*;
-import gabien.ui.Rect;
 import gabien.ui.UIBorderedElement;
 
 /**
@@ -24,8 +23,6 @@ public class ThemingCentral {
     public static final int BF_MOVEDOWN = 1;
     // Contents are black, use a clear for speed. (Ignored if tiling!)
     public static final int BF_CLEAR = 2;
-    // hi-res section is tiled, mid-res becomes 3-pixel border w/ added weirdness
-    public static final int BF_TILED = 4;
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
     public static final Theme[] themes = new Theme[4];
@@ -48,7 +45,7 @@ public class ThemingCentral {
             new DatumReaderTokenSource("themes.scm", themesISR).visit(new DatumKVDVisitor() {
                 @Override
                 public DatumVisitor handle(String key) {
-                    return new DatumODec1Visitor<ThemingResCtx, String>(ThemingResCtx.handlers, resCtx, resCtx, key);
+                    return resCtx.genVisitor(resCtx, key);
                 }
             });
             // Grab resources
@@ -62,30 +59,7 @@ public class ThemingCentral {
             for (int borderType = 0; borderType < UIBorderedElement.BORDER_TYPES; borderType++) {
                 int baseX = borderType * 12;
                 int baseY = borderTheme * 18;
-                RegularBorder border = theme.border[borderType];
-                Rect outerRegion, innerRegion;
-
-                outerRegion = new Rect(baseX, baseY, 3, 3);
-                innerRegion = new Rect(1, 1, 1, 1);
-                border.w1 = new EightPatch(themesImg, outerRegion, innerRegion);
-
-                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
-                innerRegion = new Rect(2, 2, 2, 2);
-                border.w2 = new EightPatch(themesImg, outerRegion, innerRegion);
-
-                outerRegion = new Rect(baseX + 6, baseY, 6, 6);
-                innerRegion = new Rect(3, 3, 0, 0);
-                border.w3 = new EightPatch(themesImg, outerRegion, innerRegion);
-
-                outerRegion = new Rect(baseX, baseY + 6, 12, 12);
-                innerRegion = new Rect(4, 4, 4, 4);
-                border.w4 = new EightPatch(themesImg, outerRegion, innerRegion);
-                // Extract tile
-                border.tile = themesImg.copy(borderType * 12, (borderTheme * 18) + 6, 12, 12);
-                // Setup stretch areas
-                border.stretchC1 = themesImg.subRegion(baseX + 1, baseY + 1, 1, 1);
-                border.stretchC2 = themesImg.subRegion(baseX + 8, baseY + 2, 2, 2);
-                border.stretchC4 = themesImg.subRegion(baseX + 4, baseY + 10, 4, 4);
+                theme.border[borderType].doSetup(themesImg, baseX, baseY);
             }
         }
 

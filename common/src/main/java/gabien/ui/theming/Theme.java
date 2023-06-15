@@ -6,15 +6,14 @@
  */
 package gabien.ui.theming;
 
-import static gabien.datum.DatumTreeUtils.cList;
-import static gabien.datum.DatumTreeUtils.isSym;
-
 import java.util.HashMap;
-import java.util.List;
 
-import gabien.datum.DatumDecodingVisitor;
+import gabien.datum.DatumDecToLambdaVisitor;
 import gabien.datum.DatumKVDHVisitor;
+import gabien.datum.DatumKVDVisitor;
+import gabien.datum.DatumODecVisitor;
 import gabien.datum.DatumSrcLoc;
+import gabien.datum.DatumVisitor;
 import gabien.datum.DatumODecVisitor.Handler;
 import gabien.ui.UIBorderedElement;
 
@@ -24,7 +23,7 @@ import gabien.ui.UIBorderedElement;
  */
 public class Theme {
     public int id = 0;
-    public final RegularBorder[] border = new RegularBorder[UIBorderedElement.BORDER_TYPES];
+    public final IBorder[] border = new IBorder[UIBorderedElement.BORDER_TYPES];
     public static final String[] borderTypeNames = new String[] {
         "btn",
         "btnP",
@@ -59,41 +58,56 @@ public class Theme {
             }
         };
     };
+    static final Handler<ThemingResCtx> brHandler = (k, parent, resCtx) -> {
+        RegularBorder b = new RegularBorder();
+        return makeGenericBorderVisitor(b, parent);
+    };
+    static final Handler<ThemingResCtx> btHandler = (k, parent, resCtx) -> {
+        TiledBorder b = new TiledBorder();
+        return makeGenericBorderVisitor(b, parent);
+    };
+    private static DatumVisitor makeGenericBorderVisitor(IBorder b, DatumODecVisitor<ThemingResCtx> parent) {
+        return new DatumKVDVisitor() {
+            int res = 0;
+            @Override
+            public void visitEnd(DatumSrcLoc srcLoc) {
+                super.visitEnd(srcLoc);
+                b.setFlags(res);
+                parent.visitTree(b, srcLoc);
+            }
+            
+            @Override
+            public DatumVisitor handle(String key) {
+                if (key.equals("moveDown"))
+                    return flagVisitor(ThemingCentral.BF_MOVEDOWN);
+                if (key.equals("clear"))
+                    return flagVisitor(ThemingCentral.BF_CLEAR);
+                if (key.equals("lightBkg"))
+                    return flagVisitor(ThemingCentral.BF_LIGHTBKG);
+                throw new RuntimeException("Unrecognized border key " + key);
+            }
+
+            private DatumVisitor flagVisitor(int flag) {
+                return new DatumDecToLambdaVisitor((value, srcLoc) -> {
+                    if (value == Boolean.TRUE) {
+                        res |= flag;
+                    } else if (value == Boolean.FALSE) {
+                        // nothing
+                    } else {
+                        throw new RuntimeException("Flag cannot be " + value + " at " + srcLoc);
+                    }
+                });
+            }
+        };
+    }
 
     static {
         for (int i = 0; i < borderTypeNames.length; i++) {
             final int borderType = i;
             handlersThemeKV.put(borderTypeNames[i], (k, theme, resCtx) -> {
-                return new DatumDecodingVisitor() {
-                    @Override
-                    public void visitEnd(DatumSrcLoc srcLoc) {
-                    }
-
-                    @Override
-                    public void visitTree(Object obj, DatumSrcLoc srcLoc) {
-                        if (obj instanceof List) {
-                            int res = 0;
-                            for (Object flg : cList(obj)) {
-                                if (isSym(flg, "moveDown")) {
-                                    res |= ThemingCentral.BF_MOVEDOWN;
-                                } else if (isSym(flg, "clear")) {
-                                    res |= ThemingCentral.BF_CLEAR;
-                                } else if (isSym(flg, "tiled")) {
-                                    res |= ThemingCentral.BF_TILED;
-                                } else if (isSym(flg, "lightBkg")) {
-                                    res |= ThemingCentral.BF_LIGHTBKG;
-                                } else {
-                                    throw new RuntimeException("Unrecognized flag " + flg);
-                                }
-                            }
-                            RegularBorder rb = new RegularBorder();
-                            rb.flags = res;
-                            theme.border[borderType] = rb;
-                        } else {
-                            throw new RuntimeException("Unrecognized element in themes.scm: " + obj);
-                        }
-                    }
-                };
+                return resCtx.genVisitor((rb, ctx) -> {
+                    theme.border[borderType] = (IBorder) rb;
+                }, null);
             });
         }
     }

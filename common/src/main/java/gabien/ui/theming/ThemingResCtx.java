@@ -11,6 +11,7 @@ import java.util.HashMap;
 import gabien.IImage;
 import gabien.datum.DatumODec1Visitor;
 import gabien.datum.DatumODecVisitor;
+import gabien.datum.DatumVisitor;
 
 /**
  * This is theming internal magical stuff.
@@ -23,6 +24,8 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
     static final HashMap<String, DatumODecVisitor.Handler<ThemingResCtx>> handlers = new HashMap<>();
     static {
         handlers.put("theme", Theme.handler);
+        handlers.put("borderR", Theme.brHandler);
+        handlers.put("borderT", Theme.btHandler);
     }
 
     public ThemingResCtx(IImage img) {
@@ -32,5 +35,9 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
     @Override
     public void accept(Object value, String context) {
         resources.put(context, value);
+    }
+
+    public <T> DatumVisitor genVisitor(DatumODec1Visitor.Returner<T> returner, T returnerCtx) {
+        return new DatumODec1Visitor<ThemingResCtx, T>(handlers, this, returner, returnerCtx);
     }
 }
