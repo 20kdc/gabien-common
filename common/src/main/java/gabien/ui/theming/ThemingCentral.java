@@ -7,6 +7,7 @@
 package gabien.ui.theming;
 
 import java.io.InputStreamReader;
+import java.util.LinkedList;
 
 import gabien.GaBIEn;
 import gabien.datum.*;
@@ -21,13 +22,9 @@ public class ThemingCentral {
     public static final int BF_MOVEDOWN = 1;
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
-    public static final int BORDER_THEMES = 4;
-    public static final Theme[] themes = new Theme[BORDER_THEMES];
+    public static Theme[] themes = {Theme.ROOT};
 
     public static void setupAssets() {
-        // setup "base" themes
-        for (int i = 0; i < 4; i++)
-            themes[i] = Theme.ROOT;
         try {
             ThemingResCtx resCtx = new ThemingResCtx();
 
@@ -59,11 +56,17 @@ public class ThemingCentral {
             }
 
             // Grab resources
-            for (int i = 0; i < BORDER_THEMES; i++) {
+            LinkedList<Theme> themesList = new LinkedList<>();
+            int i = 0;
+            while (true) {
                 Theme tx = (Theme) resCtx.resources.get("t" + i);
-                if (tx != null)
-                    themes[i] = tx;
+                if (tx == null)
+                    break;
+                themesList.add(tx);
+                i += 1;
             }
+            if (i > 0)
+                themes = themesList.toArray(new Theme[0]);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
