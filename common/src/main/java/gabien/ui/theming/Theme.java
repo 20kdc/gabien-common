@@ -8,6 +8,9 @@ package gabien.ui.theming;
 
 import java.util.HashMap;
 
+import org.eclipse.jdt.annotation.NonNull;
+
+import gabien.IGrDriver;
 import gabien.datum.DatumDecToLambdaVisitor;
 import gabien.datum.DatumKVDHVisitor;
 import gabien.datum.DatumODecVisitor;
@@ -24,8 +27,48 @@ import static gabien.datum.DatumTreeUtils.isSym;
  * First object to try out ODec... oh no...
  * Created 17th February 2023.
  */
-public class Theme {
-    public final IBorder[] border = new IBorder[UIBorderedElement.BORDER_TYPES];
+public final class Theme {
+    public static final Theme ROOT = new Theme();
+
+    private final IBorder[] border = new IBorder[UIBorderedElement.BORDER_TYPES];
+    private Theme() {
+        IBorder lastResortBorder = new IBorder() {
+            @Override
+            public void draw(IGrDriver igd, int borderWidth, int x, int y, int w, int h) {
+                int bw2 = borderWidth * 2;
+                igd.clearRect(0, 0, 0, x, y, w, h);
+                igd.clearRect(32, 32, 32, x + borderWidth, y + borderWidth, w - bw2, h - bw2);
+            }
+            @Override
+            public boolean getFlag(int flag) {
+                return false;
+            }
+        };
+        for (int i = 0; i < border.length; i++)
+            border[i] = lastResortBorder;
+    }
+    private Theme(Theme other) {
+        System.arraycopy(other.border, 0, border, 0, border.length);
+    }
+
+    /**
+     * Gets the border with the given ID.
+     */
+    public @NonNull IBorder getBorder(int id) {
+        return border[id];
+    }
+
+    /**
+     * Replaces the given border.
+     */
+    public Theme withBorder(int id, @NonNull IBorder replacement) {
+        Theme modified = new Theme(this);
+        modified.border[id] = replacement;
+        return modified;
+    }
+
+    // Visitor stuff follows...
+
     public static final String[] borderTypeNames = new String[] {
         "btn",
         "btnP",
@@ -47,7 +90,7 @@ public class Theme {
     };
     static final HashMap<String, DatumKVDHVisitor.Handler<Theme, ThemingResCtx>> handlersThemeKV = new HashMap<>();
     static final Handler<ThemingResCtx> handler = (k, parent, resCtx) -> {
-        Theme theme = new Theme();
+        Theme theme = new Theme(ROOT);
         return new DatumKVDHVisitor<Theme, ThemingResCtx>(Theme.handlersThemeKV, theme, resCtx) {
             @Override
             public void visitEnd(DatumSrcLoc srcLoc) {
@@ -68,6 +111,7 @@ public class Theme {
             ITexRegion basis;
             int flags = 0;
             boolean tiled = false;
+            boolean clear = false;
 
             @Override
             public DatumVisitor handle(int idx) {
@@ -78,7 +122,8 @@ public class Theme {
                         flags |= ThemingCentral.BF_MOVEDOWN;
                         return;
                     } else if (isSym(res, "clear")) {
-                        flags |= ThemingCentral.BF_CLEAR;
+                        // Contents are black, use a clear for speed. (Ignored if tiling!)
+                        clear = true;
                         return;
                     } else if (isSym(res, "lightBkg")) {
                         flags |= ThemingCentral.BF_LIGHTBKG;
@@ -95,7 +140,7 @@ public class Theme {
             public void visitEnd(DatumSrcLoc srcLoc) {
                 if (basis == null)
                     throw new RuntimeException("Border missing base image @ " + srcLoc);
-                IBorder b = tiled ? new TiledBorder(flags, basis) : new RegularBorder(flags, basis);
+                IBorder b = tiled ? new TiledBorder(flags, basis) : new RegularBorder(flags, basis, clear);
                 parent.visitTree(b, srcLoc);
             }
         };

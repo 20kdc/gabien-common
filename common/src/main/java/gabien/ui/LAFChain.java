@@ -10,7 +10,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.ui.theming.Theme;
-import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.RefSyncSet;
 
 /**
@@ -28,7 +27,7 @@ public abstract class LAFChain {
      * Actual calculated theme.
      * Package-private, get via getTheme.
      */
-    private @NonNull Theme theme = ThemingCentral.THEME_OF_LAST_RESORT;
+    private @NonNull Theme theme = Theme.ROOT;
 
     /**
      * Theme override.
@@ -97,7 +96,7 @@ public abstract class LAFChain {
         } else if (parent != null) {
             newTheme = parent.theme;
         } else {
-            newTheme = ThemingCentral.THEME_OF_LAST_RESORT;
+            newTheme = Theme.ROOT;
         }
         if (newTheme != theme) {
             theme = newTheme;

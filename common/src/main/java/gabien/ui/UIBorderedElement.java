@@ -8,7 +8,6 @@
 package gabien.ui;
 
 import gabien.*;
-import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 import gabien.ui.theming.ThemingCentral;
 
@@ -125,19 +124,13 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     private static boolean getBorderFlag2(Theme theme, int borderType, int flag) {
-        IBorder border = theme.border[borderType];
-        if (border == null)
-            return false;
-        return border.getFlag(flag);
+        return theme.getBorder(borderType).getFlag(flag);
     }
 
     public static void drawBorder(Theme theme, IGrDriver igd, int borderType, int borderWidth, Rect where) {
         drawBorder(theme, igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
     }
     public static void drawBorder(Theme theme, IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
-        IBorder border = theme.border[borderType];
-        if (border == null)
-            return;
-        border.draw(igd, borderWidth, x, y, w, h);
+        theme.getBorder(borderType).draw(igd, borderWidth, x, y, w, h);
     }
 }

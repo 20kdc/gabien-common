@@ -8,8 +8,6 @@ package gabien.ui.theming;
 
 import java.io.InputStreamReader;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 import gabien.GaBIEn;
 import gabien.datum.*;
 
@@ -21,18 +19,15 @@ import gabien.datum.*;
 public class ThemingCentral {
     // use 'pressed' offset effect (WHERE SUPPORTED)
     public static final int BF_MOVEDOWN = 1;
-    // Contents are black, use a clear for speed. (Ignored if tiling!)
-    public static final int BF_CLEAR = 2;
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
     public static final int BORDER_THEMES = 4;
     public static final Theme[] themes = new Theme[BORDER_THEMES];
-    public static final @NonNull Theme THEME_OF_LAST_RESORT = new Theme();
 
     public static void setupAssets() {
         // setup "base" themes
         for (int i = 0; i < 4; i++)
-            themes[i] = new Theme();
+            themes[i] = Theme.ROOT;
         try {
             ThemingResCtx resCtx = new ThemingResCtx();
 
