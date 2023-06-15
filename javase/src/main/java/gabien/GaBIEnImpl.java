@@ -116,7 +116,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     @Override
     public WindowSpecs defaultWindowSpecs(String name, int w, int h) {
-        WindowSpecs ws = new WindowSpecs();
+        WindowSpecs ws = new WindowSpecs(this);
         ws.scale = ((w > 400) || (h > 300)) ? 1 : 2;
         ws.resizable = false;
         return ws;

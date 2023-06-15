@@ -9,11 +9,12 @@ package gabien.backend;
 
 import java.util.LinkedList;
 
+import gabien.GaBIEn;
 import gabien.IDesktopPeripherals;
+import gabien.IGaBIEn;
 import gabien.IGrInDriver;
 import gabien.IImage;
 import gabien.IPeripherals;
-import gabien.PriorityElevatorForUseByBackendHelp;
 import gabien.WindowSpecs;
 
 /**
@@ -24,13 +25,17 @@ import gabien.WindowSpecs;
  * 
  * Created on 04/03/2020.
  */
-public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IGaBIEnMultiWindow {
+public class WindowMux implements IGaBIEnMultiWindow {
     public IGrInDriver underlyingWindow;
     
     public LinkedList<Window> windows = new LinkedList<WindowMux.Window>();
     public LinkedList<Window> windowsSystem = new LinkedList<WindowMux.Window>();
-    
-    public WindowMux(IGrInDriver underlying) {
+
+    private final IGaBIEn backend;
+
+    public WindowMux(IGaBIEn backend, IGrInDriver underlying) {
+        this.backend = backend;
+        GaBIEn.verify(backend);
         underlyingWindow = underlying;
     }
     
@@ -49,14 +54,14 @@ public class WindowMux extends PriorityElevatorForUseByBackendHelp implements IG
     
     @Override
     public WindowSpecs defaultWindowSpecs(String name, int w, int h) {
-        return newWindowSpecs();
+        return new WindowSpecs(backend);
     }
     
     @Override
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs windowspecs) {
         Window wnd = new Window(underlyingWindow.getWidth(), underlyingWindow.getHeight());
         Window oldWnd = getCurrentWindow();
-        if (isOfSystemPriority(windowspecs)) {
+        if (windowspecs.engineIsOfSystemPriority(backend)) {
             windowsSystem.add(wnd);
         } else {
             windows.add(wnd);

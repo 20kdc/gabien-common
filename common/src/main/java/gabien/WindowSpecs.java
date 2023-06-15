@@ -8,9 +8,12 @@
 package gabien;
 
 public final class WindowSpecs {
-    // Stop non-GaBIen classes from creating this object.
-    // This ensures that it has to be created via the relevant GaBIEn get-defaults function.
-    protected WindowSpecs() {
+    /**
+     * Creates a truly blank WindowSpecs.
+     * This can only be done from the backend or GaBIEn itself.
+     */
+    public WindowSpecs(IGaBIEn backend) {
+        GaBIEn.verify(backend);
     }
 
     /**
@@ -41,4 +44,20 @@ public final class WindowSpecs {
      * This matters for SWA platfomrs.
      */
     boolean hasSystemPriority = false;
+
+    /**
+     * Only gabien-common or backend code is supposed to call this.
+     */
+    public void engineElevateToSystemPriority(IGaBIEn backend) {
+        GaBIEn.verify(backend);
+        hasSystemPriority = true;
+    }
+
+    /**
+     * Only gabien-common or backend code is supposed to call this.
+     */
+    public boolean engineIsOfSystemPriority(IGaBIEn backend) {
+        GaBIEn.verify(backend);
+        return hasSystemPriority;
+    }
 }

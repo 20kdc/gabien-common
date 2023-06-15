@@ -4,24 +4,33 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-package gabien;
+package gabien.backend;
 
 import java.util.HashMap;
 
+import gabien.GaBIEn;
+import gabien.IGaBIEn;
+import gabien.IImage;
 import gabien.render.IWSIImage;
 
 /**
  * Getting this code put here.
  * Created 16th February 2023.
  */
-final class ImageCache {
+public final class ImageCache {
     private HashMap<String, IImage> loadedImages = new HashMap<String, IImage>();
+    private final IGaBIEn backend; 
 
-    IImage getImage(String a, boolean res) {
+    public ImageCache(IGaBIEn backend) {
+        this.backend = backend;
+        GaBIEn.verify(backend);
+    }
+
+    public IImage getImage(String a, boolean res) {
         String ki = a + "_N_N_N" + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IWSIImage img = GaBIEn.internal.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
+        IWSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
@@ -32,11 +41,11 @@ final class ImageCache {
         return resImg;
     }
 
-    IImage getImageCK(String a, boolean res, int tr, int tg, int tb) {
+    public IImage getImageCK(String a, boolean res, int tr, int tg, int tb) {
         String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IWSIImage img = GaBIEn.internal.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
+        IWSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();

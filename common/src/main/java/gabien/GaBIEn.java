@@ -10,6 +10,8 @@ package gabien;
 import gabien.backend.IGaBIEnClipboard;
 import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
+import gabien.backend.ImageCache;
+import gabien.backend.NativeFontCache;
 import gabien.backend.NullGrDriver;
 import gabien.natives.BadGPU;
 import gabien.render.IWSIImage;
@@ -45,8 +47,8 @@ public class GaBIEn {
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
     private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
     private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
-    private static NativeFontCache nativeFontCache = new NativeFontCache();
-    private static ImageCache imageCache = new ImageCache();
+    private static NativeFontCache nativeFontCache;
+    private static ImageCache imageCache;
 
     // Additional resource load locations.
     public static String[] appPrefixes = new String[0];
@@ -423,6 +425,7 @@ public class GaBIEn {
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      */
     static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger) {
+        // Initialize VOPEKS
         if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
             System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
         System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
@@ -432,7 +435,15 @@ public class GaBIEn {
         if (debug)
             newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
         vopeks = new Vopeks(newInstanceFlags, timeLogger);
+        // VOPEKS has started, we can now start user-level services
+        nativeFontCache = new NativeFontCache(internal);
+        imageCache = new ImageCache(internal);
         FontManager.setupFonts();
         ThemingCentral.setupAssets();
+    }
+
+    public static void verify(IGaBIEn engine) {
+        if (internal != engine)
+            throw new RuntimeException("Attempt to falsify engine permissions.");
     }
 }

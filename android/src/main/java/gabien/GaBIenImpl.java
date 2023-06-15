@@ -45,8 +45,8 @@ public final class GaBIenImpl implements IGaBIEn {
     	// Use these "key files" to control startup. Only their existence matters, contents don't.
         GaBIEn.setupNativesAndAssets(AndroidPortGlobals.debugFlag, new File("/sdcard/gabien_android_enable_timelogger").exists());
         AndroidPortGlobals.theMainWindow = new GrInDriver(800, 600);
-    	GaBIEn.internalWindowing = new WindowMux(AndroidPortGlobals.theMainWindow);
-    	GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
+    	GaBIEn.internalWindowing = new WindowMux(impl, AndroidPortGlobals.theMainWindow);
+    	GaBIEn.internalFileBrowser = new EmulatedFileBrowser(impl);
     	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
     }
 

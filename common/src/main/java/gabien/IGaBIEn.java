@@ -25,6 +25,11 @@ import gabien.text.IFixedSizeFont;
  * (All drawing primitives from platforms I've seen
  *  can be accessed from any thread,probably because games
  *  like to use their own schedulers)
+ *
+ * A second utility of IGaBIEn is to confirm that a caller "has engine access".
+ * This is because Java packages can sometimes be limiting for access control.
+ * So having an instance of IGaBIEn is a useful shorthand for "I am engine code".
+ * This property is verifiable by using GaBIEn.verify(IGaBIEn).
  */
 public interface IGaBIEn {
     // NOTE regarding the following two functions.

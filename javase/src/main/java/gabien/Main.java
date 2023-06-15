@@ -60,13 +60,13 @@ abstract class Main {
 
         initializeEmbedded(isDebug, isTimeLogging);
         if (GaBIEnImpl.mobileEmulation) {
-        	WindowSpecs ws = new WindowSpecs();
+        	WindowSpecs ws = new WindowSpecs(GaBIEn.internal);
         	ws.resizable = false;
-        	GaBIEn.internalWindowing = new WindowMux(GaBIEn.internalWindowing.makeGrIn("Mobile", 960, 540, ws));
+        	GaBIEn.internalWindowing = new WindowMux(GaBIEn.internal, GaBIEn.internalWindowing.makeGrIn("Mobile", 960, 540, ws));
             useInternalBrowser = true;
         }
         if (useInternalBrowser)
-            GaBIEn.internalFileBrowser = new EmulatedFileBrowser();
+            GaBIEn.internalFileBrowser = new EmulatedFileBrowser(GaBIEn.internal);
         try {
             Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
         } catch (Exception e) {

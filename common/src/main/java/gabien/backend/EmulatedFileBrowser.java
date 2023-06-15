@@ -7,7 +7,7 @@
 package gabien.backend;
 
 import gabien.GaBIEn;
-import gabien.PriorityElevatorForUseByBackendHelp;
+import gabien.IGaBIEn;
 import gabien.WindowSpecs;
 import gabien.uslx.append.*;
 import gabien.ui.UIElement;
@@ -16,12 +16,14 @@ import gabien.ui.WindowCreatingUIElementConsumer;
 /**
  * Created on 04/03/2020.
  */
-public class EmulatedFileBrowser extends PriorityElevatorForUseByBackendHelp implements IGaBIEnFileBrowser {
+public class EmulatedFileBrowser implements IGaBIEnFileBrowser {
 
     // The initial browser directory.
     public String browserDirectory;
+    private final IGaBIEn backend;
     
-    public EmulatedFileBrowser() {
+    public EmulatedFileBrowser(IGaBIEn backend) {
+        this.backend = backend;
         setBrowserDirectory(".");
     }
 
@@ -37,7 +39,7 @@ public class EmulatedFileBrowser extends PriorityElevatorForUseByBackendHelp imp
             @Override
             protected WindowSpecs setupSpecs(UIElement o, int scale, boolean fullscreen, boolean resizable) {
                 WindowSpecs ws = super.setupSpecs(o, scale, fullscreen, resizable);
-                elevateToSystemPriority(ws);
+                ws.engineElevateToSystemPriority(backend);
                 return ws;
             }
         };

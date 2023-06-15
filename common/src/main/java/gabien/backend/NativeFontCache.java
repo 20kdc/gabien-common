@@ -4,15 +4,17 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-package gabien;
+package gabien.backend;
 
+import gabien.GaBIEn;
+import gabien.IGaBIEn;
 import gabien.text.IFixedSizeFont;
 
 /**
  * Temporary native font cache to prevent a ton of lookups.
  * Created 16th February 2023.
  */
-final class NativeFontCache {
+public final class NativeFontCache {
     private String lastFontName = null;
     private int lastFontSize = -1;
     private IFixedSizeFont lastFont = null;
@@ -20,16 +22,23 @@ final class NativeFontCache {
     private int lastDefaultFontSize = -1;
     private IFixedSizeFont lastDefaultFont = null;
 
+    private final IGaBIEn backend;
+
+    public NativeFontCache(IGaBIEn backend) {
+        this.backend = backend;
+        GaBIEn.verify(backend);
+    }
+
     /**
      * Proxy to IGaBIEn.getDefaultNativeFont
      */
-    IFixedSizeFont getDefaultNativeFont(int size) {
+    public IFixedSizeFont getDefaultNativeFont(int size) {
         synchronized (this) {
             if (lastDefaultFont != null)
                 if (lastDefaultFontSize == size)
                     return lastDefaultFont;
         }
-        IFixedSizeFont res = GaBIEn.internal.getDefaultNativeFont(size);
+        IFixedSizeFont res = backend.getDefaultNativeFont(size);
         synchronized (this) {
             lastDefaultFontSize = size;
             lastDefaultFont = res;
@@ -40,14 +49,14 @@ final class NativeFontCache {
     /**
      * Proxy to IGaBIEn.getNativeFont
      */
-    IFixedSizeFont getNativeFont(int size, String name) {
+    public IFixedSizeFont getNativeFont(int size, String name) {
         synchronized (this) {
             if (lastFont != null)
                 if (lastFontSize == size)
                     if (lastFontName.equals(name))
                         return lastFont;
         }
-        IFixedSizeFont res = GaBIEn.internal.getNativeFont(size, name);
+        IFixedSizeFont res = backend.getNativeFont(size, name);
         if (res == null)
             return null;
         synchronized (this) {
