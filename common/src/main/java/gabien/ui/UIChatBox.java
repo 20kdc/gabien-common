@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.GaBIEn;
 import gabien.IDesktopPeripherals;
 import gabien.IGrInDriver;
 import gabien.IPeripherals;
@@ -51,6 +52,9 @@ public class UIChatBox extends UILabel {
                 // this is to clear the isEnterJustPressed flag
                 editingSession.endSession();
                 editingSession = null;
+                // this is a workaround to stop Android seizing up
+                if (GaBIEn.singleWindowApp())
+                    tempDisableSelection = true;
             }
             if ((editingSession != null) && editingSession.isSessionDead()) {
                 // clean up if the session died

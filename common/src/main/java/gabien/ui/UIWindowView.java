@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.IGrDriver;
 import gabien.IPeripherals;
+import gabien.ui.theming.Theme;
 
 import java.util.LinkedList;
 import java.util.Random;
@@ -316,10 +317,11 @@ public class UIWindowView extends UIElement {
 
             Rect b = contents.getParentRelativeBounds();
 
-            UIBorderedElement.drawBorder(igd, 5, parent.sizerVisual, b.x - parent.sizerVisual, b.y - (windowFrameHeight + parent.sizerVisual), b.width + (parent.sizerVisual * 2), b.height + (windowFrameHeight + (parent.sizerVisual * 2)));
+            Theme theme = contents.getTheme();
+            UIBorderedElement.drawBorder(theme, igd, 5, parent.sizerVisual, b.x - parent.sizerVisual, b.y - (windowFrameHeight + parent.sizerVisual), b.width + (parent.sizerVisual * 2), b.height + (windowFrameHeight + (parent.sizerVisual * 2)));
 
             boolean winSelected = parent.selectedWindow == this;
-            UITabBar.drawTab(winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), this);
+            UITabBar.drawTab(theme, winSelected ? 12 : 11, b.x, b.y - windowFrameHeight, b.width, windowFrameHeight, igd, contents.toString(), this);
 
             for (UILayer layer : UIElement.LAYERS)
                 UIPanel.scissoredRender(contents, igd, layer);

@@ -11,6 +11,7 @@ import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.IPeripherals;
 import gabien.text.TextTools;
+import gabien.ui.theming.Theme;
 
 /**
  * A label. Displays text.
@@ -140,7 +141,7 @@ public class UILabel extends UIBorderedElement {
     }
 
     // Sort of a "lite" UILabel.
-    public static class StatusLine {
+    public static class StatusLine extends LAFChain {
         private Contents statusLine;
         // used to prevent allocating Size objects
         private Size lastSize = new Size(0, 0);
@@ -159,8 +160,9 @@ public class UILabel extends UIBorderedElement {
                 height = sz.height;
                 pokeLastSize(w, height);
             }
-            UIBorderedElement.drawBorder(igd, 2, bw, x, y, w, height);
-            boolean statusLineBT = UIBorderedElement.getBlackTextFlag(2);
+            Theme theme = getTheme();
+            UIBorderedElement.drawBorder(theme, igd, 2, bw, x, y, w, height);
+            boolean statusLineBT = UIBorderedElement.getBlackTextFlag(theme, 2);
             statusLine.render(statusLineBT, x, y, igd, false);
         }
 
@@ -170,21 +172,21 @@ public class UILabel extends UIBorderedElement {
         }
     }
 
-    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache) {
-        return drawLabel(igd, wid, ox, oy, string, mode, height, cache, true, true);
+    public static int drawLabel(Theme theme, IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache) {
+        return drawLabel(theme, igd, wid, ox, oy, string, mode, height, cache, true, true);
     }
 
     // NOTE: Assumes the label is already formatted accordingly.
     // If not, expect it to go off the right of the screen if need be.
     // If you want multiline support, use a Contents instance.
-    public static int drawLabel(IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache, boolean enBack, boolean enFore) {
+    public static int drawLabel(Theme theme, IGrDriver igd, int wid, int ox, int oy, String string, int mode, int height, TextTools.PlainCached cache, boolean enBack, boolean enFore) {
         int h = UIBorderedElement.getRecommendedBorderWidth(height);
         int h2 = height + (h * 2) - (height / 8);
         if (enBack)
-            UIBorderedElement.drawBorder(igd, mode + 2, h, ox, oy, wid, h2);
+            UIBorderedElement.drawBorder(theme, igd, mode + 2, h, ox, oy, wid, h2);
         if (enFore) {
             cache.font = FontManager.getFontForText(string, height);
-            cache.blackText = UIBorderedElement.getBlackTextFlag(mode + 2);
+            cache.blackText = UIBorderedElement.getBlackTextFlag(theme, mode + 2);
             cache.text = string;
             cache.update();
             cache.getChunk().renderRoot(igd, ox + h, oy + h);

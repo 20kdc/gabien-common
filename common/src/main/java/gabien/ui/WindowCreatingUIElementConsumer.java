@@ -41,6 +41,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         ws.scale = scale;
         ws.resizable = resizable;
         ws.fullscreen = fullscreen;
+        ws.backgroundLight = UIBorderedElement.getBlackTextFlagWindowRoot(o.getTheme());
         return ws;
     }
     
@@ -102,7 +103,7 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
             sti[2] = cw;
             sti[3] = ch;
             aw.peripherals.clearOffset();
-            UIBorderedElement.drawBorder(backbuffer, 5, 0, 0, 0, cw, ch);
+            UIBorderedElement.drawBorder(aw.ue.getTheme(), backbuffer, 5, 0, 0, 0, cw, ch);
             aw.ue.update(dT, true, aw.peripherals);
             aw.ue.renderAllLayers(backbuffer);
 

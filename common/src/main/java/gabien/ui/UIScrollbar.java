@@ -14,6 +14,7 @@ import gabien.IGrDriver;
 import gabien.IImage;
 import gabien.IPeripherals;
 import gabien.text.SimpleImageGridFont;
+import gabien.ui.theming.Theme;
 
 /**
  * Replacement for UIVScrollbar in gabien-app-r48.
@@ -62,7 +63,7 @@ public class UIScrollbar extends UIElement {
         carriageBorder = barSize / 8;
         int carriageLength = barLength - (barSize * 2);
         carriageMargin = carriageBorder;
-        if (UIBorderedElement.getMoveDownFlag(7))
+        if (UIBorderedElement.getMoveDownFlag(getTheme(), 7))
             carriageMargin = 0;
 
         nubSize = barSize - (carriageMargin * 2);
@@ -103,11 +104,12 @@ public class UIScrollbar extends UIElement {
     @Override
     public void render(IGrDriver igd) {
         // Negative and Positive Buttons
-        drawNPB(igd, negativeButtonTimer, boxNegative, vertical ? 0 : 21);
-        drawNPB(igd, positiveButtonTimer, boxPositive, vertical ? 7 : 14);
+        Theme theme = getTheme();
+        drawNPB(theme, igd, negativeButtonTimer, boxNegative, vertical ? 0 : 21);
+        drawNPB(theme, igd, positiveButtonTimer, boxPositive, vertical ? 7 : 14);
         if (boxCarriage != null) {
             // Carriage
-            UIBorderedElement.drawBorder(igd, 6, carriageBorder, boxCarriage);
+            UIBorderedElement.drawBorder(theme, igd, 6, carriageBorder, boxCarriage);
             // Nub
             int nubX = boxCarriageFloor.x;
             int nubY = boxCarriageFloor.y;
@@ -118,24 +120,24 @@ public class UIScrollbar extends UIElement {
                 nubX += nubPoint;
             }
 
-            UIBorderedElement.drawBorder(igd, 7, nubBorder, nubX, nubY, nubSize, nubSize);
+            UIBorderedElement.drawBorder(theme, igd, 7, nubBorder, nubX, nubY, nubSize, nubSize);
         }
     }
 
-    public void drawNPB(IGrDriver igd, double timer, Rect box, int bump) {
+    private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, int bump) {
         boolean down = timer > 0;
         int borderId = down ? 1 : 0;
         SimpleImageGridFont fontF = (SimpleImageGridFont) FontManager.getInternalFontFor(8);
-        IImage font = UIBorderedElement.getBlackTextFlag(borderId) ? fontF.fontBlack : fontF.fontWhite;
+        IImage font = UIBorderedElement.getBlackTextFlag(theme, borderId) ? fontF.fontBlack : fontF.fontWhite;
         int iconSize = 7;
         int maxIconSize = Math.min(box.width, box.height) - (carriageBorder * 2);
         int iconSizeScale = maxIconSize / iconSize;
         if (iconSizeScale > 0)
             iconSize *= iconSizeScale;
         int yOffset = 0;
-        if (UIBorderedElement.getMoveDownFlag(borderId))
+        if (UIBorderedElement.getMoveDownFlag(theme, borderId))
             yOffset += carriageBorder;
-        UIBorderedElement.drawBorder(igd, borderId, carriageBorder, box.x, box.y + yOffset, box.width, box.height);
+        UIBorderedElement.drawBorder(theme, igd, borderId, carriageBorder, box.x, box.y + yOffset, box.width, box.height);
         igd.blitScaledImage(56 + bump, 7, 7, 7, box.x + ((box.width - iconSize) / 2), box.y + yOffset + ((box.height - iconSize) / 2), iconSize, iconSize, font);
     }
 

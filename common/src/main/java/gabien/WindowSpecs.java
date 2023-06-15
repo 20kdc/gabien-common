@@ -13,14 +13,32 @@ public final class WindowSpecs {
     protected WindowSpecs() {
     }
 
+    /**
+     * Scale. This only works on JSE.
+     * This dates to the really old days when this framework was being used for pixel-art stuff.
+     */
     public int scale = 1;
-    // NOTE: If fullscreen is set or you are on an SWA platform, this is essentially true.
+
+    /**
+     * If fullscreen is set or you are on an SWA platform, this is essentially forced to true.
+     */
     public boolean resizable = false;
-    // NOTE: On SWA platforms, this is totally ignored.
-    // Should attempt to "follow the screen the last window was already on".
+
+    /**
+     * NOTE: On SWA platforms, this is totally ignored.
+     * Should attempt to "follow the screen the last window was already on".
+     */
     public boolean fullscreen = false;
-    
-    // Creates the window with 'system priority'.
-    // This is used for file browsers or other backend-level modal dialogs.
+
+    /**
+     * Controls the default background colour for WSIs that care, to reduce flicker.
+     */
+    public boolean backgroundLight = false;
+
+    /**
+     * Creates the window with 'system priority'.
+     * This is used for file browsers or other backend-level modal dialogs.
+     * This matters for SWA platfomrs.
+     */
     boolean hasSystemPriority = false;
 }

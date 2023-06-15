@@ -8,9 +8,10 @@ package gabien.ui.theming;
 
 import java.io.InputStreamReader;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.GaBIEn;
 import gabien.datum.*;
-import gabien.ui.UIBorderedElement;
 
 /**
  * This is holding all the stuff that's being pulled out of UIBorderedElement.
@@ -24,14 +25,9 @@ public class ThemingCentral {
     public static final int BF_CLEAR = 2;
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
-    public static final Theme[] themes = new Theme[4];
-
-    /**
-     * It might be nice to do theme inheritance.
-     */
-    public static Theme getGlobalTheme() {
-        return themes[UIBorderedElement.borderTheme];
-    }
+    public static final int BORDER_THEMES = 4;
+    public static final Theme[] themes = new Theme[BORDER_THEMES];
+    public static final @NonNull Theme THEME_OF_LAST_RESORT = new Theme();
 
     public static void setupAssets() {
         // setup "base" themes
@@ -64,7 +60,7 @@ public class ThemingCentral {
                 }
             });
             // Grab resources
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < BORDER_THEMES; i++) {
                 Theme tx = (Theme) resCtx.resources.get("t" + i);
                 if (tx != null)
                     themes[i] = tx;

@@ -12,6 +12,8 @@ import gabien.IPeripherals;
 
 import java.util.LinkedList;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Once a simple class. Now it's not.
  *
@@ -22,7 +24,7 @@ import java.util.LinkedList;
  *
  * Redesigned on February 16th, 2018.
  */
-public abstract class UIElement {
+public abstract class UIElement extends LAFChain {
     /**
      * Just so that this doesn't have to be repeated a thousand times...
      */
@@ -193,6 +195,7 @@ public abstract class UIElement {
             setAttachedToRoot(newParent.attachedToRootFlag);
         else
             setAttachedToRoot(false);
+        themeUpdate();
     }
 
     /**
@@ -237,7 +240,16 @@ public abstract class UIElement {
         return getClass().getName();
     }
 
-    public UIElement getParent() {
+    public final UIElement getParent() {
+        return parent;
+    }
+
+    @Override
+    @Nullable
+    LAFChain getLAFParentInternal() {
+        LAFChain c1 = super.getLAFParentInternal();
+        if (c1 != null)
+            return c1;
         return parent;
     }
 
@@ -493,6 +505,13 @@ public abstract class UIElement {
             allElementsChanged = true;
             released = true;
         }
+
+        @Override
+        public void themeUpdateChildren() {
+            recacheElements();
+            for (UIElement uie : cachedAllElements)
+                uie.themeUpdate();
+        }
     }
 
     /**
@@ -591,6 +610,11 @@ public abstract class UIElement {
         @Override
         public void onWindowClose() {
             currentElement.onWindowClose();
+        }
+
+        @Override
+        public void themeUpdateChildren() {
+            currentElement.themeUpdate();
         }
     }
 }

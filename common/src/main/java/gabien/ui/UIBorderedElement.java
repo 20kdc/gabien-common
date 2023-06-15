@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.*;
 import gabien.ui.theming.IBorder;
+import gabien.ui.theming.Theme;
 import gabien.ui.theming.ThemingCentral;
 
 /**
@@ -16,8 +17,6 @@ import gabien.ui.theming.ThemingCentral;
  * Created on February 16th, 2018.
  */
 public abstract class UIBorderedElement extends UIElement {
-    public static int borderTheme = 0;
-    public static final int BORDER_THEMES = 4;
     public static final int BORDER_TYPES = 14;
 
     public int borderType;
@@ -58,7 +57,8 @@ public abstract class UIBorderedElement extends UIElement {
     private void calcContentsRelativeInputBounds() {
         int bw = borderWidth;
         int bwy = bw;
-        if (getBorderFlag2(borderType, ThemingCentral.BF_MOVEDOWN))
+        Theme theme = getTheme();
+        if (getBorderFlag2(theme, borderType, ThemingCentral.BF_MOVEDOWN))
             bwy *= 2;
         Size sz = getSize();
         contentsRelativeInputBounds = new Rect(-bw, -bwy, sz.width, sz.height);
@@ -79,17 +79,18 @@ public abstract class UIBorderedElement extends UIElement {
         if (layer != UILayer.Base && layer != UILayer.Content)
             return;
         Size s = getSize();
-        boolean black = getBorderFlag2(borderType, ThemingCentral.BF_LIGHTBKG);
-        if (getBorderFlag2(borderType, ThemingCentral.BF_MOVEDOWN)) {
+        Theme theme = getTheme();
+        boolean black = getBorderFlag2(theme, borderType, ThemingCentral.BF_LIGHTBKG);
+        if (getBorderFlag2(theme, borderType, ThemingCentral.BF_MOVEDOWN)) {
             float oty = igd.trsTYS(getBorderWidth());
             if (layer == UILayer.Base)
-                drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
+                drawBorder(theme, igd, borderType, borderWidth, 0, 0, s.width, s.height);
             else if (layer == UILayer.Content)
                 renderContents(black, igd);
             igd.trsTYE(oty);
         } else {
             if (layer == UILayer.Base)
-                drawBorder(igd, borderType, borderWidth, 0, 0, s.width, s.height);
+                drawBorder(theme, igd, borderType, borderWidth, 0, 0, s.width, s.height);
             else if (layer == UILayer.Content)
                 renderContents(black, igd);
         }
@@ -111,30 +112,30 @@ public abstract class UIBorderedElement extends UIElement {
     public abstract void renderContents(boolean drawBlack, IGrDriver igd);
     public abstract void updateContents(double deltaTime, boolean selected, IPeripherals peripherals);
 
-    public static boolean getBlackTextFlagWindowRoot() {
-        return getBlackTextFlag(5);
+    public static boolean getBlackTextFlagWindowRoot(Theme theme) {
+        return getBlackTextFlag(theme, 5);
     }
 
-    public static boolean getMoveDownFlag(int base) {
-        return getBorderFlag2(base, ThemingCentral.BF_MOVEDOWN);
+    public static boolean getMoveDownFlag(Theme theme, int base) {
+        return getBorderFlag2(theme, base, ThemingCentral.BF_MOVEDOWN);
     }
 
-    public static boolean getBlackTextFlag(int i) {
-        return getBorderFlag2(i, ThemingCentral.BF_LIGHTBKG);
+    public static boolean getBlackTextFlag(Theme theme, int i) {
+        return getBorderFlag2(theme, i, ThemingCentral.BF_LIGHTBKG);
     }
 
-    private static boolean getBorderFlag2(int borderType, int flag) {
-        IBorder border = ThemingCentral.getGlobalTheme().border[borderType];
+    private static boolean getBorderFlag2(Theme theme, int borderType, int flag) {
+        IBorder border = theme.border[borderType];
         if (border == null)
             return false;
         return border.getFlag(flag);
     }
 
-    public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, Rect where) {
-        drawBorder(igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
+    public static void drawBorder(Theme theme, IGrDriver igd, int borderType, int borderWidth, Rect where) {
+        drawBorder(theme, igd, borderType, borderWidth, where.x, where.y, where.width, where.height);
     }
-    public static void drawBorder(IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
-        IBorder border = ThemingCentral.getGlobalTheme().border[borderType];
+    public static void drawBorder(Theme theme, IGrDriver igd, int borderType, int borderWidth, int x, int y, int w, int h) {
+        IBorder border = theme.border[borderType];
         if (border == null)
             return;
         border.draw(igd, borderWidth, x, y, w, h);

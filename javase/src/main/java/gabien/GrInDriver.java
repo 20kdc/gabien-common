@@ -9,7 +9,6 @@ package gabien;
 
 import gabien.backend.WSIDownloadPair;
 import gabien.render.IWSIImage;
-import gabien.ui.UIBorderedElement;
 import gabien.uslx.append.IFunction;
 
 import javax.swing.*;
@@ -86,7 +85,7 @@ class GrInDriver implements IGrInDriver {
         // Set the background because of resizing. Must occur before peers created.
         Color background = Color.black;
         // Actually in a light theme? Check w/ gabien.ui
-        if (UIBorderedElement.getBlackTextFlagWindowRoot())
+        if (ws.backgroundLight)
             background = Color.white;
         // This sets OS-level stuff indirectly. It won't be enough, though.
         frame.setBackground(background);

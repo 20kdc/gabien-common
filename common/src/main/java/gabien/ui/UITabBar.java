@@ -10,6 +10,7 @@ package gabien.ui;
 import gabien.FontManager;
 import gabien.IGrDriver;
 import gabien.text.TextTools;
+import gabien.ui.theming.Theme;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -63,9 +64,10 @@ public class UITabBar extends UIElement.UIPanel {
     @Override
     public void renderLayer(IGrDriver igd, UILayer layer) {
         super.renderLayer(igd, layer);
+        Theme theme = getTheme();
         if (layer == UILayer.Base) {
             Size bounds = getSize();
-            UIBorderedElement.drawBorder(igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
+            UIBorderedElement.drawBorder(theme, igd, 8, 0, 0, 0, bounds.width, effectiveHeight);
         }
         if (layer == UILayer.Content) {
             boolean willUpdateLater = parentView.handleIncoming();
@@ -89,14 +91,14 @@ public class UITabBar extends UIElement.UIPanel {
                 parentView.runLayout();
         }
         if (layer == UILayer.Base)
-            renderTabPass(igd, false, true, false);
+            renderTabPass(theme, igd, false, true, false);
         if (layer == UILayer.Content) {
-            renderTabPass(igd, false, false, true);
+            renderTabPass(theme, igd, false, false, true);
             if ((draggingTabs.size() > 0) && canDragTabs)
-                renderTabPass(igd, true, true, true);
+                renderTabPass(theme, igd, true, true, true);
         }
     }
-    private void renderTabPass(IGrDriver igd, boolean isRenderingDraggedTabs, boolean enBack, boolean enFore) {
+    private void renderTabPass(Theme theme, IGrDriver igd, boolean isRenderingDraggedTabs, boolean enBack, boolean enFore) {
         int pos = getScrollOffsetX();
         boolean toggle = false;
         for (Tab w : tabs) {
@@ -126,17 +128,17 @@ public class UITabBar extends UIElement.UIPanel {
                 continue;
             }
 
-            if (UIBorderedElement.getMoveDownFlag(base)) {
+            if (UIBorderedElement.getMoveDownFlag(theme, base)) {
                 float[] trs = igd.getTRS();
                 int[] scissor = igd.getScissor();
                 float oldTY = igd.trsTYS(effectiveHeight / 8);
                 int oldCD = scissor[3];
                 scissor[3] = (int) Math.min(scissor[3], oldTY + (effectiveHeight * trs[3]));
-                drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
+                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
                 igd.trsTYE(oldTY);
                 scissor[3] = oldCD;
             } else {
-                drawTab(base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
+                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
             }
 
             pos += tabW;
@@ -333,21 +335,21 @@ public class UITabBar extends UIElement.UIPanel {
         return h + ((h / 8) * 2);
     }
 
-    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab) {
-        drawTab(border, x, y, w, h, igd, text, tab, true, true);
+    public static void drawTab(Theme theme, int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab) {
+        drawTab(theme, border, x, y, w, h, igd, text, tab, true, true);
     }
-    public static void drawTab(int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab, boolean enBack, boolean enFore) {
+    public static void drawTab(Theme theme, int border, int x, int y, int w, int h, IGrDriver igd, String text, Tab tab, boolean enBack, boolean enFore) {
         int margin = h / 8;
         int textHeight = h - (margin * 2);
         int tabExMargin = margin + (margin / 2);
         int tabIcoMargin = h / 4;
 
         if (enBack)
-            UIBorderedElement.drawBorder(igd, border, margin, x, y, w, h);
+            UIBorderedElement.drawBorder(theme, igd, border, margin, x, y, w, h);
 
         if (enFore) {
             tab.titleTextCache.text = text;
-            tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(border);
+            tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(theme, border);
             tab.titleTextCache.font = FontManager.getFontForText(text, textHeight);
             tab.titleTextCache.update();
             tab.titleTextCache.getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
