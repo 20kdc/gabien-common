@@ -98,7 +98,7 @@ abstract class Main {
                     // May crash on certain JREs.
                     System.err.println("FONT: Font didn't preload, " + e);
                 }
-                FontManager.fontsReady = true;
+                GaBIEn.fontsReady = true;
             }
         }.start();
         GaBIEnImpl impl = new GaBIEnImpl();

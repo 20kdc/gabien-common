@@ -49,6 +49,11 @@ public class GaBIEn {
     private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
     private static NativeFontCache nativeFontCache;
     private static ImageCache imageCache;
+    /**
+     * Flag that indicates native fonts can be used without causing a lagspike.
+     * This is a workaround for some oddities I've run into.
+     */
+    public static volatile boolean fontsReady;
 
     // Additional resource load locations.
     public static String[] appPrefixes = new String[0];
@@ -126,13 +131,8 @@ public class GaBIEn {
 
     public static void ensureQuit() {
         try {
-            vopeks.shutdown();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        try {
             if (timeLogger != null)
-                timeLogger.close();
+                timeLogger.flush();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -425,19 +425,26 @@ public class GaBIEn {
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      */
     static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger) {
-        // Initialize VOPEKS
-        if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
-            System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
-        System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
-        if (setupTimeLogger)
+        if (setupTimeLogger && (timeLogger == null))
             timeLogger = new TimeLogger(getOutFile("gTimeLogger.bin"));
-        int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf;
-        if (debug)
-            newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
-        vopeks = new Vopeks(newInstanceFlags, timeLogger);
-        // VOPEKS has started, we can now start user-level services
+        // If VOPEKS has already been initialized, skip initializing it again.
+        // It - thankfully - works independently of the rest of the system.
+        // (Sadly, this can't be cleanly separated without removing a lot of really nice utility methods.)
+        if (vopeks == null) {
+            // Initialize VOPEKS
+            if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
+                System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
+            System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
+            int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf;
+            if (debug)
+                newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
+            vopeks = new Vopeks(newInstanceFlags, timeLogger);
+        }
+        // VOPEKS has started, we can now start user-level services.
+        // Notably, because these use engine permission keys, they MUST be refreshed.
         nativeFontCache = new NativeFontCache(internal);
         imageCache = new ImageCache(internal);
+        // These will hold references to dead assets if not reinitialized.
         FontManager.setupFonts();
         ThemingCentral.setupAssets();
     }

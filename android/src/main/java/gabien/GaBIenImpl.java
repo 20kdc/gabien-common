@@ -32,7 +32,7 @@ public final class GaBIenImpl implements IGaBIEn {
     private RawAudioDriver rad;
 
     public static void main() throws Exception {
-        FontManager.fontsReady = true;
+        GaBIEn.fontsReady = true;
         final GaBIenImpl impl = new GaBIenImpl();
     	GaBIEn.internal = impl;
     	GaBIEn.clipboard = new ClipboardImpl();

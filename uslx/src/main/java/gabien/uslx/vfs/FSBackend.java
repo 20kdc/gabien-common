@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -28,19 +29,19 @@ public abstract class FSBackend {
      * @return nope
      * @throws IOException
      */
-    public abstract XState getState(String fileName);
+    public abstract @Nullable XState getState(String fileName);
 
     /**
      * Opens a stream to read the file.
      * @return file stream
      */
-    public abstract InputStream openRead(String fileName) throws IOException;
+    public abstract @NonNull InputStream openRead(String fileName) throws IOException;
 
     /**
      * Opens a stream to write the file.
      * @return file stream
      */
-    public abstract OutputStream openWrite(String fileName) throws IOException;
+    public abstract @NonNull OutputStream openWrite(String fileName) throws IOException;
 
     /**
      * Updates the time of a file.

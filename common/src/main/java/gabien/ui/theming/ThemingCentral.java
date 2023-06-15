@@ -22,9 +22,11 @@ public class ThemingCentral {
     public static final int BF_MOVEDOWN = 1;
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
-    public static Theme[] themes = {Theme.ROOT};
+    public static Theme[] themes;
 
     public static void setupAssets() {
+        // Just in case we fail to initialize...
+        themes = new Theme[] {Theme.ROOT};
         try {
             ThemingResCtx resCtx = new ThemingResCtx();
 

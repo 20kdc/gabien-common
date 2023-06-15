@@ -131,4 +131,13 @@ public final class TimeLogger implements AutoCloseable {
             }
         }
     }
+
+    public synchronized void flush() {
+        if (output != null)
+            try {
+                output.flush();
+            } catch (IOException e) {
+                // :(
+            }
+    }
 }

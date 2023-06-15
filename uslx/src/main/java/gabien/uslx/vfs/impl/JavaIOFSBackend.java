@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.uslx.vfs.*;
 
 /**
@@ -52,12 +54,12 @@ public class JavaIOFSBackend extends FSBackend {
     }
 
     @Override
-    public InputStream openRead(String fileName) throws IOException {
+    public @NonNull InputStream openRead(String fileName) throws IOException {
         return new FileInputStream(asFile(fileName));
     }
 
     @Override
-    public OutputStream openWrite(String fileName) throws IOException {
+    public @NonNull OutputStream openWrite(String fileName) throws IOException {
         return new FileOutputStream(asFile(fileName));
     }
 

@@ -24,7 +24,6 @@ public class FontManager {
     // Font override name.
     public static String fontOverride;
     public static boolean fontOverrideUE8;
-    public static boolean fontsReady;
 
     private static SimpleImageGridFont internalFont6;
     private static SimpleImageGridFont internalFont8;
