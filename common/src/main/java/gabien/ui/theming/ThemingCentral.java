@@ -9,7 +9,6 @@ package gabien.ui.theming;
 import java.io.InputStreamReader;
 
 import gabien.GaBIEn;
-import gabien.IImage;
 import gabien.datum.*;
 import gabien.ui.UIBorderedElement;
 
@@ -26,7 +25,6 @@ public class ThemingCentral {
     // text, etc. should be black
     public static final int BF_LIGHTBKG = 8;
     public static final Theme[] themes = new Theme[4];
-    public static IImage themesImg;
 
     /**
      * It might be nice to do theme inheritance.
@@ -37,8 +35,7 @@ public class ThemingCentral {
 
     public static void setupAssets() {
         try {
-            themesImg = GaBIEn.getImageEx("themes.png", false, true);
-            ThemingResCtx resCtx = new ThemingResCtx(themesImg);
+            ThemingResCtx resCtx = new ThemingResCtx();
 
             // Read in resources
             InputStreamReader themesISR = GaBIEn.getTextResource("themes.scm");
@@ -54,14 +51,5 @@ public class ThemingCentral {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        for (int borderTheme = 0; borderTheme < UIBorderedElement.BORDER_THEMES; borderTheme++) {
-            Theme theme = themes[borderTheme];
-            for (int borderType = 0; borderType < UIBorderedElement.BORDER_TYPES; borderType++) {
-                int baseX = borderType * 12;
-                int baseY = borderTheme * 18;
-                theme.border[borderType].doSetup(themesImg, baseX, baseY);
-            }
-        }
-
     }
 }

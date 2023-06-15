@@ -10,19 +10,21 @@ import java.util.HashMap;
 
 import gabien.datum.DatumDecToLambdaVisitor;
 import gabien.datum.DatumKVDHVisitor;
-import gabien.datum.DatumKVDVisitor;
 import gabien.datum.DatumODecVisitor;
+import gabien.datum.DatumSeqVisitor;
 import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumVisitor;
 import gabien.datum.DatumODecVisitor.Handler;
+import gabien.render.ITexRegion;
 import gabien.ui.UIBorderedElement;
+
+import static gabien.datum.DatumTreeUtils.isSym;
 
 /**
  * First object to try out ODec... oh no...
  * Created 17th February 2023.
  */
 public class Theme {
-    public int id = 0;
     public final IBorder[] border = new IBorder[UIBorderedElement.BORDER_TYPES];
     public static final String[] borderTypeNames = new String[] {
         "btn",
@@ -59,44 +61,42 @@ public class Theme {
         };
     };
     static final Handler<ThemingResCtx> brHandler = (k, parent, resCtx) -> {
-        RegularBorder b = new RegularBorder();
-        return makeGenericBorderVisitor(b, parent);
+        return makeGenericBorderVisitor(parent, resCtx);
     };
-    static final Handler<ThemingResCtx> btHandler = (k, parent, resCtx) -> {
-        TiledBorder b = new TiledBorder();
-        return makeGenericBorderVisitor(b, parent);
-    };
-    private static DatumVisitor makeGenericBorderVisitor(IBorder b, DatumODecVisitor<ThemingResCtx> parent) {
-        return new DatumKVDVisitor() {
-            int res = 0;
+    private static DatumVisitor makeGenericBorderVisitor(DatumODecVisitor<ThemingResCtx> parent, ThemingResCtx resCtx) {
+        return new DatumSeqVisitor() {
+            ITexRegion basis;
+            int flags = 0;
+            boolean tiled = false;
+
             @Override
-            public void visitEnd(DatumSrcLoc srcLoc) {
-                super.visitEnd(srcLoc);
-                b.setFlags(res);
-                parent.visitTree(b, srcLoc);
-            }
-            
-            @Override
-            public DatumVisitor handle(String key) {
-                if (key.equals("moveDown"))
-                    return flagVisitor(ThemingCentral.BF_MOVEDOWN);
-                if (key.equals("clear"))
-                    return flagVisitor(ThemingCentral.BF_CLEAR);
-                if (key.equals("lightBkg"))
-                    return flagVisitor(ThemingCentral.BF_LIGHTBKG);
-                throw new RuntimeException("Unrecognized border key " + key);
+            public DatumVisitor handle(int idx) {
+                if (idx == 0)
+                    return resCtx.genVisitor((obj, srcLoc) -> basis = (ITexRegion) obj, null);
+                return new DatumDecToLambdaVisitor((res, srcLoc) -> {
+                    if (isSym(res, "moveDown")) {
+                        flags |= ThemingCentral.BF_MOVEDOWN;
+                        return;
+                    } else if (isSym(res, "clear")) {
+                        flags |= ThemingCentral.BF_CLEAR;
+                        return;
+                    } else if (isSym(res, "lightBkg")) {
+                        flags |= ThemingCentral.BF_LIGHTBKG;
+                        return;
+                    } else if (isSym(res, "tiled")) {
+                        tiled = true;
+                        return;
+                    }
+                    throw new RuntimeException("Unrecognized border flag " + res + " @ " + srcLoc);
+                });
             }
 
-            private DatumVisitor flagVisitor(int flag) {
-                return new DatumDecToLambdaVisitor((value, srcLoc) -> {
-                    if (value == Boolean.TRUE) {
-                        res |= flag;
-                    } else if (value == Boolean.FALSE) {
-                        // nothing
-                    } else {
-                        throw new RuntimeException("Flag cannot be " + value + " at " + srcLoc);
-                    }
-                });
+            @Override
+            public void visitEnd(DatumSrcLoc srcLoc) {
+                if (basis == null)
+                    throw new RuntimeException("Border missing base image @ " + srcLoc);
+                IBorder b = tiled ? new TiledBorder(flags, basis) : new RegularBorder(flags, basis);
+                parent.visitTree(b, srcLoc);
             }
         };
     }

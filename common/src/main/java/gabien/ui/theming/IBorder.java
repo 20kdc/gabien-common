@@ -7,7 +7,6 @@
 package gabien.ui.theming;
 
 import gabien.IGrDriver;
-import gabien.IImage;
 
 /**
  * Interface for borders, to try and clean this all up...
@@ -20,17 +19,7 @@ public interface IBorder {
     void draw(IGrDriver igd, int borderWidth, int x, int y, int w, int h);
 
     /**
-     * Legacy support of border flags
+     * Border flags
      */
     boolean getFlag(int flag);
-
-    /**
-     * Setup procedure from ThemingCentral, please disregard
-     */
-    void doSetup(IImage themesImg, int baseX, int baseY);
-
-    /**
-     * More setup procedure stuff
-     */
-    void setFlags(int res);
 }

@@ -7,7 +7,6 @@
 package gabien.ui.theming;
 
 import gabien.IGrDriver;
-import gabien.IImage;
 import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 
@@ -15,14 +14,36 @@ import gabien.ui.Rect;
  * Regular border
  * Created 14th June, 2023.
  */
-class RegularBorder implements IBorder {
-    public EightPatch w1;
-    public EightPatch w2;
-    public EightPatch w4;
-    public ITexRegion stretchC1;
-    public ITexRegion stretchC2;
-    public ITexRegion stretchC4;
-    public int flags;
+public class RegularBorder implements IBorder {
+    private final EightPatch w1;
+    private final EightPatch w2;
+    private final EightPatch w4;
+    private final ITexRegion stretchC1;
+    private final ITexRegion stretchC2;
+    private final ITexRegion stretchC4;
+    private final int flags;
+
+    public RegularBorder(int flags, ITexRegion themesImg) {
+        Rect outerRegion, innerRegion;
+
+        outerRegion = new Rect(0, 0, 3, 3);
+        innerRegion = new Rect(1, 1, 1, 1);
+        w1 = new EightPatch(themesImg, outerRegion, innerRegion);
+
+        outerRegion = new Rect(6, 0, 6, 6);
+        innerRegion = new Rect(2, 2, 2, 2);
+        w2 = new EightPatch(themesImg, outerRegion, innerRegion);
+
+        outerRegion = new Rect(0, 6, 12, 12);
+        innerRegion = new Rect(4, 4, 4, 4);
+        w4 = new EightPatch(themesImg, outerRegion, innerRegion);
+        // Setup stretch areas
+        stretchC1 = themesImg.subRegion(1, 1, 1, 1);
+        stretchC2 = themesImg.subRegion(8, 2, 2, 2);
+        stretchC4 = themesImg.subRegion(4, 10, 4, 4);
+
+        this.flags = flags;
+    }
 
     @Override
     public void draw(IGrDriver igd, int borderWidth, int x, int y, int w, int h) {
@@ -70,34 +91,9 @@ class RegularBorder implements IBorder {
         return (flags & flag) != 0;
     }
 
-    @Override
-    public void setFlags(int res) {
-        flags = res;
-    }
-
     public static int ensureBWV(int borderWidth, int chunk) {
         if (borderWidth > chunk)
             return ((borderWidth + 2) / chunk) * chunk;
         return borderWidth;
-    }
-
-    public void doSetup(IImage themesImg, int baseX, int baseY) {
-        Rect outerRegion, innerRegion;
-
-        outerRegion = new Rect(baseX, baseY, 3, 3);
-        innerRegion = new Rect(1, 1, 1, 1);
-        w1 = new EightPatch(themesImg, outerRegion, innerRegion);
-
-        outerRegion = new Rect(baseX + 6, baseY, 6, 6);
-        innerRegion = new Rect(2, 2, 2, 2);
-        w2 = new EightPatch(themesImg, outerRegion, innerRegion);
-
-        outerRegion = new Rect(baseX, baseY + 6, 12, 12);
-        innerRegion = new Rect(4, 4, 4, 4);
-        w4 = new EightPatch(themesImg, outerRegion, innerRegion);
-        // Setup stretch areas
-        stretchC1 = themesImg.subRegion(baseX + 1, baseY + 1, 1, 1);
-        stretchC2 = themesImg.subRegion(baseX + 8, baseY + 2, 2, 2);
-        stretchC4 = themesImg.subRegion(baseX + 4, baseY + 10, 4, 4);
     }
 }

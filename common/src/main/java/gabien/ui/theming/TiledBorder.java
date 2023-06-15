@@ -8,16 +8,29 @@ package gabien.ui.theming;
 
 import gabien.IGrDriver;
 import gabien.IImage;
+import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 
 /**
  * Regular border
  * Split from RegularBorder 15th June, 2023.
  */
-class TiledBorder implements IBorder {
-    public EightPatch w3;
-    public IImage tile;
-    public int flags;
+public class TiledBorder implements IBorder {
+    private final EightPatch w3;
+    private final IImage tile;
+    private final int flags;
+
+    public TiledBorder(int flags, ITexRegion themesImg) {
+        this.flags = flags;
+        Rect outerRegion, innerRegion;
+
+        outerRegion = new Rect(6, 0, 6, 6);
+        innerRegion = new Rect(3, 3, 0, 0);
+        w3 = new EightPatch(themesImg, outerRegion, innerRegion);
+
+        // Extract tile
+        tile = themesImg.copy(0, 6, 12, 12);
+    }
 
     @Override
     public void draw(IGrDriver igd, int borderWidth, int x, int y, int w, int h) {
@@ -37,21 +50,5 @@ class TiledBorder implements IBorder {
     @Override
     public boolean getFlag(int flag) {
         return (flags & flag) != 0;
-    }
-
-    @Override
-    public void setFlags(int res) {
-        flags = res;
-    }
-
-    public void doSetup(IImage themesImg, int baseX, int baseY) {
-        Rect outerRegion, innerRegion;
-
-        outerRegion = new Rect(baseX + 6, baseY, 6, 6);
-        innerRegion = new Rect(3, 3, 0, 0);
-        w3 = new EightPatch(themesImg, outerRegion, innerRegion);
-
-        // Extract tile
-        tile = themesImg.copy(baseX, baseY + 6, 12, 12);
     }
 }
