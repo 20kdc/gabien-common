@@ -34,8 +34,26 @@ public class ThemingCentral {
     }
 
     public static void setupAssets() {
+        // setup "base" themes
+        for (int i = 0; i < 4; i++)
+            themes[i] = new Theme();
         try {
             ThemingResCtx resCtx = new ThemingResCtx();
+
+            try {
+                // Read in override file
+                InputStreamReader themesISR = GaBIEn.getTextResource("themes.override.scm");
+                if (themesISR != null) {
+                    new DatumReaderTokenSource("themes.override.scm", themesISR).visit(new DatumKVDVisitor() {
+                        @Override
+                        public DatumVisitor handle(String key) {
+                            return resCtx.genVisitor(resCtx, key);
+                        }
+                    });
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
 
             // Read in resources
             InputStreamReader themesISR = GaBIEn.getTextResource("themes.scm");
@@ -46,8 +64,11 @@ public class ThemingCentral {
                 }
             });
             // Grab resources
-            for (int i = 0; i < 4; i++)
-                themes[i] = (Theme) resCtx.resources.get("t" + i);
+            for (int i = 0; i < 4; i++) {
+                Theme tx = (Theme) resCtx.resources.get("t" + i);
+                if (tx != null)
+                    themes[i] = tx;
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
