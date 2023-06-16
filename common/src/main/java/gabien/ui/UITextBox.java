@@ -7,11 +7,11 @@
 
 package gabien.ui;
 
-import gabien.IPeripherals;
-import gabien.IPointer;
-import gabien.ITextEditingSession;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
+import gabien.wsi.ITextEditingSession;
 
 // This serves a dual purpose:
 // 1. text is *always* the current text in the box.

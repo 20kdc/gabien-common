@@ -7,8 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
-import gabien.IPeripherals;
+import gabien.render.IGrDriver;
+import gabien.wsi.IPeripherals;
 
 /**
  * Changed on 16th February 2018 for the usual fun w/ the redesign.

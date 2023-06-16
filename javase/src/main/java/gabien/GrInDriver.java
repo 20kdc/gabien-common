@@ -8,8 +8,13 @@
 package gabien;
 
 import gabien.backend.WSIDownloadPair;
+import gabien.render.IImage;
 import gabien.render.WSIImage;
 import gabien.uslx.append.IFunction;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.ITextEditingSession;
+import gabien.wsi.WindowSpecs;
 
 import javax.swing.*;
 

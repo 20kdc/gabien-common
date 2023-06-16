@@ -8,6 +8,7 @@
 package gabien;
 
 import gabien.uslx.append.*;
+import gabien.wsi.ITextEditingSession;
 
 import javax.swing.*;
 import javax.swing.text.JTextComponent;

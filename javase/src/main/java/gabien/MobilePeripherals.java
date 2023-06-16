@@ -8,6 +8,12 @@
 package gabien;
 
 import gabien.uslx.append.*;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
+import gabien.wsi.ITextEditingSession;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.text.IFixedSizeFont;
 
 import java.util.HashSet;

@@ -7,8 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
-import gabien.IPeripherals;
+import gabien.render.IGrDriver;
+import gabien.wsi.IPeripherals;
 
 import java.util.LinkedList;
 import java.util.Random;

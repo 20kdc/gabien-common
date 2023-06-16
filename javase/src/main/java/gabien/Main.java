@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.WindowMux;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
+import gabien.wsi.WindowSpecs;
 
 abstract class Main {
     private static boolean ignoreBlindingSun = false;

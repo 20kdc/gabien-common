@@ -7,9 +7,9 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
-import gabien.IPeripherals;
-import gabien.IPointer;
+import gabien.render.IGrDriver;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
 
 import java.util.LinkedList;
 

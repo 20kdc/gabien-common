@@ -7,8 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
-import gabien.IImage;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 
 /**
  * Subclass of UIPanel for use in inner classes and such

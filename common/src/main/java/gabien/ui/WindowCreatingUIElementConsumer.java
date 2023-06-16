@@ -8,12 +8,18 @@
 package gabien.ui;
 
 import gabien.*;
+import gabien.render.IGrDriver;
 import gabien.ui.theming.Theme;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
 import gabien.uslx.append.*;
+import gabien.wsi.IDesktopPeripherals;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
+import gabien.wsi.WindowSpecs;
 
 /**
  * Utility class useful for dealing with the boilerplate UI bootstrap code

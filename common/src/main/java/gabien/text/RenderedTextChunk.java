@@ -6,7 +6,7 @@
  */
 package gabien.text;
 
-import gabien.IGrDriver;
+import gabien.render.IGrDriver;
 
 /**
  * A ready-to-blit rendered text chunk.

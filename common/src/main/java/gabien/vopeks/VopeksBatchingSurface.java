@@ -11,11 +11,11 @@ import java.util.ArrayList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.IGrDriver;
-import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.uslx.append.ObjectPool;
 import gabien.vopeks.Vopeks.ITask;
 

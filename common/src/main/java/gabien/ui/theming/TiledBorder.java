@@ -6,8 +6,8 @@
  */
 package gabien.ui.theming;
 
-import gabien.IGrDriver;
-import gabien.IImage;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 

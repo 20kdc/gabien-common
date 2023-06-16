@@ -6,7 +6,7 @@
  */
 package gabien.ui.theming;
 
-import gabien.IGrDriver;
+import gabien.render.IGrDriver;
 
 /**
  * Ultimate fallback.

@@ -10,7 +10,7 @@ import java.util.HashMap;
 
 import gabien.GaBIEn;
 import gabien.IGaBIEn;
-import gabien.IImage;
+import gabien.render.IImage;
 import gabien.render.WSIImage;
 
 /**

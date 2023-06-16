@@ -8,11 +8,11 @@
 package gabien.ui;
 
 import gabien.FontManager;
-import gabien.IGrDriver;
-import gabien.IPeripherals;
+import gabien.render.IGrDriver;
 import gabien.text.TextTools;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
+import gabien.wsi.IPeripherals;
 
 /**
  * A label. Displays text.

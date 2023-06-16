@@ -14,6 +14,8 @@ import gabien.backend.ImageCache;
 import gabien.backend.NativeFontCache;
 import gabien.backend.NullGrDriver;
 import gabien.natives.BadGPU;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.ui.theming.ThemingCentral;
@@ -24,6 +26,8 @@ import gabien.uslx.vfs.FSBackend.XState;
 import gabien.vopeks.Vopeks;
 import gabien.vopeks.VopeksGrDriver;
 import gabien.vopeks.VopeksImage;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.WindowSpecs;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;

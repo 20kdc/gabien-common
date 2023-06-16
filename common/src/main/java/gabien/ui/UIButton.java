@@ -8,9 +8,9 @@
 package gabien.ui;
 
 
-import gabien.IPeripherals;
-import gabien.IPointer;
 import gabien.ui.theming.Theme;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
 
 /**
  * This was actually a totally different class at one point.

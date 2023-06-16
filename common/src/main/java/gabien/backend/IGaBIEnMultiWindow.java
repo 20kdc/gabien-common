@@ -7,8 +7,8 @@
 
 package gabien.backend;
 
-import gabien.IGrInDriver;
-import gabien.WindowSpecs;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.WindowSpecs;
 
 /**
  * This represents a multi-window environment.

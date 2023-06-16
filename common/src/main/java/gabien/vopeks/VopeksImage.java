@@ -9,9 +9,9 @@ package gabien.vopeks;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
+import gabien.render.IImage;
 import gabien.uslx.append.IConsumer;
 import gabien.uslx.append.TimeLogger;
 

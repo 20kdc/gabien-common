@@ -7,8 +7,8 @@
 
 package gabien.ui;
 
-import gabien.IPointer;
 import gabien.uslx.append.*;
+import gabien.wsi.IPointer;
 
 /**
  * Another part of multi-touch stuff.

@@ -15,7 +15,10 @@ import android.graphics.Rect;
 import android.view.Surface;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
+import gabien.render.IImage;
 import gabien.uslx.append.TimeLogger;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.IPeripherals;
 
 public class GrInDriver implements IGrInDriver {
     public Peripherals peripherals;

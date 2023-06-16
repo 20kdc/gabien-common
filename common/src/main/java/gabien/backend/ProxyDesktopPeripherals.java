@@ -8,7 +8,7 @@ package gabien.backend;
 
 import java.util.HashSet;
 
-import gabien.IDesktopPeripherals;
+import gabien.wsi.IDesktopPeripherals;
 
 /**
  * Created on 05/03/2020.

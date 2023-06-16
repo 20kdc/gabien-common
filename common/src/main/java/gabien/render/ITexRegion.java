@@ -9,8 +9,6 @@ package gabien.render;
 import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.GaBIEn;
-import gabien.IGrDriver;
-import gabien.IImage;
 
 /**
  * Represents something pixels can be sampled out of.

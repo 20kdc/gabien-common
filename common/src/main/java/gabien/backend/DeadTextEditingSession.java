@@ -7,7 +7,7 @@
 
 package gabien.backend;
 
-import gabien.ITextEditingSession;
+import gabien.wsi.ITextEditingSession;
 
 /**
  * Continuation of DeadDesktopPeripherals

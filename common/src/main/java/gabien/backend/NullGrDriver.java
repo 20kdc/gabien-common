@@ -9,10 +9,10 @@ package gabien.backend;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.IGrDriver;
-import gabien.IImage;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.render.ITexRegion;
 
 /**

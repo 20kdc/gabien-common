@@ -7,7 +7,7 @@
 
 package gabien.ui;
 
-import gabien.IPeripherals;
+import gabien.wsi.IPeripherals;
 
 /**
  * Basic scrollable layout.

@@ -7,11 +7,11 @@
 
 package gabien.ui;
 
-import gabien.IPeripherals;
-import gabien.IPointer;
-import gabien.ITextEditingSession;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
+import gabien.wsi.ITextEditingSession;
 
 /**
  * Forgot creation date, but it was back at the time of IkachanMapEdit.

@@ -7,7 +7,7 @@
 
 package gabien.ui;
 
-import gabien.IPointer;
+import gabien.wsi.IPointer;
 
 /**
  * Used to speed up porting work or for elements that shouldn't ever need to properly support multi-touch.

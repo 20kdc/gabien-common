@@ -7,6 +7,8 @@
 
 package gabien;
 
+import gabien.wsi.IPeripherals;
+
 /**
  * Fancy internal APIs as part of Textbox rework
  * Created on July 28th, 2022.

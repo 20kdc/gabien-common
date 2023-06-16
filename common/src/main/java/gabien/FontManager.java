@@ -7,6 +7,8 @@
 
 package gabien;
 
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.text.IFixedSizeFont;
 import gabien.text.RenderedTextChunk;
 import gabien.text.SimpleImageGridFont;

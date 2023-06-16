@@ -8,8 +8,6 @@ package gabien.render;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gabien.IImage;
-
 /**
  * Translating ITexRegion implementation.
  * Created 14th June, 2023.

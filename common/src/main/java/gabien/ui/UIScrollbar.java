@@ -10,13 +10,13 @@ package gabien.ui;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.FontManager;
-import gabien.IGrDriver;
-import gabien.IImage;
-import gabien.IPeripherals;
-import gabien.IPointer;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 import gabien.text.SimpleImageGridFont;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
 
 /**
  * Replacement for UIVScrollbar in gabien-app-r48.

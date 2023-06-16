@@ -10,12 +10,12 @@ package gabien.backend;
 import java.util.LinkedList;
 
 import gabien.GaBIEn;
-import gabien.IDesktopPeripherals;
 import gabien.IGaBIEn;
-import gabien.IGrInDriver;
-import gabien.IImage;
-import gabien.IPeripherals;
-import gabien.WindowSpecs;
+import gabien.render.IImage;
+import gabien.wsi.IDesktopPeripherals;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.WindowSpecs;
 
 /**
  * This 'mux' provides the illusion of multi-window support using:

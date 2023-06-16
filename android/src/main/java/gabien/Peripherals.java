@@ -8,6 +8,9 @@
 package gabien;
 
 import gabien.uslx.append.*;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
+import gabien.wsi.ITextEditingSession;
 
 import java.util.HashMap;
 import java.util.HashSet;

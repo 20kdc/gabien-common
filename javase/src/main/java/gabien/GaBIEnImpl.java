@@ -12,6 +12,8 @@ import gabien.backend.IGaBIEnMultiWindow;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.append.*;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.WindowSpecs;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;

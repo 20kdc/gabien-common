@@ -5,18 +5,17 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien;
+package gabien.render;
 
 import java.util.concurrent.Semaphore;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.GaBIEn;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
-import gabien.render.ITexRegion;
-import gabien.render.WSIImage;
 
 /**
  * An image. All IImages that are not IGrDrivers must be immutable.

@@ -12,7 +12,6 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
 import gabien.IGaBIEn;
-import gabien.IImage;
 
 /**
  * This image is backed by whatever resource is necessary for the WSI side of gabien.

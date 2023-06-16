@@ -8,8 +8,8 @@ package gabien.backend;
 
 import gabien.GaBIEn;
 import gabien.IGaBIEn;
-import gabien.WindowSpecs;
 import gabien.uslx.append.*;
+import gabien.wsi.WindowSpecs;
 import gabien.ui.UIElement;
 import gabien.ui.WindowCreatingUIElementConsumer;
 

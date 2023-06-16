@@ -8,13 +8,13 @@
 package gabien.ui;
 
 import gabien.GaBIEn;
-import gabien.IDesktopPeripherals;
-import gabien.IGrInDriver;
-import gabien.IPeripherals;
-import gabien.IPointer;
-import gabien.ITextEditingSession;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
+import gabien.wsi.IDesktopPeripherals;
+import gabien.wsi.IGrInDriver;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
+import gabien.wsi.ITextEditingSession;
 
 /**
  * For consoles and the like.

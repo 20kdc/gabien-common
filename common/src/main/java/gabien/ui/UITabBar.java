@@ -8,8 +8,7 @@
 package gabien.ui;
 
 import gabien.FontManager;
-import gabien.IGrDriver;
-import gabien.IPointer;
+import gabien.render.IGrDriver;
 import gabien.text.TextTools;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
@@ -18,6 +17,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
 import gabien.uslx.append.*;
+import gabien.wsi.IPointer;
 
 /**
  * Because frankly, the previous tab/window code sucked.

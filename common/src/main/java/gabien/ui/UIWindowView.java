@@ -7,14 +7,14 @@
 
 package gabien.ui;
 
-import gabien.IGrDriver;
-import gabien.IPeripherals;
-import gabien.IPointer;
+import gabien.render.IGrDriver;
 import gabien.ui.theming.Theme;
 
 import java.util.LinkedList;
 import java.util.Random;
 import gabien.uslx.append.*;
+import gabien.wsi.IPeripherals;
+import gabien.wsi.IPointer;
 
 /**
  * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.

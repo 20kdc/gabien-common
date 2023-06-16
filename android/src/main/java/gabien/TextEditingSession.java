@@ -11,6 +11,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.append.IFunction;
+import gabien.wsi.ITextEditingSession;
 
 /**
  * Text editing session object

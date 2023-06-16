@@ -9,8 +9,8 @@ package gabien.text;
 import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.GaBIEn;
-import gabien.IGrDriver;
-import gabien.IImage;
+import gabien.render.IGrDriver;
+import gabien.render.IImage;
 
 /**
  * Implementation of a simple image-grid font.
