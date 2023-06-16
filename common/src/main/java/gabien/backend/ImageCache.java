@@ -6,6 +6,7 @@
  */
 package gabien.backend;
 
+import java.io.InputStream;
 import java.util.HashMap;
 
 import gabien.GaBIEn;
@@ -29,7 +30,8 @@ public final class ImageCache {
         String ki = a + "_N_N_N" + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        WSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
+        InputStream ip = res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a);
+        WSIImage img = ip != null ? backend.decodeWSIImage(ip) : null;
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
@@ -44,7 +46,8 @@ public final class ImageCache {
         String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        WSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
+        InputStream ip = res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a);
+        WSIImage img = ip != null ? backend.decodeWSIImage(ip) : null;
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
