@@ -9,7 +9,7 @@ package gabien;
 
 import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.append.*;
 
@@ -123,7 +123,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public @Nullable IWSIImage decodeWSIImage(@NonNull InputStream a) {
+    public @Nullable WSIImage decodeWSIImage(@NonNull InputStream a) {
         try {
             BufferedImage bi = ImageIO.read(a);
             if (bi.getType() == BufferedImage.TYPE_INT_ARGB)
@@ -137,7 +137,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+    public WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
         return new AWTWSIImage(colours, width, height);
     }
 

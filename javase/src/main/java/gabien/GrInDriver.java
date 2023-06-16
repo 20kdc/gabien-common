@@ -8,7 +8,7 @@
 package gabien;
 
 import gabien.backend.WSIDownloadPair;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 import gabien.uslx.append.IFunction;
 
 import javax.swing.*;
@@ -286,7 +286,7 @@ class GrInDriver implements IGrInDriver {
         });    
     }
 
-    private void drawBackBufferToFrontBuffer(IWSIImage wsi) {
+    private void drawBackBufferToFrontBuffer(WSIImage wsi) {
         synchronized (this) {
             final int panelW = panel.getWidth();
             final int panelH = panel.getHeight();
@@ -403,7 +403,7 @@ class GrInDriver implements IGrInDriver {
 
         @Override
         public boolean bufferMatchesSize(AWTWSIImage buffer, int width, int height) {
-            return buffer.getWidth() == width && buffer.getHeight() == height;
+            return buffer.width == width && buffer.height == height;
         }
         @Override
         public AWTWSIImage genBuffer(int width, int height) {

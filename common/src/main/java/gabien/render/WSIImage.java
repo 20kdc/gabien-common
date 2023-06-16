@@ -11,6 +11,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
+import gabien.IGaBIEn;
 import gabien.IImage;
 
 /**
@@ -18,27 +19,31 @@ import gabien.IImage;
  * These are always mutable.
  * Copied from IImage 7th June 2023.
  */
-public interface IWSIImage {
+public abstract class WSIImage {
     /**
-     * Gets the width of the image.
+     * The size of the image.
      */
-    int getWidth();
+    public final int width, height;
 
     /**
-     * Gets the height of the image.
+     * Creates a WSIImage. This is only callable by the backend.
      */
-    int getHeight();
+    public WSIImage(IGaBIEn backend, int w, int h) {
+        GaBIEn.verify(backend);
+        width = w;
+        height = h;
+    }
 
     /**
      * Writes 0xAARRGGBB data into the given buffer.
      */
-    void getPixels(@NonNull int[] data);
+    public abstract void getPixels(@NonNull int[] data);
 
     /**
      * Like regular getPixels but allocates a buffer for you.
      */
-    default @NonNull int[] getPixels() {
-        int[] res = new int[getWidth() * getHeight()];
+    public final @NonNull int[] getPixels() {
+        int[] res = new int[width * height];
         getPixels(res);
         return res;
     }
@@ -46,28 +51,32 @@ public interface IWSIImage {
     /**
      * Creates a PNG file.
      */
-    @NonNull byte[] createPNG();
+    public abstract @NonNull byte[] createPNG();
 
     /**
      * Uploads an image to the GPU, creating an IImage.
      */
-    default @NonNull IImage upload() {
+    public final @NonNull IImage upload() {
         return upload(null);
     }
 
     /**
      * Uploads an image to the GPU, creating an IImage.
      */
-    default @NonNull IImage upload(@Nullable String debugId) {
-        int[] tmp = new int[getWidth() * getHeight()];
+    public final @NonNull IImage upload(@Nullable String debugId) {
+        int[] tmp = new int[width * height];
         getPixels(tmp);
-        return GaBIEn.createImage(debugId, tmp, getWidth(), getHeight());
+        return GaBIEn.createImage(debugId, tmp, width, height);
     }
 
-    interface RW extends IWSIImage {
+    public abstract static class RW extends WSIImage {
+        public RW(IGaBIEn backend, int w, int h) {
+            super(backend, w, h);
+        }
+
         /**
          * Updates the pixels in the image.
          */
-        void setPixels(@NonNull int[] colours);
+        public abstract void setPixels(@NonNull int[] colours);
     }
 }

@@ -14,7 +14,7 @@ import gabien.backend.ImageCache;
 import gabien.backend.NativeFontCache;
 import gabien.backend.NullGrDriver;
 import gabien.natives.BadGPU;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
@@ -254,7 +254,7 @@ public class GaBIEn {
         return new VopeksImage(GaBIEn.vopeks, debugId, width, height, colours);
     }
 
-    public static IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+    public static WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
         return internal.createWSIImage(colours, width, height);
     }
 

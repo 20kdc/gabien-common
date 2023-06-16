@@ -13,7 +13,7 @@ import java.io.InputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 
 /**
@@ -50,11 +50,11 @@ public interface IGaBIEn {
      * Decodes an image from an InputStream.
      * On error, this version of the function should return null.
      */
-    @Nullable IWSIImage decodeWSIImage(@NonNull InputStream a);
+    @Nullable WSIImage decodeWSIImage(@NonNull InputStream a);
 
     // Make a WSI image from a buffer.
     // Note that the colours are 0xAARRGGBB.
-    IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height);
+    WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height);
 
     /**
      * Gets font overrides UILabel can use.

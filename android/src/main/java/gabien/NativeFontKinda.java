@@ -59,7 +59,7 @@ public class NativeFontKinda implements IFixedSizeFont {
                 cv.drawText(text, margin, margin + ((size * 3) / 4), paint);
             }
         }
-        return new ImageRenderedTextChunk.CPU(-margin, -margin, mt, size, wsi);
+        return new ImageRenderedTextChunk.WSI(-margin, -margin, mt, size, wsi);
     }
 
     @Override
@@ -75,6 +75,6 @@ public class NativeFontKinda implements IFixedSizeFont {
                 cv.drawText(text, index, length, margin, margin + ((size * 3) / 4), paint);
             }
         }
-        return new ImageRenderedTextChunk.CPU(-margin, -margin, mt, size, wsi);
+        return new ImageRenderedTextChunk.WSI(-margin, -margin, mt, size, wsi);
     }
 }

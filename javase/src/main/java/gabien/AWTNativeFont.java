@@ -115,7 +115,7 @@ public class AWTNativeFont implements IFixedSizeFont {
             bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
             bufGraphics.drawString(text, margin, margin + (size - (size / 4)));
-            return new ImageRenderedTextChunk.CPU(-margin, -margin, mt, size, new AWTWSIImage(bi));
+            return new ImageRenderedTextChunk.WSI(-margin, -margin, mt, size, new AWTWSIImage(bi));
         } catch (Exception ex) {
             ex.printStackTrace();
         }

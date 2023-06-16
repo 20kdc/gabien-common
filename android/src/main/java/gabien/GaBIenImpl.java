@@ -15,7 +15,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.WindowMux;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.uslx.vfs.impl.*;
 
@@ -61,7 +61,7 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public IWSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+    public WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
         return new WSIImageDriver(colours, width, height);
     }
 
@@ -117,7 +117,7 @@ public final class GaBIenImpl implements IGaBIEn {
     }
 
     @Override
-    public IWSIImage decodeWSIImage(@NonNull InputStream a) {
+    public WSIImage decodeWSIImage(@NonNull InputStream a) {
         try {
             Bitmap b = BitmapFactory.decodeStream(a);
             int w = b.getWidth();

@@ -11,7 +11,7 @@ import java.util.HashMap;
 import gabien.GaBIEn;
 import gabien.IGaBIEn;
 import gabien.IImage;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 
 /**
  * Getting this code put here.
@@ -30,7 +30,7 @@ public final class ImageCache {
         String ki = a + "_N_N_N" + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IWSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
+        WSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
@@ -45,21 +45,22 @@ public final class ImageCache {
         String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        IWSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
+        WSIImage img = backend.decodeWSIImage(res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a));
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
         } else {
             int[] data = img.getPixels();
+            int colourKey = tb | (tg << 8) | (tr << 16);
             for (int i = 0; i < data.length; i++) {
                 int c = data[i];
-                if ((c & 0xFFFFFF) != (tb | (tg << 8) | (tr << 16))) {
+                if ((c & 0xFFFFFF) != colourKey) {
                     data[i] = c | 0xFF000000;
                 } else {
                     data[i] = 0;
                 }
             }
-            resImg = GaBIEn.createImage("ImageCache:" + ki, data, img.getWidth(), img.getHeight());
+            resImg = GaBIEn.createImage("ImageCache:" + ki, data, img.width, img.height);
         }
         loadedImages.put(ki, resImg);
         return resImg;

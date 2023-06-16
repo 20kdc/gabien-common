@@ -8,7 +8,7 @@ package gabien.text;
 
 import gabien.IGrDriver;
 import gabien.IImage;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 
 /**
  * Font rendering is the big trouble-causer.
@@ -30,7 +30,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
     }
 
     public abstract IImage getIImage();
-    public abstract IWSIImage getIWSIImage();
+    public abstract WSIImage getIWSIImage();
 
     @Override
     public int cursorX(int cursorXIn) {
@@ -55,11 +55,11 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         igd.clearRectAlpha(r, g, b, a, x + cursorXIn - margin, y + cursorYIn - margin, measureX + margin2, highestLineHeight + margin2);
     }
 
-    public static class CPU extends ImageRenderedTextChunk {
-        public final IWSIImage render;
+    public static class WSI extends ImageRenderedTextChunk {
+        public final WSIImage render;
         public IImage renderUpload;
 
-        public CPU(int offsetX, int offsetY, int measureX, int lineHeight, IWSIImage r) {
+        public WSI(int offsetX, int offsetY, int measureX, int lineHeight, WSIImage r) {
             super(offsetX, offsetY, measureX, lineHeight);
             render = r;
         }
@@ -74,14 +74,14 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         }
 
         @Override
-        public IWSIImage getIWSIImage() {
+        public WSIImage getIWSIImage() {
             return render;
         }
     }
 
     public static class GPU extends ImageRenderedTextChunk {
         public final IImage render;
-        public IWSIImage renderDownload;
+        public WSIImage renderDownload;
 
         public GPU(int offsetX, int offsetY, int measureX, int lineHeight, IImage r) {
             super(offsetX, offsetY, measureX, lineHeight);
@@ -94,7 +94,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         }
 
         @Override
-        public IWSIImage getIWSIImage() {
+        public WSIImage getIWSIImage() {
             synchronized (this) {
                 if (renderDownload == null)
                     renderDownload = render.download();

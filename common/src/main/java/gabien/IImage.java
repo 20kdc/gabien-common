@@ -16,7 +16,7 @@ import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPUEnum.TextureLoadFormat;
 import gabien.render.ITexRegion;
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 
 /**
  * An image. All IImages that are not IGrDrivers must be immutable.
@@ -95,7 +95,7 @@ public interface IImage extends ITexRegion {
      * This may be slow, similarly to performing getPixels.
      * This is a convenience method; for repetitive downloads it's better to reuse buffers.
      */
-    default @NonNull IWSIImage.RW download() {
+    default @NonNull WSIImage.RW download() {
         return GaBIEn.createWSIImage(getPixels(), getWidth(), getHeight());
     }
 

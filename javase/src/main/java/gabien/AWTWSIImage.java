@@ -16,16 +16,17 @@ import javax.imageio.ImageIO;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.render.IWSIImage;
+import gabien.render.WSIImage;
 
 /**
  * Copied from AWTImage and OsbDriverCore 7th June 2023.
  */
-public class AWTWSIImage implements IWSIImage.RW {
+public class AWTWSIImage extends WSIImage.RW {
     public final @Nullable BufferedImage buf;
     public final @Nullable WritableRaster bufWR;
 
     public AWTWSIImage(@NonNull BufferedImage bi) {
+        super(GaBIEn.internal, bi.getWidth(), bi.getHeight());
         if (bi.getType() != BufferedImage.TYPE_INT_ARGB)
             throw new IllegalArgumentException("The passed BufferedImage must be TYPE_INT_ARGB");
         buf = bi;
@@ -33,6 +34,7 @@ public class AWTWSIImage implements IWSIImage.RW {
     }
 
     public AWTWSIImage(@Nullable int[] colours, int width, int height) {
+        super(GaBIEn.internal, width < 0 ? 0 : width, height < 0 ? 0 : height);
         if (width <= 0 || height <= 0) {
             buf = null;
             bufWR = null;
@@ -42,20 +44,6 @@ public class AWTWSIImage implements IWSIImage.RW {
             if (colours != null)
                 bufWR.setDataElements(0, 0, width, height, colours);
         }
-    }
-
-    @Override
-    public int getWidth() {
-        if (buf == null)
-            return 0;
-        return buf.getWidth();
-    }
-
-    @Override
-    public int getHeight() {
-        if (buf == null)
-            return 0;
-        return buf.getHeight();
     }
 
     @Override
