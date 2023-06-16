@@ -5,15 +5,16 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien;
+package gabien.ui;
 
+import gabien.GaBIEn;
+import gabien.backend.IGaBIEn;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.text.IFixedSizeFont;
 import gabien.text.RenderedTextChunk;
 import gabien.text.SimpleImageGridFont;
 import gabien.text.TextTools;
-import gabien.ui.Size;
 
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,7 +36,8 @@ public class FontManager {
     // Key format is a weird mess, check the relevant function
     private static WeakHashMap<String, String> formatData = new WeakHashMap<String, String>();
 
-    static void setupFonts() {
+    public static void setupFonts(IGaBIEn backend) {
+        GaBIEn.verify(backend);
         IImage f16 = GaBIEn.getImageCKEx("font2x.png", false, true, 0, 0, 0);
         IImage f8 = GaBIEn.getImageCKEx("font.png", false, true, 0, 0, 0);
         IImage f6 = GaBIEn.getImageCKEx("fonttiny.png", false, true, 0, 0, 0);

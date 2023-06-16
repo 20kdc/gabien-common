@@ -7,7 +7,6 @@
 package gabien.backend;
 
 import gabien.GaBIEn;
-import gabien.IGaBIEn;
 import gabien.text.IFixedSizeFont;
 
 /**

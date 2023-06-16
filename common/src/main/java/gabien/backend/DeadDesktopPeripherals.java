@@ -19,7 +19,7 @@ import gabien.wsi.ITextEditingSession;
 /**
  * Created on 05/03/2020.
  */
-public class DeadDesktopPeripherals implements IDesktopPeripherals {
+public final class DeadDesktopPeripherals implements IDesktopPeripherals {
     public static final DeadDesktopPeripherals INSTANCE = new DeadDesktopPeripherals(); 
 
     @Override

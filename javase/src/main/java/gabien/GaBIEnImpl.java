@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.backend.IGaBIEn;
 import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
 import gabien.render.WSIImage;

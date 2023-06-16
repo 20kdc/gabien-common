@@ -7,11 +7,8 @@
 
 package gabien.ui;
 
-import gabien.*;
 import gabien.render.IGrDriver;
-import gabien.ui.theming.IBorder;
-import gabien.ui.theming.Theme;
-import gabien.ui.theming.ThemingCentral;
+import gabien.ui.theming.*;
 import gabien.wsi.IPeripherals;
 
 /**

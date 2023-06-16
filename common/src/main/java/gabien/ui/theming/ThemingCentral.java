@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.util.LinkedList;
 
 import gabien.GaBIEn;
+import gabien.backend.IGaBIEn;
 import gabien.datum.*;
 
 /**
@@ -24,7 +25,8 @@ public class ThemingCentral {
     public static final int BF_LIGHTBKG = 8;
     public static Theme[] themes;
 
-    public static void setupAssets() {
+    public static void setupAssets(IGaBIEn backend) {
+        GaBIEn.verify(backend);
         // Just in case we fail to initialize...
         themes = new Theme[] {Theme.ROOT};
         try {

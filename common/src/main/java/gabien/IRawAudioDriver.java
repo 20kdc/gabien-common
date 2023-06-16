@@ -7,17 +7,27 @@
 
 package gabien;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
+ * Interface to an audio output.
  * Created on 09/12/15.
  */
 public interface IRawAudioDriver {
-    interface IRawAudioSource {
-        // Pull 22050hz 16-bit stereo samples
-        // short array should be new short[samples*2], as each sample has L and R channels
-        // can be called from another thread!
-        short[] pullData(int samples);
+    /**
+     * Interface to an audio source.
+     */
+    public interface IRawAudioSource {
+        /**
+         * Pull 22050hz 16-bit stereo samples.
+         * Short array should be new short[samples*2], as each sample has L and R channels.
+         * Can be called from another thread!
+         */
+        @NonNull short[] pullData(int samples);
     }
 
-    // Set a new audio source, replacing the previous.
-    IRawAudioSource setRawAudioSource(IRawAudioSource src);
+    /**
+     * Set a new audio source, replacing the previous.
+     */
+    @NonNull IRawAudioSource setRawAudioSource(@NonNull IRawAudioSource src);
 }

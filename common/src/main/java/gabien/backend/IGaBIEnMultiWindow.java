@@ -18,7 +18,7 @@ public interface IGaBIEnMultiWindow {
     // Returns true if this is a single-window environment pretending to be multi-window
     //  through the use of a "window stack".
     boolean isActuallySingleWindow();
-    
+
     // Gets the default window details.
     WindowSpecs defaultWindowSpecs(String name, int w, int h);
 

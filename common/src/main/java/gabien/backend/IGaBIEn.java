@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien;
+package gabien.backend;
 
 import java.io.File;
 import java.io.InputStream;
@@ -13,6 +13,7 @@ import java.io.InputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.IRawAudioDriver;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 

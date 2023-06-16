@@ -10,7 +10,6 @@ package gabien.backend;
 import java.util.LinkedList;
 
 import gabien.GaBIEn;
-import gabien.IGaBIEn;
 import gabien.render.IImage;
 import gabien.wsi.IDesktopPeripherals;
 import gabien.wsi.IGrInDriver;

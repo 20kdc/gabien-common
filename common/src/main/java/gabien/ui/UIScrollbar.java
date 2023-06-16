@@ -9,7 +9,6 @@ package gabien.ui;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.FontManager;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.text.SimpleImageGridFont;

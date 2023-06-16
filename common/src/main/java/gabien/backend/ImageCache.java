@@ -9,7 +9,6 @@ package gabien.backend;
 import java.util.HashMap;
 
 import gabien.GaBIEn;
-import gabien.IGaBIEn;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
 

@@ -11,6 +11,9 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
+
+import org.eclipse.jdt.annotation.NonNull;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -36,7 +39,7 @@ final class RawSoundDriver implements IRawAudioDriver, Runnable {
     private Thread soundthread = new Thread(this);
     private AtomicReference<IRawAudioSource> source = new AtomicReference<IRawAudioSource>(new IRawAudioSource() {
         @Override
-        public short[] pullData(int samples) {
+        public @NonNull short[] pullData(int samples) {
             return new short[samples * 2];
         }
     });
@@ -81,7 +84,7 @@ final class RawSoundDriver implements IRawAudioDriver, Runnable {
     }
 
     @Override
-    public IRawAudioSource setRawAudioSource(IRawAudioSource src) {
+    public @NonNull IRawAudioSource setRawAudioSource(@NonNull IRawAudioSource src) {
         return source.getAndSet(src);
     }
 

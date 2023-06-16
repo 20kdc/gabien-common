@@ -8,7 +8,7 @@
 package gabien.wsi;
 
 import gabien.GaBIEn;
-import gabien.IGaBIEn;
+import gabien.backend.IGaBIEn;
 
 public final class WindowSpecs {
     /**

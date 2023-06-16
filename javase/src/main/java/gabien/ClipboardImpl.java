@@ -9,7 +9,7 @@ package gabien;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 
-import gabien.backend.IGaBIEnClipboard;
+import gabien.wsi.IGaBIEnClipboard;
 
 public class ClipboardImpl implements IGaBIEnClipboard {
 

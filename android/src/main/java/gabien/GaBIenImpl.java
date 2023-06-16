@@ -14,6 +14,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import gabien.backend.EmulatedFileBrowser;
+import gabien.backend.IGaBIEn;
 import gabien.backend.WindowMux;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;

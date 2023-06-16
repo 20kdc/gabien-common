@@ -13,7 +13,7 @@ import gabien.wsi.ITextEditingSession;
  * Continuation of DeadDesktopPeripherals
  * Created 28th July 2022
  */
-public class DeadTextEditingSession implements ITextEditingSession {
+public final class DeadTextEditingSession implements ITextEditingSession {
     @Override
     public String maintain(int x, int y, int w, int h, String text) {
         return text;

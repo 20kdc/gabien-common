@@ -7,7 +7,7 @@
 
 package gabien;
 
-import gabien.backend.IGaBIEnClipboard;
+import gabien.backend.IGaBIEn;
 import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
 import gabien.backend.ImageCache;
@@ -18,6 +18,7 @@ import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
+import gabien.ui.FontManager;
 import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
@@ -26,6 +27,7 @@ import gabien.uslx.vfs.FSBackend.XState;
 import gabien.vopeks.Vopeks;
 import gabien.vopeks.VopeksGrDriver;
 import gabien.vopeks.VopeksImage;
+import gabien.wsi.IGaBIEnClipboard;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.WindowSpecs;
 
@@ -39,55 +41,108 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-public class GaBIEn {
+/**
+ * The entrypoint to the API. Has been around as long as the library was a distinct library.
+ * This is at least as early as 10th October, 2014, though it only consisted of 8 classes back then.
+ */
+public final class GaBIEn {
+    /**
+     * Vopeks instance. See the vopeks package.
+     */
     public static Vopeks vopeks;
+
+    /**
+     * TimeLogger for profiling. Can be null, be careful.
+     */
     public static TimeLogger timeLogger;
-    protected static IGaBIEn internal;
-    protected static IGaBIEnMultiWindow internalWindowing;
-    protected static IGaBIEnFileBrowser internalFileBrowser;
+
+    /**
+     * The clipboard.
+     */
     public static IGaBIEnClipboard clipboard;
+
+    /**
+     * The filesystem.
+     */
     public static FSBackend mutableDataFS;
-    private static IImage errorImage;
-    private static ReentrantLock callbackQueueLock = new ReentrantLock();
-    private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
-    private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
-    private static NativeFontCache nativeFontCache;
-    private static ImageCache imageCache;
+
     /**
      * Flag that indicates native fonts can be used without causing a lagspike.
      * This is a workaround for some oddities I've run into.
      */
     public static volatile boolean fontsReady;
 
-    // Additional resource load locations.
+    /**
+     * Only the backend should access this! Implementation.
+     */
+    static IGaBIEn internal;
+
+    /**
+     * Only the backend should access this! Windowing implementation.
+     * This is separated out to allow swapping based on user configuration (mobile emulation).
+     */
+    static IGaBIEnMultiWindow internalWindowing;
+
+    /**
+     * Only the backend should access this! File Browser implementation.
+     */
+    static IGaBIEnFileBrowser internalFileBrowser;
+
+    private static IImage errorImage;
+    private static ReentrantLock callbackQueueLock = new ReentrantLock();
+    private static LinkedList<Runnable> callbackQueue = new LinkedList<Runnable>();
+    private static LinkedList<Runnable> callbacksToAddAfterCallbacksQueue = new LinkedList<Runnable>();
+    private static NativeFontCache nativeFontCache;
+    private static ImageCache imageCache;
+
+    /**
+     * Additional resource load locations.
+     * This is initialized to gabienapp.Application.appPrefixes if possible.
+     */
     public static String[] appPrefixes = new String[0];
-    // Can be used by internal UI.
-    public static String wordSave = "Save", wordLoad = "Load";
-    public static String wordInvalidFileName = "Invalid or missing file name.";
+
+    /**
+     * Translatable phrases used by internal UI.
+     */
+    public static String wordSave = "Save", wordLoad = "Load", wordInvalidFileName = "Invalid or missing file name.";
+
+    /**
+     * Font size used by internal UI.
+     */
     public static int sysCoreFontSize = 8;
 
     private static double lastDt;
     private static long startup = System.currentTimeMillis();
 
+    private GaBIEn() {
+        // Nope!
+    }
+
+    /**
+     * Gets the time since application start in seconds.
+     */
     public static double getTime() {
         return (System.currentTimeMillis() - startup) / 1000.0;
     }
 
+    /**
+     * Gets the amount of time since this function was last called with true passed.
+     * If the function was never called with true passed, gets the time since application start in seconds.
+     */
     public static double timeDelta(boolean reset) {
-        double dt = getTime() - lastDt;
+        double recording = getTime();
+        double dt = recording - lastDt;
         if (reset)
-            lastDt = getTime();
+            lastDt = recording;
         return dt;
     }
 
-    // Regarding this change:
-    // getRFile and getWFile are the "arbitrary file access" providers,
-    //  and should only ever access the "external storage".
-    // This prevents the namespace pollution I was worried about before.
-    // However, sometimes we do want to access resources, but also want the user to be able to override these.
-    // Hence getResource and appPrefix.
-    // Essentially, a gabien application that wishes to allow openRFile and openWFile.
-    public static InputStream getResource(String resource) {
+    /**
+     * Gets a resource.
+     * Resources can come from disk via application resource prefixes, or from the JAR's assets directory.
+     * @return Resource InputStream, or null on failure.
+     */
+    public static @Nullable InputStream getResource(@NonNull String resource) {
         for (String s : appPrefixes) {
             InputStream inp = getInFile(s + resource);
             if (inp != null)
@@ -98,41 +153,64 @@ public class GaBIEn {
 
     /**
      * Wrapper over getResource for text.
+     * @return Resource InputStreamReader (UTF-8), or null on failure.
      */
-    public static InputStreamReader getTextResource(String resource) {
+    public static @Nullable InputStreamReader getTextResource(@NonNull String resource) {
         InputStream inp = getResource(resource);
         if (inp == null)
             return null;
         return new InputStreamReader(inp, StandardCharsets.UTF_8);
     }
 
-    public static InputStream getInFile(String resource) {
+    /**
+     * Wraps mutableDataFS. Opens a file for input. If an error occurs, returns null.
+     * @return The InputStream, or null on error.
+     */
+    public static @Nullable InputStream getInFile(@NonNull String name) {
         try {
-            return mutableDataFS.openRead(resource);
+            return mutableDataFS.openRead(name);
         } catch (Exception ioe) {
             return null;
         }
     }
 
-    public static OutputStream getOutFile(String string) {
+    /**
+     * Wraps mutableDataFS. Opens a file for output. If an error occurs, returns null.
+     * @return The InputStream, or null on error.
+     */
+    public static @Nullable OutputStream getOutFile(@NonNull String name) {
         try {
-            return mutableDataFS.openWrite(string);
+            return mutableDataFS.openWrite(name);
         } catch (Exception ioe) {
             return null;
         }
     }
 
+    /**
+     * @return Is this a single-window platform? (Android or mobile emulator)
+     */
     public static boolean singleWindowApp() {
         return internalWindowing.isActuallySingleWindow();
     }
 
-    public static IRawAudioDriver getRawAudio() {
+    /**
+     * Gets/creates the raw audio driver.
+     * @return Raw audio driver.
+     */
+    public static @NonNull IRawAudioDriver getRawAudio() {
         return internal.getRawAudio();
     }
+
+    /**
+     * A hint to the backend to shutdown raw audio (possibly saving CPU).
+     */
     public static void hintShutdownRawAudio() {
         internal.hintShutdownRawAudio();
     }
 
+    /**
+     * Ensures that the application quits.
+     */
     public static void ensureQuit() {
         try {
             if (timeLogger != null)
@@ -143,23 +221,32 @@ public class GaBIEn {
         internal.ensureQuit();
     }
 
-    public static WindowSpecs defaultWindowSpecs(String name, int w, int h) {
+    /**
+     * Returns the default window specifications for the given parameters.
+     */
+    public static @NonNull WindowSpecs defaultWindowSpecs(@NonNull String name, int w, int h) {
         return internalWindowing.defaultWindowSpecs(name, w, h);
     }
 
-    public static IGrInDriver makeGrIn(String name, int w, int h) {
+    /**
+     * Opens a window with the default window specifications.
+     */
+    public static @NonNull IGrInDriver makeGrIn(@NonNull String name, int w, int h) {
         WindowSpecs ws = defaultWindowSpecs(name, w, h);
         return makeGrIn(name, w, h, ws);
     }
 
-    public static IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs specs) {
+    /**
+     * Opens a window with the given window specifications.
+     */
+    public static @NonNull IGrInDriver makeGrIn(String name, int w, int h, @NonNull WindowSpecs specs) {
         return internalWindowing.makeGrIn(name, w, h, specs);
     }
 
     /**
      * Creates an offscreen RGBA buffer.
      */
-    public static IGrDriver makeOffscreenBuffer(int width, int height) {
+    public static @NonNull IGrDriver makeOffscreenBuffer(int width, int height) {
         return makeOffscreenBuffer(width, height, null);
     }
 
@@ -167,7 +254,7 @@ public class GaBIEn {
      * Creates an offscreen RGBA buffer.
      * This variant has a debug ID.
      */
-    public static IGrDriver makeOffscreenBuffer(int width, int height, @Nullable String id) {
+    public static @NonNull IGrDriver makeOffscreenBuffer(int width, int height, @Nullable String id) {
         if (width <= 0)
             return new NullGrDriver();
         if (height <= 0)
@@ -175,18 +262,27 @@ public class GaBIEn {
         return new VopeksGrDriver(GaBIEn.vopeks, id, width, height, null);
     }
 
-    // This has to at least support JPGs, PNGs and BMPs.
-    // On error, it should return an "error" image. This "error" image is unique, and can be gotten via getErrorImage.
-
-    public static IImage getImage(String a) {
+    /**
+     * Gets an image. This is cached.
+     * Tries the filesystem first, then resources.
+     * This has to at least support JPGs, PNGs and BMPs.
+     * Returns the result of getErrorImage on failure.
+     */
+    public static @NonNull IImage getImage(String a) {
         return getImageEx(a, true, true);
     }
 
-    public static IImage getImageCK(String a, int r, int g, int b) {
+    /**
+     * Gets an image, and colour-keys away a colour. This is cached.
+     */
+    public static @NonNull IImage getImageCK(@NonNull String a, int r, int g, int b) {
         return getImageCKEx(a, true, true, r, g, b);
     }
 
-    public static IImage getImageEx(String a, boolean fs, boolean res) {
+    /**
+     * Gets an image. You can specify if the image can be gotten from the filesystem directly or the resources.
+     */
+    public static @NonNull IImage getImageEx(@NonNull String a, boolean fs, boolean res) {
         IImage err = getErrorImage();
         if (fs) {
             IImage r = imageCache.getImage(a, false);
@@ -208,7 +304,10 @@ public class GaBIEn {
         return err;
     }
 
-    public static IImage getImageCKEx(String a, boolean fs, boolean res, int r, int g, int b) {
+    /**
+     * getImageEx with colour-key processing.
+     */
+    public static @NonNull IImage getImageCKEx(@NonNull String a, boolean fs, boolean res, int r, int g, int b) {
         IImage err = getErrorImage();
         if (fs) {
             IImage ri = imageCache.getImageCK(a, false, r, g, b);
@@ -230,27 +329,26 @@ public class GaBIEn {
         return err;
     }
 
-    public static IImage getErrorImage() {
-        if (errorImage == null) {
-            errorImage = createImage("getErrorImage", new int[] {
-                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
-                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
-                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
-                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
-                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
-                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
-                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
-                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF
-            }, 8, 8);
-        }
+    /**
+     * Returns the one true static error image.
+     * This can be compared to image get results.
+     */
+    public static @NonNull IImage getErrorImage() {
         return errorImage;
     }
 
-    public static IImage createImage(@NonNull int[] colours, int width, int height) {
+    /**
+     * Creates an image from colours/width/height.
+     */
+    public static @NonNull IImage createImage(@NonNull int[] colours, int width, int height) {
         return createImage(null, colours, width, height);
     }
 
-    public static IImage createImage(@Nullable String debugId, @NonNull int[] colours, int width, int height) {
+    /**
+     * Creates an image from colours/width/height.
+     * Has a debug ID to help keep track.
+     */
+    public static @NonNull IImage createImage(@Nullable String debugId, @NonNull int[] colours, int width, int height) {
         if (width <= 0)
             return new NullGrDriver();
         if (height <= 0)
@@ -258,10 +356,17 @@ public class GaBIEn {
         return new VopeksImage(GaBIEn.vopeks, debugId, width, height, colours);
     }
 
-    public static WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
+    /**
+     * Creates a WSI image from colours/width/height.
+     * This is only really useful when saving an image.
+     */
+    public static @NonNull WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height) {
         return internal.createWSIImage(colours, width, height);
     }
 
+    /**
+     * Clears the image cache.
+     */
     public static void hintFlushAllTheCaches() {
         imageCache.hintFlushAllTheCaches();
     }
@@ -269,7 +374,7 @@ public class GaBIEn {
     /**
      * Returns the list of native font names.
      */
-    public static String[] getFontOverrides() {
+    public static @NonNull String[] getFontOverrides() {
         return internal.getFontOverrides();
     }
 
@@ -299,28 +404,43 @@ public class GaBIEn {
         return nf;
     }
 
-    public static boolean fileOrDirExists(String s) {
+    /**
+     * File or directory exists.
+     */
+    public static boolean fileOrDirExists(@NonNull String s) {
         return mutableDataFS.getState(s) != null;
     }
-    public static boolean dirExists(String s) {
+
+    /**
+     * Directory exists.
+     */
+    public static boolean dirExists(@NonNull String s) {
         return mutableDataFS.getState(s) instanceof DirectoryState;
     }
 
-    // Resources DO NOT QUALIFY.
-    // It is possible that this will be called with or without a trailing "/".
-    // Elements are listed just with names and no further detail.
-    public static String[] listEntries(String s) {
+    /**
+     * Wrapper around mutableDataFS.
+     * Lists entries in a directory.
+     * @return List of filenames, or null on error.
+     */
+    public static @Nullable String[] listEntries(@NonNull String s) {
         XState xs = mutableDataFS.getState(s);
         if (xs instanceof DirectoryState)
             return ((DirectoryState) xs).entries;
         return null;
     }
 
-    public static String absolutePathOf(String s) {
+    /**
+     * Converts a path to an absolute path.
+     */
+    public static @NonNull String absolutePathOf(@NonNull String s) {
         return mutableDataFS.absolutePathOf(s);
     }
 
-    public static String nameOf(String s) {
+    /**
+     * Returns the name of a file.
+     */
+    public static @NonNull String nameOf(@NonNull String s) {
         return mutableDataFS.nameOf(s);
     }
 
@@ -328,22 +448,28 @@ public class GaBIEn {
      * See FSBackend.parentOf
      * TLDR: Returns null if no parent exists, is supposed to switch to absolute paths when necessary.
      */
-    public static @Nullable String parentOf(String s) {
+    public static @Nullable String parentOf(@NonNull String s) {
         return mutableDataFS.parentOf(s);
     }
 
-    public static void makeDirectories(String s) {
+    /**
+     * Makes directories up to the given path.
+     */
+    public static void makeDirectories(@NonNull String s) {
         mutableDataFS.mkdirs(s);
     }
 
     /**
      * Attempts to start a text editor. Returns false on failure.
      */
-    public static boolean tryStartTextEditor(String fpath) {
+    public static boolean tryStartTextEditor(@NonNull String fpath) {
         return internal.tryStartTextEditor(fpath);
     }
 
-    public static void rmFile(String s) {
+    /**
+     * Attempts to delete a file.
+     */
+    public static void rmFile(@NonNull String s) {
         try {
             mutableDataFS.delete(s);
         } catch (Exception e) {
@@ -351,37 +477,54 @@ public class GaBIEn {
         }
     }
 
-    public static void setBrowserDirectory(String s) {
+    /**
+     * Sets the file browser directory.
+     */
+    public static void setBrowserDirectory(@NonNull String s) {
         internalFileBrowser.setBrowserDirectory(s);
     }
 
-    // exts should just be left blank for now.
-    // iConsumer is called as part of runCallbacks.
-    // Regarding the path, the only guarantee is that it'll be null or a valid file path.
-    // It does not necessarily have to match the standard gabien path separator.
+    /**
+     * (This is a bit of an inconsistent one due to AWT being difficult.)
+     * exts should just be left blank for now.
+     * iConsumer is called as part of runCallbacks.
+     * Regarding the path, the only guarantee is that it'll be null or a valid file path.
+     * It does not necessarily have to match the standard gabien path separator.
+     */
     public static void startFileBrowser(String s, boolean saving, String exts, IConsumer<String> iConsumer) {
         internalFileBrowser.startFileBrowser(s, saving, exts, iConsumer, "");
     }
+
+    /**
+     * Same as previous version, but now with an initial filename.
+     */
     public static void startFileBrowser(String s, boolean saving, String exts, IConsumer<String> iConsumer, String initialName) {
         internalFileBrowser.startFileBrowser(s, saving, exts, iConsumer, initialName);
     }
 
-    // invokeLater-alike for the gabien main thread.
-    // This can be used by the application,
-    //  but mostly exists as a way to get application callbacks called on the thread they are expected to be called on.
-
+    /**
+     * invokeLater-alike for the gabien main thread.
+     * This can be used by the application,
+     *  but mostly exists as a way to get application callbacks called on the thread they are expected to be called on.
+     */
     public static void pushCallback(Runnable r) {
         callbackQueueLock.lock();
         callbackQueue.add(r);
         callbackQueueLock.unlock();
     }
 
+    /**
+     * Like pushCallback, but occurs on the next time runCallbacks is run, after the current time.
+     */
     public static void pushLaterCallback(Runnable runnable) {
         callbackQueueLock.lock();
         callbacksToAddAfterCallbacksQueue.add(runnable);
         callbackQueueLock.unlock();
     }
 
+    /**
+     * Runs callbacks.
+     */
     public static void runCallbacks() {
         callbackQueueLock.lock();
         while (callbackQueue.size() > 0) {
@@ -394,7 +537,10 @@ public class GaBIEn {
         callbackQueueLock.unlock();
     }
 
-    // DT compensation is optional.
+    /**
+     * Attempts to end a frame with a decently consistent framerate while properly sleeping.
+     * Also performs runCallbacks.
+     */
     public static double endFrame(double dTTarg) {
         runCallbacks();
         double dT = GaBIEn.timeDelta(false);
@@ -429,6 +575,20 @@ public class GaBIEn {
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      */
     static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger) {
+        try {
+            String[] str = (String[]) Class.forName("gabienapp.Application").getField("appPrefixes").get(null);
+            appPrefixes = str;
+            StringBuilder sb = new StringBuilder();
+            sb.append("GaBIEn: Successfully set app resource prefixes to:");
+            for (String s : appPrefixes) {
+                sb.append(" \"");
+                sb.append(s);
+                sb.append("\"");
+            }
+            System.err.println(sb.toString());
+        } catch (Exception ex) {
+            // do nothing
+        }
         if (setupTimeLogger && (timeLogger == null))
             timeLogger = new TimeLogger(getOutFile("gTimeLogger.bin"));
         // If VOPEKS has already been initialized, skip initializing it again.
@@ -443,16 +603,35 @@ public class GaBIEn {
             if (debug)
                 newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
             vopeks = new Vopeks(newInstanceFlags, timeLogger);
+            errorImage = createImage("getErrorImage", new int[] {
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF,
+                    0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF
+            }, 8, 8);
         }
         // VOPEKS has started, we can now start user-level services.
         // Notably, because these use engine permission keys, they MUST be refreshed.
         nativeFontCache = new NativeFontCache(internal);
         imageCache = new ImageCache(internal);
         // These will hold references to dead assets if not reinitialized.
-        FontManager.setupFonts();
-        ThemingCentral.setupAssets();
+        FontManager.setupFonts(internal);
+        ThemingCentral.setupAssets(internal);
     }
 
+    /**
+     * This is used to verify that a call has come from "in-engine" (GaBIEn).
+     * Some classes are internal API but need to communicate cross-package.
+     * As such, the very secure* encapsulation abilities of Java are used for defensive programming.
+     *
+     * * Security subject to CVE-of-the-week. See "Phrack: Twenty years of Escaping the Java Sandbox (Ieu Eauvidoum &amp; disk noise)".
+     * * Security also subject to the same issues that allow gabien backends and the test rig to operate in the first place.
+     *   If you're abusing this, that's on you.
+     */
     public static void verify(IGaBIEn engine) {
         if (internal != engine)
             throw new RuntimeException("Attempt to falsify engine permissions.");

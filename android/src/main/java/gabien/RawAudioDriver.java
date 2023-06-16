@@ -7,6 +7,9 @@
 
 package gabien;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -33,13 +36,13 @@ public class RawAudioDriver implements IRawAudioDriver {
 
     private IRawAudioSource ras = new IRawAudioSource() {
         @Override
-        public short[] pullData(int samples) {
+        public @NonNull short[] pullData(int samples) {
             return new short[samples * 2];
         }
     };
 
     @Override
-    public IRawAudioSource setRawAudioSource(IRawAudioSource src) {
+    public @NonNull IRawAudioSource setRawAudioSource(@NonNull IRawAudioSource src) {
         IRawAudioSource last = ras;
         ras = src;
         return last;
