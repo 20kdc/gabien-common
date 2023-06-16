@@ -12,7 +12,7 @@ import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 
 /**
- * Regular border
+ * Tiled-background border.
  * Split from RegularBorder 15th June, 2023.
  */
 public class TiledBorder implements IBorder {
@@ -39,7 +39,7 @@ public class TiledBorder implements IBorder {
         // Entire highres border space is reserved for tiling pattern.
         // Try to make the most of lowres? :(
         if (borderWidth != 0)
-            borderWidth = RegularBorder.ensureBWV(Math.max(borderWidth, 3), 3);
+            borderWidth = StretchBorder.ensureBWV(Math.max(borderWidth, 3), 3);
 
         if (borderWidth <= 0)
             return;

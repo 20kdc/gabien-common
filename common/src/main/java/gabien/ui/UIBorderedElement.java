@@ -61,6 +61,7 @@ public abstract class UIBorderedElement extends UIElement {
 
     @Override
     public void onThemeChanged() {
+        // System.out.println("theme updated @ " + this + " -> " + this.getTheme());
         updateBorder();
     }
 

@@ -12,8 +12,8 @@ import gabien.render.IGrDriver;
  * Ultimate fallback.
  * Created 15th June, 2023.
  */
-class FlatBorder implements IBorder {
-    public static final FlatBorder INSTANCE = new FlatBorder();
+class FallbackBorder implements IBorder {
+    public static final FallbackBorder INSTANCE = new FallbackBorder();
     @Override
     public void draw(IGrDriver igd, int borderWidth, int x, int y, int w, int h) {
         int bw2 = borderWidth * 2;

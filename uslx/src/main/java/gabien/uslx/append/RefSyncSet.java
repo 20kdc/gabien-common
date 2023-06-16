@@ -61,22 +61,6 @@ public final class RefSyncSet<T> implements Iterable<T> {
     }
 
     /**
-     * Removes an entry by value. Slower but easier to work with in some cases.
-     */
-    public synchronized void removeValue(T object) {
-        Holder res = null;
-        for (Reference<Holder> h : held) {
-            Holder r2 = h.get();
-            if (r2.value == object) {
-                res = r2;
-                break;
-            }
-        }
-        if (res != null)
-            remove(res);
-    }
-
-    /**
      * This is the "reference holder".
      * The purpose of this object is to get finalized so that references cleanly leave the RefSyncSet.
      */

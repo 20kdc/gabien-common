@@ -196,6 +196,7 @@ public abstract class UIElement extends LAFChain {
             setAttachedToRoot(newParent.attachedToRootFlag);
         else
             setAttachedToRoot(false);
+        // System.out.println("Theme update because of internalSetParent @ " + this);
         themeUpdate();
     }
 

@@ -22,6 +22,10 @@ public abstract class LAFChain {
     }
 
     private @Nullable LAFChain.Node lafParentOverride;
+    // This is what holds the LAFChain to the parent.
+    // If the LAFChain would be GC'd, the holder gets finalized.
+    // This disconnects things upstream.
+    private RefSyncSet<LAFChain>.Holder lafParentOverrideHolder;
 
     /**
      * Actual calculated theme.
@@ -50,11 +54,13 @@ public abstract class LAFChain {
      * Sets the theming parent override.
      */
     public void setLAFParentOverride(@Nullable LAFChain.Node parent) {
-        if (lafParentOverride != null)
-           lafParentOverride.removeLAFChild(this);
+        if (lafParentOverrideHolder != null) {
+           lafParentOverride.children.remove(lafParentOverrideHolder);
+           lafParentOverrideHolder = null;
+        }
         lafParentOverride = parent;
         if (lafParentOverride != null)
-            lafParentOverride.addLAFChild(this);
+            lafParentOverrideHolder = lafParentOverride.children.addWeak(this);
         themeUpdate();
     }
 
@@ -99,6 +105,7 @@ public abstract class LAFChain {
             newTheme = Theme.ROOT;
         }
         if (newTheme != theme) {
+            // System.out.println("theme change " + theme + " -> " + newTheme + " @ " + this);
             theme = newTheme;
             onThemeChanged();
             themeUpdateChildren();
@@ -127,14 +134,6 @@ public abstract class LAFChain {
      */
     public static final class Node extends LAFChain {
         private RefSyncSet<LAFChain> children = new RefSyncSet<>();
-
-        void addLAFChild(LAFChain child) {
-            children.addWeak(child);
-        }
-
-        void removeLAFChild(LAFChain child) {
-            children.removeValue(child);
-        }
 
         @Override
         void themeUpdateChildren() {

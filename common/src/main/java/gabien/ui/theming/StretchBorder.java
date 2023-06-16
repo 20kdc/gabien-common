@@ -11,10 +11,10 @@ import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 
 /**
- * Regular border
+ * Regular border.
  * Created 14th June, 2023.
  */
-public class RegularBorder implements IBorder {
+public class StretchBorder implements IBorder {
     private final EightPatch w1;
     private final EightPatch w2;
     private final EightPatch w4;
@@ -22,11 +22,9 @@ public class RegularBorder implements IBorder {
     private final ITexRegion stretchC2;
     private final ITexRegion stretchC4;
     private final int flags;
-    private final boolean clear;
 
-    public RegularBorder(int flags, ITexRegion themesImg, boolean clear) {
+    public StretchBorder(int flags, ITexRegion themesImg) {
         Rect outerRegion, innerRegion;
-        this.clear = clear;
 
         outerRegion = new Rect(0, 0, 3, 3);
         innerRegion = new Rect(1, 1, 1, 1);
@@ -68,11 +66,7 @@ public class RegularBorder implements IBorder {
 
         borderWidth = ensureBWV(borderWidth, chunkSize);
 
-        if (clear) {
-            igd.clearRect(0, 0, 0, x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2));
-        } else {
-            igd.blitScaledImage(x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), stretchRegion);
-        }
+        igd.blitScaledImage(x + borderWidth, y + borderWidth, w - (borderWidth * 2), h - (borderWidth * 2), stretchRegion);
 
         if (borderWidth <= 0)
             return;

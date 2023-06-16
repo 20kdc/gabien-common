@@ -148,7 +148,7 @@ public final class Theme {
     }
     private static class BAttr extends BuiltinAttr<IBorder> {
         public BAttr(String id, int iid) {
-            super(id, iid, IBorder.class, FlatBorder.INSTANCE);
+            super(id, iid, IBorder.class, FallbackBorder.INSTANCE);
         }
     }
 
@@ -183,7 +183,6 @@ public final class Theme {
             ITexRegion basis;
             int flags = 0;
             boolean tiled = false;
-            boolean clear = false;
 
             @Override
             public DatumVisitor handle(int idx) {
@@ -192,10 +191,6 @@ public final class Theme {
                 return new DatumDecToLambdaVisitor((res, srcLoc) -> {
                     if (isSym(res, "moveDown")) {
                         flags |= ThemingCentral.BF_MOVEDOWN;
-                        return;
-                    } else if (isSym(res, "clear")) {
-                        // Contents are black, use a clear for speed. (Ignored if tiling!)
-                        clear = true;
                         return;
                     } else if (isSym(res, "lightBkg")) {
                         flags |= ThemingCentral.BF_LIGHTBKG;
@@ -212,7 +207,7 @@ public final class Theme {
             public void visitEnd(DatumSrcLoc srcLoc) {
                 if (basis == null)
                     throw new RuntimeException("Border missing base image @ " + srcLoc);
-                IBorder b = tiled ? new TiledBorder(flags, basis) : new RegularBorder(flags, basis, clear);
+                IBorder b = tiled ? new TiledBorder(flags, basis) : new StretchBorder(flags, basis);
                 parent.visitTree(b, srcLoc);
             }
         };

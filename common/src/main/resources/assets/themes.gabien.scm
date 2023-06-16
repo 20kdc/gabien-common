@@ -5,7 +5,7 @@
 
 ; Theme configuration file.
 ; Defines border flags, border types, and image regions.
-; Border flags are: moveDown, clear, lightBkg
+; Border flags are: moveDown, lightBkg
 
 iThemes? (img "themes.png")
 
@@ -51,7 +51,6 @@ t0? (theme
 	)
 	window (border
 		(reg iT0 rB5)
-		clear
 	)
 	sbTray (border
 		(reg iT0 rB6)
@@ -217,7 +216,6 @@ t3? (theme
 	)
 	window (border
 		(reg iT3 rB5)
-		clear
 	)
 	sbTray (border
 		(reg iT3 rB6)
