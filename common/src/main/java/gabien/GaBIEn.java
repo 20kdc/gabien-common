@@ -19,6 +19,7 @@ import gabien.render.IImage;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.ui.FontManager;
+import gabien.ui.LAFChain;
 import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
@@ -110,6 +111,11 @@ public final class GaBIEn {
      * Font size used by internal UI.
      */
     public static int sysCoreFontSize = 8;
+
+    /**
+     * Theme root used by internal UI.
+     */
+    public static final LAFChain.Node sysThemeRoot = new LAFChain.Node();
 
     private static double lastDt;
     private static long startup = System.currentTimeMillis();

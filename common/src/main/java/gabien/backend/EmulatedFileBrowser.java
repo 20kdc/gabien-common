@@ -44,6 +44,7 @@ public class EmulatedFileBrowser implements IGaBIEnFileBrowser {
         };
         // if this crashes, you're pretty doomed
         UIFileBrowser fb = new UIFileBrowser(browserDirectory, result, text, saving, GaBIEn.sysCoreFontSize, GaBIEn.sysCoreFontSize, initialName);
+        fb.setLAFParentOverride(GaBIEn.sysThemeRoot);
         wc.accept(fb);
         final Runnable tick = new Runnable() {
             double lastTime = GaBIEn.getTime();

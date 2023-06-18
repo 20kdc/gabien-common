@@ -7,11 +7,14 @@
 
 package gabien;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jdt.annotation.NonNull;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import gabien.backend.NullAudioSource;
 
 public class RawAudioDriver implements IRawAudioDriver {
     public boolean keepAlive = true;
@@ -23,8 +26,10 @@ public class RawAudioDriver implements IRawAudioDriver {
                 AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 22050, AudioFormat.CHANNEL_OUT_STEREO,
                         AudioFormat.ENCODING_PCM_16BIT, 1024,
                         AudioTrack.MODE_STREAM);
+                short[] dataIL = new short[1024];
                 while (keepAlive) {
-                    at.write(ras.pullData(512), 0, 1024);
+                    source.get().pullData(dataIL, 0, dataIL.length / 2);
+                    at.write(dataIL, 0, dataIL.length);
                     if (at.getPlayState() != AudioTrack.PLAYSTATE_PLAYING)
                         at.play();
                 }
@@ -33,17 +38,10 @@ public class RawAudioDriver implements IRawAudioDriver {
         t.start();
     }
 
-    private IRawAudioSource ras = new IRawAudioSource() {
-        @Override
-        public @NonNull short[] pullData(int samples) {
-            return new short[samples * 2];
-        }
-    };
+    private AtomicReference<IRawAudioSource> source = new AtomicReference<IRawAudioSource>(new NullAudioSource());
 
     @Override
     public @NonNull IRawAudioSource setRawAudioSource(@NonNull IRawAudioSource src) {
-        IRawAudioSource last = ras;
-        ras = src;
-        return last;
+        return source.getAndSet(src);
     }
 }

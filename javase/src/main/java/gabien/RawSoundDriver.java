@@ -9,77 +9,85 @@ package gabien;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineEvent.Type;
+import javax.sound.sampled.LineListener;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import gabien.backend.NullAudioSource;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Note that it may be a good idea to move part of this into GaBIEn-Common, and
- * make ISoundDriver take raw data.
- * (Later on, that happened)
+ * This has been being revised since 2014 and it's still a mess.
+ * Arguably even more of a mess than it was before.
+ * Just so future people understand:
+ * DO NOT BUILD AUDIO APIs BASED ON WRITING DATA TO STREAMS
+ * JUST DON'T DO IT. PERIOD. IT IS A TERRIBLE IDEA.
+ * Instead:
+ * 1. Negotiate the size of buffers/packets/whatever you want to call them during stream opening.
+ *    This gives the application a chance to allocate appropriate buffers that never need to be reallocated. 
+ * 2. Always use callbacks. The assumption should be that the callback has X time to complete.
+ *    X is the buffer size translated into audio time.
+ * This comment written 18th June, 2023.
  */
 final class RawSoundDriver implements IRawAudioDriver, Runnable {
     SourceDataLine sdl;
 
     public RawSoundDriver() throws LineUnavailableException {
-        AudioFormat af = new AudioFormat(22050, 16, 2, true, true);
+        AudioFormat af = new AudioFormat(22050, 16, 2, true, false);
         sdl = AudioSystem.getSourceDataLine(af);
-        sdl.open(af, 22050);
-        soundthread.setName("GaBIEn.Sound");
-        soundthread.setPriority(Thread.MAX_PRIORITY);
-        soundthread.start();
+        sdl.open(af);
+        sdl.addLineListener(new LineListener() {
+            @Override
+            public void update(LineEvent event) {
+                if (event.getType() == Type.STOP) {
+                    try {
+                        sdl.start();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+        sdl.start();
+        soundThread.setName("Sound");
+        soundThread.setPriority(Thread.MAX_PRIORITY);
+        soundThread.start();
     }
 
-    private Thread soundthread = new Thread(this);
-    private AtomicReference<IRawAudioSource> source = new AtomicReference<IRawAudioSource>(new IRawAudioSource() {
-        @Override
-        public @NonNull short[] pullData(int samples) {
-            return new short[samples * 2];
-        }
-    });
+    private Thread soundThread = new Thread(this);
 
-    public byte[] createData(int amount) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(baos);
-            short[] data = source.get().pullData(amount);
-            int pt = 0;
-            for (int px = 0; px < amount * 2; px++)
-                dos.writeShort(data[pt++]);
-            dos.flush();
-            return baos.toByteArray();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+    private AtomicReference<IRawAudioSource> source = new AtomicReference<IRawAudioSource>(new NullAudioSource());
+
+    public void createData(ShortBuffer dataB, short[] dataIL) {
+        source.get().pullData(dataIL, 0, dataIL.length / 2);
+        dataB.position(0);
+        dataB.put(dataIL);
     }
 
     private boolean alive = true;
 
     @Override
     public void run() {
+        int frames = 2048;
+
+        // "ring-ish" buffer from which data is transferred
+        byte[] dataB = new byte[frames * 4];
+        ByteBuffer bb = ByteBuffer.wrap(dataB);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        ShortBuffer fb = bb.asShortBuffer();
+        // working buffers
+        short[] dataIL = new short[frames * 2];
         while (alive) {
-            // a is in sample frames now.
-            // So a/2205 == amount of 10-millisecond blocks you can sleep in.
-            int a = (sdl.available() / 4);
-            if (a > 0) {
-                byte[] bytes = createData(a);
-                sdl.write(bytes, 0, bytes.length);
-            } else if (!sdl.isRunning()) {
-                System.err.println("SOUND:needed restart...");
-                sdl.start();
-            } else {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                }
-            }
-            
+            createData(fb, dataIL);
+            sdl.write(dataB, 0, dataB.length);
         }
     }
 

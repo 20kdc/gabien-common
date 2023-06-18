@@ -20,10 +20,11 @@ public interface IRawAudioDriver {
     public interface IRawAudioSource {
         /**
          * Pull 22050hz 16-bit stereo samples.
-         * Short array should be new short[samples*2], as each sample has L and R channels.
-         * Can be called from another thread!
+         * Interleaved contains interleaved left/right samples.
+         * Offset is an absolute, while frames is the number of frames (each frame being a left and right sample).
+         * Can be called from another thread.
          */
-        @NonNull short[] pullData(int samples);
+        void pullData(@NonNull short[] interleaved, int ofs, int frames);
     }
 
     /**
