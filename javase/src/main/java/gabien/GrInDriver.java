@@ -60,6 +60,10 @@ class GrInDriver implements IGrInDriver {
 
     @SuppressWarnings("serial")
     public GrInDriver(String name, WindowSpecs ws, int rw, int rh) {
+        if (rw < 1)
+            rw = 1;
+        if (rh < 1)
+            rh = 1;
         sc = ws.scale;
         frame = new JFrame(name) {
             @Override

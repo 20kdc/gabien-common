@@ -98,6 +98,11 @@
 !natives-examples/src
 !natives-examples/src/**
 
+!tools
+!tools/
+!tools/src
+!tools/src/**
+
 !example-toolchains.xml
 
 !unzip-desktop-jars.sh

@@ -42,7 +42,7 @@
 		<module>android</module>
 		<!-- natives not included, install via natives-sdk release -->
 		<module>natives-util</module>
-		<module>natives-examples</module>
+		<!-- tools, native examples not included; it adds build time to application projects -->
 	</modules>
 </project>
 

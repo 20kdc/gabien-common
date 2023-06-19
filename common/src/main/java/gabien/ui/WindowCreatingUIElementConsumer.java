@@ -71,6 +71,10 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         return w;
     }
 
+    public int runningWindowCount() {
+        return activeWindows.size() + incomingWindows.size();
+    }
+
     public void runTick(double dT) {
         activeWindows.addAll(incomingWindows);
         incomingWindows.clear();
@@ -190,7 +194,6 @@ public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
         // Default behavior: override as you wish
         wvWindow.onWindowClose();
     }
-
 
     private class ActiveWindow {
         IGrInDriver igd;
