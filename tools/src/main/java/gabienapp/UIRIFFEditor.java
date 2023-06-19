@@ -144,7 +144,7 @@ public class UIRIFFEditor extends UIProxy {
         }), false, 0);
         pastePtr = new UISplitterLayout(pastePtr, new UILabel(" ", 16), false, 0);
         pastePtr = new UISplitterLayout(pastePtr, new UITextButton("CList", 16, () -> {
-            parent.contents.add(index, new RIFFNode.CData());
+            parent.contents.add(index, new RIFFNode.CList("LIST", "test"));
             regenerateContents();
         }), false, 0);
         pastePtr = new UISplitterLayout(pastePtr, new UILabel(" ", 16), false, 0);
