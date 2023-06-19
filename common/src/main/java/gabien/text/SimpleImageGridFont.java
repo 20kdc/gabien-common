@@ -54,41 +54,50 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     }
 
     @Override
-    public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
-        int width = measureLine(text);
-        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight);
-        // :(
-        IImage font = textBlack ? fontBlack : fontWhite;
-        int x = 0;
-        int l = text.length();
-        for (int p = 0; p < l; p++) {
-            int cc = text.charAt(p);
-            if (cc < 256) {
-                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, 0, font);
-            } else {
-                igd.blitImage(0, 0, charWidth, charHeight, x, 0, font);
-            }
-            x += advance;
-        }
-        return new ImageRenderedTextChunk.GPU(0, 0, width, size, igd);
+    public RenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
+        return renderLineWithOwnedCA(text.toCharArray(), textBlack);
     }
 
     @Override
-    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-        int width = measureLine(text, index, length);
-        IGrDriver igd = GaBIEn.makeOffscreenBuffer(width, charHeight);
+    public RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
+        char[] tmp = new char[length];
+        System.arraycopy(text, index, tmp, 0, length);
+        return renderLineWithOwnedCA(tmp, textBlack);
+    }
+
+    private RenderedTextChunk renderLineWithOwnedCA(@NonNull char[] text, boolean textBlack) {
         // :(
-        IImage font = textBlack ? fontBlack : fontWhite;
-        int x = 0;
-        for (int p = 0; p < length; p++) {
-            int cc = text[index + p];
-            if (cc < 256) {
-                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, 0, font);
-            } else {
-                igd.blitImage(0, 0, charWidth, charHeight, x, 0, font);
+        final IImage font = textBlack ? fontBlack : fontWhite;
+        final int measureX = measureLine(text, 0, text.length);
+        return new RenderedTextChunk(size) {
+            @Override
+            public void backgroundTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
+                int margin = 1;
+                int margin2 = margin * 2;
+                igd.clearRectAlpha(r, g, b, a, x + cursorXIn - margin, y + cursorYIn - margin, measureX + margin2, highestLineHeight + margin2);
             }
-            x += advance;
-        }
-        return new ImageRenderedTextChunk.GPU(0, 0, width, size, igd);
+            @Override
+            public int cursorX(int cursorXIn) {
+                return cursorXIn + (text.length * advance);
+            }
+            @Override
+            public int cursorY(int cursorYIn, int highestLineHeightIn) {
+                return cursorYIn;
+            }
+            @Override
+            public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
+                x += cursorXIn;
+                y += cursorYIn;
+                for (int p = 0; p < text.length; p++) {
+                    int cc = text[p];
+                    if (cc < 256) {
+                        igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+                    } else {
+                        igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+                    }
+                    x += advance;
+                }
+            }
+        };
     }
 }
