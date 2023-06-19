@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import gabien.GaBIEn;
 import gabien.ui.Rect;
 import gabien.ui.UILabel;
+import gabien.ui.UIScrollLayout;
 import gabien.uslx.append.HexByteEncoding;
 import gabien.uslx.append.IConsumer;
 
@@ -22,7 +23,9 @@ import gabien.uslx.append.IConsumer;
  */
 public class UIBytesEditor extends UIProxy {
     public UIBytesEditor(byte[] init, IConsumer<byte[]> res) {
-        super(new UILabel(HexByteEncoding.toHexString(init) + "\n" + new String(init, StandardCharsets.ISO_8859_1), 16), false);
+        UIScrollLayout usl = new UIScrollLayout(true, 16);
+        usl.panelsAdd(new UILabel(HexByteEncoding.toHexString(init) + "\n" + new String(init, StandardCharsets.ISO_8859_1), 16));
+        proxySetElement(usl, false);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
         setLAFParentOverride(GaBIEn.sysThemeRoot);
     }
