@@ -113,7 +113,8 @@ public class UIBytesEditor extends UIProxy {
             sb.append(": ");
             for (int i = base; i < lim; i++) {
                 if (isInBounds(i)) {
-                    sb.append(HexByteEncoding.toHexString(i));
+                    int val = data[i] & 0xFF;
+                    sb.append(HexByteEncoding.toHexString(val));
                     sb.append(' ');
                 } else {
                     sb.append("   ");
