@@ -47,6 +47,15 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     /**
+     * Returns some approximation of the last surface for dealing with IReplicatedTexRegion.
+     */
+    public @Nullable IImage batchGetLastSurface() {
+        if (currentBatch != null)
+            return currentBatch.tex;
+        return null;
+    }
+
+    /**
      * Ensures the batcher is in the right state to accept the given geometry.
      * This will actually begin a new batch, so make sure you're sure!
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.

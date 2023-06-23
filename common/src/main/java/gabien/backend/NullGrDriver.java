@@ -13,7 +13,7 @@ import gabien.natives.BadGPU;
 import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
-import gabien.render.ITexRegion;
+import gabien.render.IReplicatedTexRegion;
 
 /**
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
@@ -41,7 +41,7 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i) {
+    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
 
     }
 
@@ -51,12 +51,12 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i) {
+    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i) {
 
     }
 
     @Override
-    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, int blendSub) {
+    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i, int blendSub) {
     }
 
     @Override

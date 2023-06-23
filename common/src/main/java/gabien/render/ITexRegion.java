@@ -7,28 +7,13 @@
 package gabien.render;
 
 import org.eclipse.jdt.annotation.NonNull;
-
-import gabien.GaBIEn;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Represents something pixels can be sampled out of.
  * Created 14th June, 2023.
  */
-public interface ITexRegion {
-    /**
-     * Gets the theoretical width of this region.
-     * This is metadata only and not necessarily accurate.
-     * In theory, the region encompasses 0 to width.
-     */
-    float getRegionWidth();
-
-    /**
-     * Gets the theoretical width of this region.
-     * This is metadata only and not necessarily accurate.
-     * In theory, the region encompasses 0 to height.
-     */
-    float getRegionHeight();
-
+public interface ITexRegion extends IReplicatedTexRegion {
     /**
      * Gets the underlying image of this texture region.
      */
@@ -45,27 +30,18 @@ public interface ITexRegion {
     float getT(float x, float y);
 
     /**
+     * The picked texture region of a raw texture region is always itself.
+     */
+    @Override
+    default ITexRegion pickTexRegion(@Nullable IImage lastSurface) {
+        return this;
+    }
+
+    /**
      * Creates a subregion.
      */
+    @Override
     default @NonNull ITexRegion subRegion(float x, float y, float w, float h) {
         return new TexRegion(this, x, y, w, h);
-    }
-
-    /**
-     * Creates an IImage copy. Useful for tiling.
-     */
-    default @NonNull IImage copy(float x, float y, int w, int h) {
-        // We don't want any unnecessary OSBs because they carry a lot of baggage.
-        // So we make one temporarily just for the blitting code, then steal it.
-        IGrDriver osb = GaBIEn.makeOffscreenBuffer(w, h, "ITexRegion.copy (OSB)");
-        osb.blitImage(x, y, w, h, 0, 0, this);
-        return osb.convertToImmutable("ITexRegion.copy (Final)");
-    }
-
-    /**
-     * Creates an IImage copy. Useful for tiling.
-     */
-    default @NonNull IImage copy() {
-        return copy(0, 0, (int) getRegionWidth(), (int) getRegionHeight());
     }
 }

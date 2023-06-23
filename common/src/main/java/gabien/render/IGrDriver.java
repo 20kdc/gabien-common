@@ -37,21 +37,21 @@ public interface IGrDriver extends IImage {
     );
 
     // Basic blit operations.
-    void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i);
+    void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i);
     void blitTiledImage(float x, float y, float w, float h, IImage cachedTile);
-    void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i);
-    default void blitScaledImage(float x, float y, float acw, float ach, ITexRegion i) {
+    void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i);
+    default void blitScaledImage(float x, float y, float acw, float ach, IReplicatedTexRegion i) {
         blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i);
     }
 
     /**
      * Legacy interface. This is just inherently awkward.
      */
-    default void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, boolean blendSub) {
+    default void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i, boolean blendSub) {
         blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BLEND_SUB : BLEND_ADD);
     }
 
-    default void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i) {
+    default void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i) {
         blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL);
     }
 
@@ -62,7 +62,7 @@ public interface IGrDriver extends IImage {
      * Firstly, the image is placed as if no rotation were involved.
      * Then the destination is rotated anticlockwise by angle degrees.
      */
-    void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, int blendSub);
+    void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i, int blendSub);
 
     void clearAll(int i, int i0, int i1);
 

@@ -14,6 +14,7 @@ import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
+import gabien.render.IReplicatedTexRegion;
 import gabien.render.ITexRegion;
 
 /**
@@ -37,7 +38,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i) {
+    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
         blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BLEND_NORMAL);
     }
 
@@ -46,10 +47,10 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BLEND_NORMAL);
     }
 
-    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, ITexRegion i, TilingMode tiling, int blendSub) {
+    public synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IReplicatedTexRegion iU, TilingMode tiling, int blendSub) {
         if ((trs[2] != 1) || (trs[3] != 1)) {
             // scaling is in use, slowpath this
-            blitScaledImageForced(srcx, srcy, w, h, x, y, w, h, i, tiling, blendSub);
+            blitScaledImageForced(srcx, srcy, w, h, x, y, w, h, iU, tiling, blendSub);
             return;
         }
         // scaling not in use, so don't apply it
@@ -79,6 +80,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         if ((cR <= x) || (cD <= y))
             return;
         // The rest
+        ITexRegion i = iU.pickTexRegion(batchGetLastSurface());
         float s00 = i.getS(srcx, srcy), t00 = i.getT(srcx, srcy);
         float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
         float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
@@ -93,11 +95,11 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, ITexRegion i) {
+    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i) {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BLEND_NORMAL);
     }
 
-    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, ITexRegion i, TilingMode tiling, int blendSub) {
+    public synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion i, TilingMode tiling, int blendSub) {
         if (srcw == w && srch == h) {
             blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
             return;
@@ -113,7 +115,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         return trs[1] + (y * trs[3]);
     }
 
-    public synchronized void blitScaledImageForced(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, ITexRegion i, TilingMode tiling, int blendSub) {
+    public synchronized void blitScaledImageForced(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion iU, TilingMode tiling, int blendSub) {
         // Translate coordinates
         x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // Do the CPU scissor dance, but only to work out if cropping is essential.
@@ -133,6 +135,7 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         else if (cD > scD)
             isCropEssential = true;
         // End
+        ITexRegion i = iU.pickTexRegion(batchGetLastSurface());
         float s00 = i.getS(srcx, srcy), t00 = i.getT(srcx, srcy);
         float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
         float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
@@ -147,11 +150,12 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
     }
 
     @Override
-    public synchronized void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, ITexRegion i, int blendSub) {
+    public synchronized void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion iU, int blendSub) {
         if (angle == 0) {
-            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, blendSub);
+            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, iU, TilingMode.None, blendSub);
             return;
         }
+        ITexRegion i = iU.pickTexRegion(batchGetLastSurface());
         // We don't bother with regular coordinate translation here, because it wouldn't work for scaling.
         // Instead coordinate translation is done during final point calculation.
         // Calculate texture coordinates
