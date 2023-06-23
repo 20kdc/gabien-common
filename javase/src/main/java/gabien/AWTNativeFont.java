@@ -52,24 +52,24 @@ public class AWTNativeFont implements IFixedSizeFont {
                     return textSize;
                 }
                 @Override
-                public int measureLine(@NonNull char[] text, int index, int count) {
+                public int measureLine(@NonNull char[] text, int index, int count, boolean withLastAdvance) {
                     if (GaBIEnImpl.fontsAlwaysMeasure16)
                         return 16;
                     return (count * textSize) / 2;
                 }
                 @Override
-                public int measureLine(@NonNull String text) {
+                public int measureLine(@NonNull String text, boolean withLastAdvance) {
                     if (GaBIEnImpl.fontsAlwaysMeasure16)
                         return 16;
                     return (text.length() * textSize) / 2;
                 }
                 @Override
                 public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text, index, length), textSize, GaBIEn.getErrorImage());
+                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text, index, length, true), textSize, GaBIEn.getErrorImage());
                 }
                 @Override
                 public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
-                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text), textSize, GaBIEn.getErrorImage());
+                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text, true), textSize, GaBIEn.getErrorImage());
                 }
             };
         }
@@ -82,7 +82,7 @@ public class AWTNativeFont implements IFixedSizeFont {
     }
 
     @Override
-    public int measureLine(@NonNull char[] text, int index, int count) {
+    public int measureLine(@NonNull char[] text, int index, int count, boolean withLastAdvance) {
         if (GaBIEnImpl.fontsAlwaysMeasure16)
             return 16;
         Rectangle r = font.getStringBounds(text, index, index + count, frc).getBounds();
@@ -90,7 +90,7 @@ public class AWTNativeFont implements IFixedSizeFont {
     }
 
     @Override
-    public int measureLine(@NonNull String text) {
+    public int measureLine(@NonNull String text, boolean withLastAdvance) {
         if (GaBIEnImpl.fontsAlwaysMeasure16)
             return 16;
         Rectangle r = font.getStringBounds(text, frc).getBounds();
@@ -105,7 +105,7 @@ public class AWTNativeFont implements IFixedSizeFont {
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
         try {
-            int mt = measureLine(text);
+            int mt = measureLine(text, false);
             int margin = 16;
             BufferedImage bi = new BufferedImage(margin + mt + margin, margin + size + margin, BufferedImage.TYPE_INT_ARGB);
             Graphics2D bufGraphics = bi.createGraphics();

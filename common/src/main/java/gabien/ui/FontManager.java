@@ -8,12 +8,9 @@
 package gabien.ui;
 
 import gabien.GaBIEn;
-import gabien.backend.IGaBIEn;
 import gabien.render.IGrDriver;
-import gabien.render.IImage;
 import gabien.text.IFixedSizeFont;
 import gabien.text.RenderedTextChunk;
-import gabien.text.SimpleImageGridFont;
 import gabien.text.TextTools;
 
 import java.util.WeakHashMap;
@@ -21,30 +18,20 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Just get this out of UILabel so I can continue doing meaningful stuff.
- * Created on 16th February 2018.
+ * Created on 16th February 2018. Heavily gutted as of 23rd June, 2023.
  */
-public class FontManager {
+public final class FontManager {
     // Font override name.
-    public static String fontOverride;
-    public static boolean fontOverrideUE8;
+    public final String fontOverride;
+    public final boolean fontOverrideUE8;
 
-    private static SimpleImageGridFont internalFont6;
-    private static SimpleImageGridFont internalFont8;
-    private static SimpleImageGridFont internalFont16;
-
-    private static ReentrantLock formatLock = new ReentrantLock();
+    private ReentrantLock formatLock = new ReentrantLock();
     // Key format is a weird mess, check the relevant function
-    private static WeakHashMap<String, String> formatData = new WeakHashMap<String, String>();
+    private WeakHashMap<String, String> formatData = new WeakHashMap<String, String>();
 
-    public static void setupFonts(IGaBIEn backend) {
-        GaBIEn.verify(backend);
-        IImage f16 = GaBIEn.getImageCKEx("font2x.png", false, true, 0, 0, 0);
-        IImage f8 = GaBIEn.getImageCKEx("font.png", false, true, 0, 0, 0);
-        IImage f6 = GaBIEn.getImageCKEx("fonttiny.png", false, true, 0, 0, 0);
-        //                                            W  H   C   A  S
-        internalFont16 = new SimpleImageGridFont(f16, 7, 14, 16, 8, 16);
-        internalFont8 =  new SimpleImageGridFont(f8,  7,  7, 16, 8,  8);
-        internalFont6 =  new SimpleImageGridFont(f6,  3,  5, 16, 4,  6);
+    public FontManager(String fo, boolean ue8) {
+        fontOverride = fo;
+        fontOverrideUE8 = ue8;
     }
 
     /**
@@ -52,17 +39,17 @@ public class FontManager {
      * @param height The target font height (pixels per line).
      * @return An internal font with a 128-character image covering ASCII (with some codepage 437)
      */
-    public static IFixedSizeFont getInternalFontFor(int height) {
+    private IFixedSizeFont getInternalFontFor(int height) {
         if (height >= 16) {
-            return internalFont16;
+            return GaBIEn.engineFonts.f16;
         } else if (height >= 8) {
-            return internalFont8;
+            return GaBIEn.engineFonts.f8;
         } else {
-            return internalFont6;
+            return GaBIEn.engineFonts.f6;
         }
     }
 
-    private static boolean useSystemFont(String text, int height) {
+    private boolean useSystemFont(String text, int height) {
         if (fontOverride != null) {
             if (height > 8)
                 return true;
@@ -86,7 +73,7 @@ public class FontManager {
     /**
      * FontManager's font lookup function, finally accessible (mainly as a way to otherwise get rid of FontManager).
      */
-    public static IFixedSizeFont getFontForText(String text, int height) {
+    public IFixedSizeFont getFontForText(String text, int height) {
         if (useSystemFont(text, height))
             return GaBIEn.getNativeFont(height, fontOverride, true);
         return getInternalFontFor(height);
@@ -96,7 +83,7 @@ public class FontManager {
      * Please don't use this, it bleeds performance.
      * @see gabien.text.TextTools
      */
-    public static void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
+    public void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
         RenderedTextChunk rtc = TextTools.renderString(text, getFontForText(text, height), textBlack);
         int cc = textBlack ? 255 : 0;
         if (!noBackground)
@@ -106,7 +93,7 @@ public class FontManager {
 
     // NOTE: This assumes the results are for the final content block.
     //       So it doesn't include the padding at the bottom.
-    public static Size getTextSize(String text, int textHeight) {
+    public Size getTextSize(String text, int textHeight) {
         int w = 0;
         int h = textHeight;
         IFixedSizeFont font = getFontForText(text, textHeight);
@@ -121,7 +108,7 @@ public class FontManager {
             } else {
                 text = "";
             }
-            w = Math.max(w, font.measureLine(tLine));
+            w = Math.max(w, font.measureLine(tLine, false));
         }
         return new Size(w, h - (textHeight / 8));
     }
@@ -131,16 +118,15 @@ public class FontManager {
      * Use getFontForText(...).measureLine(...) if you're going to do that.
      * In the two places this is used, it's used for good reason (though that may change as TextTools matures).
      */
-    public static int getLineLength(String text, int height) {
-        return getFontForText(text, height).measureLine(text);
+    public int getLineLength(String text, int height) {
+        return getFontForText(text, height).measureLine(text, false);
     }
 
-    public static String formatTextFor(String text, int textHeight, int width) {
+    public String formatTextFor(String text, int textHeight, int width) {
         // This is a bunch of worst-case scenarios that should be ignored anyway
         if (width <= 0)
             return "";
-        String fo = fontOverride;
-        String key = (fo == null ? "<NULL, NOBODY WOULD NAME A FONT THIS, IF YOU DO, PLEASE DON'T>" : fo) + ";`bird`;" + text + ";`bird`;" + width + ";" + textHeight;
+        String key = width + ";" + textHeight + ";" + text;
         String res;
         // This takes a while, and is a critical path, particularly on Android.
         // So *cache it*.

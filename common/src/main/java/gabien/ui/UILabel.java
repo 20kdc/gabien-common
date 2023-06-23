@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.GaBIEn;
 import gabien.render.IGrDriver;
 import gabien.text.TextTools;
 import gabien.ui.theming.IBorder;
@@ -32,7 +33,8 @@ public class UILabel extends UIBorderedElement {
         contents = new Contents(h, spacer);
         text = txt;
 
-        setForcedBounds(null, new Rect(getRecommendedTextSize(text, h)));
+        // Using the sysThemeRoot here is cheating, but the alternative is summoning bugs that won't be found until too late.
+        setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEn.sysThemeRoot.getTheme(), text, h)));
         runLayout();
         setForcedBounds(null, new Rect(getWantedSize()));
     }
@@ -53,7 +55,7 @@ public class UILabel extends UIBorderedElement {
     @Override
     public void runLayout() {
         super.runLayout();
-        Size p = contents.update(getSize(), getBorderWidth(), text);
+        Size p = contents.update(getTheme(), getSize(), getBorderWidth(), text);
         if (p != null)
             setWantedSize(p);
     }
@@ -72,8 +74,7 @@ public class UILabel extends UIBorderedElement {
         private Size lastSize = new Size(0, 0);
         private Size lastActSize = new Size(0, 0);
         private Size lastSpacerSize = null;
-        private String lastOverride = null;
-        private boolean lastOverrideUE8 = false;
+        private FontManager lastFM = null;
         private int lastBw = 1;
         private TextTools.PlainCached paragraph = new TextTools.PlainCached();
 
@@ -89,37 +90,26 @@ public class UILabel extends UIBorderedElement {
             spacerText = st;
         }
 
-        public Size update(Size sz, int bw, String text) {
+        public Size update(Theme theme, Size sz, int bw, String text) {
             // run formatting...
             Size sz2 = null;
-            boolean overrideChanged = false;
-            if (lastOverride != null) {
-                if (FontManager.fontOverride == null) {
-                    overrideChanged = true;
-                } else if (!FontManager.fontOverride.equals(lastOverride)) {
-                    overrideChanged = true;
-                }
-            } else if (FontManager.fontOverride != null) {
-                overrideChanged = true;
-            } else if (lastOverrideUE8 != FontManager.fontOverrideUE8) {
-                overrideChanged = true;
-            }
+            FontManager fm = Theme.FM_GLOBAL.get(theme);
+            boolean overrideChanged = lastFM != fm;
             if ((lastSpacerSize == null) || (!lastText.equals(text)) || (lastBw != bw) || (!lastSize.sizeEquals(sz)) || overrideChanged) {
                 lastText = text;
                 lastSize = sz;
                 lastBw = bw;
-                lastOverride = FontManager.fontOverride;
-                lastOverrideUE8 = FontManager.fontOverrideUE8;
-                textFormatted = FontManager.formatTextFor(text, textHeight, sz.width - (bw * 2));
+                lastFM = fm;
+                textFormatted = fm.formatTextFor(text, textHeight, sz.width - (bw * 2));
                 // You may be wondering why this is set up the way it is.
                 // The answer is simply that B's height is what we need to be given the width,
                 //  and A is what we want to be, width and height alike.
-                Size a = getRecommendedTextSize(text, textHeight, bw);
-                Size b = lastActSize = getRecommendedTextSize(textFormatted, textHeight, bw);
-                lastSpacerSize = getRecommendedTextSize(spacerText, textHeight, bw);
+                Size a = getRecommendedTextSize(theme, text, textHeight, bw);
+                Size b = lastActSize = getRecommendedTextSize(theme, textFormatted, textHeight, bw);
+                lastSpacerSize = getRecommendedTextSize(theme, spacerText, textHeight, bw);
                 sz2 = new Size(a.width, b.height);
                 sz2 = sz2.sizeMax(lastSpacerSize);
-                paragraph.font = FontManager.getFontForText(textFormatted, textHeight);
+                paragraph.font = fm.getFontForText(textFormatted, textHeight);
                 paragraph.text = textFormatted;
             }
             return sz2;
@@ -155,7 +145,7 @@ public class UILabel extends UIBorderedElement {
             }
             int bw = UIBorderedElement.getRecommendedBorderWidth(textHeight);
             pokeLastSize(w, height);
-            Size sz = statusLine.update(lastSize, bw, text);
+            Size sz = statusLine.update(getTheme(), lastSize, bw, text);
             if (sz != null) {
                 height = sz.height;
                 pokeLastSize(w, height);
@@ -185,7 +175,8 @@ public class UILabel extends UIBorderedElement {
         if (enBack)
             UIBorderedElement.drawBorder(theme, igd, mode, h, ox, oy, wid, h2);
         if (enFore) {
-            cache.font = FontManager.getFontForText(string, height);
+            FontManager fm = Theme.FM_GLOBAL.get(theme);
+            cache.font = fm.getFontForText(string, height);
             cache.blackText = UIBorderedElement.getBlackTextFlag(theme, mode);
             cache.text = string;
             cache.update();

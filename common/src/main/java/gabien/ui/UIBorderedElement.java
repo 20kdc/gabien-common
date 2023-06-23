@@ -41,12 +41,13 @@ public abstract class UIBorderedElement extends UIElement {
         return Math.max(1, textHeight / 8);
     }
     // Used for various texty things.
-    public static Size getRecommendedTextSize(String text, int textHeight) {
-        return getRecommendedTextSize(text, textHeight, getRecommendedBorderWidth(textHeight));
+    public static Size getRecommendedTextSize(Theme theme, String text, int textHeight) {
+        return getRecommendedTextSize(theme, text, textHeight, getRecommendedBorderWidth(textHeight));
     }
 
-    public static Size getRecommendedTextSize(String text, int textHeight, int bs) {
-        Size s = FontManager.getTextSize(text, textHeight);
+    public static Size getRecommendedTextSize(Theme theme, String text, int textHeight, int bs) {
+        FontManager fm = Theme.FM_GLOBAL.get(theme);
+        Size s = fm.getTextSize(text, textHeight);
         return new Size(s.width + (bs * 2), s.height + (bs * 2));
     }
 

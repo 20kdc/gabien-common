@@ -18,7 +18,7 @@ import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
-import gabien.ui.FontManager;
+import gabien.text.EngineFonts;
 import gabien.ui.LAFChain;
 import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
@@ -88,6 +88,11 @@ public final class GaBIEn {
      * Only the backend should access this! File Browser implementation.
      */
     static IGaBIEnFileBrowser internalFileBrowser;
+
+    /**
+     * Engine fonts. They're fonts, in the engine.
+     */
+    public static EngineFonts engineFonts;
 
     private static IImage errorImage;
     private static ReentrantLock callbackQueueLock = new ReentrantLock();
@@ -625,7 +630,7 @@ public final class GaBIEn {
         nativeFontCache = new NativeFontCache(internal);
         imageCache = new ImageCache(internal);
         // These will hold references to dead assets if not reinitialized.
-        FontManager.setupFonts(internal);
+        engineFonts = new EngineFonts(internal);
         ThemingCentral.setupAssets(internal);
     }
 

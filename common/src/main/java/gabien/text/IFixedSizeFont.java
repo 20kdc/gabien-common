@@ -23,13 +23,13 @@ public interface IFixedSizeFont {
      * Measures the horizontal width of the given text.
      * The text shouldn't contain newlines.
      */
-    int measureLine(@NonNull String text);
+    int measureLine(@NonNull String text, boolean withLastAdvance);
 
     /**
      * Measures the horizontal width of the given text.
      * The text shouldn't contain newlines.
      */
-    int measureLine(@NonNull char[] text, int index, int length);
+    int measureLine(@NonNull char[] text, int index, int length, boolean withLastAdvance);
 
     /**
      * The fancy new way to render text that's more GPU-aware.

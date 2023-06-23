@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.GaBIEn;
 import gabien.render.IGrDriver;
 import gabien.wsi.IPeripherals;
 
@@ -24,7 +25,8 @@ public class UITextButton extends UIButton<UITextButton> {
         text = tex;
         onClick = click;
 
-        setForcedBounds(null, new Rect(getRecommendedTextSize(tex, h, getBorderWidth())));
+        // Same reasoning as in UILabel
+        setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEn.sysThemeRoot.getTheme(), tex, h, getBorderWidth())));
         // This overrides the previous wanted size!
         forceToRecommended();
     }
@@ -39,7 +41,7 @@ public class UITextButton extends UIButton<UITextButton> {
     @Override
     public void runLayout() {
         super.runLayout();
-        Size p = contents.update(getSize(), getBorderWidth(), text);
+        Size p = contents.update(getTheme(), getSize(), getBorderWidth(), text);
         if (p != null)
             setWantedSize(p);
     }

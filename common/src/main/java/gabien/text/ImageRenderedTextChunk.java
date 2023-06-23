@@ -49,11 +49,14 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         igd.blitImage(0, 0, res.getRegionWidth(), res.getRegionHeight(), x + cX + offsetX, y + cY + offsetY, res);
     }
 
+    public static void background(IGrDriver igd, int x, int y, int w, int h, int margin, int r, int g, int b, int a) {
+        int margin2 = margin * 2;
+        igd.clearRectAlpha(r, g, b, a, x - margin, y - margin, w + margin2, h + margin2);
+    }
+
     @Override
     public void backgroundTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
-        int margin = 1;
-        int margin2 = margin * 2;
-        igd.clearRectAlpha(r, g, b, a, x + cursorXIn - margin, y + cursorYIn - margin, measureX + margin2, highestLineHeight + margin2);
+        background(igd, x + cursorXIn, y + cursorYIn, measureX, highestLineHeight, 1, r, g, b, a);
     }
 
     public static class WSI extends ImageRenderedTextChunk {

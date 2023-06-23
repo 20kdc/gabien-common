@@ -9,6 +9,7 @@ package gabien.ui;
 
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.GaBIEn;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.text.SimpleImageGridFont;
@@ -128,7 +129,7 @@ public class UIScrollbar extends UIElement {
     private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, int bump) {
         boolean down = timer > 0;
         Theme.Attr<IBorder> borderId = down ? Theme.B_BTNP : Theme.B_BTN;
-        SimpleImageGridFont fontF = (SimpleImageGridFont) FontManager.getInternalFontFor(8);
+        SimpleImageGridFont fontF = (SimpleImageGridFont) GaBIEn.engineFonts.f8;
         IImage font = UIBorderedElement.getBlackTextFlag(theme, borderId) ? fontF.fontBlack : fontF.fontWhite;
         int iconSize = 7;
         int maxIconSize = Math.min(box.width, box.height) - (carriageBorder * 2);

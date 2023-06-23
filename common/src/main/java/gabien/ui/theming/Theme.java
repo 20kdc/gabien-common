@@ -19,6 +19,7 @@ import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumVisitor;
 import gabien.datum.DatumODecVisitor.Handler;
 import gabien.render.ITexRegion;
+import gabien.ui.FontManager;
 import gabien.ui.LAFChain;
 
 import static gabien.datum.DatumTreeUtils.isSym;
@@ -46,18 +47,22 @@ public final class Theme {
     // 12
     public static final Attr<IBorder> B_TITLESEL = new BAttr("titleSel", 12);
     public static final Attr<IBorder> B_R48OVERLAY = new BAttr("r48Overlay", 13);
+    // 13 - note the unfortunate stashing of an ultimate fallback FontManager here.
+    // this may end up unexpectedly caching things past engine resets, but luckily those only happen in tests...
+    public static final Attr<FontManager> FM_GLOBAL = new BuiltinAttr<>("fontManager", 14, FontManager.class, new FontManager(null, false));
 
-    private final static Attr<?>[] allBI = {B_BTN, B_BTNP, B_LABEL, B_TEXTBOX, B_TEXTBOXF, B_WINDOW, B_SBTRAY, B_SBNUB, B_TABA, B_TABB, B_TABSEL, B_TITLE, B_TITLESEL, B_R48OVERLAY};
+    private final static Attr<?>[] allBI = {B_BTN, B_BTNP, B_LABEL, B_TEXTBOX, B_TEXTBOXF, B_WINDOW, B_SBTRAY, B_SBNUB, B_TABA, B_TABB, B_TABSEL, B_TITLE, B_TITLESEL, B_R48OVERLAY, FM_GLOBAL};
 
     // Actual guts
     public static final Theme ROOT = new Theme();
     private final HashMap<String, Object> values = new HashMap<>();
-    private final Object[] builtins = new Object[14];
+    private final Object[] builtins = new Object[allBI.length];
 
     private Theme() {
     }
 
     private Theme(Theme other) {
+        System.arraycopy(other.builtins, 0, builtins, 0, builtins.length);
         values.putAll(other.values);
     }
 
@@ -87,7 +92,7 @@ public final class Theme {
      */
     public Theme with(String id, @Nullable Object replacement) {
         Theme modified = new Theme(this);
-        modified.set(id, modified);
+        modified.set(id, replacement);
         return modified;
     }
 
@@ -116,6 +121,10 @@ public final class Theme {
             return get(src.getTheme());
         }
 
+        public final Theme with(Theme base, T res) {
+            return base.with(id, res);
+        }
+
         void set(Theme theme, T res) {
             theme.values.put(id, res);
         }
@@ -132,10 +141,14 @@ public final class Theme {
         @Override
         public T get(Theme theme) {
             Object tmp = theme.builtins[iid];
-            if (tmp == null)
+            if (tmp == null) {
+                // System.out.println(id + " fell back to default, null @ " + theme + " ; root theme is " + Theme.ROOT + " and scf is " + GaBIEn.sysThemeRoot.getTheme());
                 return def;
-            if (!clazz.isAssignableFrom(tmp.getClass()))
+            }
+            if (!clazz.isAssignableFrom(tmp.getClass())) {
+                // System.out.println(id + " fell back to default, not assignable");
                 return def;
+            }
             return (T) tmp;
         }
 

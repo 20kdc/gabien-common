@@ -47,21 +47,21 @@ public class TextTools {
             String firstLine = newlines[0];
             while (true) {
                 String nextFirstLine = "";
-                boolean testLen = font.measureLine(firstLine) > width;
+                boolean testLen = font.measureLine(firstLine, false) > width;
                 if (testLen) {
                     // Break down words...
                     int space;
                     while (((space = firstLine.lastIndexOf(' ')) > 0) && testLen) {
                         nextFirstLine = firstLine.substring(space) + nextFirstLine;
                         firstLine = firstLine.substring(0, space);
-                        testLen = font.measureLine(firstLine) > width;
+                        testLen = font.measureLine(firstLine, false) > width;
                     }
                     // And, if need be, letters.
                     while (testLen && (firstLine.length() > 1)) {
                         int split = firstLine.length() / 2;
                         nextFirstLine = firstLine.substring(split) + nextFirstLine;
                         firstLine = firstLine.substring(0, split);
-                        testLen = font.measureLine(firstLine) > width;
+                        testLen = font.measureLine(firstLine, false) > width;
                     }
                 }
 

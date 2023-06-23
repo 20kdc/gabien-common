@@ -373,7 +373,8 @@ public class UIWindowView extends UIElement {
                 ow += ox;
                 ox = 0;
             }
-            ow = Math.max(ow, UITabBar.getTabWidth(this, 0, fh));
+            FontManager fm = Theme.FM_GLOBAL.get(contents);
+            ow = Math.max(ow, UITabBar.getTabWidth(fm, this, 0, fh));
             oh = Math.max(oh, 0);
             if ((ox != s.x) || (oy != s.y) || (ow != s.width) || (oh != s.height))
                 contents.setForcedBounds(null, new Rect(ox, oy, ow, oh));

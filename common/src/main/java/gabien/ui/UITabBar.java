@@ -102,10 +102,11 @@ public class UITabBar extends UIElement.UIPanel {
     private void renderTabPass(Theme theme, IGrDriver igd, boolean isRenderingDraggedTabs, boolean enBack, boolean enFore) {
         int pos = getScrollOffsetX();
         boolean toggle = false;
+        FontManager fm = Theme.FM_GLOBAL.get(theme);
         for (Tab w : tabs) {
             // This is used for all rendering.
             int theDisplayOX = pos;
-            int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
+            int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
             Theme.Attr<IBorder> base = toggle ? Theme.B_TABB : Theme.B_TABA;
             if (parentView.selectedTab == w)
                 base = Theme.B_TABSEL;
@@ -147,9 +148,10 @@ public class UITabBar extends UIElement.UIPanel {
     }
 
     private int calculateTabBarWidth() {
+        FontManager fm = Theme.FM_GLOBAL.get(this);
         int tl = 0;
         for (UITabBar.Tab tab : tabs)
-            tl += UITabBar.getTabWidth(tab, shortTabs, effectiveHeight);
+            tl += getTabWidth(fm, tab, shortTabs, effectiveHeight);
         int extra = canSelectNone ? wantedHeight : 0;
         return tl + extra;
     }
@@ -273,6 +275,7 @@ public class UITabBar extends UIElement.UIPanel {
     }
 
     private void tabReorderer(int x, Tab target) {
+        FontManager fm = Theme.FM_GLOBAL.get(this);
         int oldIndex = tabs.indexOf(target);
         // Oscillates if a tab that's being nudged left to make way moves out of range.
         // Since these are always two-frame oscillations, just deal with it the simple way...
@@ -283,7 +286,7 @@ public class UITabBar extends UIElement.UIPanel {
             int pos = getScrollOffsetX();
             int i = 0;
             for (Tab w : tabs) {
-                int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
+                int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
                 pos += tabW;
                 if (x < pos)
                     if (expectedIndex == -1)
@@ -310,13 +313,13 @@ public class UITabBar extends UIElement.UIPanel {
         tabReorderDidSomething = false;
     }
 
-    public static int getTabWidth(Tab window, int shortTab, int h) {
+    public static int getTabWidth(FontManager fm, Tab window, int shortTab, int h) {
         int margin = h / 8;
         int tabExMargin = margin + (margin / 2);
         int textHeight = h - (margin * 2);
         if (shortTab == 0)
             tabExMargin = 0;
-        return FontManager.getLineLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
+        return fm.getLineLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
     }
 
     public static String getVisibleTabName(Tab w, int shortTab) {
@@ -351,7 +354,7 @@ public class UITabBar extends UIElement.UIPanel {
         if (enFore) {
             tab.titleTextCache.text = text;
             tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(theme, border);
-            tab.titleTextCache.font = FontManager.getFontForText(text, textHeight);
+            tab.titleTextCache.font = Theme.FM_GLOBAL.get(theme).getFontForText(text, textHeight);
             tab.titleTextCache.update();
             tab.titleTextCache.getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
     
@@ -386,14 +389,15 @@ public class UITabBar extends UIElement.UIPanel {
 
     @Override
     public IPointerReceiver handleNewPointer(IPointer pointer) {
+        FontManager fm = Theme.FM_GLOBAL.get(this);
         int x = pointer.getX();
         int y = pointer.getY();
         if (y < effectiveHeight) {
             int pos = getScrollOffsetX();
             for (final Tab w : tabs) {
-                final int tabW = UITabBar.getTabWidth(w, shortTabs, effectiveHeight);
+                final int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
                 if (x < (pos + tabW)) {
-                    if (UITabBar.clickInTab(w, x - pos, y, tabW, effectiveHeight))
+                    if (clickInTab(w, x - pos, y, tabW, effectiveHeight))
                         return null;
                     parentView.selectTab(w.contents);
                     if (canDragTabs) {

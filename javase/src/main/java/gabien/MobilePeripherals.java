@@ -93,7 +93,7 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
             }
             // This is called by GrInDriver because MobilePeripherals do special things.
             String status = "Pointer " + (activePointer + 1) + " of " + dummies.size();
-            int statusLen = font.measureLine(status);
+            int statusLen = font.measureLine(status, false);
             backBufferGr.clearRect(0, 0, 0, 0, 0, statusLen, 16);
             font.renderLine(status, false).renderRoot(backBufferGr, 0, 0);
         }

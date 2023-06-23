@@ -36,12 +36,12 @@ public class NativeFontKinda implements IFixedSizeFont {
     }
 
     @Override
-    public int measureLine(@NonNull String text) {
+    public int measureLine(@NonNull String text, boolean withLastAdvance) {
         return (int) (paint.measureText(text) + space);
     }
 
     @Override
-    public int measureLine(@NonNull char[] text, int index, int length) {
+    public int measureLine(@NonNull char[] text, int index, int length, boolean withLastAdvance) {
         // *hmm*... something seems off here.
         return (int) (paint.measureText(text, index, length) + space); // about the " " : it gets it wrong somewhat, by about this amount
     }
@@ -49,7 +49,7 @@ public class NativeFontKinda implements IFixedSizeFont {
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
         int r = textBlack ? 0 : 255;
-        int mt = measureLine(text);
+        int mt = measureLine(text, false);
         int margin = 16;
         WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + size + margin);
         if (wsi.bitmap != null) {
@@ -65,7 +65,7 @@ public class NativeFontKinda implements IFixedSizeFont {
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
         int r = textBlack ? 0 : 255;
-        int mt = measureLine(text, index, length);
+        int mt = measureLine(text, index, length, false);
         int margin = 16;
         WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + size + margin);
         if (wsi.bitmap != null) {

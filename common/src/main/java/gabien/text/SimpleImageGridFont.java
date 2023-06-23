@@ -17,7 +17,7 @@ import gabien.render.IImage;
  * This is intended to be high-performance blitting, so this does as little fancy stuff as possible.
  * Created 16th February 2023.
  */
-public class SimpleImageGridFont implements IFixedSizeFont {
+public class SimpleImageGridFont implements IImmFixedSizeFont {
     public final IImage fontWhite, fontBlack;
     public final int charWidth, charHeight, charsPerRow, advance, size;
 
@@ -40,64 +40,64 @@ public class SimpleImageGridFont implements IFixedSizeFont {
     }
 
     @Override
-    public int measureLine(@NonNull String text) {
-        if (text.length() == 0)
-            return 0;
-        return ((text.length() - 1) * advance) + charWidth;
+    public int measureLine(@NonNull String text, boolean withLastAdvance) {
+        return measureLineCommon(text.length(), withLastAdvance);
     }
 
     @Override
-    public int measureLine(@NonNull char[] text, int index, int length) {
+    public int measureLine(@NonNull char[] text, int index, int length, boolean withLastAdvance) {
+        return measureLineCommon(length, withLastAdvance);
+    }
+
+    private int measureLineCommon(int length, boolean withLastAdvance) {
+        if (withLastAdvance)
+            return length * advance;
         if (length == 0)
             return 0;
         return ((length - 1) * advance) + charWidth;
     }
 
     @Override
-    public RenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
-        return renderLineWithOwnedCA(text.toCharArray(), textBlack);
+    public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
+        final IImage font = textBlack ? fontBlack : fontWhite;
+        int lim = index + length;
+        for (int p = index; p < lim; p++) {
+            int cc = text[p];
+            if (cc < 256) {
+                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+            } else {
+                igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+            }
+            x += advance;
+        }
     }
 
     @Override
-    public RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-        char[] tmp = new char[length];
-        System.arraycopy(text, index, tmp, 0, length);
-        return renderLineWithOwnedCA(tmp, textBlack);
+    public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull String text, boolean textBlack) {
+        final IImage font = textBlack ? fontBlack : fontWhite;
+        int length = text.length();
+        for (int p = 0; p < length; p++) {
+            int cc = text.charAt(p);
+            if (cc < 256) {
+                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+            } else {
+                igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+            }
+            x += advance;
+        }
     }
 
-    private RenderedTextChunk renderLineWithOwnedCA(@NonNull char[] text, boolean textBlack) {
-        // :(
-        final IImage font = textBlack ? fontBlack : fontWhite;
-        final int measureX = measureLine(text, 0, text.length);
-        return new RenderedTextChunk(size) {
-            @Override
-            public void backgroundTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
-                int margin = 1;
-                int margin2 = margin * 2;
-                igd.clearRectAlpha(r, g, b, a, x + cursorXIn - margin, y + cursorYIn - margin, measureX + margin2, highestLineHeight + margin2);
-            }
-            @Override
-            public int cursorX(int cursorXIn) {
-                return cursorXIn + (text.length * advance);
-            }
-            @Override
-            public int cursorY(int cursorYIn, int highestLineHeightIn) {
-                return cursorYIn;
-            }
-            @Override
-            public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
-                x += cursorXIn;
-                y += cursorYIn;
-                for (int p = 0; p < text.length; p++) {
-                    int cc = text[p];
-                    if (cc < 256) {
-                        igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
-                    } else {
-                        igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
-                    }
-                    x += advance;
-                }
-            }
-        };
+    @Override
+    public void drawBackground(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, int r, int g, int b, int a) {
+        drawBackgroundCommon(igd, x, y, length, r, g, b, a);
+    }
+
+    @Override
+    public void drawBackground(IGrDriver igd, int x, int y, @NonNull String text, int r, int g, int b, int a) {
+        drawBackgroundCommon(igd, x, y, text.length(), r, g, b, a);
+    }
+
+    private void drawBackgroundCommon(IGrDriver igd, int x, int y, int length, int r, int g, int b, int a) {
+        ImageRenderedTextChunk.background(igd, x, y, measureLineCommon(length, false), length, a, r, g, b, a);
     }
 }
