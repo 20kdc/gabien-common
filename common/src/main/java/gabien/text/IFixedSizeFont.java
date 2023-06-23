@@ -17,7 +17,13 @@ public interface IFixedSizeFont {
     /**
      * Gets the inter-line height in pixels.
      */
-    int getSize();
+    int getLineHeight();
+
+    /**
+     * Gets the height of content in this font.
+     * This is distinct from the line height.
+     */
+    int getContentHeight();
 
     /**
      * Measures the horizontal width of the given text.

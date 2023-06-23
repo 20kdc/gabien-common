@@ -31,8 +31,13 @@ public class NativeFontKinda implements IFixedSizeFont {
     }
 
     @Override
-    public int getSize() {
+    public int getLineHeight() {
         return size;
+    }
+
+    @Override
+    public int getContentHeight() {
+        return size - (size / 8);
     }
 
     @Override

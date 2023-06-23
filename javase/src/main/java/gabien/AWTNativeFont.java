@@ -48,8 +48,12 @@ public class AWTNativeFont implements IFixedSizeFont {
             System.err.println("AWTNativeFont failed to get fallback font, so a completely fake NativeFont has been generated. Text will probably not display.");
             return new IFixedSizeFont() {
                 @Override
-                public int getSize() {
+                public int getLineHeight() {
                     return textSize;
+                }
+                @Override
+                public int getContentHeight() {
+                    return textSize - (textSize / 8);
                 }
                 @Override
                 public int measureLine(@NonNull char[] text, int index, int count, boolean withLastAdvance) {
@@ -77,8 +81,13 @@ public class AWTNativeFont implements IFixedSizeFont {
     }
 
     @Override
-    public int getSize() {
+    public int getLineHeight() {
         return size;
+    }
+
+    @Override
+    public int getContentHeight() {
+        return size - (size / 8);
     }
 
     @Override

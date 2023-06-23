@@ -51,6 +51,15 @@ public abstract class UIBorderedElement extends UIElement {
         return new Size(s.width + (bs * 2), s.height + (bs * 2));
     }
 
+    public static int getBorderedTextHeight(Theme theme, int textHeight) {
+        return getBorderedTextHeight(theme, textHeight, getRecommendedBorderWidth(textHeight));
+    }
+
+    public static int getBorderedTextHeight(Theme theme, int textHeight, int bs) {
+        FontManager fm = Theme.FM_GLOBAL.get(theme);
+        return fm.getFontSizeGeneralContentHeight(textHeight) + (bs * 2);
+    }
+
     public int getBorderWidth() {
         return borderWidth;
     }

@@ -81,8 +81,9 @@ public final class FontManager {
     //       So it doesn't include the padding at the bottom.
     public Size getTextSize(String text, int textHeight) {
         int w = 0;
-        int h = textHeight;
         IFixedSizeFont font = getFontForText(text, textHeight);
+        int lineContentHeight = font.getContentHeight();
+        int h = lineContentHeight;
         while (text.length() > 0) {
             int nlI = text.indexOf('\n');
             String tLine = text;
@@ -96,7 +97,11 @@ public final class FontManager {
             }
             w = Math.max(w, font.measureLine(tLine, false));
         }
-        return new Size(w, h - (textHeight / 8));
+        return new Size(w, h);
+    }
+
+    public int getFontSizeGeneralContentHeight(int textHeight) {
+        return getFontForText("", textHeight).getContentHeight();
     }
 
     /**

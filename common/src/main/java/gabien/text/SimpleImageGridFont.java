@@ -35,8 +35,13 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
     }
 
     @Override
-    public int getSize() {
+    public int getLineHeight() {
         return size;
+    }
+
+    @Override
+    public int getContentHeight() {
+        return charHeight;
     }
 
     @Override
