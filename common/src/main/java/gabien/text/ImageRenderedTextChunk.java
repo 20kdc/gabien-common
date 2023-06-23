@@ -8,6 +8,7 @@ package gabien.text;
 
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
+import gabien.render.IReplicatedTexRegion;
 import gabien.render.WSIImage;
 
 /**
@@ -29,7 +30,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         this.measureX = measureX;
     }
 
-    public abstract IImage getIImage();
+    public abstract IReplicatedTexRegion getIImage();
     public abstract WSIImage getIWSIImage();
 
     @Override
@@ -44,8 +45,8 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
 
     @Override
     public void renderTo(IGrDriver igd, int x, int y, int cX, int cY, int hlh) {
-        IImage res = getIImage();
-        igd.blitImage(0, 0, res.getWidth(), res.getHeight(), x + cX + offsetX, y + cY + offsetY, res);
+        IReplicatedTexRegion res = getIImage();
+        igd.blitImage(0, 0, res.getRegionWidth(), res.getRegionHeight(), x + cX + offsetX, y + cY + offsetY, res);
     }
 
     @Override
@@ -57,7 +58,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
 
     public static class WSI extends ImageRenderedTextChunk {
         public final WSIImage render;
-        public IImage renderUpload;
+        private IImage renderUpload;
 
         public WSI(int offsetX, int offsetY, int measureX, int lineHeight, WSIImage r) {
             super(offsetX, offsetY, measureX, lineHeight);
@@ -81,7 +82,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
 
     public static class GPU extends ImageRenderedTextChunk {
         public final IImage render;
-        public WSIImage renderDownload;
+        private WSIImage renderDownload;
 
         public GPU(int offsetX, int offsetY, int measureX, int lineHeight, IImage r) {
             super(offsetX, offsetY, measureX, lineHeight);

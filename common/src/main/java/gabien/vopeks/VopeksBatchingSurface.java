@@ -48,11 +48,78 @@ public class VopeksBatchingSurface extends VopeksImage {
 
     /**
      * Returns some approximation of the last surface for dealing with IReplicatedTexRegion.
+     * Notably, this is an optimization only, so sync isn't too important outside of not crashing.
      */
     public @Nullable IImage batchGetLastSurface() {
-        if (currentBatch != null)
-            return currentBatch.tex;
-        return null;
+        // copy to local var so we don't need to sync
+        Batch cb = currentBatch;
+        return cb != null ? cb.tex : null;
+    }
+
+    /**
+     * Batches an uncoloured, textured triangle.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     */
+    public final synchronized void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
+        batchStartGroup(3, false, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex);
+        batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x1, y1, s1, t1, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1);
+    }
+
+    /**
+     * Batches an uncoloured, textured quad (012023).
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     */
+    public final synchronized void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+        batchStartGroup(6, false, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex);
+        batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x1, y1, s1, t1, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1);
+        batchWriteXYSTRGBA(x3, y3, s3, t3, 1, 1, 1, 1);
+    }
+
+    /**
+     * Batches a coloured, untextured triangle.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     */
+    public final void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2) {
+        batchXYSTRGBA(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex, x0, y0, 0, 0, r0, g0, b0, a0, x1, y1, 0, 0, r1, g1, b1, a1, x2, y2, 0, 0, r2, g2, b2, a2);
+    }
+
+    /**
+     * Batches a coloured, untextured quad.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     */
+    public final void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3) {
+        batchXYSTRGBA(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex, x0, y0, 0, 0, r0, g0, b0, a0, x1, y1, 0, 0, r1, g1, b1, a1, x2, y2, 0, 0, r2, g2, b2, a2, x3, y3, 0, 0, r3, g3, b3, a3);
+    }
+
+    /**
+     * Batches a coloured, textured triangle.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     */
+    public final synchronized void batchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+        batchStartGroup(3, true, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex);
+        batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0);
+        batchWriteXYSTRGBA(x1, y1, s1, t1, r1, g1, b1, a1);
+        batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2);
+    }
+
+    /**
+     * Batches a coloured, textured quad (012023).
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     */
+    public final synchronized void batchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
+        batchStartGroup(6, true, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, tex);
+        batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0);
+        batchWriteXYSTRGBA(x1, y1, s1, t1, r1, g1, b1, a1);
+        batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2);
+        batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0);
+        batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2);
+        batchWriteXYSTRGBA(x3, y3, s3, t3, r3, g3, b3, a3);
     }
 
     /**
@@ -60,7 +127,7 @@ public class VopeksBatchingSurface extends VopeksImage {
      * This will actually begin a new batch, so make sure you're sure!
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      */
-    public void batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, IImage tex) {
+    private void batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, IImage tex) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -161,39 +228,29 @@ public class VopeksBatchingSurface extends VopeksImage {
     }
 
     @Override
-    public void batchUnreference(IImage caller) {
+    public synchronized void batchUnreference(IImage caller) {
         referencedBy.remove(caller);
-    }
-
-    /**
-     * Writes a texCoorded vertex to the batcher.
-     * For ease of use, X/Y coordinates are converted to the -1 to 1 representation here.
-     * ST would be converted but might be useful to have the ability to introduce epsilon margins.
-     */
-    public void batchWriteXYST(float x, float y, float s, float t) {
-        int vertexBase2 = currentBatch.vertexCount * 2;
-        stagingV[vertexBase2] = (x - halfWF) / halfWF;
-        stagingV[vertexBase2 + 1] = (y - halfHF) / halfHF;
-        if (currentBatch.tex != null) {
-            stagingT[vertexBase2] = s;
-            stagingT[vertexBase2 + 1] = t;
-        }
-        currentBatch.vertexCount++;
     }
 
     /**
      * Writes a vertex to the batcher.
      * For ease of use, X/Y coordinates are converted to the -1 to 1 representation here.
      */
-    public void batchWriteXYRGBA(float x, float y, float r, float g, float b, float a) {
+    private void batchWriteXYSTRGBA(float x, float y, float s, float t, float r, float g, float b, float a) {
         int vertexBase2 = currentBatch.vertexCount * 2;
         int vertexBase4 = currentBatch.vertexCount * 4;
         stagingV[vertexBase2] = (x - halfWF) / halfWF;
         stagingV[vertexBase2 + 1] = (y - halfHF) / halfHF;
-        stagingC[vertexBase4] = r;
-        stagingC[vertexBase4 + 1] = g;
-        stagingC[vertexBase4 + 2] = b;
-        stagingC[vertexBase4 + 3] = a;
+        if (currentBatch.tex != null) {
+            stagingT[vertexBase2] = s;
+            stagingT[vertexBase2 + 1] = t;
+        }
+        if (currentBatch.hasColours) {
+            stagingC[vertexBase4] = r;
+            stagingC[vertexBase4 + 1] = g;
+            stagingC[vertexBase4 + 2] = b;
+            stagingC[vertexBase4 + 3] = a;
+        }
         currentBatch.vertexCount++;
     }
 

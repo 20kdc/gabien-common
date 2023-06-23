@@ -98,14 +98,21 @@ public final class Vopeks {
         }
     }
 
+    public void putBatchStatisticsTask() {
+        if (timeLoggerFlushTask != null) {
+            putTask((instance) -> {
+                // this task also counts as a task
+                tasksBetweenFlushes--;
+                System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
+                tasksBetweenFlushes = 0;
+            });
+        }
+    }
+
     public void putFlushTask() {
         if (timeLoggerFlushTask != null) {
             putTask((instance) -> {
                 try (TimeLogger.Source src = TimeLogger.open(timeLoggerFlushTask)) {
-                    if (tasksBetweenFlushes > 0) {
-                        System.out.println("VOPEKS: Tasks between flushes: " + tasksBetweenFlushes);
-                        tasksBetweenFlushes = 0;
-                    }
                     instance.flush();
                 }
             });

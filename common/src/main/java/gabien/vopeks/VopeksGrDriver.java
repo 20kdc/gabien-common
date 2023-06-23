@@ -85,13 +85,12 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
         float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
         float s11 = i.getS(srcR, srcD), t11 = i.getT(srcR, srcD);
-        batchStartGroupScA(false, false, 6, blendSub, tiling, i.getSurface());
-        batchWriteXYST(x , y , s00, t00);
-        batchWriteXYST(cR, y , s10, t10);
-        batchWriteXYST(cR, cD, s11, t11);
-        batchWriteXYST(x , y , s00, t00);
-        batchWriteXYST(cR, cD, s11, t11);
-        batchWriteXYST(x , cD, s01, t01);
+        batchXYSTScA(false, blendSub, tiling, i.getSurface(),
+            x , y , s00, t00,
+            cR, y , s10, t10,
+            cR, cD, s11, t11,
+            x , cD, s01, t01
+        );
     }
 
     @Override
@@ -140,13 +139,12 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float s01 = i.getS(srcx, srcD), t01 = i.getT(srcx, srcD);
         float s10 = i.getS(srcR, srcy), t10 = i.getT(srcR, srcy);
         float s11 = i.getS(srcR, srcD), t11 = i.getT(srcR, srcD);
-        batchStartGroupScA(false, isCropEssential, 6, blendSub, tiling, i.getSurface());
-        batchWriteXYST(x , y , s00, t00);
-        batchWriteXYST(cR, y , s10, t10);
-        batchWriteXYST(cR, cD, s11, t11);
-        batchWriteXYST(x , y , s00, t00);
-        batchWriteXYST(cR, cD, s11, t11);
-        batchWriteXYST(x , cD, s01, t01);
+        batchXYSTScA(isCropEssential, blendSub, tiling, i.getSurface(),
+            x , y , s00, t00,
+            cR, y , s10, t10,
+            cR, cD, s11, t11,
+            x , cD, s01, t01
+        );
     }
 
     @Override
@@ -191,13 +189,12 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchStartGroupScA(false, true, 6, blendSub, TilingMode.None, i.getSurface());
-        batchWriteXYST(p00X, p00Y, s00, t00);
-        batchWriteXYST(p10X, p10Y, s10, t10);
-        batchWriteXYST(p11X, p11Y, s11, t11);
-        batchWriteXYST(p00X, p00Y, s00, t00);
-        batchWriteXYST(p11X, p11Y, s11, t11);
-        batchWriteXYST(p01X, p01Y, s01, t01);
+        batchXYSTScA(true, blendSub, TilingMode.None, i.getSurface(),
+            p00X, p00Y, s00, t00,
+            p10X, p10Y, s10, t10,
+            p11X, p11Y, s11, t11,
+            p01X, p01Y, s01, t01
+        );
     }
 
     @Override
@@ -238,21 +235,36 @@ public class VopeksGrDriver extends VopeksBatchingSurface implements IGrDriver {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchStartGroupScA(true, false, 6, BLEND_NORMAL, TilingMode.None, null);
-        batchWriteXYRGBA(x , y , rF, gF, bF, aF);
-        batchWriteXYRGBA(cR, y , rF, gF, bF, aF);
-        batchWriteXYRGBA(cR, cD, rF, gF, bF, aF);
-        batchWriteXYRGBA(x , y , rF, gF, bF, aF);
-        batchWriteXYRGBA(cR, cD, rF, gF, bF, aF);
-        batchWriteXYRGBA(x , cD, rF, gF, bF, aF);
+        batchXYRGBAScA(true, BLEND_NORMAL, TilingMode.None, null,
+            x , y , rF, gF, bF, aF,
+            cR, y , rF, gF, bF, aF,
+            cR, cD, rF, gF, bF, aF,
+            x , cD, rF, gF, bF, aF
+        );
     }
 
     /**
-     * batchStartGroup but aware of scissoring
+     * batchXYST but aware of scissoring
      */
-    public void batchStartGroupScA(boolean hasColours, boolean cropEssential, int vertices, int blendMode, TilingMode tilingMode, IImage tex) {
+    public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
         int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
-        batchStartGroup(vertices, hasColours, cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex);
+        batchXYST(cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2);
+    }
+
+    /**
+     * batchXYST but aware of scissoring
+     */
+    public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
+        batchXYST(cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2, x3, y3, s3, t3);
+    }
+
+    /**
+     * batchXYRGBA but aware of scissoring
+     */
+    public final synchronized void batchXYRGBAScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IImage tex, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3) {
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
+        batchXYRGBA(cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex, x0, y0, r0, g0, b0, a0, x1, y1, r1, g1, b1, a1, x2, y2, r2, g2, b2, a2);
     }
 
     @Override
