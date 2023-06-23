@@ -41,7 +41,5 @@ public interface ITexRegion extends IReplicatedTexRegion {
      * Creates a subregion.
      */
     @Override
-    default @NonNull ITexRegion subRegion(float x, float y, float w, float h) {
-        return new TexRegion(this, x, y, w, h);
-    }
+    @NonNull ITexRegion subRegion(float x, float y, float w, float h);
 }

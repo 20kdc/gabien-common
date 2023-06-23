@@ -10,17 +10,32 @@ import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Translating ITexRegion implementation.
+ * Notably, this class intends to be optimized, so it only works on IImages.
+ * Also notably, this class can scale as a side-effect, but intentionally never directly.
  * Created 14th June, 2023.
  */
-public class TexRegion implements ITexRegion {
-    public final @NonNull ITexRegion base;
-    public final float x, y, w, h;
-    public TexRegion(ITexRegion base, float x, float y, float w, float h) {
+public final class ImageTexRegion implements ITexRegion {
+    public final @NonNull IImage base;
+    public final float x, y, w, h, sW, sH;
+
+    /**
+     * Creates the ImageTexRegion.
+     * @param base Base surface.
+     * @param x X of region (relative to sW/sH)
+     * @param y Y of region (relative to sW/sH)
+     * @param w Width metadata
+     * @param h Height metadata
+     * @param sW Virtual width of surface. Can be used to implement scaling.
+     * @param sH Virtual height of surface. Can be used to implement scaling.
+     */
+    public ImageTexRegion(IImage base, float x, float y, float w, float h, float sW, float sH) {
         this.base = base;
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
+        this.sW = sW;
+        this.sH = sH;
     }
 
     @Override
@@ -35,12 +50,12 @@ public class TexRegion implements ITexRegion {
 
     @Override
     public float getS(float x, float y) {
-        return base.getS(this.x + x, this.y + y);
+        return (this.x + x) / sW;
     }
 
     @Override
     public float getT(float x, float y) {
-        return base.getT(this.x + x, this.y + y);
+        return (this.y + y) / sH;
     }
 
     @Override
@@ -51,7 +66,7 @@ public class TexRegion implements ITexRegion {
 
     @Override
     @NonNull
-    public TexRegion subRegion(float x, float y, float w, float h) {
-        return new TexRegion(base, this.x + x, this.y + y, w, h);
+    public ImageTexRegion subRegion(float x, float y, float w, float h) {
+        return new ImageTexRegion(base, this.x + x, this.y + y, w, h, this.sW, this.sH);
     }
 }

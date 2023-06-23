@@ -14,6 +14,7 @@ import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.IReplicatedTexRegion;
+import gabien.render.ITexRegion;
 
 /**
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
@@ -113,5 +114,11 @@ public class NullGrDriver implements IGrDriver {
     @Nullable
     public Texture releaseTextureCustodyFromTask() {
         return null;
+    }
+
+    @Override
+    @NonNull
+    public ITexRegion subRegion(float x, float y, float w, float h) {
+        return this;
     }
 }

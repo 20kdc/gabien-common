@@ -143,4 +143,10 @@ public interface IImage extends ITexRegion {
     default IImage getSurface() {
         return this;
     }
+
+    @Override
+    @NonNull
+    default ITexRegion subRegion(float x, float y, float w, float h) {
+        return new ImageTexRegion(this, x, y, w, h, getWidth(), getHeight());
+    }
 }
