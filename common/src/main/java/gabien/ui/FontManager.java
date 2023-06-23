@@ -8,9 +8,7 @@
 package gabien.ui;
 
 import gabien.GaBIEn;
-import gabien.render.IGrDriver;
 import gabien.text.IFixedSizeFont;
-import gabien.text.RenderedTextChunk;
 import gabien.text.TextTools;
 
 import java.util.WeakHashMap;
@@ -77,18 +75,6 @@ public final class FontManager {
         if (useSystemFont(text, height))
             return GaBIEn.getNativeFont(height, fontOverride, true);
         return getInternalFontFor(height);
-    }
-
-    /**
-     * Please don't use this, it bleeds performance.
-     * @see gabien.text.TextTools
-     */
-    public void drawString(IGrDriver igd, int xptr, int oy, String text, boolean noBackground, boolean textBlack, int height) {
-        RenderedTextChunk rtc = TextTools.renderString(text, getFontForText(text, height), textBlack);
-        int cc = textBlack ? 255 : 0;
-        if (!noBackground)
-            rtc.backgroundRoot(igd, xptr, oy, cc, cc, cc, 255);
-        rtc.renderRoot(igd, xptr, oy);
     }
 
     // NOTE: This assumes the results are for the final content block.

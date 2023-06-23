@@ -41,15 +41,15 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
 
     @Override
     public int measureLine(@NonNull String text, boolean withLastAdvance) {
-        return measureLineCommon(text.length(), withLastAdvance);
+        return measureLineCommon(advance, charWidth, text.length(), withLastAdvance);
     }
 
     @Override
     public int measureLine(@NonNull char[] text, int index, int length, boolean withLastAdvance) {
-        return measureLineCommon(length, withLastAdvance);
+        return measureLineCommon(advance, charWidth, length, withLastAdvance);
     }
 
-    private int measureLineCommon(int length, boolean withLastAdvance) {
+    public static int measureLineCommon(int advance, int charWidth, int length, boolean withLastAdvance) {
         if (withLastAdvance)
             return length * advance;
         if (length == 0)
@@ -98,6 +98,6 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
     }
 
     private void drawBackgroundCommon(IGrDriver igd, int x, int y, int length, int r, int g, int b, int a) {
-        ImageRenderedTextChunk.background(igd, x, y, measureLineCommon(length, false), length, a, r, g, b, a);
+        ImageRenderedTextChunk.background(igd, x, y, measureLineCommon(advance, charWidth, length, false), charHeight, 1, r, g, b, a);
     }
 }
