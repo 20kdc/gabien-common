@@ -62,7 +62,7 @@ public class UIBytesEditor extends UIProxy {
     @Override
     public void runLayout() {
         int h = getSize().height;
-        int rh = UIBorderedElement.getRecommendedTextSize("", 16).height;
+        int rh = UIBorderedElement.getBorderedTextHeight(getTheme(), 16);
         setRowCount(h / rh);
         super.runLayout();
     }

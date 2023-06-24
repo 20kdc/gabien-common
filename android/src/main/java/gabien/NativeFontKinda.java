@@ -10,6 +10,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import gabien.text.IFixedSizeFont;
 import gabien.text.ImageRenderedTextChunk;
 
@@ -22,9 +23,10 @@ public class NativeFontKinda implements IFixedSizeFont {
     public final int space;
     public final Paint paint;
 
-    public NativeFontKinda(int s) {
+    public NativeFontKinda(Typeface tf, int s) {
         size = s;
         paint = new Paint();
+        paint.setTypeface(tf);
         paint.setTextSize(size);
         paint.setAntiAlias(true);
         space = (int) paint.measureText(" ");
