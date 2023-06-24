@@ -41,7 +41,7 @@ public class ReleaseNativesAreInstalledAndReproducibleTest {
         // It acts as a - disablable - safety guard with no other side effects.
         @Nullable String dev = System.getenv("GABIEN_NATIVES_DEV");
         boolean isCorrect = ver.equals(vrl);
-        boolean isDev = (dev == null) || !dev.equals("1");
+        boolean isDev = (dev != null) && dev.equals("1");
         System.out.println("gabien-natives version: " + ver);
         System.out.println("gabien-natives-util release-lock: " + vrl);
         System.out.println("isCorrect: " + isCorrect);
