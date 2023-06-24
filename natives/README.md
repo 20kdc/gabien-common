@@ -40,3 +40,7 @@ natives/thirdparty/zig (to Zig directory, NOT to Zig binary!)
 
 The procedure is then to run `sdk-make`.
 
+## Install Instructions
+
+Run `./sdk-install`.
+
