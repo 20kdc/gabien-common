@@ -6,14 +6,22 @@
  */
 package gabien.backend;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.GaBIEn;
 import gabien.text.IFixedSizeFont;
+import gabien.text.ITypeface;
 
 /**
  * Temporary native font cache to prevent a ton of lookups.
  * Created 16th February 2023.
  */
 public final class NativeFontCache {
+    private final ITypeface defaultTypeface;
+
+    private String lastTypefaceName = null;
+    private ITypeface lastTypeface = null;
+
     private String lastFontName = null;
     private int lastFontSize = -1;
     private IFixedSizeFont lastFont = null;
@@ -26,6 +34,23 @@ public final class NativeFontCache {
     public NativeFontCache(IGaBIEn backend) {
         this.backend = backend;
         GaBIEn.verify(backend);
+        defaultTypeface = backend.getDefaultTypeface();
+    }
+
+    private ITypeface getTypeface(@NonNull String name) {
+        synchronized (this) {
+            if (lastTypeface != null)
+                if (lastTypefaceName.equals(name))
+                    return lastTypeface;
+        }
+        ITypeface tf = backend.getNativeTypeface(name);
+        if (tf == null)
+            return null;
+        synchronized (this) {
+            lastTypeface = tf;
+            lastTypefaceName = name;
+        }
+        return tf;
     }
 
     /**
@@ -37,7 +62,7 @@ public final class NativeFontCache {
                 if (lastDefaultFontSize == size)
                     return lastDefaultFont;
         }
-        IFixedSizeFont res = backend.getDefaultNativeFont(size);
+        IFixedSizeFont res = defaultTypeface.derive(size);
         synchronized (this) {
             lastDefaultFontSize = size;
             lastDefaultFont = res;
@@ -55,9 +80,10 @@ public final class NativeFontCache {
                     if (lastFontName.equals(name))
                         return lastFont;
         }
-        IFixedSizeFont res = backend.getNativeFont(size, name);
-        if (res == null)
+        ITypeface tf = getTypeface(name);
+        if (tf == null)
             return null;
+        IFixedSizeFont res = tf.derive(size);
         synchronized (this) {
             lastFontName = name;
             lastFontSize = size;

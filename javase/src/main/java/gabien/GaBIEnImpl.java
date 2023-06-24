@@ -11,7 +11,7 @@ import gabien.backend.IGaBIEn;
 import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
 import gabien.render.WSIImage;
-import gabien.text.IFixedSizeFont;
+import gabien.text.ITypeface;
 import gabien.uslx.append.*;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.WindowSpecs;
@@ -150,14 +150,14 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     @Override
     @NonNull
-    public IFixedSizeFont getDefaultNativeFont(int size) {
-        return AWTNativeFont.getFont(size, null);
+    public ITypeface getDefaultTypeface() {
+        return AWTTypeface.getDefaultTypeface();
     }
 
     @Override
     @Nullable
-    public IFixedSizeFont getNativeFont(int size, @NonNull String name) {
-        return AWTNativeFont.getFont(size, name);
+    public ITypeface getNativeTypeface(@NonNull String name) {
+        return AWTTypeface.getTypeface(name);
     }
 
     @Override

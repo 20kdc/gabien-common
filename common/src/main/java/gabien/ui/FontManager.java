@@ -32,21 +32,6 @@ public final class FontManager {
         fontOverrideUE8 = ue8;
     }
 
-    /**
-     * Returns an internal font.
-     * @param height The target font height (pixels per line).
-     * @return An internal font with a 128-character image covering ASCII (with some codepage 437)
-     */
-    private IFixedSizeFont getInternalFontFor(int height) {
-        if (height >= 16) {
-            return GaBIEn.engineFonts.f16;
-        } else if (height >= 8) {
-            return GaBIEn.engineFonts.f8;
-        } else {
-            return GaBIEn.engineFonts.f6;
-        }
-    }
-
     private boolean useSystemFont(String text, int height) {
         if (fontOverride != null) {
             if (height > 8)
@@ -74,7 +59,7 @@ public final class FontManager {
     public IFixedSizeFont getFontForText(String text, int height) {
         if (useSystemFont(text, height))
             return GaBIEn.getNativeFont(height, fontOverride, true);
-        return getInternalFontFor(height);
+        return GaBIEn.engineFonts.derive(height);
     }
 
     // NOTE: This assumes the results are for the final content block.

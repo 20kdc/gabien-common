@@ -17,7 +17,7 @@ import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.IGaBIEn;
 import gabien.backend.WindowMux;
 import gabien.render.WSIImage;
-import gabien.text.IFixedSizeFont;
+import gabien.text.ITypeface;
 import gabien.uslx.vfs.impl.*;
 
 import java.io.*;
@@ -68,13 +68,13 @@ public final class GaBIenImpl implements IGaBIEn {
 
     @Override
     @NonNull
-    public IFixedSizeFont getDefaultNativeFont(int size) {
-        return new NativeFontKinda(size);
+    public ITypeface getDefaultTypeface() {
+        return new TypefaceKinda();
     }
 
     @Override
     @Nullable
-    public IFixedSizeFont getNativeFont(int size, @NonNull String name) {
+    public ITypeface getNativeTypeface(@NonNull String name) {
         return null;
     }
 

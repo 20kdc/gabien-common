@@ -6,6 +6,8 @@
  */
 package gabien.text;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.GaBIEn;
 import gabien.backend.IGaBIEn;
 import gabien.render.IGrDriver;
@@ -15,7 +17,7 @@ import gabien.render.IImage;
  * Container to try and pull this stuff out of FontManager.
  * Created 23rd June, 2023.
  */
-public final class EngineFonts {
+public final class EngineFonts implements ITypeface {
     public final SimpleImageGridFont f6;
     public final SimpleImageGridFont f8;
     public final SimpleImageGridFont f16;
@@ -75,6 +77,23 @@ public final class EngineFonts {
             int srcy = 0;
             igd.blitScaledImage(srcx, srcy, 7, 14, x, y, charWidth, charHeight, font);
             x += advance;
+        }
+    }
+
+    /**
+     * Returns an approximate IFixedSizeFont for the given line height.
+     * This doesn't scale.
+     * @param lineHeight The target font height (pixels per line).
+     * @return An internal font with a 128-character image covering ASCII (with some codepage 437)
+     */
+    @Override
+    public @NonNull IFixedSizeFont derive(int lineHeight) {
+        if (lineHeight >= 16) {
+            return f16;
+        } else if (lineHeight >= 8) {
+            return f8;
+        } else {
+            return f6;
         }
     }
 }

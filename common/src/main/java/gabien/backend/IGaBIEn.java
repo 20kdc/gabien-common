@@ -15,7 +15,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.IRawAudioDriver;
 import gabien.render.WSIImage;
-import gabien.text.IFixedSizeFont;
+import gabien.text.ITypeface;
 
 /**
  * This instance should be the entry point to the program.
@@ -66,16 +66,16 @@ public interface IGaBIEn {
     String[] getFontOverrides();
 
     /**
-     * Returns a native font by size and name, unless it does not exist (in which case returns null).
+     * Returns a native font by name, unless it does not exist (in which case returns null).
      * The GaBIEn version of this method is partially cached.
      */
-    @Nullable IFixedSizeFont getNativeFont(int size, @NonNull String name);
+    @Nullable ITypeface getNativeTypeface(@NonNull String name);
 
     /**
      * Returns the default/fallback native font.
      * The GaBIEn version of this method is partially cached.
      */
-    @NonNull IFixedSizeFont getDefaultNativeFont(int size);
+    @NonNull ITypeface getDefaultTypeface();
 
     boolean tryStartTextEditor(String fpath);
 

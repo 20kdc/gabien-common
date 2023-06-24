@@ -34,52 +34,6 @@ public class AWTNativeFont implements IFixedSizeFont {
         size = apparentSize;
     }
 
-    /**
-     * Basically implements GaBIEnImpl.getNativeFont
-     */
-    public static IFixedSizeFont getFont(int textSize, String s) {
-        String modified = s == null ? GaBIEnImpl.getDefaultFont() : null; 
-        try {
-            return new AWTNativeFont(new Font(modified, Font.PLAIN, textSize - (textSize / 8)), textSize);
-        } catch (Exception ex) {
-        }
-        if (s == null) {
-            // Shouldn't happen, so return a fake font as if we know what we're doing.
-            System.err.println("AWTNativeFont failed to get fallback font, so a completely fake NativeFont has been generated. Text will probably not display.");
-            return new IFixedSizeFont() {
-                @Override
-                public int getLineHeight() {
-                    return textSize;
-                }
-                @Override
-                public int getContentHeight() {
-                    return textSize - (textSize / 8);
-                }
-                @Override
-                public int measureLine(@NonNull char[] text, int index, int count, boolean withLastAdvance) {
-                    if (GaBIEnImpl.fontsAlwaysMeasure16)
-                        return 16;
-                    return (count * textSize) / 2;
-                }
-                @Override
-                public int measureLine(@NonNull String text, boolean withLastAdvance) {
-                    if (GaBIEnImpl.fontsAlwaysMeasure16)
-                        return 16;
-                    return (text.length() * textSize) / 2;
-                }
-                @Override
-                public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text, index, length, true), textSize, GaBIEn.getErrorImage());
-                }
-                @Override
-                public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
-                    return new ImageRenderedTextChunk.GPU(0, 0, measureLine(text, true), textSize, GaBIEn.getErrorImage());
-                }
-            };
-        }
-        return null;
-    }
-
     @Override
     public int getLineHeight() {
         return size;
