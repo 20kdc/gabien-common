@@ -10,6 +10,8 @@
 // So we have printf, etc.
 #include "badgpu/badgpu_internal.h"
 
+extern const char una_version[];
+
 #define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x
 #define J_LOADER(x) Java_gabien_natives_Loader_ ## x
 

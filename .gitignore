@@ -82,9 +82,14 @@
 !natives/c/loader_jni.c
 !natives/c/android_jni.c
 !natives/c/una.h
+!natives/thirdparty
+!natives/thirdparty/
+!natives/thirdparty/placeholder
 !natives/sdk-make
 !natives/sdk-clean
 !natives/sdk-install
+!natives/sdk-rel
+!natives/ktsz.zig
 
 !natives-util
 !natives-util/

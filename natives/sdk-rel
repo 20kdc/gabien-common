@@ -4,7 +4,22 @@
 # To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
-# cleaning script / initial variables
-LIBUNA="src/main/resources/assets/gabien-natives"
-rm -rf src target
+if [ "$#" -ne 1 ]; then
+ echo "sdk-rel RELEASE_ID"
+ exit 1
+fi
+
+echo "-- GaBIEn Natives Release Build --"
+
+export UNA_BUILD_ID="$1"
+
+./sdk-make || exit
+
+rm -rf ../natives-sdk
+mkdir -p ../natives-sdk
+# script that installs the build to the local Maven repo
+cp sdk-install ../natives-sdk/
+cp natives.jar ../natives-sdk/natives.jar
+cp ../COPYING.txt ../natives-sdk/
+cp ../CREDITS.txt ../natives-sdk/
 

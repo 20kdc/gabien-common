@@ -24,3 +24,19 @@ Flexibility ideology is to assume someone will have to write a GLES2 backend in 
 (I expect this to be relevant roughly when Apple drops OpenGL and everybody has to scramble to shipping ANGLE.)
 
 _API design is under revision, though the reference implementation is complete enough that things should stabilize as other parts come into play._
+
+## Build Instructions
+
+1. Be running Linux or something that can imitate it, via say Docker. (The build process is already enough of a mess...)
+2. You need the Android NDK, versions `r9d` and `r12b`.
+3. You need Zig `0.11.0-dev.2892+fd6200eda` ; other versions may work, no guarantee
+4. You need to *symlink* these into `thirdparty` as follows:
+
+```
+natives/thirdparty/android-ndk-r9d (to corresponding NDK)
+natives/thirdparty/android-ndk-r12b (to corresponding NDK)
+natives/thirdparty/zig (to Zig directory, NOT to Zig binary!)
+```
+
+The procedure is then to run `sdk-make`.
+

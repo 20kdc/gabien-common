@@ -8,6 +8,6 @@
 #include "una.h"
 
 void * J_LOADER(getNativesVersion)(void * env, void * self) {
-    return JNI_NewStringUTF(env, UNA_BUILD_ID);
+    return JNI_NewStringUTF(env, una_version);
 }
 

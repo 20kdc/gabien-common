@@ -4,17 +4,19 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<groupId>t20kdc.hs2</groupId>
 	<artifactId>gabien-natives</artifactId>
 
 	<name>gabien-natives</name>
-	<description>Natives plus JNI stubs library. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
+	<description>Natives and only natives. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
+	<version>0.666-SNAPSHOT</version>
+
+	<!-- This pom.xml is for the sake of IDEs and embedding into the JAR. Maven is not actually used for compilation. -->
 	<!-- This might actually become close to the first *stable* library in the system... we'll see. -->
 
-	<parent>
-		<groupId>t20kdc.hs2</groupId>
-		<artifactId>gabien-common-parent-project</artifactId>
-		<version>0.666-SNAPSHOT</version>
-		<relativePath>..</relativePath>
-	</parent>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<!-- We couldn't care less about the actual Java version because there are no classes in this library. -->
+	</properties>
 </project>
 

@@ -5,55 +5,69 @@
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
 # tested using Zig 0.11.0-dev.2892+fd6200eda
+
 . ./sdk-clean
+
 mkdir -p $LIBUNA
-UNA_BUILD_ID=`date +%Y.%m.%d.%H.%M.%S`
-COMMONFLAGS="-Wno-attributes -O4 -shared -DUNA_BUILD_ID=\"$UNA_BUILD_ID\""
+
+if [ "$UNA_BUILD_ID" = "" ]; then
+ echo "const char una_version[] = \"`date +%Y.%m.%d.%H.%M.%S`\";" > c/version.c
+else
+ echo "const char una_version[] = \"$UNA_BUILD_ID\";" > c/version.c
+fi
+
+COMMONFLAGS="-Wno-attributes -O4 -shared"
 TARGETS="x86-linux-gnu"
 TARGETS_W="x86-windows-gnu x86_64-windows-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
-SOURCES="c/badgpu_jni.c c/loader_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c"
+SOURCES="c/version.c c/badgpu_jni.c c/loader_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c"
 SOURCES_U="c/badgpu/badgpu_wsi_egl.c"
 SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
 SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
+
+# Tools & etc.
+ZIG=thirdparty/zig/zig
+# in theory, we shouldn't be using API level 9 libraries, but you need to use those to get access to ANativeWindow_fromSurface in the NDK.
+# assume it's a packaging error or something. if it isn't, then it isn't.
+NDK_PLATFORM9=thirdparty/android-ndk-r9d/platforms/android-9
+NDK_PLATFORM21=thirdparty/android-ndk-r12b/platforms/android-21
+NDK_ARM_GCC=thirdparty/android-ndk-r9d/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc
+
+# Continue...
+
 for TARGET in $TARGETS ; do
  echo $TARGET
- zig cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS
+ "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS
 done
 for TARGET in $TARGETS_W ; do
  echo $TARGET
- zig cc -target $TARGET -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$TARGET $COMMONFLAGS -lgdi32 -lopengl32
+ "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$TARGET $COMMONFLAGS -lgdi32 -lopengl32
  # Compile the EGL-using variant.
- zig cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET.CX_BackPath $COMMONFLAGS -lgdi32 -lopengl32
+ "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET.CX_BackPath $COMMONFLAGS -lgdi32 -lopengl32
 done
 # LTO not yet supported
 for TARGET in $TARGETS_M ; do
  echo $TARGET
- zig cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
+ "$ZIG" cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
  # Compile the EGL-using variant.
- zig cc -target $TARGET $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET.CX_BackPath $COMMONFLAGS
+ "$ZIG" cc -target $TARGET $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET.CX_BackPath $COMMONFLAGS
 done
 # on most of the Linuxy targets, use "fake libc" (this particularly works well with the Androids)
 for TARGET in $TARGETS_NSL ; do
  echo $TARGET
- zig cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib
+ "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib
 done
 # ANDROID IS REALLY REALLY WEIRD
 echo THE ANDROID BUILDS
 doAndroidBuild() {
 echo $1 zig
-zig cc -target $1 -flto -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so $2/liblog.so $2/libandroid.so $2/libEGL.so $2/libGLESv1_CM.so -I $3
+ "$ZIG" cc -target $1 -flto -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so $2/liblog.so $2/libandroid.so $2/libEGL.so $2/libGLESv1_CM.so -I $3
 }
 doAndroidBuildGCC() {
-echo $1 gcc
-$2 -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM -Wint-to-pointer-cast-off
+ echo $1 gcc
+ $2 -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM
 }
-# in theory, we shouldn't be using API level 9 libraries, but you need to use those to get access to ANativeWindow_fromSurface in the NDK.
-# assume it's a packaging error or something. if it isn't, then it isn't.
-NDK_PLATFORM9=/media/modus/External2/android-ndk-r9d/platforms/android-9
-NDK_PLATFORM21=/media/modus/External2/android-ndk-r12b/platforms/android-21
-NDK_ARM_GCC=/media/modus/External2/android-ndk-r9d/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc
 # this PARTICULAR ONE crashes Zig's clang for some reason
 doAndroidBuildGCC arm-linux-android $NDK_ARM_GCC $NDK_PLATFORM9/arch-arm
 doAndroidBuild aarch64-linux-android $NDK_PLATFORM21/arch-arm64/usr/lib    $NDK_PLATFORM21/arch-arm64/usr/include
@@ -69,18 +83,26 @@ for x in `ls $LIBUNA`; do
  llvm-strip $LIBUNA/$x
 done
 
-# Maven
-mvn package
-mvn install
-rm -rf ../natives-sdk
-mkdir -p ../natives-sdk
-# script that installs the build to the local Maven repo
-cp sdk-install ../natives-sdk/
-cp target/gabien-natives-0.666-SNAPSHOT.jar ../natives-sdk/natives.jar
-cp ../COPYING.txt ../natives-sdk/
-cp ../CREDITS.txt ../natives-sdk/
+# Fake Maven metadata
+mkdir -p src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives || exit
+cp pom.xml src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives/pom.xml || exit
+
+# "Compile" the "JAR"
+# Someone's going to probably have to ask why I did this at some point. TLDR: This process scrubs any Maven metadata and zip metadata.
+# I had hoped for hash-reproducability but it seems to be pretty difficult/impossible.
+"$ZIG" build-exe ktsz.zig || exit
+rm -f natives.jar || exit
+cd src/main/resources || exit
+../../../ktsz `find * -type f | LC_ALL=C sort -u` > ../../../natives.jar || exit
+cd ../../.. || exit
+
+# Install
+./sdk-install
 
 echo
-echo Build ID: $UNA_BUILD_ID
+echo "Build ID: $UNA_BUILD_ID"
+echo "sha256sum: `sha256sum natives.jar`"
+echo "content sums..."
+sha256sum $LIBUNA/*
 echo
 
