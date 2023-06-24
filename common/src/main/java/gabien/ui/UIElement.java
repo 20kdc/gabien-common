@@ -34,6 +34,9 @@ public abstract class UIElement extends LAFChain {
     private Rect elementBounds = Rect.ZERO;
 
     private UIElement parent;
+    // Parent for LAF purposes. Changes earlier or later so that LAF can happen without wreaking recursive havoc.
+    private UIElement lafTmpParent;
+
     private Size wantedSize = Size.ZERO;
     // Used during construction & setForcedBounds.
     // In the first case, this prevents accidentally calling runLayout before the object is ready.
@@ -172,6 +175,7 @@ public abstract class UIElement extends LAFChain {
      * Step 2 will trigger "pleaseContinueLayingOut" to be set if necessary.
      * UNDER NO CIRCUMSTANCES should this be non-super-called anywhere except from UIElement,
      *  or classes with an understanding of what they're calling, i.e. their own runLayout method.
+     * It is HIGHLY DISCOURAGED to add UI elements from this function; their parameters will change as they change LAF.
      */
     public void runLayout() {
 
@@ -191,13 +195,21 @@ public abstract class UIElement extends LAFChain {
      * Internal parent attach/detach logic, ensures root attach/detach is correct
      */
     private void internalSetParent(UIElement newParent) {
+        if (parent == null) {
+            // Update theme early before we attach.
+            lafTmpParent = newParent;
+            // System.out.println("Theme update because of internalSetParent @ " + this);
+            themeUpdate();
+        }
         parent = newParent;
-        if (newParent != null)
+        if (newParent != null) {
             setAttachedToRoot(newParent.attachedToRootFlag);
-        else
+        } else {
             setAttachedToRoot(false);
-        // System.out.println("Theme update because of internalSetParent @ " + this);
-        themeUpdate();
+            // Update theme late now we're not attached. 
+            lafTmpParent = newParent;
+            themeUpdate();
+        }
     }
 
     /**
@@ -252,7 +264,7 @@ public abstract class UIElement extends LAFChain {
         LAFChain c1 = super.getLAFParentInternal();
         if (c1 != null)
             return c1;
-        return parent;
+        return lafTmpParent;
     }
 
     /**

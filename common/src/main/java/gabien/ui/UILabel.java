@@ -50,6 +50,13 @@ public class UILabel extends UIBorderedElement {
         runLayout();
     }
 
+    @Override
+    public void onThemeChanged() {
+        super.onThemeChanged();
+        // important because the label render can change based on theme now
+        runLayout();
+    }
+
     // This just gets spammed every frame, in order to update text at every possible time.
     // It's not perfect, but contents.update checks enough so everything's :ok_hand:
     @Override

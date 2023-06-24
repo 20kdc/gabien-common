@@ -39,6 +39,13 @@ public class UITextButton extends UIButton<UITextButton> {
     }
 
     @Override
+    public void onThemeChanged() {
+        super.onThemeChanged();
+        // Same as with updateContents.
+        runLayout();
+    }
+
+    @Override
     public void runLayout() {
         super.runLayout();
         Size p = contents.update(getTheme(), getSize(), getBorderWidth(), text);
