@@ -88,6 +88,7 @@
 !natives/sdk-make
 !natives/sdk-clean
 !natives/sdk-install
+!natives/sdk-install.cmd
 !natives/sdk-rel
 !natives/ktsz.zig
 

@@ -19,6 +19,7 @@ rm -rf ../natives-sdk ../natives-sdk.zip || exit
 mkdir -p ../natives-sdk || exit
 # script that installs the build to the local Maven repo
 cp sdk-install ../natives-sdk/ || exit
+cp sdk-install.cmd ../natives-sdk/ || exit
 cp natives.jar ../natives-sdk/natives.jar || exit
 cp ../COPYING.txt ../natives-sdk/ || exit
 cp ../CREDITS.txt ../natives-sdk/ || exit
