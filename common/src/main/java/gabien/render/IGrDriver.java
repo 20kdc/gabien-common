@@ -7,8 +7,6 @@
 
 package gabien.render;
 
-import java.util.ArrayList;
-
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -20,7 +18,7 @@ import gabien.natives.BadGPUEnum.BlendWeight;
  * Represents a buffer that can be drawn to.
  * Created on 04/06/17. Made into an abstract class 9th July, 2023.
  */
-public abstract class IGrDriver extends IImage {
+public abstract class IGrDriver extends RenderTarget {
     /**
      * Scissor control.
      */
@@ -30,11 +28,6 @@ public abstract class IGrDriver extends IImage {
      * Translate/scale control.
      */
     public final float[] trs = new float[4];
-
-    /**
-     * Reference list.
-     */
-    private final ArrayList<IImage> referencedBy = new ArrayList<>();
 
     public static final int BLEND_NONE = BadGPU.blendProgram(
         BlendWeight.One, BlendWeight.Zero, BlendOp.Add,
@@ -55,64 +48,51 @@ public abstract class IGrDriver extends IImage {
 
     // Image stuff
 
-    public IGrDriver(int w, int h) {
-        super(w, h);
+    public IGrDriver(@Nullable String id, int w, int h) {
+        super(id, w, h);
         trs[2] = 1;
         trs[3] = 1;
         scissor[2] = w;
         scissor[3] = h;
     }
 
-    /**
-     * Flushes batches of things that have batches attached to this surface.
-     * Call immediately before any call to putTask that writes to this surface.
-     * Will be internally called before batchStartGroup.
-     */
-    protected final synchronized void batchReferenceBarrier() {
-        while (!referencedBy.isEmpty())
-            referencedBy.remove(referencedBy.size() - 1).batchFlush();
-    }
-
-    @Override
-    public final synchronized void batchReference(IImage caller) {
-        // If this wasn't here, the caller could refer to an unfinished batch.
-        // Where this becomes a problem is that the caller could submit the task, and the batch might still not be submitted.
-        // Since any changes we do make would require a flush (because we have a reference), just flush now,
-        //  rather than flushing on unreference or something.
-        // (Also, we could be holding a reference to caller, which implies the ability to create reference loops.)
-        batchFlush();
-        referencedBy.add(caller);
-    }
-
-    @Override
-    public final synchronized void batchUnreference(IImage caller) {
-        referencedBy.remove(caller);
-    }
-
     // Universal interface for doing everything
 
     /**
      * Batches an uncoloured, textured triangle.
-     * This does NOT account for scissor/translate/scale.
-     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     * Coordinates do not have scissor or TRS applied, but are setup to fit the screen.
+     * STs are transformed because they are dependent on IReplicatedTexRegion decisions.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2);
+    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2);
 
     /**
      * Batches an uncoloured, textured quad (012023).
-     * This does NOT account for scissor/translate/scale.
-     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     * Coordinates do not have scissor or TRS applied, but are setup to fit the screen.
+     * STs are transformed because they are dependent on IReplicatedTexRegion decisions.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3);
+    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3);
 
     /**
-     * Batches a coloured, untextured quad.
-     * This does NOT account for scissor/translate/scale.
-     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
+     * Batches a coloured, textured triangle.
+     * Coordinates do not have scissor or TRS applied, but are setup to fit the screen.
+     * STs are transformed because they are dependent on IReplicatedTexRegion decisions.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
+     * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3);
+    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2);
+
+    /**
+     * Batches a coloured, textured quad (012023).
+     * Coordinates do not have scissor or TRS applied, but are setup to fit the screen.
+     * STs are transformed because they are dependent on IReplicatedTexRegion decisions.
+     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
+     * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
+     */
+    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
 
     // Universal interface, accounting for scissoring
 
@@ -120,24 +100,28 @@ public abstract class IGrDriver extends IImage {
      * batchXYST-3 but auto-fills crop fields based on scissoring.
      */
     public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
-        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
-        batchXYST(cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2);
+        rawBatchXYST(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2);
     }
 
     /**
      * batchXYST-4 but auto-fills crop fields based on scissoring.
      */
     public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
-        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
-        batchXYST(cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2, x3, y3, s3, t3);
+        rawBatchXYST(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2, x3, y3, s3, t3);
     }
 
     /**
-     * batchXYRGBA-4 but auto-fills crop fields based on scissoring.
+     * batchXYSTRGBA-3 but auto-fills crop fields based on scissoring.
      */
-    public final synchronized void batchXYRGBAScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3) {
-        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
-        batchXYRGBA(cropEssential, scL, scU, scR - scL, scD - scU, blendMode, tilingMode, tex, x0, y0, r0, g0, b0, a0, x1, y1, r1, g1, b1, a1, x2, y2, r2, g2, b2, a2, x3, y3, r3, g3, b3, a3);
+    public final synchronized void batchXYSTRGBAScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+        rawBatchXYSTRGBA(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2);
+    }
+
+    /**
+     * batchXYSTRGBA-4 but auto-fills crop fields based on scissoring.
+     */
+    public final synchronized void batchXYSTRGBAScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
+        rawBatchXYSTRGBA(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2, x3, y3, s3, t3, r3, g3, b3, a3);
     }
 
     // Basic blit operations.
@@ -333,18 +317,13 @@ public abstract class IGrDriver extends IImage {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchXYRGBAScA(false, BLEND_NORMAL, TilingMode.None, null,
-            x , y , rF, gF, bF, aF,
-            cR, y , rF, gF, bF, aF,
-            cR, cD, rF, gF, bF, aF,
-            x , cD, rF, gF, bF, aF
+        batchXYSTRGBAScA(false, BLEND_NORMAL, TilingMode.None, null,
+            x , y , 0, 0, rF, gF, bF, aF,
+            cR, y , 0, 0, rF, gF, bF, aF,
+            cR, cD, 0, 0, rF, gF, bF, aF,
+            x , cD, 0, 0, rF, gF, bF, aF
         );
     }
-
-    /**
-     * Stop all drawing operations. Makes an OsbDriver unusable.
-     */
-    public abstract void shutdown();
 
     /**
      * Gets the local scissor buffer, in the order: cropL, cropU, cropR, cropD
@@ -403,20 +382,6 @@ public abstract class IGrDriver extends IImage {
         trs[0] = x;
         trs[1] = y;
     }
-
-    /**
-     * Ok, so this is a particularly evil little call.
-     * This is like getTextureFromTask, but it releases custody of the texture.
-     * This irrevocably alters the image (to being non-existent).
-     * As such, you can only do this on an IGrDriver.
-     */
-    public abstract @Nullable BadGPU.Texture releaseTextureCustodyFromTask();
-
-    /**
-     * This converts an IGrDriver into an immutable image.
-     * Data-wise, this is an in-place operation and shuts down the IGrDriver.
-     */
-    public abstract @NonNull IImage convertToImmutable(@Nullable String debugId);
 
     public enum TilingMode {
         None(0),

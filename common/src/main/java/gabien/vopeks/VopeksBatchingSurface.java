@@ -11,11 +11,9 @@ import java.util.Arrays;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.GaBIEn;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
-import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.IReplicatedTexRegion;
@@ -39,17 +37,6 @@ public final class VopeksBatchingSurface extends IGrDriver {
 
     private volatile boolean wasDisposed;
 
-    /**
-     * The texture.
-     * This is only guaranteed to exist on the instance thread.
-     */
-    protected BadGPU.Texture texture;
-
-    /**
-     * ID for debugging.
-     */
-    public final @NonNull String debugId;
-
     private static final int MAX_VERTICES_IN_BATCH = 65536;
     private final BatchPool batchPool = new BatchPool(1);
     private Batch currentBatch = null;
@@ -59,12 +46,17 @@ public final class VopeksBatchingSurface extends IGrDriver {
     private final float halfWF, halfHF;
 
     /**
+     * State of the crop registers for the group that is being prepared right now.
+     * Use only in sync.
+     */
+    private int upcomingCropL, upcomingCropU, upcomingCropR, upcomingCropD;
+
+    /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
     public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
-        super(w, h);
+        super(id, w, h);
         this.vopeks = vopeks;
-        debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         vopeks.putTask((instance) -> {
             // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
             // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
@@ -72,11 +64,6 @@ public final class VopeksBatchingSurface extends IGrDriver {
         });
         halfWF = w / 2.0f;
         halfHF = h / 2.0f;
-    }
-
-    @Override
-    public String toString() {
-        return debugId;
     }
 
     @Override
@@ -104,42 +91,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
     }
 
     @Override
-    public Texture getTextureFromTask() {
-        return texture;
-    }
-
-    @Override
-    public void shutdown() {
-        dispose();
-    }
-
-    @Override
-    @Nullable
-    public BadGPU.Texture releaseTextureCustodyFromTask() {
-        BadGPU.Texture tex = texture;
-        texture = null;
-        return tex;
-    }
-
-    @Override
-    @NonNull
-    public synchronized IImage convertToImmutable(@Nullable String debugId) {
-        batchFlush();
-        VopeksImage res = new VopeksImage(GaBIEn.vopeks, debugId, getWidth(), getHeight(), (consumer) -> {
-            GaBIEn.vopeks.putTask((instance) -> {
-                consumer.accept(releaseTextureCustodyFromTask());
-            });
-        });
-        shutdown();
-        return res;
-    }
-
-    @Override
-    protected void finalize() {
-        dispose();
-    }
-
-    public synchronized void dispose() {
+    public synchronized void shutdown() {
         if (!wasDisposed) {
             wasDisposed = true;
             // We're about to dispose, so clean up references
@@ -153,12 +105,37 @@ public final class VopeksBatchingSurface extends IGrDriver {
         }
     }
 
+    @Override
+    protected void finalize() {
+        shutdown();
+    }
+
+    /**
+     * Initializes crop registers and returns true to mean invalid.
+     */
+    private final boolean setupAndCheckCrop(boolean cropEssential, int cropL, int cropU, int cropR, int cropD) {
+        cropL = cropL < 0 ? 0 : (cropL > width ? width : cropL);
+        cropR = cropR < 0 ? 0 : (cropR > width ? width : cropR);
+        cropU = cropU < 0 ? 0 : (cropU > height ? height : cropU);
+        cropD = cropD < 0 ? 0 : (cropD > height ? height : cropD);
+        if (cropEssential && (cropR <= cropL || cropD <= cropU))
+            return true;
+        upcomingCropL = cropL;
+        upcomingCropU = cropU;
+        upcomingCropR = cropR;
+        upcomingCropD = cropD;
+        return false;
+    }
+
     /**
      * Batches an uncoloured, textured triangle.
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
-    public final synchronized void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
-        ITexRegion tex = batchStartGroup(3, false, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, iU);
+    @Override
+    public final synchronized void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
+        if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
+            return;
+        ITexRegion tex = batchStartGroup(3, false, cropEssential, blendMode, tilingMode, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1, tex);
@@ -168,8 +145,11 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * Batches an uncoloured, textured quad (012023).
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
-    public final synchronized void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
-        ITexRegion tex = batchStartGroup(6, false, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, iU);
+    @Override
+    public final synchronized void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+        if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
+            return;
+        ITexRegion tex = batchStartGroup(6, false, cropEssential, blendMode, tilingMode, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1, tex);
@@ -179,27 +159,14 @@ public final class VopeksBatchingSurface extends IGrDriver {
     }
 
     /**
-     * Batches a coloured, untextured triangle.
-     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
-     */
-    public final void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2) {
-        batchXYSTRGBA(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, iU, x0, y0, 0, 0, r0, g0, b0, a0, x1, y1, 0, 0, r1, g1, b1, a1, x2, y2, 0, 0, r2, g2, b2, a2);
-    }
-
-    /**
-     * Batches a coloured, untextured quad.
-     * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
-     */
-    public final void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3) {
-        batchXYSTRGBA(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, iU, x0, y0, 0, 0, r0, g0, b0, a0, x1, y1, 0, 0, r1, g1, b1, a1, x2, y2, 0, 0, r2, g2, b2, a2, x3, y3, 0, 0, r3, g3, b3, a3);
-    }
-
-    /**
      * Batches a coloured, textured triangle.
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
-    public final synchronized void batchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
-        ITexRegion tex = batchStartGroup(3, true, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, iU);
+    @Override
+    public final synchronized void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+        if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
+            return;
+        ITexRegion tex = batchStartGroup(3, true, cropEssential, blendMode, tilingMode, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, r1, g1, b1, a1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2, tex);
@@ -209,8 +176,11 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * Batches a coloured, textured quad (012023).
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
-    public final synchronized void batchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
-        ITexRegion tex = batchStartGroup(6, true, cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, iU);
+    @Override
+    public final synchronized void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
+        if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
+            return;
+        ITexRegion tex = batchStartGroup(6, true, cropEssential, blendMode, tilingMode, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, r1, g1, b1, a1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2, tex);
@@ -225,7 +195,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      * This function returns the batching-optimal ITexRegion picked if any.
      */
-    private @Nullable ITexRegion batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, IReplicatedTexRegion iU) {
+    private @Nullable ITexRegion batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int blendMode, TilingMode tilingMode, IReplicatedTexRegion iU) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -247,7 +217,9 @@ public final class VopeksBatchingSurface extends IGrDriver {
             tex = iU.pickTexRegion(currentBatch != null ? currentBatch.tex : null);
         if (tex != null)
             srf = tex.getSurface();
-        if (currentBatch == null || !currentBatch.matchesState(cropEssential, cropL, cropU, cropW, cropH, blendMode, tilingMode, srf)) {
+        // calculate this here so that it can be pushed forward if necessary
+        // in particular matchesState may be happier if this is pushed all the way...
+        if (currentBatch == null || !currentBatch.matchesState(cropEssential, upcomingCropL, upcomingCropU, upcomingCropR, upcomingCropD, blendMode, tilingMode, srf)) {
             batchFlush();
             // Setup the reference.
             // Note that we only have to worry about this at the start of a batch.
@@ -258,15 +230,15 @@ public final class VopeksBatchingSurface extends IGrDriver {
             currentBatch.hasColours = hasColours;
             currentBatch.cropEssential = cropEssential;
             if (cropEssential) {
-                currentBatch.cropL = cropL;
-                currentBatch.cropU = cropU;
-                currentBatch.cropW = cropW;
-                currentBatch.cropH = cropH;
+                currentBatch.cropL = upcomingCropL;
+                currentBatch.cropU = upcomingCropU;
+                currentBatch.cropR = upcomingCropR;
+                currentBatch.cropD = upcomingCropD;
             } else {
                 currentBatch.cropL = 0;
                 currentBatch.cropU = 0;
-                currentBatch.cropW = width;
-                currentBatch.cropH = height;
+                currentBatch.cropR = width;
+                currentBatch.cropD = height;
             }
             currentBatch.blendMode = blendMode;
             currentBatch.tilingMode = tilingMode;
@@ -354,8 +326,8 @@ public final class VopeksBatchingSurface extends IGrDriver {
         public void reset(@NonNull Batch element) {
             element.cropL = 0;
             element.cropU = 0;
-            element.cropW = 0;
-            element.cropH = 0;
+            element.cropR = 0;
+            element.cropD = 0;
             element.cropEssential = false;
             element.vertexCount = 0;
             element.blendMode = IGrDriver.BLEND_NONE;
@@ -370,7 +342,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
     }
 
     private class Batch implements ITask {
-        int cropL, cropU, cropW, cropH;
+        int cropL, cropU, cropR, cropD;
         int vertexCount;
         int blendMode = IGrDriver.BLEND_NONE;
         TilingMode tilingMode = TilingMode.None;
@@ -399,7 +371,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
             drawFlags |= tilingMode.badgpuValue;
 
             BadGPUUnsafe.drawGeomNoDS(texture.pointer, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
-                    cropL, cropU, cropW, cropH,
+                    cropL, cropU, cropR - cropL, cropD - cropU,
                     drawFlags,
                     2, megabuffer, verticesOfs, hasColours ? megabuffer : null, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
                     BadGPU.PrimitiveType.Triangles.value, 1,
@@ -413,18 +385,14 @@ public final class VopeksBatchingSurface extends IGrDriver {
             batchPool.finish(this);
         }
 
-        public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, IImage tex) {
+        public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, IImage tex) {
             if (cropEssential) {
-                if (cropL != this.cropL || cropU != this.cropU || cropW != this.cropW || cropH != this.cropH) {
-                    // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropW + "," + cropH + " -> " + this.cropL + "," + this.cropU + "," + this.cropW + "," + this.cropH);
+                if (cropL != this.cropL || cropU != this.cropU || cropR != this.cropR || cropD != this.cropD) {
+                    // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropR + "," + cropD + " -> " + this.cropL + "," + this.cropU + "," + this.cropR + "," + this.cropD);
                     return false;
                 }
             } else if (this.cropEssential) {
-                int cropR = cropL + cropW;
-                int cropD = cropU + cropH;
-                int tCropR = this.cropL + this.cropW;
-                int tCropD = this.cropU + this.cropH;
-                if (cropL > this.cropL || cropU > this.cropU || cropR < tCropR || cropD < tCropD) {
+                if (cropL > this.cropL || cropU > this.cropU || cropR < this.cropR || cropD < this.cropD) {
                     // System.out.println("break batch: SCO on a non-essential crop");
                     return false;
                 }

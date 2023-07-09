@@ -10,7 +10,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
-import gabien.natives.BadGPU.Texture;
 import gabien.render.IImage;
 import gabien.uslx.append.IConsumer;
 import gabien.uslx.append.TimeLogger;
@@ -30,23 +29,11 @@ public final class VopeksImage extends IImage {
     private volatile boolean wasDisposed;
 
     /**
-     * The texture.
-     * This is only guaranteed to exist on the instance thread.
-     */
-    private BadGPU.Texture texture;
-
-    /**
-     * ID for debugging.
-     */
-    public final @NonNull String debugId;
-
-    /**
      * Creates a new VopeksImage.
      */
     public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
-        super(w, h);
+        super(id, w, h);
         this.vopeks = vopeks;
-        debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         vopeks.putTask((instance) -> {
             // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
             // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
@@ -58,15 +45,9 @@ public final class VopeksImage extends IImage {
      * This promises that a Vopeks task will be created on behalf of the image.
      */
     public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, IConsumer<IConsumer<BadGPU.Texture>> grabber) {
-        super(w, h);
+        super(id, w, h);
         this.vopeks = vopeks;
-        debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         grabber.accept((res) -> texture = res);
-    }
-
-    @Override
-    public String toString() {
-        return debugId;
     }
 
     @Override
@@ -117,16 +98,11 @@ public final class VopeksImage extends IImage {
     }
 
     @Override
-    public Texture getTextureFromTask() {
-        return texture;
-    }
-
-    @Override
     protected void finalize() {
-        dispose();
+        shutdown();
     }
 
-    public synchronized void dispose() {
+    public synchronized void shutdown() {
         if (!wasDisposed) {
             wasDisposed = true;
             vopeks.putTask((instance) -> {

@@ -10,9 +10,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
-import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
-import gabien.render.IImage;
 import gabien.render.IReplicatedTexRegion;
 
 /**
@@ -20,7 +18,7 @@ import gabien.render.IReplicatedTexRegion;
  */
 public class NullGrDriver extends IGrDriver {
     public NullGrDriver() {
-        super(0, 0);
+        super(null, 0, 0);
     }
 
     @Override
@@ -34,15 +32,19 @@ public class NullGrDriver extends IGrDriver {
     }
 
     @Override
-    public void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3) {
+    public void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
     }
 
     @Override
-    public void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
+    public void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
     }
 
     @Override
-    public void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+    public void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+    }
+
+    @Override
+    public void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
     }
 
     @Override
@@ -57,22 +59,5 @@ public class NullGrDriver extends IGrDriver {
 
     @Override
     public void batchFlush() {
-    }
-
-    @Override
-    public Texture getTextureFromTask() {
-        return null;
-    }
-
-    @Override
-    @NonNull
-    public IImage convertToImmutable(@Nullable String debugId) {
-        return this;
-    }
-
-    @Override
-    @Nullable
-    public Texture releaseTextureCustodyFromTask() {
-        return null;
     }
 }

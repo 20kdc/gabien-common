@@ -36,9 +36,26 @@ public abstract class IImage implements ITexRegion {
      */
     public final int width, height;
 
-    public IImage(int w, int h) {
+    /**
+     * The texture.
+     * This is only guaranteed to exist on the instance thread.
+     */
+    protected BadGPU.Texture texture;
+
+    /**
+     * ID for debugging.
+     */
+    public final @NonNull String debugId;
+
+    public IImage(@Nullable String id, int w, int h) {
         width = w;
         height = h;
+        debugId = id == null ? super.toString() : (super.toString() + ":" + id);
+    }
+
+    @Override
+    public final String toString() {
+        return debugId;
     }
 
     /**
@@ -57,12 +74,12 @@ public abstract class IImage implements ITexRegion {
 
     @Override
     public final float getRegionWidth() {
-        return getWidth();
+        return width;
     }
 
     @Override
     public final float getRegionHeight() {
-        return getHeight();
+        return height;
     }
 
     /**
@@ -71,7 +88,7 @@ public abstract class IImage implements ITexRegion {
      * Also because this allocates a new buffer.
      */
     public final @NonNull int[] getPixels() {
-        int[] res = new int[getWidth() * getHeight()];
+        int[] res = new int[width * height];
         getPixels(res);
         return res;
     }
@@ -92,11 +109,9 @@ public abstract class IImage implements ITexRegion {
      * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
      */
     public final void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
-        final int w = getWidth();
-        final int h = getHeight();
-        getPixelsAsync(0, 0, w, h, TextureLoadFormat.RGBA8888, buffer, 0, () -> {
+        getPixelsAsync(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0, () -> {
             // If it gets here, it's in-bounds.
-            BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(w, h, buffer, 0);
+            BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
             onDone.run();
         });
     }
@@ -110,7 +125,7 @@ public abstract class IImage implements ITexRegion {
      * This is a convenience method; for repetitive downloads it's better to reuse buffers.
      */
     public final @NonNull WSIImage.RW download() {
-        return GaBIEn.createWSIImage(getPixels(), getWidth(), getHeight());
+        return GaBIEn.createWSIImage(getPixels(), width, height);
     }
 
     // Creates a PNG file.
@@ -141,16 +156,18 @@ public abstract class IImage implements ITexRegion {
      * Gets a texture. Run from Vopeks task code.
      * This can return null if the texture is empty (0 width, 0 height).
      */
-    public abstract @Nullable BadGPU.Texture getTextureFromTask();
+    public final @Nullable BadGPU.Texture getTextureFromTask() {
+        return texture;
+    }
 
     @Override
     public final float getS(float x, float y) {
-        return x / getWidth();
+        return x / width;
     }
 
     @Override
     public final float getT(float x, float y) {
-        return y / getHeight();
+        return y / height;
     }
 
     @Override
@@ -162,6 +179,6 @@ public abstract class IImage implements ITexRegion {
     @Override
     @NonNull
     public final ITexRegion subRegion(float x, float y, float w, float h) {
-        return new ImageTexRegion(this, x, y, w, h, getWidth(), getHeight());
+        return new ImageTexRegion(this, x, y, w, h, width, height);
     }
 }
