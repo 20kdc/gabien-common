@@ -133,70 +133,7 @@ public abstract class IGrDriver extends RenderTarget {
 
     public abstract void clearAll(int r, int g, int b, int a);
 
-    // -- Basic blit operations. --
-
-    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
-        blitImage(srcx, srcy, srcw, srch, x, y, i, 0, BLEND_NORMAL);
-    }
-
-    private final int DRAWFLAGS_WRAPST = BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT;
-
-    public final void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
-        blitImage(0, 0, w, h, x, y, cachedTile, DRAWFLAGS_WRAPST, BLEND_NORMAL);
-    }
-
-    public final synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IReplicatedTexRegion iU, int drawFlagsEx, int blendSub) {
-        if ((trs[2] != 1) || (trs[3] != 1)) {
-            // scaling is in use, slowpath this
-            blitScaledImageForced(srcx, srcy, w, h, x, y, w, h, iU, drawFlagsEx, blendSub);
-            return;
-        }
-        // scaling not in use, so don't apply it
-        x += trs[0]; y += trs[1];
-        // CPU scissor
-        float cR = x + w;
-        float cD = y + h;
-        float srcR = srcx + w;
-        float srcD = srcy + h;
-        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
-        if (x < scL) {
-            srcx += scL - x;
-            x = scL;
-        }
-        if (y < scU) {
-            srcy += scU - y;
-            y = scU;
-        }
-        if (cR > scR) {
-            srcR -= cR - scR;
-            cR = scR;
-        }
-        if (cD > scD) {
-            srcD -= cD - scD;
-            cD = scD;
-        }
-        if ((cR <= x) || (cD <= y))
-            return;
-        // The rest
-        batchXYSTScA(false, blendSub, drawFlagsEx, iU,
-            x , y , srcx, srcy,
-            cR, y , srcR, srcy,
-            cR, cD, srcR, srcD,
-            x , cD, srcx, srcD
-        );
-    }
-
-    public final void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i) {
-        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, 0, BLEND_NORMAL);
-    }
-
-    public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion i, int drawFlagsEx, int blendSub) {
-        if (srcw == w && srch == h) {
-            blitImage(srcx, srcy, srcw, srch, x, y, i, drawFlagsEx, blendSub);
-            return;
-        }
-        blitScaledImageForced(srcx, srcy, srcw, srch, x, y, w, h, i, drawFlagsEx, blendSub);
-    }
+    // -- Basic blit operations --
 
     protected final float trsX(float x) {
         return trs[0] + (x * trs[2]);
@@ -206,27 +143,35 @@ public abstract class IGrDriver extends RenderTarget {
         return trs[1] + (y * trs[3]);
     }
 
-    public final synchronized void blitScaledImageForced(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion iU, int drawFlagsEx, int blendSub) {
+    public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion iU, int blendMode, int drawFlagsEx) {
         // Translate coordinates
         x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
-        // Do the CPU scissor dance, but only to work out if cropping is essential.
-        // It usually isn't, and we save a ton of batches by making use of this.
-        boolean isCropEssential = false;
+        // Do the CPU scissor dance.
         float cR = x + w;
         float cD = y + h;
         float srcR = srcx + srcw;
         float srcD = srcy + srch;
         int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
-        if (x < scL)
-            isCropEssential = true;
-        else if (y < scU)
-            isCropEssential = true;
-        else if (cR > scR)
-            isCropEssential = true;
-        else if (cD > scD)
-            isCropEssential = true;
+        if (x < scL) {
+            srcx += ((scL - x) * srcw) / w;
+            x = scL;
+        }
+        if (y < scU) {
+            srcy += ((scU - y) * srch) / h;
+            y = scU;
+        }
+        if (cR > scR) {
+            srcR -= ((cR - scR) * srcw) / w;
+            cR = scR;
+        }
+        if (cD > scD) {
+            srcD -= ((cD - scD) * srch) / h;
+            cD = scD;
+        }
+        if ((cR <= x) || (cD <= y))
+            return;
         // End
-        batchXYSTScA(isCropEssential, blendSub, drawFlagsEx, iU,
+        batchXYSTScA(false, blendMode, drawFlagsEx, iU,
             x , y , srcx, srcy,
             cR, y , srcR, srcy,
             cR, cD, srcR, srcD,
@@ -241,9 +186,9 @@ public abstract class IGrDriver extends RenderTarget {
      * Firstly, the image is placed as if no rotation were involved.
      * Then the destination is rotated anticlockwise by angle degrees.
      */
-    public final synchronized void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion iU, int blendSub) {
+    public final synchronized void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion iU, int blendMode, int drawFlagsEx) {
         if (angle == 0) {
-            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, iU, 0, blendSub);
+            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, iU, blendMode, drawFlagsEx);
             return;
         }
         // We don't bother with regular coordinate translation here, because it wouldn't work for scaling.
@@ -277,7 +222,7 @@ public abstract class IGrDriver extends RenderTarget {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchXYSTScA(true, blendSub, 0, iU,
+        batchXYSTScA(true, blendMode, 0, iU,
             p00X, p00Y, srcx, srcy,
             p10X, p10Y, srcR, srcy,
             p11X, p11Y, srcR, srcD,
@@ -285,26 +230,7 @@ public abstract class IGrDriver extends RenderTarget {
         );
     }
 
-    public final void blitScaledImage(float x, float y, float acw, float ach, IReplicatedTexRegion i) {
-        blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, 0, BLEND_NORMAL);
-    }
-
-    /**
-     * Legacy interface. This is just inherently awkward.
-     */
-    public final void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i, boolean blendSub) {
-        blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BLEND_SUB : BLEND_ADD);
-    }
-
-    public final void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i) {
-        blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL);
-    }
-
-    public final void clearRect(int r, int g, int b, float x, float y, float width, float height) {
-        clearRectAlpha(r, g, b, 255, x, y, width, height);
-    }
-
-    public final synchronized void clearRectAlpha(int r, int g, int b, int a, float x, float y, float w, float h) {
+    public final synchronized void fillRect(int r, int g, int b, int a, float x, float y, float w, float h, int blendMode, int drawFlagsEx) {
         // Translate coordinates
         x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // CPU scissor
@@ -327,12 +253,58 @@ public abstract class IGrDriver extends RenderTarget {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchXYSTRGBAScA(false, BLEND_NORMAL, 0, null,
+        batchXYSTRGBAScA(false, blendMode, drawFlagsEx, null,
             x , y , 0, 0, rF, gF, bF, aF,
             cR, y , 0, 0, rF, gF, bF, aF,
             cR, cD, 0, 0, rF, gF, bF, aF,
             x , cD, 0, 0, rF, gF, bF, aF
         );
+    }
+
+    // -- Wrapping blit operations --
+
+    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
+        blitImage(srcx, srcy, srcw, srch, x, y, i, 0, BLEND_NORMAL);
+    }
+
+    private final int DRAWFLAGS_WRAPST = BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT;
+
+    public final void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
+        blitScaledImage(0, 0, w, h, x, y, w, h, cachedTile, BLEND_NORMAL, DRAWFLAGS_WRAPST);
+    }
+
+    public final synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IReplicatedTexRegion iU, int drawFlagsEx, int blendMode) {
+        blitScaledImage(srcx, srcy, w, h, x, y, w, h, iU, blendMode, drawFlagsEx);
+    }
+
+    public final void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i) {
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, BLEND_NORMAL, 0);
+    }
+
+    public final void blitScaledImage(float x, float y, float acw, float ach, IReplicatedTexRegion i) {
+        blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, BLEND_NORMAL, 0);
+    }
+
+    /**
+     * Legacy interface. This is just inherently awkward.
+     */
+    public final void blendRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i, boolean blendSub) {
+        blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, blendSub ? BLEND_SUB : BLEND_ADD, 0);
+    }
+
+    public final void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i) {
+        blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL, 0);
+    }
+
+    public final void clearRect(int r, int g, int b, float x, float y, float width, float height) {
+        fillRect(r, g, b, 255, x, y, width, height, BLEND_NONE, 0);
+    }
+
+    /**
+     * Despite the name, this is not actually a clear!
+     */
+    public final void clearRectAlpha(int r, int g, int b, int a, float x, float y, float w, float h) {
+        fillRect(r, g, b, a, x, y, w, h, BLEND_NORMAL, 0);
     }
 
     /**
