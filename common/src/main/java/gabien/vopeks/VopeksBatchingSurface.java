@@ -6,7 +6,6 @@
  */
 package gabien.vopeks;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -32,7 +31,7 @@ import gabien.vopeks.Vopeks.ITask;
  *
  * Created 7th June, 2023.
  */
-public class VopeksBatchingSurface extends IGrDriver {
+public final class VopeksBatchingSurface extends IGrDriver {
     /**
      * The parent instance.
      */
@@ -58,17 +57,12 @@ public class VopeksBatchingSurface extends IGrDriver {
     private final float[] stagingC = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float[] stagingT = new float[MAX_VERTICES_IN_BATCH * 4];
     private final float halfWF, halfHF;
-    private final ArrayList<IImage> referencedBy = new ArrayList<>();
 
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
     public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
         super(w, h);
-        trs[2] = 1;
-        trs[3] = 1;
-        scissor[2] = width;
-        scissor[3] = height;
         this.vopeks = vopeks;
         debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         vopeks.putTask((instance) -> {
@@ -148,6 +142,8 @@ public class VopeksBatchingSurface extends IGrDriver {
     public synchronized void dispose() {
         if (!wasDisposed) {
             wasDisposed = true;
+            // We're about to dispose, so clean up references
+            batchReferenceBarrier();
             // This is important! Otherwise, we leak batch resources.
             batchFlush();
             vopeks.putTask((instance) -> {
@@ -284,16 +280,6 @@ public class VopeksBatchingSurface extends IGrDriver {
         return tex;
     }
 
-    /**
-     * Flushes batches of things that have batches attached to this surface.
-     * Call immediately before any call to putTask that writes to this surface.
-     * Will be internally called before batchStartGroup.
-     */
-    public synchronized void batchReferenceBarrier() {
-        while (!referencedBy.isEmpty())
-            referencedBy.remove(referencedBy.size() - 1).batchFlush();
-    }
-
     @Override
     public synchronized void batchFlush() {
         // Now actually do the batching thing
@@ -329,22 +315,6 @@ public class VopeksBatchingSurface extends IGrDriver {
             vopeks.putTask(currentBatch);
         }
         currentBatch = null;
-    }
-
-    @Override
-    public synchronized void batchReference(IImage caller) {
-        // If this wasn't here, the caller could refer to an unfinished batch.
-        // Where this becomes a problem is that the caller could submit the task, and the batch might still not be submitted.
-        // Since any changes we do make would require a flush (because we have a reference), just flush now,
-        //  rather than flushing on unreference or something.
-        // (Also, we could be holding a reference to caller, which implies the ability to create reference loops.)
-        batchFlush();
-        referencedBy.add(caller);
-    }
-
-    @Override
-    public synchronized void batchUnreference(IImage caller) {
-        referencedBy.remove(caller);
     }
 
     /**
@@ -399,19 +369,6 @@ public class VopeksBatchingSurface extends IGrDriver {
         }
     }
 
-    public enum TilingMode {
-        None(0),
-        X(BadGPU.DrawFlags.WrapS),
-        Y(BadGPU.DrawFlags.WrapT),
-        XY(BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT);
-
-        private final int value;
-
-        TilingMode(int v) {
-            value = v;
-        }
-    }
-
     private class Batch implements ITask {
         int cropL, cropU, cropW, cropH;
         int vertexCount;
@@ -439,7 +396,7 @@ public class VopeksBatchingSurface extends IGrDriver {
             if (blendMode == IGrDriver.BLEND_NORMAL)
                 alphaComp = BadGPU.Compare.Greater.value;
 
-            drawFlags |= tilingMode.value;
+            drawFlags |= tilingMode.badgpuValue;
 
             BadGPUUnsafe.drawGeomNoDS(texture.pointer, BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor,
                     cropL, cropU, cropW, cropH,

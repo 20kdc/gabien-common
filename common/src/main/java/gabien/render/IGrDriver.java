@@ -7,13 +7,14 @@
 
 package gabien.render;
 
+import java.util.ArrayList;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUEnum.BlendOp;
 import gabien.natives.BadGPUEnum.BlendWeight;
-import gabien.vopeks.VopeksBatchingSurface.TilingMode;
 
 /**
  * Represents a buffer that can be drawn to.
@@ -29,6 +30,11 @@ public abstract class IGrDriver extends IImage {
      * Translate/scale control.
      */
     public final float[] trs = new float[4];
+
+    /**
+     * Reference list.
+     */
+    private final ArrayList<IImage> referencedBy = new ArrayList<>();
 
     public static final int BLEND_NONE = BadGPU.blendProgram(
         BlendWeight.One, BlendWeight.Zero, BlendOp.Add,
@@ -51,6 +57,36 @@ public abstract class IGrDriver extends IImage {
 
     public IGrDriver(int w, int h) {
         super(w, h);
+        trs[2] = 1;
+        trs[3] = 1;
+        scissor[2] = w;
+        scissor[3] = h;
+    }
+
+    /**
+     * Flushes batches of things that have batches attached to this surface.
+     * Call immediately before any call to putTask that writes to this surface.
+     * Will be internally called before batchStartGroup.
+     */
+    protected final synchronized void batchReferenceBarrier() {
+        while (!referencedBy.isEmpty())
+            referencedBy.remove(referencedBy.size() - 1).batchFlush();
+    }
+
+    @Override
+    public final synchronized void batchReference(IImage caller) {
+        // If this wasn't here, the caller could refer to an unfinished batch.
+        // Where this becomes a problem is that the caller could submit the task, and the batch might still not be submitted.
+        // Since any changes we do make would require a flush (because we have a reference), just flush now,
+        //  rather than flushing on unreference or something.
+        // (Also, we could be holding a reference to caller, which implies the ability to create reference loops.)
+        batchFlush();
+        referencedBy.add(caller);
+    }
+
+    @Override
+    public final synchronized void batchUnreference(IImage caller) {
+        referencedBy.remove(caller);
     }
 
     // Universal interface for doing everything
@@ -331,9 +367,8 @@ public abstract class IGrDriver extends IImage {
      * Returns old value.
      */
     public final float trsTXS(float x) {
-        float[] tmp = getTRS();
-        float old = tmp[0];
-        tmp[0] += x * tmp[2];
+        float old = trs[0];
+        trs[0] += x * trs[2];
         return old;
     }
 
@@ -342,9 +377,8 @@ public abstract class IGrDriver extends IImage {
      * Returns old value.
      */
     public final float trsTYS(float y) {
-        float[] tmp = getTRS();
-        float old = tmp[1];
-        tmp[1] += y * tmp[3];
+        float old = trs[1];
+        trs[1] += y * trs[3];
         return old;
     }
 
@@ -352,23 +386,22 @@ public abstract class IGrDriver extends IImage {
      * Restores TRS X.
      */
     public final void trsTXE(float x) {
-        getTRS()[0] = x;
+        trs[0] = x;
     }
 
     /**
      * Restores TRS Y.
      */
     public final void trsTYE(float y) {
-        getTRS()[1] = y;
+        trs[1] = y;
     }
 
     /**
      * Restores TRS Y.
      */
     public final void trsTXYE(float x, float y) {
-        float[] tmp = getTRS();
-        tmp[0] = x;
-        tmp[1] = y;
+        trs[0] = x;
+        trs[1] = y;
     }
 
     /**
@@ -384,4 +417,17 @@ public abstract class IGrDriver extends IImage {
      * Data-wise, this is an in-place operation and shuts down the IGrDriver.
      */
     public abstract @NonNull IImage convertToImmutable(@Nullable String debugId);
+
+    public enum TilingMode {
+        None(0),
+        X(BadGPU.DrawFlags.WrapS),
+        Y(BadGPU.DrawFlags.WrapT),
+        XY(BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT);
+
+        public final int badgpuValue;
+
+        TilingMode(int v) {
+            badgpuValue = v;
+        }
+    }
 }

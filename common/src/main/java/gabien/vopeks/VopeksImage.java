@@ -21,7 +21,7 @@ import gabien.uslx.append.TimeLogger;
  *
  * Created 7th June, 2023.
  */
-public class VopeksImage extends IImage {
+public final class VopeksImage extends IImage {
     /**
      * The parent instance.
      */
@@ -33,7 +33,7 @@ public class VopeksImage extends IImage {
      * The texture.
      * This is only guaranteed to exist on the instance thread.
      */
-    protected BadGPU.Texture texture;
+    private BadGPU.Texture texture;
 
     /**
      * ID for debugging.
@@ -129,8 +129,6 @@ public class VopeksImage extends IImage {
     public synchronized void dispose() {
         if (!wasDisposed) {
             wasDisposed = true;
-            // This is important! Otherwise, we leak batch resources.
-            batchFlush();
             vopeks.putTask((instance) -> {
                 if (texture != null)
                     texture.dispose();

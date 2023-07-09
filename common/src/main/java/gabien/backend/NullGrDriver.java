@@ -14,7 +14,6 @@ import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.IReplicatedTexRegion;
-import gabien.vopeks.VopeksBatchingSurface.TilingMode;
 
 /**
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
@@ -22,8 +21,6 @@ import gabien.vopeks.VopeksBatchingSurface.TilingMode;
 public class NullGrDriver extends IGrDriver {
     public NullGrDriver() {
         super(0, 0);
-        trs[2] = 1;
-        trs[3] = 1;
     }
 
     @Override
@@ -60,14 +57,6 @@ public class NullGrDriver extends IGrDriver {
 
     @Override
     public void batchFlush() {
-    }
-
-    @Override
-    public void batchReference(IImage caller) {
-    }
-
-    @Override
-    public void batchUnreference(IImage caller) {
     }
 
     @Override
