@@ -46,7 +46,7 @@ public abstract class IGrDriver extends RenderTarget {
         BlendWeight.Zero, BlendWeight.One, BlendOp.Add
     );
 
-    // Image stuff
+    // -- Image stuff --
 
     public IGrDriver(@Nullable String id, int w, int h) {
         super(id, w, h);
@@ -56,7 +56,7 @@ public abstract class IGrDriver extends RenderTarget {
         scissor[3] = h;
     }
 
-    // Universal interface for doing everything
+    // -- Base Rendering Interface --
 
     /**
      * Batches an uncoloured, textured triangle.
@@ -65,7 +65,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2);
+    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2);
 
     /**
      * Batches an uncoloured, textured quad (012023).
@@ -74,7 +74,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3);
+    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3);
 
     /**
      * Batches a coloured, textured triangle.
@@ -83,7 +83,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2);
+    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2);
 
     /**
      * Batches a coloured, textured quad (012023).
@@ -92,51 +92,63 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
+    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
 
-    // Universal interface, accounting for scissoring
+    // -- Universal interface, accounting for scissoring --
 
     /**
      * batchXYST-3 but auto-fills crop fields based on scissoring.
      */
-    public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
-        rawBatchXYST(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2);
+    public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
+        rawBatchXYST(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, drawFlagsEx, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2);
     }
 
     /**
      * batchXYST-4 but auto-fills crop fields based on scissoring.
      */
-    public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
-        rawBatchXYST(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2, x3, y3, s3, t3);
+    public final synchronized void batchXYSTScA(boolean cropEssential, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+        rawBatchXYST(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, drawFlagsEx, tex, x0, y0, s0, t0, x1, y1, s1, t1, x2, y2, s2, t2, x3, y3, s3, t3);
     }
 
     /**
      * batchXYSTRGBA-3 but auto-fills crop fields based on scissoring.
      */
-    public final synchronized void batchXYSTRGBAScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
-        rawBatchXYSTRGBA(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2);
+    public final synchronized void batchXYSTRGBAScA(boolean cropEssential, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+        rawBatchXYSTRGBA(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, drawFlagsEx, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2);
     }
 
     /**
      * batchXYSTRGBA-4 but auto-fills crop fields based on scissoring.
      */
-    public final synchronized void batchXYSTRGBAScA(boolean cropEssential, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
-        rawBatchXYSTRGBA(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, tilingMode, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2, x3, y3, s3, t3, r3, g3, b3, a3);
+    public final synchronized void batchXYSTRGBAScA(boolean cropEssential, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
+        rawBatchXYSTRGBA(cropEssential, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, drawFlagsEx, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2, x3, y3, s3, t3, r3, g3, b3, a3);
     }
 
-    // Basic blit operations.
-    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
-        blitImage(srcx, srcy, srcw, srch, x, y, i, TilingMode.None, BLEND_NORMAL);
+    /**
+     * Clears the buffer.
+     */
+    public final void clearAll(int r, int g, int b) {
+        clearAll(r, g, b, 255);
     }
+
+    public abstract void clearAll(int r, int g, int b, int a);
+
+    // -- Basic blit operations. --
+
+    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
+        blitImage(srcx, srcy, srcw, srch, x, y, i, 0, BLEND_NORMAL);
+    }
+
+    private final int DRAWFLAGS_WRAPST = BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT;
 
     public final void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
-        blitImage(0, 0, w, h, x, y, cachedTile, TilingMode.XY, BLEND_NORMAL);
+        blitImage(0, 0, w, h, x, y, cachedTile, DRAWFLAGS_WRAPST, BLEND_NORMAL);
     }
 
-    public final synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IReplicatedTexRegion iU, TilingMode tiling, int blendSub) {
+    public final synchronized void blitImage(float srcx, float srcy, float w, float h, float x, float y, IReplicatedTexRegion iU, int drawFlagsEx, int blendSub) {
         if ((trs[2] != 1) || (trs[3] != 1)) {
             // scaling is in use, slowpath this
-            blitScaledImageForced(srcx, srcy, w, h, x, y, w, h, iU, tiling, blendSub);
+            blitScaledImageForced(srcx, srcy, w, h, x, y, w, h, iU, drawFlagsEx, blendSub);
             return;
         }
         // scaling not in use, so don't apply it
@@ -166,7 +178,7 @@ public abstract class IGrDriver extends RenderTarget {
         if ((cR <= x) || (cD <= y))
             return;
         // The rest
-        batchXYSTScA(false, blendSub, tiling, iU,
+        batchXYSTScA(false, blendSub, drawFlagsEx, iU,
             x , y , srcx, srcy,
             cR, y , srcR, srcy,
             cR, cD, srcR, srcD,
@@ -175,15 +187,15 @@ public abstract class IGrDriver extends RenderTarget {
     }
 
     public final void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i) {
-        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, TilingMode.None, BLEND_NORMAL);
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, 0, BLEND_NORMAL);
     }
 
-    public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion i, TilingMode tiling, int blendSub) {
+    public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion i, int drawFlagsEx, int blendSub) {
         if (srcw == w && srch == h) {
-            blitImage(srcx, srcy, srcw, srch, x, y, i, tiling, blendSub);
+            blitImage(srcx, srcy, srcw, srch, x, y, i, drawFlagsEx, blendSub);
             return;
         }
-        blitScaledImageForced(srcx, srcy, srcw, srch, x, y, w, h, i, tiling, blendSub);
+        blitScaledImageForced(srcx, srcy, srcw, srch, x, y, w, h, i, drawFlagsEx, blendSub);
     }
 
     protected final float trsX(float x) {
@@ -194,7 +206,7 @@ public abstract class IGrDriver extends RenderTarget {
         return trs[1] + (y * trs[3]);
     }
 
-    public final synchronized void blitScaledImageForced(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion iU, TilingMode tiling, int blendSub) {
+    public final synchronized void blitScaledImageForced(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, IReplicatedTexRegion iU, int drawFlagsEx, int blendSub) {
         // Translate coordinates
         x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // Do the CPU scissor dance, but only to work out if cropping is essential.
@@ -214,7 +226,7 @@ public abstract class IGrDriver extends RenderTarget {
         else if (cD > scD)
             isCropEssential = true;
         // End
-        batchXYSTScA(isCropEssential, blendSub, tiling, iU,
+        batchXYSTScA(isCropEssential, blendSub, drawFlagsEx, iU,
             x , y , srcx, srcy,
             cR, y , srcR, srcy,
             cR, cD, srcR, srcD,
@@ -231,7 +243,7 @@ public abstract class IGrDriver extends RenderTarget {
      */
     public final synchronized void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion iU, int blendSub) {
         if (angle == 0) {
-            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, iU, TilingMode.None, blendSub);
+            blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, iU, 0, blendSub);
             return;
         }
         // We don't bother with regular coordinate translation here, because it wouldn't work for scaling.
@@ -265,7 +277,7 @@ public abstract class IGrDriver extends RenderTarget {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
-        batchXYSTScA(true, blendSub, TilingMode.None, iU,
+        batchXYSTScA(true, blendSub, 0, iU,
             p00X, p00Y, srcx, srcy,
             p10X, p10Y, srcR, srcy,
             p11X, p11Y, srcR, srcD,
@@ -274,7 +286,7 @@ public abstract class IGrDriver extends RenderTarget {
     }
 
     public final void blitScaledImage(float x, float y, float acw, float ach, IReplicatedTexRegion i) {
-        blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i);
+        blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, 0, BLEND_NORMAL);
     }
 
     /**
@@ -287,8 +299,6 @@ public abstract class IGrDriver extends RenderTarget {
     public final void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i) {
         blitRotatedScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL);
     }
-
-    public abstract void clearAll(int i, int i0, int i1);
 
     public final void clearRect(int r, int g, int b, float x, float y, float width, float height) {
         clearRectAlpha(r, g, b, 255, x, y, width, height);
@@ -317,7 +327,7 @@ public abstract class IGrDriver extends RenderTarget {
         float gF = g / 255f;
         float bF = b / 255f;
         float aF = a / 255f;
-        batchXYSTRGBAScA(false, BLEND_NORMAL, TilingMode.None, null,
+        batchXYSTRGBAScA(false, BLEND_NORMAL, 0, null,
             x , y , 0, 0, rF, gF, bF, aF,
             cR, y , 0, 0, rF, gF, bF, aF,
             cR, cD, 0, 0, rF, gF, bF, aF,
@@ -381,18 +391,5 @@ public abstract class IGrDriver extends RenderTarget {
     public final void trsTXYE(float x, float y) {
         trs[0] = x;
         trs[1] = y;
-    }
-
-    public enum TilingMode {
-        None(0),
-        X(BadGPU.DrawFlags.WrapS),
-        Y(BadGPU.DrawFlags.WrapT),
-        XY(BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT);
-
-        public final int badgpuValue;
-
-        TilingMode(int v) {
-            badgpuValue = v;
-        }
     }
 }
