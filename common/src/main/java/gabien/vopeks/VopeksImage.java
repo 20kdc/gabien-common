@@ -21,7 +21,7 @@ import gabien.uslx.append.TimeLogger;
  *
  * Created 7th June, 2023.
  */
-public class VopeksImage implements IImage {
+public class VopeksImage extends IImage {
     /**
      * The parent instance.
      */
@@ -36,11 +36,6 @@ public class VopeksImage implements IImage {
     protected BadGPU.Texture texture;
 
     /**
-     * Texture dimensions.
-     */
-    public final int width, height;
-
-    /**
      * ID for debugging.
      */
     public final @NonNull String debugId;
@@ -49,6 +44,7 @@ public class VopeksImage implements IImage {
      * Creates a new VopeksImage.
      */
     public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
+        super(w, h);
         this.vopeks = vopeks;
         debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         vopeks.putTask((instance) -> {
@@ -56,19 +52,16 @@ public class VopeksImage implements IImage {
             // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
             texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
         });
-        width = w;
-        height = h;
     }
 
     /**
      * This promises that a Vopeks task will be created on behalf of the image.
      */
     public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, IConsumer<IConsumer<BadGPU.Texture>> grabber) {
+        super(w, h);
         this.vopeks = vopeks;
         debugId = id == null ? super.toString() : (super.toString() + ":" + id);
         grabber.accept((res) -> texture = res);
-        width = w;
-        height = h;
     }
 
     @Override
@@ -91,38 +84,36 @@ public class VopeksImage implements IImage {
         // and so forth...
     }
 
-    @Override
-    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
+    public static void getPixelsAsync(Vopeks vopeks, IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
         vopeks.putTask((instance) -> {
             try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
-                BadGPU.Texture texture = getTextureFromTask();
+                BadGPU.Texture texture = image.getTextureFromTask();
                 if (texture != null)
                     texture.readPixels(x, y, w, h, format, data, dataOfs);
             }
             vopeks.putCallback(onDone);
         });
+    }
+
+    public static void getPixelsAsync(Vopeks vopeks, IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone) {
+        vopeks.putTask((instance) -> {
+            try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
+                BadGPU.Texture texture = image.getTextureFromTask();
+                if (texture != null)
+                    texture.readPixels(x, y, w, h, format, data, dataOfs);
+            }
+            vopeks.putCallback(onDone);
+        });
+    }
+
+    @Override
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
+        getPixelsAsync(vopeks, this, x, y, w, h, format, data, dataOfs, onDone);
     }
 
     @Override
     public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone) {
-        vopeks.putTask((instance) -> {
-            try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
-                BadGPU.Texture texture = getTextureFromTask();
-                if (texture != null)
-                    texture.readPixels(x, y, w, h, format, data, dataOfs);
-            }
-            vopeks.putCallback(onDone);
-        });
-    }
-
-    @Override
-    public int getWidth() {
-        return width;
-    }
-
-    @Override
-    public int getHeight() {
-        return height;
+        getPixelsAsync(vopeks, this, x, y, w, h, format, data, dataOfs, onDone);
     }
 
     @Override

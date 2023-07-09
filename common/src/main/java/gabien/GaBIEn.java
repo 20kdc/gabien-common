@@ -26,7 +26,7 @@ import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 import gabien.vopeks.Vopeks;
-import gabien.vopeks.VopeksGrDriver;
+import gabien.vopeks.VopeksBatchingSurface;
 import gabien.vopeks.VopeksImage;
 import gabien.wsi.IGaBIEnClipboard;
 import gabien.wsi.IGrInDriver;
@@ -270,7 +270,7 @@ public final class GaBIEn {
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksGrDriver(GaBIEn.vopeks, id, width, height, null);
+        return new VopeksBatchingSurface(GaBIEn.vopeks, id, width, height, null);
     }
 
     /**

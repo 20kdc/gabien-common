@@ -14,21 +14,16 @@ import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.IReplicatedTexRegion;
-import gabien.render.ITexRegion;
+import gabien.vopeks.VopeksBatchingSurface.TilingMode;
 
 /**
  * Created on 6/20/17 as NullOsbDriver. Migrated to gabien.backendhelp.NullGrDriver 7th June, 2023.
  */
-public class NullGrDriver implements IGrDriver {
-    public final float[] trs = new float[] {0, 0, 1, 1};
-    @Override
-    public int getWidth() {
-        return 0;
-    }
-
-    @Override
-    public int getHeight() {
-        return 0;
+public class NullGrDriver extends IGrDriver {
+    public NullGrDriver() {
+        super(0, 0);
+        trs[2] = 1;
+        trs[3] = 1;
     }
 
     @Override
@@ -42,22 +37,15 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, IReplicatedTexRegion i) {
-
+    public void batchXYRGBA(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float r0, float g0, float b0, float a0, float x1, float y1, float r1, float g1, float b1, float a1, float x2, float y2, float r2, float g2, float b2, float a2, float x3, float y3, float r3, float g3, float b3, float a3) {
     }
 
     @Override
-    public void blitTiledImage(float x, float y, float w, float h, IImage cachedTile) {
-
+    public void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
     }
 
     @Override
-    public void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, IReplicatedTexRegion i) {
-
-    }
-
-    @Override
-    public void blitRotatedScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, IReplicatedTexRegion i, int blendSub) {
+    public void batchXYST(boolean cropEssential, int cropL, int cropU, int cropW, int cropH, int blendMode, TilingMode tilingMode, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
     }
 
     @Override
@@ -66,25 +54,8 @@ public class NullGrDriver implements IGrDriver {
     }
 
     @Override
-    public void clearRectAlpha(int r, int g, int b, int a, float x, float y, float width, float height) {
-
-    }
-
-    @Override
     public void shutdown() {
 
-    }
-
-    @Override
-    @NonNull
-    public int[] getScissor() {
-        return new int[4];
-    }
-
-    @Override
-    @NonNull
-    public float[] getTRS() {
-        return trs;
     }
 
     @Override
@@ -114,11 +85,5 @@ public class NullGrDriver implements IGrDriver {
     @Nullable
     public Texture releaseTextureCustodyFromTask() {
         return null;
-    }
-
-    @Override
-    @NonNull
-    public ITexRegion subRegion(float x, float y, float w, float h) {
-        return this;
     }
 }

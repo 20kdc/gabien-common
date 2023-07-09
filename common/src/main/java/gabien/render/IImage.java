@@ -28,25 +28,40 @@ import gabien.natives.BadGPUEnum.TextureLoadFormat;
  * It then became INativeImageHolder sometime around August 21st, 2017.
  * On the 7th June, 2023, it became IVopeksSurfaceHolder.
  * Now it's 9th June 2023. Vopeks is pretty much certain; we're not going back, so everything was merged.
+ * 9th July 2023: Made into an abstract class.
  */
-public interface IImage extends ITexRegion {
+public abstract class IImage implements ITexRegion {
+    /**
+     * Texture dimensions.
+     */
+    public final int width, height;
+
+    public IImage(int w, int h) {
+        width = w;
+        height = h;
+    }
+
     /**
      * Gets the width of the image.
      */
-    int getWidth();
+    public final int getWidth() {
+        return width;
+    }
 
     /**
      * Gets the height of the image.
      */
-    int getHeight();
+    public final int getHeight() {
+        return height;
+    }
 
     @Override
-    default float getRegionWidth() {
+    public final float getRegionWidth() {
         return getWidth();
     }
 
     @Override
-    default float getRegionHeight() {
+    public final float getRegionHeight() {
         return getHeight();
     }
 
@@ -55,7 +70,7 @@ public interface IImage extends ITexRegion {
      * This may be slow, because processing may not have finished on the image yet.
      * Also because this allocates a new buffer.
      */
-    default @NonNull int[] getPixels() {
+    public final @NonNull int[] getPixels() {
         int[] res = new int[getWidth() * getHeight()];
         getPixels(res);
         return res;
@@ -65,7 +80,7 @@ public interface IImage extends ITexRegion {
      * Same as the other form, but with a provided buffer.
      * This may be slow, because processing may not have finished on the image yet.
      */
-    default void getPixels(@NonNull int[] buffer) {
+    public final void getPixels(@NonNull int[] buffer) {
         getSurface().batchFlush();
         Semaphore sm = new Semaphore(1);
         sm.acquireUninterruptibly();
@@ -76,7 +91,7 @@ public interface IImage extends ITexRegion {
     /**
      * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
      */
-    default void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+    public final void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
         final int w = getWidth();
         final int h = getHeight();
         getPixelsAsync(0, 0, w, h, TextureLoadFormat.RGBA8888, buffer, 0, () -> {
@@ -86,20 +101,20 @@ public interface IImage extends ITexRegion {
         });
     }
 
-    void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone);
-    void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone);
+    public abstract void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone);
+    public abstract void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone);
 
     /**
      * Downloads an IImage (presumably from the GPU) to the CPU as an IWSIImage.
      * This may be slow, similarly to performing getPixels.
      * This is a convenience method; for repetitive downloads it's better to reuse buffers.
      */
-    default @NonNull WSIImage.RW download() {
+    public final @NonNull WSIImage.RW download() {
         return GaBIEn.createWSIImage(getPixels(), getWidth(), getHeight());
     }
 
     // Creates a PNG file.
-    default @NonNull byte[] createPNG() {
+    public final @NonNull byte[] createPNG() {
         return download().createPNG();
     }
 
@@ -107,46 +122,46 @@ public interface IImage extends ITexRegion {
      * Flushes any queued operations to the Vopeks task queue.
      * This ensures that any operations you subsequently schedule run after the preceding operations.
      */
-    void batchFlush();
+    public abstract void batchFlush();
 
     /**
      * This is used when the caller is writing this image into its own batch.
      * Ensures that any changes to this image first flush the batch of the caller.
      * This ensures that the ordering remains correct.
      */
-    void batchReference(IImage caller);
+    public abstract void batchReference(IImage caller);
 
     /**
      * This is used when the caller has flushed a batch that was using this image.
      * It cleans up the previously established reference, preventing a memory leak.
      */
-    void batchUnreference(IImage caller);
+    public abstract void batchUnreference(IImage caller);
 
     /**
      * Gets a texture. Run from Vopeks task code.
      * This can return null if the texture is empty (0 width, 0 height).
      */
-    @Nullable BadGPU.Texture getTextureFromTask();
+    public abstract @Nullable BadGPU.Texture getTextureFromTask();
 
     @Override
-    default float getS(float x, float y) {
+    public final float getS(float x, float y) {
         return x / getWidth();
     }
 
     @Override
-    default float getT(float x, float y) {
+    public final float getT(float x, float y) {
         return y / getHeight();
     }
 
     @Override
     @NonNull
-    default IImage getSurface() {
+    public final IImage getSurface() {
         return this;
     }
 
     @Override
     @NonNull
-    default ITexRegion subRegion(float x, float y, float w, float h) {
+    public final ITexRegion subRegion(float x, float y, float w, float h) {
         return new ImageTexRegion(this, x, y, w, h, getWidth(), getHeight());
     }
 }

@@ -12,9 +12,11 @@ import java.util.Arrays;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.GaBIEn;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
+import gabien.natives.BadGPU.Texture;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.IReplicatedTexRegion;
@@ -30,7 +32,25 @@ import gabien.vopeks.Vopeks.ITask;
  *
  * Created 7th June, 2023.
  */
-public class VopeksBatchingSurface extends VopeksImage {
+public class VopeksBatchingSurface extends IGrDriver {
+    /**
+     * The parent instance.
+     */
+    public final Vopeks vopeks;
+
+    private volatile boolean wasDisposed;
+
+    /**
+     * The texture.
+     * This is only guaranteed to exist on the instance thread.
+     */
+    protected BadGPU.Texture texture;
+
+    /**
+     * ID for debugging.
+     */
+    public final @NonNull String debugId;
+
     private static final int MAX_VERTICES_IN_BATCH = 65536;
     private final BatchPool batchPool = new BatchPool(1);
     private Batch currentBatch = null;
@@ -44,9 +64,97 @@ public class VopeksBatchingSurface extends VopeksImage {
      * Creates a new texture for rendering, and possibly initializes it.
      */
     public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
-        super(vopeks, id, w, h, init);
+        super(w, h);
+        trs[2] = 1;
+        trs[3] = 1;
+        scissor[2] = width;
+        scissor[3] = height;
+        this.vopeks = vopeks;
+        debugId = id == null ? super.toString() : (super.toString() + ":" + id);
+        vopeks.putTask((instance) -> {
+            // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
+            // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
+            texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
+        });
         halfWF = w / 2.0f;
         halfHF = h / 2.0f;
+    }
+
+    @Override
+    public String toString() {
+        return debugId;
+    }
+
+    @Override
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
+        VopeksImage.getPixelsAsync(vopeks, this, x, y, w, h, format, data, dataOfs, onDone);
+    }
+
+    @Override
+    public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone) {
+        VopeksImage.getPixelsAsync(vopeks, this, x, y, w, h, format, data, dataOfs, onDone);
+    }
+
+    @Override
+    public synchronized void clearAll(int i, int i0, int i1) {
+        batchFlush();
+        int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
+        int cropW = scR - scL;
+        int cropH = scD - scU;
+        batchReferenceBarrier();
+        vopeks.putTask((instance) -> {
+            BadGPUUnsafe.drawClear(texture.pointer, 0,
+                    BadGPU.SessionFlags.MaskAll | BadGPU.SessionFlags.Scissor, scL, scU, cropW, cropH,
+                    i / 255.0f, i0 / 255.0f, i1 / 255.0f, 1, 0, 0);
+        });
+    }
+
+    @Override
+    public Texture getTextureFromTask() {
+        return texture;
+    }
+
+    @Override
+    public void shutdown() {
+        dispose();
+    }
+
+    @Override
+    @Nullable
+    public BadGPU.Texture releaseTextureCustodyFromTask() {
+        BadGPU.Texture tex = texture;
+        texture = null;
+        return tex;
+    }
+
+    @Override
+    @NonNull
+    public synchronized IImage convertToImmutable(@Nullable String debugId) {
+        batchFlush();
+        VopeksImage res = new VopeksImage(GaBIEn.vopeks, debugId, getWidth(), getHeight(), (consumer) -> {
+            GaBIEn.vopeks.putTask((instance) -> {
+                consumer.accept(releaseTextureCustodyFromTask());
+            });
+        });
+        shutdown();
+        return res;
+    }
+
+    @Override
+    protected void finalize() {
+        dispose();
+    }
+
+    public synchronized void dispose() {
+        if (!wasDisposed) {
+            wasDisposed = true;
+            // This is important! Otherwise, we leak batch resources.
+            batchFlush();
+            vopeks.putTask((instance) -> {
+                if (texture != null)
+                    texture.dispose();
+            });
+        }
     }
 
     /**
