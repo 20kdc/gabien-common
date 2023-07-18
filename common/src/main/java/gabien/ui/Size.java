@@ -41,4 +41,8 @@ public class Size {
             h = height;
         return new Size(w, h);
     }
+
+    public int area() {
+        return width * height;
+    }
 }

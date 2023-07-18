@@ -6,10 +6,8 @@
  */
 package gabien.atlas;
 
-import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.jdt.annotation.Nullable;
-
 import gabien.ui.Rect;
+import gabien.ui.Size;
 
 /**
  * This is not how you atlas.
@@ -18,24 +16,17 @@ import gabien.ui.Rect;
  * Created 17th June, 2023.
  */
 public final class ExtremelyBadAtlasStrategy implements IAtlasStrategy {
-    public final ExtremelyBadAtlasStrategy INSTANCE = new ExtremelyBadAtlasStrategy();
+    public final static ExtremelyBadAtlasStrategy INSTANCE = new ExtremelyBadAtlasStrategy();
 
     private ExtremelyBadAtlasStrategy() {
     }
 
     @Override
-    public @NonNull Instance withParameters(int w, int h, boolean border) {
-        return new Instance() {
-            boolean hasMadeOneAllocation;
-            @Override
-            public @Nullable Rect allocate(int pw, int ph) {
-                if (hasMadeOneAllocation)
-                    return null;
-                if (pw > w || ph > h)
-                    return null;
-                hasMadeOneAllocation = true;
-                return new Rect(0, 0, pw, ph);
-            }
-        };
+    public Rect[] calculate(Size atlasSize, Size[] placements) {
+        Rect[] res = new Rect[placements.length];
+        if (placements.length > 0)
+            if (placements[0].width <= atlasSize.width && placements[0].height <= atlasSize.height)
+                res[0] = new Rect(placements[0]);
+        return res;
     }
 }

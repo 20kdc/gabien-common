@@ -30,6 +30,9 @@ public class UIMainMenu extends UIProxy {
         vsl.panelsAdd(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));
         }));
+        vsl.panelsAdd(new UITextButton("Start Atlasing Tester (flashing lights ahead)", 16, () -> {
+            ui.accept(new UIAtlasTester());
+        }));
         vsl.panelsAdd(lbl);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
         setLAFParentOverride(GaBIEn.sysThemeRoot);
