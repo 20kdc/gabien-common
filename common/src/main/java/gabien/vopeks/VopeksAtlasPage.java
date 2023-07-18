@@ -29,11 +29,11 @@ public final class VopeksAtlasPage extends AtlasPage {
 
     private volatile boolean wasDisposed;
     private static final float[] RECT_VERTICES = {
-            -1, -1,
-             1, -1,
-             1,  1,
-            -1,  1
-        };
+        -1, -1,
+         1, -1,
+         1,  1,
+        -1,  1
+    };
     private static final short[] RECT_INDICES = {
         0, 1, 2, 0, 2, 3
     };
@@ -60,7 +60,7 @@ public final class VopeksAtlasPage extends AtlasPage {
             iir.getS(srcx, srcd), iir.getT(srcx, srcd)
         };
         vopeks.putTask((instance) -> {
-            BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskAll, 0, 0, 0, 0,
+            BadGPU.drawGeomNoDS(texture, BadGPU.SessionFlags.MaskRGBA, 0, 0, 0, 0,
                 0,
                 2, RECT_VERTICES, 0, null, 0, 2, uvs, 0,
                 PrimitiveType.Triangles, 0,
@@ -81,8 +81,6 @@ public final class VopeksAtlasPage extends AtlasPage {
             wasDisposed = true;
             // We're about to dispose, so clean up references
             batchReferenceBarrier();
-            // This is important! Otherwise, we leak batch resources.
-            batchFlush();
             vopeks.putTask((instance) -> {
                 if (texture != null)
                     texture.dispose();
