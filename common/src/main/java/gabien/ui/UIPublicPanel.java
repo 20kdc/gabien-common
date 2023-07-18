@@ -8,14 +8,14 @@
 package gabien.ui;
 
 import gabien.render.IGrDriver;
-import gabien.render.IImage;
+import gabien.render.ITexRegion;
 
 /**
  * Subclass of UIPanel for use in inner classes and such
  * Created on 15th December 2017
  */
 public class UIPublicPanel extends UIElement.UIPanel {
-    public IImage baseImage; // I forgot this existed. Whoops.
+    public ITexRegion baseImage; // I forgot this existed. Whoops.
     public int imageX, imageY;
     public boolean imageScale;
     public int imageSW, imageSH;

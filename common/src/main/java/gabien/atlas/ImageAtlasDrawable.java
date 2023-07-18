@@ -24,6 +24,6 @@ public final class ImageAtlasDrawable extends AtlasDrawable {
 
     @Override
     public void drawTo(AtlasPage ap, int x, int y) {
-        ap.copyFrom(0, 0, width, height, x, y, ap);
+        ap.copyFrom(0, 0, width, height, x, y, source);
     }
 }

@@ -43,6 +43,8 @@ public final class SimpleAtlasBuilder<K> {
                 // couldn't put anything further into an atlas, give up...
                 for (int i = 0; i < entriesArray.length; i++) {
                     Entry e = entriesArray[i];
+                    if (e == null)
+                        continue;
                     AtlasPage ap = GaBIEn.makeAtlasPage(e.sz.width, e.sz.height);
                     e.tex.drawTo(ap, 0, 0);
                     res.contents.put((K) e.key, ap);
