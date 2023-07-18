@@ -5,18 +5,21 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.render;
+package gabien.atlas;
+
+import gabien.render.AtlasPage;
 
 /**
- * This is pretty much intended to be a thing you can cheaply blit textures onto.
- * Beware: Ordering is not guaranteed!
- *
- * 18th July, 2023.
+ * Something that can be drawn to an AtlasPage.
+ * Created 18th July, 2023.
  */
-public abstract class AtlasPage extends RenderTarget {
-    public AtlasPage(String id, int w, int h) {
-        super(id, w, h);
+public abstract class AtlasDrawable {
+    public final int width, height;
+
+    public AtlasDrawable(int w, int h) {
+        width = w;
+        height = h;
     }
 
-    public abstract void copyFrom(int srcx, int srcy, int srcw, int srch, int targetx, int targety, ITexRegion base);
+    public abstract void drawTo(AtlasPage ap, int x, int y);
 }
