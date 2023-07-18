@@ -12,8 +12,10 @@ import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
 import gabien.backend.ImageCache;
 import gabien.backend.NativeFontCache;
+import gabien.backend.NullAtlasPage;
 import gabien.backend.NullGrDriver;
 import gabien.natives.BadGPU;
+import gabien.render.AtlasPage;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
@@ -26,6 +28,7 @@ import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
 import gabien.uslx.vfs.FSBackend.XState;
 import gabien.vopeks.Vopeks;
+import gabien.vopeks.VopeksAtlasPage;
 import gabien.vopeks.VopeksBatchingSurface;
 import gabien.vopeks.VopeksImage;
 import gabien.wsi.IGaBIEnClipboard;
@@ -271,6 +274,25 @@ public final class GaBIEn {
         if (height <= 0)
             return new NullGrDriver();
         return new VopeksBatchingSurface(GaBIEn.vopeks, id, width, height, null);
+    }
+
+    /**
+     * Creates an offscreen RGBA buffer.
+     */
+    public static @NonNull AtlasPage makeAtlasPage(int width, int height) {
+        return makeAtlasPage(width, height, null);
+    }
+
+    /**
+     * Creates an offscreen RGBA buffer.
+     * This variant has a debug ID.
+     */
+    public static @NonNull AtlasPage makeAtlasPage(int width, int height, @Nullable String id) {
+        if (width <= 0)
+            return new NullAtlasPage();
+        if (height <= 0)
+            return new NullAtlasPage();
+        return new VopeksAtlasPage(GaBIEn.vopeks, id, width, height);
     }
 
     /**
