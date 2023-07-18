@@ -14,7 +14,7 @@ import org.eclipse.jdt.annotation.NonNull;
  * Also notably, this class can scale as a side-effect, but intentionally never directly.
  * Created 14th June, 2023.
  */
-public final class ImageTexRegion implements ITexRegion {
+public final class ImageTexRegion implements IImgRegion {
     public final @NonNull IImage base;
     public final float x, y, w, h, sW, sH;
 

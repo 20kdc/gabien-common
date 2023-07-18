@@ -13,8 +13,8 @@ import org.eclipse.jdt.annotation.Nullable;
  * Replicated texture region.
  * Created 17th July, 2023.
  */
-public final class ReplicatedTexRegion implements IReplicatedTexRegion {
-    private ITexRegion[] regions = new ITexRegion[0];
+public final class ReplicatedTexRegion implements ITexRegion {
+    private IImgRegion[] regions = new IImgRegion[0];
     public final float width, height;
 
     public ReplicatedTexRegion(float w, float h) {
@@ -22,9 +22,9 @@ public final class ReplicatedTexRegion implements IReplicatedTexRegion {
         this.height = h;
     }
 
-    public synchronized void addRegion(ITexRegion n) {
-        ITexRegion[] last = regions;
-        regions = new ITexRegion[last.length + 1];
+    public synchronized void addRegion(IImgRegion n) {
+        IImgRegion[] last = regions;
+        regions = new IImgRegion[last.length + 1];
         System.arraycopy(last, 0, regions, 0, last.length);
         regions[last.length] = n;
     }
@@ -40,10 +40,10 @@ public final class ReplicatedTexRegion implements IReplicatedTexRegion {
     }
 
     @Override
-    public ITexRegion pickTexRegion(@Nullable IImage lastSurface) {
-        ITexRegion[] rs = regions;
+    public IImgRegion pickImgRegion(@Nullable IImage lastSurface) {
+        IImgRegion[] rs = regions;
         if (lastSurface != null)
-            for (ITexRegion itr : rs)
+            for (IImgRegion itr : rs)
                 if (itr.getSurface() == lastSurface)
                     return itr;
         return regions[0];
@@ -53,7 +53,7 @@ public final class ReplicatedTexRegion implements IReplicatedTexRegion {
     @NonNull
     public ReplicatedTexRegion subRegion(float x, float y, float w, float h) {
         ReplicatedTexRegion res = new ReplicatedTexRegion(w, h);
-        res.regions = new ITexRegion[regions.length];
+        res.regions = new IImgRegion[regions.length];
         for (int i = 0; i < regions.length; i++)
             res.regions[i] = regions[i].subRegion(x, y, w, h);
         return res;

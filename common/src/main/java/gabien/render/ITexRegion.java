@@ -9,37 +9,55 @@ package gabien.render;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.GaBIEn;
+
 /**
  * Represents something pixels can be sampled out of.
- * Created 14th June, 2023.
+ * This version can present different "actual underlying" IImgRegions based on the state of the batcher.
+ * This is much more friendly to performance when mixing a batcher and atlas textures.
+ * This is because the atlas texture can host multiple copies of common textures, stopping ABAC cycles.
+ * Created 23rd June, 2023.
  */
-public interface ITexRegion extends IReplicatedTexRegion {
+public interface ITexRegion {
     /**
-     * Gets the underlying image of this texture region.
+     * Gets the theoretical width of this region.
+     * This is metadata only and not necessarily accurate.
+     * In theory, the region encompasses 0 to width.
      */
-    @NonNull IImage getSurface();
+    float getRegionWidth();
 
     /**
-     * Returns the texture S value for a given input coordinate.
+     * Gets the theoretical width of this region.
+     * This is metadata only and not necessarily accurate.
+     * In theory, the region encompasses 0 to height.
      */
-    float getS(float x, float y);
+    float getRegionHeight();
 
     /**
-     * Returns the texture T value for a given input coordinate.
+     * Tries to pick an optimal source based on the current batch surface.
      */
-    float getT(float x, float y);
-
-    /**
-     * The picked texture region of a raw texture region is always itself.
-     */
-    @Override
-    default ITexRegion pickTexRegion(@Nullable IImage lastSurface) {
-        return this;
-    }
+    IImgRegion pickImgRegion(@Nullable IImage lastSurface);
 
     /**
      * Creates a subregion.
      */
-    @Override
     @NonNull ITexRegion subRegion(float x, float y, float w, float h);
+
+    /**
+     * Creates an IImage copy. Useful for tiling.
+     */
+    default @NonNull IImage copy(float x, float y, int w, int h) {
+        // We don't want any unnecessary OSBs because they carry a lot of baggage.
+        // So we make one temporarily just for the blitting code, then steal it.
+        IGrDriver osb = GaBIEn.makeOffscreenBuffer(w, h, "ITexRegion.copy (OSB)");
+        osb.blitImage(x, y, w, h, 0, 0, this);
+        return osb.convertToImmutable("ITexRegion.copy (Final)");
+    }
+
+    /**
+     * Creates an IImage copy. Useful for tiling.
+     */
+    default @NonNull IImage copy() {
+        return copy(0, 0, (int) getRegionWidth(), (int) getRegionHeight());
+    }
 }

@@ -8,7 +8,7 @@ package gabien.text;
 
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
-import gabien.render.IReplicatedTexRegion;
+import gabien.render.ITexRegion;
 import gabien.render.WSIImage;
 
 /**
@@ -30,7 +30,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         this.measureX = measureX;
     }
 
-    public abstract IReplicatedTexRegion getIImage();
+    public abstract ITexRegion getIImage();
     public abstract WSIImage getIWSIImage();
 
     @Override
@@ -45,7 +45,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
 
     @Override
     public void renderTo(IGrDriver igd, int x, int y, int cX, int cY, int hlh) {
-        IReplicatedTexRegion res = getIImage();
+        ITexRegion res = getIImage();
         igd.blitImage(x + cX + offsetX, y + cY + offsetY, res);
     }
 

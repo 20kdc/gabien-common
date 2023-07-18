@@ -16,8 +16,8 @@ import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
-import gabien.render.IReplicatedTexRegion;
 import gabien.render.ITexRegion;
+import gabien.render.IImgRegion;
 import gabien.uslx.append.ObjectPool;
 import gabien.vopeks.Vopeks.ITask;
 
@@ -132,10 +132,10 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
     @Override
-    public final synchronized void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
+    public final synchronized void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
         if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
             return;
-        ITexRegion tex = batchStartGroup(3, false, cropEssential, blendMode, drawFlagsEx, iU);
+        IImgRegion tex = batchStartGroup(3, false, cropEssential, blendMode, drawFlagsEx, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1, tex);
@@ -146,10 +146,10 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
     @Override
-    public final synchronized void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+    public final synchronized void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
         if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
             return;
-        ITexRegion tex = batchStartGroup(6, false, cropEssential, blendMode, drawFlagsEx, iU);
+        IImgRegion tex = batchStartGroup(6, false, cropEssential, blendMode, drawFlagsEx, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, 1, 1, 1, 1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, 1, 1, 1, 1, tex);
@@ -163,10 +163,10 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
     @Override
-    public final synchronized void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+    public final synchronized void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
         if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
             return;
-        ITexRegion tex = batchStartGroup(3, true, cropEssential, blendMode, drawFlagsEx, iU);
+        IImgRegion tex = batchStartGroup(3, true, cropEssential, blendMode, drawFlagsEx, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, r1, g1, b1, a1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2, tex);
@@ -177,10 +177,10 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less.
      */
     @Override
-    public final synchronized void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
+    public final synchronized void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
         if (setupAndCheckCrop(cropEssential, cropL, cropU, cropR, cropD))
             return;
-        ITexRegion tex = batchStartGroup(6, true, cropEssential, blendMode, drawFlagsEx, iU);
+        IImgRegion tex = batchStartGroup(6, true, cropEssential, blendMode, drawFlagsEx, iU);
         batchWriteXYSTRGBA(x0, y0, s0, t0, r0, g0, b0, a0, tex);
         batchWriteXYSTRGBA(x1, y1, s1, t1, r1, g1, b1, a1, tex);
         batchWriteXYSTRGBA(x2, y2, s2, t2, r2, g2, b2, a2, tex);
@@ -195,7 +195,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      * This function returns the batching-optimal ITexRegion picked if any.
      */
-    private @Nullable ITexRegion batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int blendMode, int drawFlagsEx, IReplicatedTexRegion iU) {
+    private @Nullable IImgRegion batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int blendMode, int drawFlagsEx, ITexRegion iU) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -211,10 +211,10 @@ public final class VopeksBatchingSurface extends IGrDriver {
             if ((currentBatch.vertexCount + vertices) > MAX_VERTICES_IN_BATCH)
                 batchFlush();
         // ok, so now that the current batch is dealt with, do the pick here
-        ITexRegion tex = null;
+        IImgRegion tex = null;
         IImage srf = null;
         if (iU != null)
-            tex = iU.pickTexRegion(currentBatch != null ? currentBatch.tex : null);
+            tex = iU.pickImgRegion(currentBatch != null ? currentBatch.tex : null);
         if (tex != null)
             srf = tex.getSurface();
         // calculate this here so that it can be pushed forward if necessary
@@ -293,7 +293,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * Writes a vertex to the batcher.
      * For ease of use, X/Y coordinates are converted to the -1 to 1 representation here.
      */
-    private void batchWriteXYSTRGBA(float x, float y, float s, float t, float r, float g, float b, float a, @Nullable ITexRegion tf) {
+    private void batchWriteXYSTRGBA(float x, float y, float s, float t, float r, float g, float b, float a, @Nullable IImgRegion tf) {
         int vertexBase2 = currentBatch.vertexCount * 2;
         int vertexBase4 = currentBatch.vertexCount * 4;
         stagingV[vertexBase2] = (x - halfWF) / halfWF;

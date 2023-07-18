@@ -18,6 +18,7 @@ import gabien.datum.DatumSeqVisitor;
 import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumVisitor;
 import gabien.datum.DatumODecVisitor.Handler;
+import gabien.render.IImgRegion;
 import gabien.render.ITexRegion;
 import gabien.ui.FontManager;
 import gabien.ui.LAFChain;

@@ -30,7 +30,7 @@ import gabien.natives.BadGPUEnum.TextureLoadFormat;
  * Now it's 9th June 2023. Vopeks is pretty much certain; we're not going back, so everything was merged.
  * 9th July 2023: Made into an abstract class.
  */
-public abstract class IImage implements ITexRegion {
+public abstract class IImage implements IImgRegion {
     /**
      * Texture dimensions.
      */
@@ -178,7 +178,7 @@ public abstract class IImage implements ITexRegion {
 
     @Override
     @NonNull
-    public final ITexRegion subRegion(float x, float y, float w, float h) {
+    public final IImgRegion subRegion(float x, float y, float w, float h) {
         return new ImageTexRegion(this, x, y, w, h, width, height);
     }
 }

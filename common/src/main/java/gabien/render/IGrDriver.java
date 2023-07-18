@@ -65,7 +65,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2);
+    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2);
 
     /**
      * Batches an uncoloured, textured quad (012023).
@@ -74,7 +74,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3);
+    public abstract void rawBatchXYST(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3);
 
     /**
      * Batches a coloured, textured triangle.
@@ -83,7 +83,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2);
+    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2);
 
     /**
      * Batches a coloured, textured quad (012023).
@@ -92,7 +92,7 @@ public abstract class IGrDriver extends RenderTarget {
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
      * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
      */
-    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
+    public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
 
     // -- Universal interface, accounting for transforms and such --
 
@@ -107,7 +107,7 @@ public abstract class IGrDriver extends RenderTarget {
     /**
      * batchXYST-3 but wrapped to apply translation, scaling, and scissoring.
      */
-    public final synchronized void drawXYST(int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
+    public final synchronized void drawXYST(int blendMode, int drawFlagsEx, @Nullable ITexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2) {
         x0 = trsX(x0); y0 = trsY(y0);
         x1 = trsX(x1); y1 = trsY(y1);
         x2 = trsX(x2); y2 = trsY(y2);
@@ -117,7 +117,7 @@ public abstract class IGrDriver extends RenderTarget {
     /**
      * batchXYST-4 but wrapped to apply translation, scaling, and scissoring.
      */
-    public final synchronized void drawXYST(int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
+    public final synchronized void drawXYST(int blendMode, int drawFlagsEx, @Nullable ITexRegion tex, float x0, float y0, float s0, float t0, float x1, float y1, float s1, float t1, float x2, float y2, float s2, float t2, float x3, float y3, float s3, float t3) {
         x0 = trsX(x0); y0 = trsY(y0);
         x1 = trsX(x1); y1 = trsY(y1);
         x2 = trsX(x2); y2 = trsY(y2);
@@ -128,7 +128,7 @@ public abstract class IGrDriver extends RenderTarget {
     /**
      * batchXYSTRGBA-3 but wrapped to apply translation, scaling, and scissoring.
      */
-    public final synchronized void drawXYSTRGBA(int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
+    public final synchronized void drawXYSTRGBA(int blendMode, int drawFlagsEx, @Nullable ITexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2) {
         x0 = trsX(x0); y0 = trsY(y0);
         x1 = trsX(x1); y1 = trsY(y1);
         x2 = trsX(x2); y2 = trsY(y2);
@@ -138,7 +138,7 @@ public abstract class IGrDriver extends RenderTarget {
     /**
      * batchXYSTRGBA-4 but wrapped to apply translation, scaling, and scissoring.
      */
-    public final synchronized void drawXYSTRGBA(int blendMode, int drawFlagsEx, @Nullable IReplicatedTexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
+    public final synchronized void drawXYSTRGBA(int blendMode, int drawFlagsEx, @Nullable ITexRegion tex, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3) {
         x0 = trsX(x0); y0 = trsY(y0);
         x1 = trsX(x1); y1 = trsY(y1);
         x2 = trsX(x2); y2 = trsY(y2);
@@ -157,7 +157,7 @@ public abstract class IGrDriver extends RenderTarget {
 
     // -- Basic blit operations --
 
-    public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable IReplicatedTexRegion iU, int blendMode, int drawFlagsEx) {
+    public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable ITexRegion iU, int blendMode, int drawFlagsEx) {
         // Translate coordinates
         x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // Do the CPU scissor dance.
@@ -193,7 +193,7 @@ public abstract class IGrDriver extends RenderTarget {
         );
     }
 
-    public final synchronized void drawScaledColoured(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable IReplicatedTexRegion iU, int blendMode, int drawFlagsEx, float r, float g, float b, float a) {
+    public final synchronized void drawScaledColoured(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable ITexRegion iU, int blendMode, int drawFlagsEx, float r, float g, float b, float a) {
         // Translate coordinates
         x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
         // Do the CPU scissor dance.
@@ -229,7 +229,7 @@ public abstract class IGrDriver extends RenderTarget {
         );
     }
 
-    public final synchronized void drawRotatedScaled(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, @Nullable IReplicatedTexRegion iU, int blendMode, int drawFlagsEx) {
+    public final synchronized void drawRotatedScaled(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, @Nullable ITexRegion iU, int blendMode, int drawFlagsEx) {
         if (angle == 0) {
             blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, iU, blendMode, drawFlagsEx);
             return;
@@ -280,7 +280,7 @@ public abstract class IGrDriver extends RenderTarget {
      * Firstly, the image is placed as if no rotation were involved.
      * Then the destination is rotated anticlockwise by angle degrees.
      */
-    public final synchronized void drawRotatedScaledColoured(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, @Nullable IReplicatedTexRegion iU, int blendMode, int drawFlagsEx, float r, float g, float b, float a) {
+    public final synchronized void drawRotatedScaledColoured(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, @Nullable ITexRegion iU, int blendMode, int drawFlagsEx, float r, float g, float b, float a) {
         if (angle == 0) {
             drawScaledColoured(srcx, srcy, srcw, srch, x, y, acw, ach, iU, blendMode, drawFlagsEx, r, g, b, a);
             return;
@@ -326,11 +326,11 @@ public abstract class IGrDriver extends RenderTarget {
 
     // -- blit wrappers --
 
-    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, @Nullable IReplicatedTexRegion i) {
+    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, @Nullable ITexRegion i) {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitImage(float x, float y, @NonNull IReplicatedTexRegion i) {
+    public final void blitImage(float x, float y, @NonNull ITexRegion i) {
         float srcw = i.getRegionWidth(), srch = i.getRegionHeight();
         blitScaledImage(0, 0, srcw, srch, x, y, srcw, srch, i, BLEND_NORMAL, 0);
     }
@@ -341,28 +341,28 @@ public abstract class IGrDriver extends RenderTarget {
         blitScaledImage(0, 0, w, h, x, y, w, h, cachedTile, BLEND_NORMAL, DRAWFLAGS_WRAPST);
     }
 
-    public final void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, @Nullable IReplicatedTexRegion i) {
+    public final void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, @Nullable ITexRegion i) {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitScaledImage(float x, float y, float acw, float ach, @NonNull IReplicatedTexRegion i) {
+    public final void blitScaledImage(float x, float y, float acw, float ach, @NonNull ITexRegion i) {
         blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitScaledImage(float x, float y, float acw, float ach, @NonNull IReplicatedTexRegion i, int blendMode, int drawFlagsEx) {
+    public final void blitScaledImage(float x, float y, float acw, float ach, @NonNull ITexRegion i, int blendMode, int drawFlagsEx) {
         blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, blendMode, drawFlagsEx);
     }
 
-    public final void drawRotatedScaled(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, @Nullable IReplicatedTexRegion i) {
+    public final void drawRotatedScaled(float srcx, float srcy, float srcw, float srch, float x, float y, float acw, float ach, float angle, @Nullable ITexRegion i) {
         drawRotatedScaled(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL, 0);
     }
 
-    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, @NonNull IReplicatedTexRegion i, int blendMode, int drawFlagsEx) {
+    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, @NonNull ITexRegion i, int blendMode, int drawFlagsEx) {
         float srcw = i.getRegionWidth(), srch = i.getRegionHeight();
         drawRotatedScaled(0, 0, srcw, srch, x, y, acw, ach, angle, i, blendMode, drawFlagsEx);
     }
 
-    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, @NonNull IReplicatedTexRegion i) {
+    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, @NonNull ITexRegion i) {
         float srcw = i.getRegionWidth(), srch = i.getRegionHeight();
         drawRotatedScaled(0, 0, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL, 0);
     }
