@@ -10,8 +10,10 @@ import java.util.LinkedList;
 
 import gabien.GaBIEn;
 import gabien.render.AtlasPage;
+import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 import gabien.ui.Size;
+import gabien.uslx.append.IConsumer;
 
 /**
  * 
@@ -27,16 +29,15 @@ public final class SimpleAtlasBuilder<K> {
         this.pageStrategy = pageStrategy;
     }
 
-    public void add(K key, AtlasDrawable src) {
-        entries.add(new Entry(key, src));
+    public void add(IConsumer<ITexRegion> result, AtlasDrawable src) {
+        entries.add(new Entry(result, src));
     }
 
-    @SuppressWarnings("unchecked")
-    public AtlasSet<K> compile() {
+    public AtlasSet compile() {
         // Entries are nulled as completed
         Entry[] entriesArray = entries.toArray(new Entry[0]);
         int amountInArray = entriesArray.length;
-        AtlasSet<K> res = new AtlasSet<>();
+        AtlasSet res = new AtlasSet();
         while (amountInArray > 0) {
             int change = compilePage(res, entriesArray);
             if (change == 0) {
@@ -47,7 +48,7 @@ public final class SimpleAtlasBuilder<K> {
                         continue;
                     AtlasPage ap = GaBIEn.makeAtlasPage(e.sz.width, e.sz.height);
                     e.tex.drawTo(ap, 0, 0);
-                    res.contents.put((K) e.key, ap);
+                    e.key.accept(ap);
                     res.pages.add(ap);
                     entriesArray[i] = null;
                     amountInArray--;
@@ -59,7 +60,7 @@ public final class SimpleAtlasBuilder<K> {
         return res;
     }
 
-    private int compilePage(AtlasSet<K> res, Entry[] entriesArray) {
+    private int compilePage(AtlasSet res, Entry[] entriesArray) {
         // figure out "seed" of the page
         for (int i = 0; i < entriesArray.length; i++) {
             Entry eI = entriesArray[i];
@@ -85,7 +86,7 @@ public final class SimpleAtlasBuilder<K> {
         return 0;
     }
 
-    private int compilePageWithSeed(AtlasSet<K> res, Entry[] entriesArray, Rect[] currentBest, Entry eI, Entry eJ) {
+    private int compilePageWithSeed(AtlasSet res, Entry[] entriesArray, Rect[] currentBest, Entry eI, Entry eJ) {
         Entry[] currentBestContents = {eI, eJ};
         Size[] currentSizes = {eI.sz, eJ.sz};
         while (true) {
@@ -128,24 +129,23 @@ public final class SimpleAtlasBuilder<K> {
         return finishCompilePage(res, currentBest, currentBestContents);
     }
 
-    @SuppressWarnings("unchecked")
-    private int finishCompilePage(AtlasSet<K> res, Rect[] currentBest, Entry[] currentBestContents) {
+    private int finishCompilePage(AtlasSet res, Rect[] currentBest, Entry[] currentBestContents) {
         AtlasPage ap = GaBIEn.makeAtlasPage(pageSize.width, pageSize.height);
         for (int i = 0; i < currentBest.length; i++) {
             Rect r = currentBest[i];
             Entry e = currentBestContents[i];
             e.tex.drawTo(ap, r.x, r.y);
-            res.contents.put((K) e.key, ap.subRegion(r.x, r.y, e.sz.width, e.sz.height));
+            e.key.accept(ap.subRegion(r.x, r.y, e.sz.width, e.sz.height));
         }
         res.pages.add(ap);
         return currentBest.length;
     }
 
     private static class Entry {
-        final Object key;
+        final IConsumer<ITexRegion> key;
         final Size sz;
         final AtlasDrawable tex;
-        Entry(Object key, AtlasDrawable tex) {
+        Entry(IConsumer<ITexRegion> key, AtlasDrawable tex) {
             this.key = key;
             this.tex = tex;
             this.sz = new Size(tex.width, tex.height);

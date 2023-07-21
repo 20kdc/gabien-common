@@ -6,17 +6,14 @@
  */
 package gabien.atlas;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 
 import gabien.render.AtlasPage;
-import gabien.render.ITexRegion;
 
 /**
  * Created 18th July, 2023.
  */
-public final class AtlasSet<K> {
-    public final HashMap<K, ITexRegion> contents = new HashMap<>();
+public final class AtlasSet {
     public final LinkedList<AtlasPage> pages = new LinkedList<>();
 
     public void shutdown() {
