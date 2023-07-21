@@ -20,12 +20,16 @@ import gabien.natives.BadGPUEnum.BlendWeight;
  */
 public abstract class IGrDriver extends RenderTarget {
     /**
-     * Scissor control.
+     * Scissor control. Elements:
+     * L, U, R, D
+     * All elements are absolute.
      */
     public final int[] scissor = new int[4];
 
     /**
-     * Translate/scale control.
+     * Translate/scale control. Elements:
+     * TX, TY, SX, SY
+     * TX/TY are absolute.
      */
     public final float[] trs = new float[4];
 
