@@ -19,7 +19,7 @@ import gabien.uslx.append.IConsumer;
  * 
  * Created 18th July, 2023.
  */
-public final class SimpleAtlasBuilder<K> {
+public final class SimpleAtlasBuilder {
     private LinkedList<Entry> entries = new LinkedList<>();
     private final Size pageSize;
     private final IAtlasStrategy pageStrategy;

@@ -50,7 +50,7 @@ public interface ITexRegion {
         // We don't want any unnecessary OSBs because they carry a lot of baggage.
         // So we make one temporarily just for the blitting code, then steal it.
         IGrDriver osb = GaBIEn.makeOffscreenBuffer(w, h, "ITexRegion.copy (OSB)");
-        osb.blitImage(x, y, w, h, 0, 0, this);
+        osb.blitScaledImage(x, y, w, h, 0, 0, w, h, this, IGrDriver.BLEND_NONE, 0);
         return osb.convertToImmutable("ITexRegion.copy (Final)");
     }
 

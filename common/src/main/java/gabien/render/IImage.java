@@ -181,4 +181,16 @@ public abstract class IImage implements IImgRegion {
     public final IImgRegion subRegion(float x, float y, float w, float h) {
         return new ImageTexRegion(this, x, y, w, h, width, height);
     }
+
+    /**
+     * Determines if the contents of this IImage are completely zero-alpha.
+     * Expensive but can save rendering time in the long run.
+     */
+    public boolean areContentsZeroAlpha() {
+        int[] gp = getPixels();
+        for (int i = 0; i < gp.length; i++)
+            if ((gp[i] & 0xFF000000) != 0)
+                return false;
+        return true;
+    }
 }
