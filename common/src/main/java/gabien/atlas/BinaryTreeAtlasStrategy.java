@@ -6,6 +6,9 @@
  */
 package gabien.atlas;
 
+import java.util.Comparator;
+
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.ui.Rect;
@@ -15,20 +18,26 @@ import gabien.ui.Size;
  * Atlasing strategy based on binary trees.
  * Created 18th June, 2023.
  */
-public final class BinaryTreeAtlasStrategy extends SortingAtlasStrategy {
+public final class BinaryTreeAtlasStrategy implements IAtlasStrategy {
     public final static BinaryTreeAtlasStrategy INSTANCE = new BinaryTreeAtlasStrategy();
 
-    private BinaryTreeAtlasStrategy() {
-        super(SORT_HEIGHT_THEN_WIDTH);
+    @Override
+    @NonNull
+    public Instance instance(@NonNull Size atlasSize) {
+        TreeNode root = new TreeNode(new Rect(atlasSize), null);
+        return new Instance() {
+            @Override
+            @Nullable
+            public Rect add(@NonNull Size size) {
+                return root.place(size);
+            }
+        };
     }
 
     @Override
-    public Rect[] calculateSorted(Size atlasSize, Size[] placements) {
-        Rect[] res = new Rect[placements.length];
-        TreeNode root = new TreeNode(new Rect(atlasSize), null);
-        for (int i = 0; i < placements.length; i++)
-            res[i] = root.place(placements[i]);
-        return res;
+    @Nullable
+    public Comparator<Size> getSortingAlgorithm() {
+        return SORT_HEIGHT_THEN_WIDTH;
     }
 
     private static class TreeNode {

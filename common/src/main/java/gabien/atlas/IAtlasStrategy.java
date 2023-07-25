@@ -7,6 +7,11 @@
 
 package gabien.atlas;
 
+import java.util.Comparator;
+
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.ui.Rect;
 import gabien.ui.Size;
 
@@ -15,11 +20,38 @@ import gabien.ui.Size;
  * Created 17th June, 2023.
  */
 public interface IAtlasStrategy {
+    public static final Comparator<Size> SORT_HEIGHT_THEN_WIDTH = (sa, sb) -> {
+        // order based on height
+        if (sa.height > sb.height)
+            return -1;
+        if (sa.height < sb.height)
+            return 1;
+        // order based on width
+        if (sa.width > sb.width)
+            return -1;
+        if (sa.width < sb.width)
+            return 1;
+        return 0;
+    };
+
     /**
-     * Returns the placements.
-     * Note that each element of the array can be null on failure-to-place.
-     * @param atlasSize Atlas size.
-     * @param placements Input placements.
+     * Creates a new instance.
+     * @param atlasSize The atlas size.
+     * @return A newly prepared instance.
      */
-    Rect[] calculate(Size atlasSize, Size[] placements);
+    @NonNull Instance instance(@NonNull Size atlasSize);
+
+    /**
+     * Gets a recommended mechanism for sorting placements, if any.
+     */
+    @Nullable Comparator<Size> getSortingAlgorithm();
+
+    interface Instance {
+        /**
+         * Adds a placement to the atlas being built.
+         * Returns null if the placement couldn't be added.
+         * @return Placement or null on failure.
+         */
+        @Nullable Rect add(@NonNull Size size);
+    }
 }

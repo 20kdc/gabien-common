@@ -6,6 +6,11 @@
  */
 package gabien.atlas;
 
+import java.util.Comparator;
+
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.ui.Rect;
 import gabien.ui.Size;
 
@@ -22,11 +27,25 @@ public final class ExtremelyBadAtlasStrategy implements IAtlasStrategy {
     }
 
     @Override
-    public Rect[] calculate(Size atlasSize, Size[] placements) {
-        Rect[] res = new Rect[placements.length];
-        if (placements.length > 0)
-            if (placements[0].width <= atlasSize.width && placements[0].height <= atlasSize.height)
-                res[0] = new Rect(placements[0]);
-        return res;
+    @NonNull
+    public Instance instance(@NonNull Size atlasSize) {
+        return new Instance() {
+            boolean hasPlacement = false;
+            @Override
+            @Nullable
+            public Rect add(@NonNull Size size) {
+                if (hasPlacement)
+                    return null;
+                if (size.width > atlasSize.width || size.height > atlasSize.height)
+                    return null;
+                hasPlacement = true;
+                return new Rect(size);
+            }
+        };
+    }
+
+    @Override
+    public Comparator<Size> getSortingAlgorithm() {
+        return null;
     }
 }

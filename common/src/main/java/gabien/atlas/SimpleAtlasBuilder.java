@@ -6,6 +6,8 @@
  */
 package gabien.atlas;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedList;
 
 import gabien.GaBIEn;
@@ -36,6 +38,8 @@ public final class SimpleAtlasBuilder {
     public AtlasSet compile() {
         // Entries are nulled as completed
         Entry[] entriesArray = entries.toArray(new Entry[0]);
+        final Comparator<Size> sizeSorter = pageStrategy.getSortingAlgorithm();
+        Arrays.sort(entriesArray, (a, b) -> sizeSorter.compare(a.sz, b.sz));
         int amountInArray = entriesArray.length;
         AtlasSet res = new AtlasSet();
         while (amountInArray > 0) {
@@ -71,51 +75,43 @@ public final class SimpleAtlasBuilder {
                 if (eJ == null)
                     continue;
                 // "page seed" : eI + eJ
-                Rect[] seedTest = pageStrategy.calculate(pageSize, new Size[] {
-                    eI.sz,
-                    eJ.sz
-                });
-                if (seedTest[0] == null || seedTest[1] == null)
+                IAtlasStrategy.Instance instance = pageStrategy.instance(pageSize);
+                Rect rcI = instance.add(eI.sz);
+                if (rcI == null)
+                    continue;
+                Rect rcJ = instance.add(eJ.sz);
+                if (rcJ == null)
                     continue;
                 // after this point, it's confirmed!
                 entriesArray[i] = null;
                 entriesArray[j] = null;
-                return compilePageWithSeed(res, entriesArray, seedTest, eI, eJ);
+                Rect[] seedTest = {rcI, rcJ};
+                return compilePageWithSeed(res, entriesArray, seedTest, eI, eJ, instance);
             }
         }
         return 0;
     }
 
-    private int compilePageWithSeed(AtlasSet res, Entry[] entriesArray, Rect[] currentBest, Entry eI, Entry eJ) {
+    private int compilePageWithSeed(AtlasSet res, Entry[] entriesArray, Rect[] currentBest, Entry eI, Entry eJ, IAtlasStrategy.Instance instance) {
         Entry[] currentBestContents = {eI, eJ};
-        Size[] currentSizes = {eI.sz, eJ.sz};
         while (true) {
             Entry[] nextContents = new Entry[currentBest.length + 1];
-            Size[] nextSizes = new Size[currentBest.length + 1];
+            Rect[] nextRects = new Rect[currentBest.length + 1];
             System.arraycopy(currentBestContents, 0, nextContents, 0, currentBest.length);
-            System.arraycopy(currentSizes, 0, nextSizes, 0, currentBest.length);
+            System.arraycopy(currentBest, 0, nextRects, 0, currentBest.length);
             int foundSomething = -1;
-            Rect[] nextRects = null;
             for (int i = 0; i < entriesArray.length; i++) {
                 Entry e = entriesArray[i];
                 if (e == null)
                     continue;
                 // update the last entry
                 nextContents[nextContents.length - 1] = e;
-                nextSizes[nextContents.length - 1] = e.sz;
                 // and recalculate
-                nextRects = pageStrategy.calculate(pageSize, nextSizes);
-                // results?
-                boolean ok = true;
-                for (int j = 0; j < nextRects.length; j++) {
-                    if (nextRects[j] == null) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (ok) {
+                Rect rct = instance.add(e.sz);
+                if (rct != null) {
                     // Successfully added another element.
                     foundSomething = i;
+                    nextRects[nextRects.length - 1] = rct;
                     break;
                 }
             }
@@ -124,7 +120,6 @@ public final class SimpleAtlasBuilder {
             entriesArray[foundSomething] = null;
             currentBestContents = nextContents;
             currentBest = nextRects;
-            currentSizes = nextSizes;
         }
         return finishCompilePage(res, currentBest, currentBestContents);
     }

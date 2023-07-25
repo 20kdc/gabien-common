@@ -9,6 +9,8 @@ package gabienapp;
 import gabien.ui.UIScrollLayout;
 import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
+import gabien.uslx.append.EmptyLambdas;
+import gabien.uslx.append.IConsumer;
 import gabien.GaBIEn;
 import gabien.atlas.AtlasSet;
 import gabien.atlas.BinaryTreeAtlasStrategy;
@@ -16,6 +18,7 @@ import gabien.atlas.ImageAtlasDrawable;
 import gabien.atlas.SimpleAtlasBuilder;
 import gabien.media.RIFFNode;
 import gabien.render.AtlasPage;
+import gabien.render.ITexRegion;
 import gabien.ui.Rect;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.UILabel;
@@ -40,14 +43,15 @@ public class UIMainMenu extends UIProxy {
             ui.accept(new UIAtlasTester());
         }));
         vsl.panelsAdd(new UITextButton("Compile Sphere Atlases", 16, () -> {
-            SimpleAtlasBuilder<Object> sab = new SimpleAtlasBuilder<>(512, 512, BinaryTreeAtlasStrategy.INSTANCE);
-            sab.add(32, new ImageAtlasDrawable(GaBIEn.getImage("sphere32.png")));
+            SimpleAtlasBuilder sab = new SimpleAtlasBuilder(512, 512, BinaryTreeAtlasStrategy.INSTANCE);
+            IConsumer<ITexRegion> itr = EmptyLambdas.emptyConsumer();
+            sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere32.png")));
             for (int i = 0; i < 32; i++)
-                sab.add(64, new ImageAtlasDrawable(GaBIEn.getImage("sphere64.png")));
-            sab.add(128, new ImageAtlasDrawable(GaBIEn.getImage("sphere128.png")));
-            sab.add(256, new ImageAtlasDrawable(GaBIEn.getImage("sphere256.png")));
-            sab.add(512, new ImageAtlasDrawable(GaBIEn.getImage("sphere512.png")));
-            AtlasSet<Object> as = sab.compile();
+                sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere64.png")));
+            sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere128.png")));
+            sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere256.png")));
+            sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere512.png")));
+            AtlasSet as = sab.compile();
             for (AtlasPage ap : as.pages) {
                 UIPublicPanel upp = new UIPublicPanel(ap.width, ap.height);
                 upp.baseImage = ap;

@@ -10,6 +10,7 @@ import java.util.Random;
 
 import gabien.GaBIEn;
 import gabien.atlas.AllAtlasStrategies;
+import gabien.atlas.IAtlasStrategy;
 import gabien.render.AtlasPage;
 import gabien.render.IGrDriver;
 import gabien.ui.Rect;
@@ -63,7 +64,7 @@ public class UIAtlasTester extends UIElement {
             planRegen = true;
         } else if (dp.isKeyJustPressed(IGrInDriver.VK_F)) {
             for (int i = 0; i < 128; i++) {
-                atlas = AllAtlasStrategies.strategies[st].calculate(new Size(512, 512), createTestCase());
+                atlas = calculate(AllAtlasStrategies.strategies[st], new Size(512, 512), createTestCase());
                 boolean done = false;
                 for (int j = 0; j < atlas.length; j++)
                     if (atlas[j] == null)
@@ -73,7 +74,15 @@ public class UIAtlasTester extends UIElement {
             }
         }
         if (planRegen)
-            atlas = AllAtlasStrategies.strategies[st].calculate(new Size(512, 512), createTestCase());
+            atlas = calculate(AllAtlasStrategies.strategies[st], new Size(512, 512), createTestCase());
+    }
+
+    private Rect[] calculate(IAtlasStrategy iAtlasStrategy, Size size, Size[] createTestCase) {
+        IAtlasStrategy.Instance instance = iAtlasStrategy.instance(size);
+        Rect[] rects = new Rect[createTestCase.length];
+        for (int i = 0; i < rects.length; i++)
+            rects[i] = instance.add(createTestCase[i]);
+        return rects;
     }
 
     @Override
