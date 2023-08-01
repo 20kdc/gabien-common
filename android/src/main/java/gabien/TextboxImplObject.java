@@ -10,6 +10,7 @@ package gabien;
 import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -41,6 +42,9 @@ public class TextboxImplObject implements ITextboxImplementation {
         host = new LinearLayout(activity);
         lastMultiLine = true;
         fixLayoutAC(false);
+        // Some R48/etc. typing is highly technical. In addition A.S. reported crash with red underlines.
+        // No way to get logs from the device so just work around it.
+        tf.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
         tf.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
