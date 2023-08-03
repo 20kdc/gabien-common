@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.90.0` (release candidate of `1.0.0`)
+ * Version: `0.90.1` (release candidate of `1.0.0`)
  *
  * ## Formatting Policy
  *
@@ -1246,8 +1246,8 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
  * However, in the case of Android, the performance problems of not having it
  *  got so bad that something had to be done.
  *
- * That in mind, the following functions allow access to certain EGL values in
- *  BadGPU. Obviously, this is dependent on the instance being EGL-based.
+ * That in mind, the following functions allow access to certain values in
+ *  BadGPU. Obviously, this leads to platform-specific code.
  *
  * This allows just enough flexibility to build a WSI layer... if you have to.
  */
