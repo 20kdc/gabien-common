@@ -20,11 +20,8 @@ static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err)
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
     *expectDesktopExtensions = 1;
-    *eglDisplay = 0;
-    *eglContext = 0;
-    *eglConfig = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -76,6 +73,22 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
     if (!main)
         return GetProcAddress(GetModuleHandleA("opengl32"), proc);
     return main;
+}
+
+void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
+    if (query == BADGPUWSIQuery_WSIType)
+        return (void *) BADGPUWSIType_WGL;
+    if (query == BADGPUWSIQuery_LibGL)
+        return GetModuleHandleA("opengl32");
+
+    if (query == BADGPUWSIQuery_WGLHWND)
+        return ctx->hwnd;
+    if (query == BADGPUWSIQuery_WGLHDC)
+        return ctx->hdc;
+    if (query == BADGPUWSIQuery_WGLHGLRC)
+        return ctx->ctx;
+
+    return NULL;
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {

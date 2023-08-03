@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.26.0`
+ * Version: `0.90.0` (release candidate of `1.0.0`)
  *
  * ## Formatting Policy
  *
@@ -410,6 +410,7 @@ typedef BADGPUObject BADGPUInstance;
 typedef enum BADGPUNewInstanceFlags {
     // If true, BADGPU is allowed to use printf to report errors and so forth.
     // (Errors that leave the function with no instance won't be reported.)
+    // Note that printf is substituted with Android logging functions there.
     BADGPUNewInstanceFlags_CanPrintf = 1,
     // Check the backend (glGetError, etc.) after most operations.
     // Use with CanPrintf or BackendCheckAggressive or both.
@@ -1263,34 +1264,82 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeomNoDS(
 BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance);
 
 /*
- * ### `badgpuGetEGLDisplay`
+ * ### `BADGPUWSIType`
  *
- * Returns the `EGLDisplay`, or `NULL` if none.
+ * Rationale: The WSI layer has different implementations depending on platform.
  */
-BADGPU_EXPORT void * badgpuGetEGLDisplay(BADGPUInstance instance);
+typedef enum BADGPUWSIType {
+    BADGPUWSIType_EGL =     0x00000001,
+    BADGPUWSIType_CGL =     0x00000002,
+    BADGPUWSIType_WGL =     0x00000003,
+
+    BADGPUWSIType_Force32 = 0x7FFFFFFF
+} BADGPUWSIType;
 
 /*
- * ### `badgpuGetEGLContext`
+ * ### `BADGPUWSIQuery`
  *
- * Returns the `EGLContext`, or `NULL` if none.
+ * Rationale: The WSI layer has various variables that can be retrieved.
+ * Sometimes it's necessary to access those for direct poking (i.e. to implement
+ *  proper WSI).
  */
-BADGPU_EXPORT void * badgpuGetEGLContext(BADGPUInstance instance);
+typedef enum BADGPUWSIQuery {
+    // BADGPUWSIType as void*
+    BADGPUWSIQuery_WSIType =           0x00000000,
+    // Native handle of libGL or equivalent.
+    // Note that this will not necessarily access extension functions.
+    BADGPUWSIQuery_LibGL =           0x00000001,
+
+    // EGLDisplay
+    BADGPUWSIQuery_EGLDisplay =      0x00000100,
+    // EGLContext
+    BADGPUWSIQuery_EGLContext =      0x00000101,
+    // EGLConfig
+    BADGPUWSIQuery_EGLConfig =       0x00000102,
+    // EGLSurface (of 'false draw surface')
+    // Note this isn't equivalent to the EGL calls to get the current surface.
+    // This always returns the false draw surface created by the WSI layer.
+    BADGPUWSIQuery_EGLSurface =      0x00000103,
+    // libEGL native handle
+    BADGPUWSIQuery_EGLLibEGL =       0x00000104,
+
+    // Pixel format
+    BADGPUWSIQuery_CGLPixFmt =       0x00000200,
+    // Context
+    BADGPUWSIQuery_CGLContext =      0x00000201,
+
+    // WGL window
+    BADGPUWSIQuery_WGLHWND =         0x00000300,
+    // WGL HDC
+    BADGPUWSIQuery_WGLHDC =          0x00000301,
+    // WGL HGLRC
+    BADGPUWSIQuery_WGLHGLRC =        0x00000302,
+
+    BADGPUWSIQuery_Force32 =         0x7FFFFFFF
+} BADGPUWSIQuery;
 
 /*
- * ### `badgpuGetEGLConfig`
+ * ### `badgpuGetWSIValue`
  *
- * Returns the `EGLConfig`, or `NULL` if none.
+ * Returns the requested value, or `NULL` if none.
  */
-BADGPU_EXPORT void * badgpuGetEGLConfig(BADGPUInstance instance);
+BADGPU_EXPORT void * badgpuGetWSIValue(BADGPUInstance instance, BADGPUWSIQuery query);
+
+/*
+ * ### `badgpuGetGLProcAddress`
+ *
+ * Returns a procedure from the GL or the WSI, or `NULL` on failure.
+ * The instance must be bound.
+ */
+BADGPU_EXPORT void * badgpuGetGLProcAddress(BADGPUInstance instance, const char * fn);
 
 /*
  * ### `badgpuGetGLTexture`
  *
  * Returns the texture ID. Does not have a proper invalid value, so will return
- *  0 if not relevant. Will always be valid if EGL values are valid.
+ *  0 if not relevant. Will always be valid if this is a GL-based context.
  */
 BADGPU_EXPORT uint32_t badgpuGetGLTexture(BADGPUTexture texture);
-
 
 #endif
 

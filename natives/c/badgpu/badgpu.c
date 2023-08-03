@@ -29,7 +29,6 @@ typedef struct BADGPUInstancePriv {
     uint32_t fbo;
     uint32_t fboBoundTex, fboBoundDS;
     // wsi stuff
-    void * eglDisplay, * eglContext, * eglConfig;
     BADGPUGLBind gl;
 } BADGPUInstancePriv;
 #define BG_INSTANCE(x) ((BADGPUInstancePriv *) (x))
@@ -141,7 +140,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     bi->canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
     badgpu_initObj((BADGPUObject) bi, destroyInstance);
     int desktopExt;
-    bi->ctx = badgpu_newWsiCtx(error, &desktopExt, &bi->eglDisplay, &bi->eglContext, &bi->eglConfig);
+    bi->ctx = badgpu_newWsiCtx(error, &desktopExt);
     if (!bi->ctx) {
         free(bi);
         // error provided by badgpu_newWsiCtx
@@ -848,19 +847,14 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
     return badgpuChk(bi, "badgpuResetGLState", 0);
 }
 
-BADGPU_EXPORT void * badgpuGetEGLDisplay(BADGPUInstance instance) {
+BADGPU_EXPORT void * badgpuGetWSIValue(BADGPUInstance instance, BADGPUWSIQuery query) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    return bi->eglDisplay;
+    return badgpu_wsiCtxGetValue(bi->ctx, query);
 }
 
-BADGPU_EXPORT void * badgpuGetEGLContext(BADGPUInstance instance) {
+BADGPU_EXPORT void * badgpuGetGLProcAddress(BADGPUInstance instance, const char * fn) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    return bi->eglContext;
-}
-
-BADGPU_EXPORT void * badgpuGetEGLConfig(BADGPUInstance instance) {
-    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    return bi->eglConfig;
+    return badgpu_wsiCtxGetProcAddress(bi->ctx, fn);
 }
 
 BADGPU_EXPORT uint32_t badgpuGetGLTexture(BADGPUTexture texture) {

@@ -23,15 +23,16 @@
 #define J_PTR(l) ((int64_t) (intptr_t) (l))
 
 int64_t J_BADGPU(ANDcreateEGLSurface)(void * env, void * self, int64_t instance, jobject obj) {
-    void * eglDisplay = badgpuGetEGLDisplay(C_PTR(instance));
-    void * eglConfig = badgpuGetEGLConfig(C_PTR(instance));
+    void * eglDisplay = badgpuGetWSIValue(C_PTR(instance), BADGPUWSIQuery_EGLDisplay);
+    void * eglConfig = badgpuGetWSIValue(C_PTR(instance), BADGPUWSIQuery_EGLConfig);
     void * nwh = ANativeWindow_fromSurface(env, obj);
     int32_t oops = EGL_NONE;
     return J_PTR(eglCreateWindowSurface(eglDisplay, eglConfig, nwh, &oops));
 }
 
 void J_BADGPU(ANDdestroyEGLSurface)(void * env, void * self, int64_t instance, int64_t surface) {
-    eglDestroySurface(badgpuGetEGLDisplay(C_PTR(instance)), C_PTR(surface));
+    void * eglDisplay = badgpuGetWSIValue(C_PTR(instance), BADGPUWSIQuery_EGLDisplay);
+    eglDestroySurface(eglDisplay, C_PTR(surface));
 }
 
 static const float vertexData[] = {
@@ -44,8 +45,8 @@ static const float vertexData[] = {
 };
 
 void J_BADGPU(ANDoverrideSurface)(void * env, void * self, int64_t instance, int64_t surface) {
-    void * eglDisplay = badgpuGetEGLDisplay(C_PTR(instance));
-    void * eglContext = badgpuGetEGLContext(C_PTR(instance));
+    void * eglDisplay = badgpuGetWSIValue(C_PTR(instance), BADGPUWSIQuery_EGLDisplay);
+    void * eglContext = badgpuGetWSIValue(C_PTR(instance), BADGPUWSIQuery_EGLContext);
     eglMakeCurrent(eglDisplay, C_PTR(surface), C_PTR(surface), eglContext);
 }
 
@@ -59,8 +60,7 @@ void J_BADGPU(ANDblitToSurface)(void * env, void * self, int64_t instance, int64
         s0, t1
     };
 
-    void * eglDisplay = badgpuGetEGLDisplay(C_PTR(instance));
-    void * eglContext = badgpuGetEGLContext(C_PTR(instance));
+    void * eglDisplay = badgpuGetWSIValue(C_PTR(instance), BADGPUWSIQuery_EGLDisplay);
 
     badgpuResetGLState(C_PTR(instance));
     glViewport(0, 0, width, height);

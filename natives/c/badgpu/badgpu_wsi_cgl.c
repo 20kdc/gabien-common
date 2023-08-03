@@ -30,11 +30,8 @@ static const char * locations[] = {
     NULL
 };
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
     *expectDesktopExtensions = 1;
-    *eglDisplay = 0;
-    *eglContext = 0;
-    *eglConfig = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -75,6 +72,20 @@ void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx) {
 
 void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
     return badgpu_dlSym(ctx->glLibrary, proc);
+}
+
+void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
+    if (query == BADGPUWSIQuery_WSIType)
+        return (void *) BADGPUWSIType_CGL;
+    if (query == BADGPUWSIQuery_LibGL)
+        return ctx->glLibrary;
+
+    if (query == BADGPUWSIQuery_CGLPixFmt)
+        return ctx->pixFmt;
+    if (query == BADGPUWSIQuery_CGLContext)
+        return ctx->ctx;
+
+    return NULL;
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {

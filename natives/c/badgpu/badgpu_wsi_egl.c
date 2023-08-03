@@ -14,6 +14,7 @@ struct BADGPUWSICtx {
     void * dsp;
     void * ctx;
     void * srf;
+    void * cfg;
     void * (KHRABI *eglGetDisplay)(void *);
     unsigned int (KHRABI *eglInitialize)(void *, int32_t *, int32_t *);
     unsigned int (KHRABI *eglChooseConfig)(void *, int32_t *, void *, int32_t, int32_t *);
@@ -52,7 +53,7 @@ static const char * locationsGLES1[] = {
 #define EGL_OPENGL_ES_BIT 0x0001
 #define EGL_NONE 0x3038
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions, void ** eglDisplay, void ** eglContext, void ** eglConfig) {
+BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
     *expectDesktopExtensions = 0;
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
@@ -80,7 +81,6 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     ctx->dsp = ctx->eglGetDisplay(NULL);
     if (!ctx->dsp)
         return badgpu_newWsiCtxError(error, "Could not create EGLDisplay");
-    *eglDisplay = ctx->dsp;
     if (!ctx->eglInitialize(ctx->dsp, NULL, NULL))
         return badgpu_newWsiCtxError(error, "Could not initialize EGL");
     void * config;
@@ -111,10 +111,9 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         EGL_NONE
     };
     ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribsCtx);
-    *eglContext = ctx->ctx;
-    *eglConfig = config;
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create EGL context");
+    ctx->cfg = config;
     return ctx;
 }
 
@@ -131,6 +130,26 @@ void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc) {
     if (ctx->glLibrary && !main)
         return badgpu_dlSym(ctx->glLibrary, proc);
     return main;
+}
+
+void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
+    if (query == BADGPUWSIQuery_WSIType)
+        return (void *) BADGPUWSIType_EGL;
+    if (query == BADGPUWSIQuery_LibGL)
+        return ctx->glLibrary;
+
+    if (query == BADGPUWSIQuery_EGLDisplay)
+        return ctx->dsp;
+    if (query == BADGPUWSIQuery_EGLContext)
+        return ctx->ctx;
+    if (query == BADGPUWSIQuery_EGLConfig)
+        return ctx->cfg;
+    if (query == BADGPUWSIQuery_EGLSurface)
+        return ctx->srf;
+    if (query == BADGPUWSIQuery_EGLLibEGL)
+        return ctx->eglLibrary;
+
+    return NULL;
 }
 
 void badgpu_destroyWsiCtx(BADGPUWSICtx ctx) {
