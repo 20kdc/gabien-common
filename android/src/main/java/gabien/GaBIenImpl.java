@@ -13,6 +13,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import gabien.audio.IRawAudioDriver;
 import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.IGaBIEn;
 import gabien.backend.WindowMux;

@@ -14,6 +14,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import gabien.audio.IRawAudioDriver;
 import gabien.backend.NullAudioSource;
 
 public class RawAudioDriver implements IRawAudioDriver {

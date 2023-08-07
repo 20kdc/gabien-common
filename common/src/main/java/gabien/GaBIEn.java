@@ -7,6 +7,7 @@
 
 package gabien;
 
+import gabien.audio.IRawAudioDriver;
 import gabien.backend.IGaBIEn;
 import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;

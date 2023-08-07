@@ -13,7 +13,7 @@ import java.io.InputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.IRawAudioDriver;
+import gabien.audio.IRawAudioDriver;
 import gabien.render.WSIImage;
 import gabien.text.ITypeface;
 

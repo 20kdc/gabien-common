@@ -17,6 +17,7 @@ import javax.sound.sampled.SourceDataLine;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gabien.audio.IRawAudioDriver;
 import gabien.backend.NullAudioSource;
 
 import java.nio.ByteBuffer;
