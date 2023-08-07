@@ -56,13 +56,14 @@ public abstract class Loader {
             "riscv64",
             // OpenJDK will complain about disabling stack guard if this is loaded early
             "x86",
-            "arm"
+            "arm",
+            "mipsel"
         };
         String[] os = {
             "linux-gnu",
             "windows-gnu",
             "macos",
-            // this shouldn't really get extracted due to how the packaging works
+            // so previously I said this shouldn't get extracted, I kiiinda lied
             "linux-android"
         };
         // would have been for Android but it doesn't work because Reasons
@@ -102,6 +103,8 @@ public abstract class Loader {
             detectedCPU = "aarch64";
         else if (detectedCPU.contains("arm"))
             detectedCPU = "arm";
+        else if (detectedCPU.contains("mips"))
+            detectedCPU = "mipsel";
         return detectedCPU;
     }
     private static boolean loadLibrary(String name, PrintWriter errorsP) {

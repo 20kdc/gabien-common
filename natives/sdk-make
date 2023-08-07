@@ -33,6 +33,7 @@ ZIG=thirdparty/zig/zig
 NDK_PLATFORM9=thirdparty/android-ndk-r9d/platforms/android-9
 NDK_PLATFORM21=thirdparty/android-ndk-r12b/platforms/android-21
 NDK_ARM_GCC=thirdparty/android-ndk-r9d/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc
+NDK_MIPS_GCC=thirdparty/android-ndk-r9d/toolchains/mipsel-linux-android-4.6/prebuilt/linux-x86_64/bin/mipsel-linux-android-gcc
 
 # Continue...
 
@@ -73,6 +74,7 @@ doAndroidBuildGCC arm-linux-android $NDK_ARM_GCC $NDK_PLATFORM9/arch-arm
 doAndroidBuild aarch64-linux-android $NDK_PLATFORM21/arch-arm64/usr/lib    $NDK_PLATFORM21/arch-arm64/usr/include
 doAndroidBuild x86-linux-android     $NDK_PLATFORM9/arch-x86/usr/lib       $NDK_PLATFORM9/arch-x86/usr/include
 doAndroidBuild x86_64-linux-android  $NDK_PLATFORM21/arch-x86_64/usr/lib64 $NDK_PLATFORM21/arch-x86_64/usr/include
+doAndroidBuildGCC mipsel-linux-android $NDK_MIPS_GCC $NDK_PLATFORM9/arch-mips
 echo THE ANDROID BUILDS ARE OVER NOW
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
 # ideally, would do the BSDs, but no libc and can't override
