@@ -27,8 +27,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private UILabel upperSection;
     private UIScrollLayout basicLayout;
     private UISplitterLayout outerLayout;
-    private UIPublicPanel lowerSection;
-    private UIElement lowerSectionContents;
+    private UIDynamicProxy lowerSection;
     private int fontSize;
     private LinkedList<String> pathComponents;
     private boolean saving;
@@ -43,25 +42,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
         pathComponents = UIFileBrowser.createComponents(actPath);
         basicLayout = new UIScrollLayout(true, scrollerSize);
         upperSection = new UILabel("!", fSize);
-        lowerSection = new UIPublicPanel(1, 1) {
-            UIElement currentLSC;
-            @Override
-            public void runLayout() {
-                if (currentLSC != lowerSectionContents) {
-                    if (currentLSC != null)
-                        layoutRemoveElement(currentLSC);
-                    if (lowerSectionContents != null)
-                        layoutAddElement(lowerSectionContents);
-                    currentLSC = lowerSectionContents;
-                }
-                if (currentLSC != null) {
-                    currentLSC.setForcedBounds(this, new Rect(getSize()));
-                    setWantedSize(currentLSC.getWantedSize());
-                } else {
-                    setWantedSize(new Size(0, 0));
-                }
-            }
-        };
+        lowerSection = new UIDynamicProxy();
         fontSize = fSize;
         outerLayout = new UISplitterLayout(upperSection, new UISplitterLayout(basicLayout, lowerSection, true, 1), true, 0);
         rebuild();
@@ -110,8 +91,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private void rebuild() {
         basicLayout.panelsClear();
 
-        if (lowerSectionContents != null)
-            lowerSectionContents = null;
+        lowerSection.dynProxySet(null);
 
         boolean showManualControl = true;
         final String verb = saving ? GaBIEn.wordSave : GaBIEn.wordLoad;
@@ -205,8 +185,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
                     }
                 }
             }), false, 1.0d);
-            lowerSectionContents = new UISplitterLayout(mainLine, statusLine, true, 0.5d);
-            lowerSectionContents.forceToRecommended();
+            lowerSection.dynProxySet(new UISplitterLayout(mainLine, statusLine, true, 0.5d));
         }
         basicLayout.runLayoutLoop();
         lowerSection.runLayoutLoop();

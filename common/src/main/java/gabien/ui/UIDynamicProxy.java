@@ -23,6 +23,7 @@ public class UIDynamicProxy extends UIElement.UIPanel {
     public void dynProxySet(@Nullable UIElement uie) {
         if (content != null) {
             layoutRemoveElement(content);
+            content = null;
             setWantedSize(new Size(0, 0));
         }
         content = uie;

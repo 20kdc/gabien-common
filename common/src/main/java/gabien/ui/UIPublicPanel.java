@@ -48,6 +48,6 @@ public class UIPublicPanel extends UIElement.UIPanel {
                 }
             }
         }
-        super.render(igd);
+        super.renderLayer(igd, layer);
     }
 }
