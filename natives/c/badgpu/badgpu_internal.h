@@ -76,18 +76,8 @@ void badgpu_dlClose(BADGPUDynLib lib);
 
 // WSI
 
-typedef struct BADGPUWSICtx * BADGPUWSICtx;
-
 // Creates a new WSICtx.
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions);
-BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
-void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx);
-// Warning: Must be made current first!
-void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
-// WSI introspection endpoint
-void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
-// Attempting to destroy a context generally clears the current context.
-void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
+BADGPUWSIContext badgpu_newWsiCtx(const char ** error);
 
 #endif
 

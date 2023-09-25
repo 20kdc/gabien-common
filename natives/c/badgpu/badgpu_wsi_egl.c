@@ -8,7 +8,8 @@
 #include "badgpu_internal.h"
 
 // WSICTX
-struct BADGPUWSICtx {
+typedef struct BADGPUWSICtx {
+    struct BADGPUWSIContext wsi;
     void * eglLibrary;
     void * glLibrary;
     void * dsp;
@@ -25,9 +26,9 @@ struct BADGPUWSICtx {
     unsigned int (KHRABI *eglTerminate)(void *);
     void * (KHRABI *eglCreatePbufferSurface)(void *, void *, int32_t *);
     unsigned int (KHRABI *eglDestroySurface)(void *, void *);
-};
+} * BADGPUWSICtx;
 
-static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err) {
+static BADGPUWSIContext badgpu_newWsiCtxError(const char ** error, const char * err) {
     if (error)
         *error = err;
     return 0;
@@ -53,12 +54,24 @@ static const char * locationsGLES1[] = {
 #define EGL_OPENGL_ES_BIT 0x0001
 #define EGL_NONE 0x3038
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
-    *expectDesktopExtensions = 0;
+static BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
+static void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx);
+static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
+static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
+static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
+
+BADGPUWSIContext badgpu_newWsiCtx(const char ** error) {
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
+
+    ctx->wsi.makeCurrent = (void *) badgpu_wsiCtxMakeCurrent;
+    ctx->wsi.stopCurrent = (void *) badgpu_wsiCtxStopCurrent;
+    ctx->wsi.getProcAddress = (void *) badgpu_wsiCtxGetProcAddress;
+    ctx->wsi.getValue = (void *) badgpu_wsiCtxGetValue;
+    ctx->wsi.close = (void *) badgpu_destroyWsiCtx;
+
     // Can't guarantee a link to EGL, so we have to do it the *hard* way
     ctx->eglLibrary = badgpu_dlOpen(locationsEGL, "BADGPU_EGL_LIBRARY");
     if (!ctx->eglLibrary)
@@ -114,7 +127,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create EGL context");
     ctx->cfg = config;
-    return ctx;
+    return (BADGPUWSIContext) ctx;
 }
 
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
@@ -137,6 +150,10 @@ void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
         return (void *) BADGPUWSIType_EGL;
     if (query == BADGPUWSIQuery_LibGL)
         return ctx->glLibrary;
+    if (query == BADGPUWSIQuery_ContextType)
+        return (void *) BADGPUContextType_GLESv1;
+    if (query == BADGPUWSIQuery_ContextWrapper)
+        return (void *) ctx;
 
     if (query == BADGPUWSIQuery_EGLDisplay)
         return ctx->dsp;

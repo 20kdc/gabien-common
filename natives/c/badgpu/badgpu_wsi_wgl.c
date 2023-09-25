@@ -8,24 +8,37 @@
 #include "badgpu_internal.h"
 
 // WSICTX
-struct BADGPUWSICtx {
+typedef struct BADGPUWSICtx {
+    struct BADGPUWSIContext wsi;
     HWND hwnd;
     HDC hdc;
     HGLRC ctx;
-};
+} * BADGPUWSICtx;
 
-static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err) {
+static BADGPUWSIContext badgpu_newWsiCtxError(const char ** error, const char * err) {
     if (error)
         *error = err;
     return 0;
 }
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
-    *expectDesktopExtensions = 1;
+static BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
+static void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx);
+static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
+static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
+static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
+
+BADGPUWSIContext badgpu_newWsiCtx(const char ** error) {
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
+
+    ctx->wsi.makeCurrent = (void *) badgpu_wsiCtxMakeCurrent;
+    ctx->wsi.stopCurrent = (void *) badgpu_wsiCtxStopCurrent;
+    ctx->wsi.getProcAddress = (void *) badgpu_wsiCtxGetProcAddress;
+    ctx->wsi.getValue = (void *) badgpu_wsiCtxGetValue;
+    ctx->wsi.close = (void *) badgpu_destroyWsiCtx;
+
     WNDCLASS wc = {
         .lpfnWndProc = DefWindowProcA,
         .hInstance = GetModuleHandleA(NULL),
@@ -57,7 +70,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         badgpu_destroyWsiCtx(ctx);
         return badgpu_newWsiCtxError(error, "Could not create GL context");
     }
-    return ctx;
+    return (BADGPUWSIContext) ctx;
 }
 
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
@@ -80,6 +93,10 @@ void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
         return (void *) BADGPUWSIType_WGL;
     if (query == BADGPUWSIQuery_LibGL)
         return GetModuleHandleA("opengl32");
+    if (query == BADGPUWSIQuery_ContextType)
+        return (void *) BADGPUContextType_GL;
+    if (query == BADGPUWSIQuery_ContextWrapper)
+        return (void *) ctx;
 
     if (query == BADGPUWSIQuery_WGLHWND)
         return ctx->hwnd;

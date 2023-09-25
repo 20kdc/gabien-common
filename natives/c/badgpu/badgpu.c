@@ -21,7 +21,7 @@ struct BADGPUObject {
 
 typedef struct BADGPUInstancePriv {
     struct BADGPUObject obj;
-    BADGPUWSICtx ctx;
+    BADGPUWSIContext ctx;
     int isBound;
     int backendCheck;
     int backendCheckAggressive;
@@ -37,6 +37,7 @@ typedef struct BADGPUTexturePriv {
     struct BADGPUObject obj;
     BADGPUInstancePriv * i;
     uint32_t tex;
+    int autoDel;
 } BADGPUTexturePriv;
 #define BG_TEXTURE(x) ((BADGPUTexturePriv *) (x))
 
@@ -90,8 +91,8 @@ static void destroyInstance(BADGPUObject obj) {
     BADGPUInstancePriv * bi = BG_INSTANCE(obj);
     if (badgpuBChk(bi, "destroyInstance")) {
         bi->gl.DeleteFramebuffers(1, &bi->fbo);
-        badgpu_wsiCtxStopCurrent(bi->ctx);
-        badgpu_destroyWsiCtx(bi->ctx);
+        bi->ctx->stopCurrent(bi->ctx);
+        bi->ctx->close(bi->ctx);
         free(obj);
     }
 }
@@ -128,36 +129,55 @@ static KHRABI void badgpuDebugCB(int32_t a, int32_t b, int32_t c, int32_t d, int
 }
 
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
+    BADGPUWSIContext wsi = badgpu_newWsiCtx(error);
+    if (!wsi) {
+        // error provided by badgpu_newWsiCtx
+        return NULL;
+    }
+    return badgpuNewInstanceWithWSI(flags, error, wsi);
+}
+
+BADGPU_EXPORT BADGPUInstance badgpuNewInstanceWithWSI(uint32_t flags, const char ** error, BADGPUWSIContext wsi) {
     BADGPUInstancePriv * bi = malloc(sizeof(BADGPUInstancePriv));
     if (!bi) {
         if (error)
             *error = "Failed to allocate BADGPUInstance.";
+        wsi->close(wsi);
         return NULL;
     }
     memset(bi, 0, sizeof(BADGPUInstancePriv));
+    bi->ctx = wsi;
     bi->backendCheck = (flags & BADGPUNewInstanceFlags_BackendCheck) != 0;
     bi->backendCheckAggressive = (flags & BADGPUNewInstanceFlags_BackendCheckAggressive) != 0;
     bi->canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
     badgpu_initObj((BADGPUObject) bi, destroyInstance);
-    int desktopExt;
-    bi->ctx = badgpu_newWsiCtx(error, &desktopExt);
-    if (!bi->ctx) {
+    // determine context type stuff
+    int desktopExt = 0;
+    switch ((BADGPUContextType) (int) (intptr_t) wsi->getValue(wsi, BADGPUWSIQuery_ContextType)) {
+    case BADGPUContextType_GLESv1:
+        break;
+    case BADGPUContextType_GL:
+        desktopExt = 1;
+        break;
+    default:
+        if (error)
+            *error = "BadGPU does not support the given context type";
+        wsi->close(wsi);
         free(bi);
-        // error provided by badgpu_newWsiCtx
         return NULL;
     }
     // Initial bind
-    if (!badgpu_wsiCtxMakeCurrent(bi->ctx)) {
+    if (!wsi->makeCurrent(wsi)) {
         if (error)
             *error = "Failed to initially bind instance";
-        badgpu_destroyWsiCtx(bi->ctx);
+        wsi->close(wsi);
         free(bi);
         return NULL;
     }
     bi->isBound = 1;
-    const char * failedFn = badgpu_glBind(bi->ctx, &bi->gl, desktopExt);
+    const char * failedFn = badgpu_glBind(wsi, &bi->gl, desktopExt);
     if (failedFn) {
-        badgpu_destroyWsiCtx(bi->ctx);
+        wsi->close(wsi);
         if (error)
             *error = failedFn;
         free(bi);
@@ -177,13 +197,13 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
         if (exCheck && ((exCheck[12] == 0) || (exCheck[12] == ' '))) {
             printf("BADGPU: KHR_debug detected, testing...\n");
             bi->gl.Enable(GL_DEBUG_OUTPUT);
-            void (KHRABI *glDebugMessageControl)(int32_t, int32_t, int32_t, int32_t, const int32_t *, int32_t) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageControl");
+            void (KHRABI *glDebugMessageControl)(int32_t, int32_t, int32_t, int32_t, const int32_t *, int32_t) = wsi->getProcAddress(wsi, "glDebugMessageControl");
             if (glDebugMessageControl)
                 glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, 1);
-            void (KHRABI *glDebugMessageCallback)(void *, const void *) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageCallback");
+            void (KHRABI *glDebugMessageCallback)(void *, const void *) = wsi->getProcAddress(wsi, "glDebugMessageCallback");
             if (glDebugMessageCallback)
                 glDebugMessageCallback(badgpuDebugCB, NULL);
-            void (KHRABI *glDebugMessageInsert)(int32_t, int32_t, int32_t, int32_t, int32_t, const char *) = badgpu_wsiCtxGetProcAddress(bi->ctx, "glDebugMessageInsert");
+            void (KHRABI *glDebugMessageInsert)(int32_t, int32_t, int32_t, int32_t, int32_t, const char *) = wsi->getProcAddress(wsi, "glDebugMessageInsert");
             if (glDebugMessageInsert)
                 glDebugMessageInsert(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, -1, "BADGPU GL Debug Test Message");
         }
@@ -219,7 +239,7 @@ BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance) {
             printf("BADGPU: badgpuBindInstance: already bound somewhere\n");
         return 1;
     }
-    if (!badgpu_wsiCtxMakeCurrent(bi->ctx)) {
+    if (!bi->ctx->makeCurrent(bi->ctx)) {
         if (bi->canPrintf)
             printf("BADGPU: badgpuBindInstance: failed to bind\n");
         return 1;
@@ -234,7 +254,7 @@ BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     if (!badgpuBChk(bi, "badgpuUnbindInstance"))
         return;
-    badgpu_wsiCtxStopCurrent(bi->ctx);
+    bi->ctx->stopCurrent(bi->ctx);
     bi->isBound = 0;
 }
 
@@ -311,8 +331,10 @@ static void destroyTexture(BADGPUObject obj) {
     tex->i->gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, 0);
     tex->i->fboBoundTex = 0;
     // continue
-    tex->i->gl.DeleteTextures(1, &tex->tex);
-    badgpuChk(tex->i, "destroyTexture", 0);
+    if (tex->autoDel) {
+        tex->i->gl.DeleteTextures(1, &tex->tex);
+        badgpuChk(tex->i, "destroyTexture", 0);
+    }
     badgpuUnref((BADGPUObject) tex->i);
     free(tex);
 }
@@ -362,6 +384,7 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
     badgpu_initObj((BADGPUObject) tex, destroyTexture);
 
     tex->i = BG_INSTANCE(badgpuRef(instance));
+    tex->autoDel = 1;
     bi->gl.GenTextures(1, &tex->tex);
 
     bi->gl.BindTexture(GL_TEXTURE_2D, tex->tex);
@@ -849,16 +872,35 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
 
 BADGPU_EXPORT void * badgpuGetWSIValue(BADGPUInstance instance, BADGPUWSIQuery query) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    return badgpu_wsiCtxGetValue(bi->ctx, query);
-}
-
-BADGPU_EXPORT void * badgpuGetGLProcAddress(BADGPUInstance instance, const char * fn) {
-    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
-    return badgpu_wsiCtxGetProcAddress(bi->ctx, fn);
+    return bi->ctx->getValue(bi->ctx, query);
 }
 
 BADGPU_EXPORT uint32_t badgpuGetGLTexture(BADGPUTexture texture) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(texture);
     return sTex->tex;
 }
+
+BADGPU_EXPORT BADGPUTexture badgpuNewTextureFromGL(BADGPUInstance instance, uint32_t glTex) {
+    if (!instance)
+        return NULL;
+
+    // Continue.
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+
+    if (!badgpuBChk(bi, "badgpuNewTextureFromGL"))
+        return NULL;
+
+    BADGPUTexturePriv * tex = malloc(sizeof(BADGPUTexturePriv));
+    if (!tex) {
+        badgpuErr(bi, "badgpuNewTextureFromGL: Unable to allocate memory.");
+        return NULL;
+    }
+    badgpu_initObj((BADGPUObject) tex, destroyTexture);
+
+    tex->i = BG_INSTANCE(badgpuRef(instance));
+    tex->autoDel = 0;
+    tex->tex = glTex;
+    return (BADGPUTexture) tex;
+}
+
 

@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.90.1` (release candidate of `1.0.0`)
+ * Version: `0.91.0` (release candidate of `1.0.0`)
  *
  * ## Formatting Policy
  *
@@ -436,6 +436,9 @@ typedef enum BADGPUNewInstanceFlags {
  *  invalidated.
  *
  * The flags are `BADGPUNewInstanceFlags`.
+ *
+ * Notably, there is an alternate version of this function in Integration.
+ * The alternate version allows specifying a custom WSI backend.
  */
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error);
 
@@ -1269,12 +1272,36 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance);
  * Rationale: The WSI layer has different implementations depending on platform.
  */
 typedef enum BADGPUWSIType {
+    BADGPUWSIType_Custom =  0x00000000,
     BADGPUWSIType_EGL =     0x00000001,
     BADGPUWSIType_CGL =     0x00000002,
     BADGPUWSIType_WGL =     0x00000003,
 
     BADGPUWSIType_Force32 = 0x7FFFFFFF
 } BADGPUWSIType;
+
+/*
+ * ### `BADGPUContextType`
+ *
+ * Specifies a type of OpenGL context.
+ * This is useful if using BADGPU in conjunction with another source of OpenGL contexts.
+ */
+typedef enum BADGPUContextType {
+    // OpenGL ES 1(.1+extensions)
+    BADGPUContextType_GLESv1 =  0x00000000,
+    // OpenGL 1.x or 2.x (with appropriate extensions)
+    BADGPUContextType_GL =      0x00000001,
+    // OpenGL ES 2 (Not supported in reference implementation)
+    BADGPUContextType_GLESv2 =  0x00000002,
+    // OpenGL 3.x Core 
+    // If at all possible, return BADGPUContextType_GL instead!
+    // Even if a device "supports" GL 3.x, it may not really support it.
+    // See Intel and to a lesser extent AMD.
+    // Not supported in reference implementation anyway.
+    BADGPUContextType_GL3Core = 0x00000003,
+
+    BADGPUContextType_Force32 = 0x7FFFFFFF
+} BADGPUContextType;
 
 /*
  * ### `BADGPUWSIQuery`
@@ -1285,10 +1312,14 @@ typedef enum BADGPUWSIType {
  */
 typedef enum BADGPUWSIQuery {
     // BADGPUWSIType as void*
-    BADGPUWSIQuery_WSIType =           0x00000000,
+    BADGPUWSIQuery_WSIType =         0x00000000,
     // Native handle of libGL or equivalent.
     // Note that this will not necessarily access extension functions.
     BADGPUWSIQuery_LibGL =           0x00000001,
+    // BADGPUContextType as void*
+    BADGPUWSIQuery_ContextType =     0x00000002,
+    // BADGPUWSIContext (for getProcAddress/etc.)
+    BADGPUWSIQuery_ContextWrapper =  0x00000003,
 
     // EGLDisplay
     BADGPUWSIQuery_EGLDisplay =      0x00000100,
@@ -1326,20 +1357,58 @@ typedef enum BADGPUWSIQuery {
 BADGPU_EXPORT void * badgpuGetWSIValue(BADGPUInstance instance, BADGPUWSIQuery query);
 
 /*
- * ### `badgpuGetGLProcAddress`
- *
- * Returns a procedure from the GL or the WSI, or `NULL` on failure.
- * The instance must be bound.
- */
-BADGPU_EXPORT void * badgpuGetGLProcAddress(BADGPUInstance instance, const char * fn);
-
-/*
  * ### `badgpuGetGLTexture`
  *
  * Returns the texture ID. Does not have a proper invalid value, so will return
  *  0 if not relevant. Will always be valid if this is a GL-based context.
  */
 BADGPU_EXPORT uint32_t badgpuGetGLTexture(BADGPUTexture texture);
+
+/*
+ * ### `badgpuNewTextureFromGL`
+ *
+ * Provides an existing GL texture to BadGPU.
+ *
+ * This texture will not be deleted by BadGPU.
+ *
+ * Returns `NULL` on failure, otherwise the new texture.
+ */
+BADGPU_EXPORT BADGPUTexture badgpuNewTextureFromGL(BADGPUInstance instance, uint32_t tex);
+
+/*
+ * ### `BADGPUWSIContext`
+ *
+ * Structure for a custom WSI handler.
+ * This is useful if using BadGPU in conjunction with another source of OpenGL contexts.
+ */
+typedef struct BADGPUWSIContext {
+    // This field will never be written or read by BadGPU on a user-provided context.
+    void * userdata;
+    // Makes this context current. (Should a context not require this, this is a NOP.)
+    BADGPUBool (*makeCurrent)(struct BADGPUWSIContext * self);
+    // Makes this context not current. (Should a context not require this, this is a NOP.)
+    void (*stopCurrent)(struct BADGPUWSIContext * self);
+    // Gets a function address. The context must be current!
+    void * (*getProcAddress)(struct BADGPUWSIContext * self, const char * proc);
+    // Equivalent to badgpuGetWSIValue.
+    // Note that BadGPU will call this, particularly for BADGPUWSIQuery_ContextType.
+    void * (*getValue)(struct BADGPUWSIContext * self, BADGPUWSIQuery query);
+    // Called on the destruction of the instance using the WSI.
+    // Failure to create the instance also counts as destruction.
+    // The instance will never access this context past this point.
+    void (*close)(struct BADGPUWSIContext * self);
+} * BADGPUWSIContext;
+
+/*
+ * ### `badgpuNewInstanceWithWSI`
+ *
+ * See `badgpuNewInstance`. \
+ * However, a BADGPUWSIContext pointer is passed. \
+ * The pointer must live as long as the instance does.
+ *
+ * Any failure or the instance's destruction will call `wsi->close`, which may be used to shut down the context.
+ */
+BADGPU_EXPORT BADGPUInstance badgpuNewInstanceWithWSI(uint32_t flags, const char ** error, BADGPUWSIContext wsi);
 
 #endif
 

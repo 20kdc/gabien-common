@@ -8,16 +8,16 @@
 #include "badgpu_glbind.h"
 
 // returns failed function name, if any
-const char * badgpu_glBind(BADGPUWSICtx ctx, BADGPUGLBind * into, int desktopExt) {
+const char * badgpu_glBind(BADGPUWSIContext ctx, BADGPUGLBind * into, int desktopExt) {
     // Function bind
 #define CHKGLFN(fn) \
 if (!(into->fn)) \
     return "Failed to bind function: gl" #fn;
 
-#define BINDGLFN(fn) into->fn = badgpu_wsiCtxGetProcAddress(ctx, "gl" #fn); \
+#define BINDGLFN(fn) into->fn = ctx->getProcAddress(ctx, "gl" #fn); \
 CHKGLFN(fn)
 
-#define BINDGLFN2(fn, ext) into->fn = badgpu_wsiCtxGetProcAddress(ctx, "gl" #fn #ext); \
+#define BINDGLFN2(fn, ext) into->fn = ctx->getProcAddress(ctx, "gl" #fn #ext); \
 CHKGLFN(fn)
 
     BINDGLFN(GetError);

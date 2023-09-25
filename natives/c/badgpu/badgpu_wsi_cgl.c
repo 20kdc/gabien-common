@@ -8,7 +8,8 @@
 #include "badgpu_internal.h"
 
 // WSICTX
-struct BADGPUWSICtx {
+typedef struct BADGPUWSICtx {
+    struct BADGPUWSIContext wsi;
     void * glLibrary;
     void * pixFmt;
     void * ctx;
@@ -17,9 +18,9 @@ struct BADGPUWSICtx {
     unsigned int (*CGLSetCurrentContext)(void *);
     unsigned int (*CGLDestroyContext)(void *);
     unsigned int (*CGLDestroyPixelFormat)(void *);
-};
+} * BADGPUWSICtx;
 
-static BADGPUWSICtx badgpu_newWsiCtxError(const char ** error, const char * err) {
+static BADGPUWSIContext badgpu_newWsiCtxError(const char ** error, const char * err) {
     if (error)
         *error = err;
     return 0;
@@ -30,12 +31,24 @@ static const char * locations[] = {
     NULL
 };
 
-BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions) {
-    *expectDesktopExtensions = 1;
+static BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
+static void badgpu_wsiCtxStopCurrent(BADGPUWSICtx ctx);
+static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
+static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
+static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
+
+BADGPUWSIContext badgpu_newWsiCtx(const char ** error) {
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
     memset(ctx, 0, sizeof(struct BADGPUWSICtx));
+
+    ctx->wsi.makeCurrent = (void *) badgpu_wsiCtxMakeCurrent;
+    ctx->wsi.stopCurrent = (void *) badgpu_wsiCtxStopCurrent;
+    ctx->wsi.getProcAddress = (void *) badgpu_wsiCtxGetProcAddress;
+    ctx->wsi.getValue = (void *) badgpu_wsiCtxGetValue;
+    ctx->wsi.close = (void *) badgpu_destroyWsiCtx;
+
     ctx->glLibrary = badgpu_dlOpen(locations, "BADGPU_OPENGL_FRAMEWORK");
     if (!ctx->glLibrary)
         return badgpu_newWsiCtxError(error, "Could not open CGL");
@@ -59,7 +72,7 @@ BADGPUWSICtx badgpu_newWsiCtx(const char ** error, int * expectDesktopExtensions
         return badgpu_newWsiCtxError(error, "Failed to create CGL context");
     if (!ctx->ctx)
         return badgpu_newWsiCtxError(error, "Failed to create CGL context");
-    return ctx;
+    return (BADGPUWSIContext) ctx;
 }
 
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
@@ -79,6 +92,10 @@ void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
         return (void *) BADGPUWSIType_CGL;
     if (query == BADGPUWSIQuery_LibGL)
         return ctx->glLibrary;
+    if (query == BADGPUWSIQuery_ContextType)
+        return (void *) BADGPUContextType_GL;
+    if (query == BADGPUWSIQuery_ContextWrapper)
+        return (void *) ctx;
 
     if (query == BADGPUWSIQuery_CGLPixFmt)
         return ctx->pixFmt;
