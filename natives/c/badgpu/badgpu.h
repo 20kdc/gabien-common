@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.91.0` (release candidate of `1.0.0`)
+ * Version: `0.91.1` (release candidate of `1.0.0`)
  *
  * ## Formatting Policy
  *
@@ -1094,8 +1094,8 @@ typedef enum BADGPUBlendWeight {
  *  arrays is used (allowing for "single-colour uniform" treatment). \
  * (This lookup ignores indices, and frozen arrays can be just that element.)
  *
- * `iStart` and `iCount` represent a range in the indices array, which in turn are
- *  indices into the vertex arrays. \
+ * `iStart` and `iCount` represent a range in the indices array, which in turn
+ *  are indices into the vertex arrays. \
  * If `indices` is `NULL`, then it is essentially as if an array was passed with
  *  values 0 to 65535. \
  * `iCount` must not be below 0 or above 65536.
@@ -1283,8 +1283,9 @@ typedef enum BADGPUWSIType {
 /*
  * ### `BADGPUContextType`
  *
- * Specifies a type of OpenGL context.
- * This is useful if using BADGPU in conjunction with another source of OpenGL contexts.
+ * Specifies a type of OpenGL context. \
+ * This is useful if using BadGPU in conjunction with another source of OpenGL
+ *  contexts.
  */
 typedef enum BADGPUContextType {
     // OpenGL ES 1(.1+extensions)
@@ -1379,19 +1380,26 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTextureFromGL(BADGPUInstance instance, uint
  * ### `BADGPUWSIContext`
  *
  * Structure for a custom WSI handler.
- * This is useful if using BadGPU in conjunction with another source of OpenGL contexts.
+ * This is useful if using BadGPU in conjunction with another source of OpenGL
+ *  contexts.
  */
 typedef struct BADGPUWSIContext {
-    // This field will never be written or read by BadGPU on a user-provided context.
+    // This field will never be written or read by BadGPU on a provided context.
     void * userdata;
-    // Makes this context current. (Should a context not require this, this is a NOP.)
+    // Makes this context current. Returns false on failure.
+    // (Should a context not require this, always returns true.)
     BADGPUBool (*makeCurrent)(struct BADGPUWSIContext * self);
-    // Makes this context not current. (Should a context not require this, this is a NOP.)
+    // Makes this context not current.
+    // (Should a context not require this, this is a NOP.)
     void (*stopCurrent)(struct BADGPUWSIContext * self);
     // Gets a function address. The context must be current!
+    // Importantly, this must work for core and extension functions.
+    // This matters in the case of, say, WGL.
     void * (*getProcAddress)(struct BADGPUWSIContext * self, const char * proc);
     // Equivalent to badgpuGetWSIValue.
-    // Note that BadGPU will call this, particularly for BADGPUWSIQuery_ContextType.
+    // Note that BadGPU will call this for any fields which are not specific to
+    //  a WSI type but are relevant to the context type, and also to retrieve
+    //  the context type itself.
     void * (*getValue)(struct BADGPUWSIContext * self, BADGPUWSIQuery query);
     // Called on the destruction of the instance using the WSI.
     // Failure to create the instance also counts as destruction.
@@ -1404,9 +1412,10 @@ typedef struct BADGPUWSIContext {
  *
  * See `badgpuNewInstance`. \
  * However, a BADGPUWSIContext pointer is passed. \
- * The pointer must live as long as the instance does.
+ * The context (and pointer) must live as long as the instance does.
  *
- * Any failure or the instance's destruction will call `wsi->close`, which may be used to shut down the context.
+ * Any failure or the instance's destruction will call `wsi->close`. \
+ * Past this call, the context (and pointer) are no longer in use.
  */
 BADGPU_EXPORT BADGPUInstance badgpuNewInstanceWithWSI(uint32_t flags, const char ** error, BADGPUWSIContext wsi);
 
