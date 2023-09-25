@@ -37,12 +37,28 @@ static BADGPUWSIContext badgpu_newWsiCtxError(const char ** error, const char * 
 static const char * locationsEGL[] = {
     "libEGL.so.1",
     "libEGL.so", // Android needs this
+    "libEGL.dll",
+    "libEGL",
+    // if this ends up being reached, you're probably doomed
+    // try it anyway; it's POSSIBLE it might establish ANGLE contact
+    "libGLESv2.dll",
+    "libGLESv2",
     NULL
 };
 
 static const char * locationsGLES1[] = {
+    // these two should be expected for Android
     "libGLESv1_CM.so.1",
     "libGLESv1_CM.so",
+    // shot in the dark
+    "libGLESv1_CM.dll",
+    "libGLESv1_CM",
+    "libGLESv1_C.so.1",
+    "libGLESv1_C.so",
+    "libGLESv1_C.dll",
+    "libGLESv1_C",
+    "libGLESv1.dll",
+    "libGLESv1",
     NULL
 };
 
