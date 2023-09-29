@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `0.91.1` (release candidate of `1.0.0`)
+ * Version: `1.0.0`
  *
  * ## Formatting Policy
  *
