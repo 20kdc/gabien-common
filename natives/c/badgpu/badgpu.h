@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.0.0`
+ * Version: `1.0.1`
  *
  * ## Formatting Policy
  *
@@ -108,6 +108,18 @@
  *   Since BadGPU avoids immense swaths of state, and particularly mutable state
  *    that needs saving and restoring, it follows that getters/setters for this
  *    state are not necessary.
+ *
+ * ### The Custom WSI API Is A Special Exception
+ *
+ * The custom WSI API only exists because it's the only reasonable way to allow
+ *  an application to use BadGPU efficiently with SDL2 context creation.
+ *
+ * As such, it's designed to work well specifically for C code that is
+ *  responsible for connecting BadGPU and SDL2 along with some GL glue code.
+ *
+ * It is not designed to work well for anything else, and even exposing WSI
+ *  details in general is a concession to performing Android WSI. This both was
+ *  practical to implement and also absolutely necessary to implement.
  *
  * ## Implementation Policy
  *
