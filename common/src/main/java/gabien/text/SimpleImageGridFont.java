@@ -23,10 +23,10 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
 
     public SimpleImageGridFont(IImage base, int charWidth, int charHeight, int charsPerRow, int advance, int size) {
         fontWhite = base;
-        int[] px = base.getPixels();
-        for (int i = 0; i < px.length; i++)
-            px[i] &= 0xFF000000;
-        fontBlack = GaBIEn.createImage(px, base.getWidth(), base.getHeight());
+        // ideally the re-coloured image wouldn't be a thing - but at least this saves a roundtrip!
+        IGrDriver igd = GaBIEn.makeOffscreenBuffer(base.width, base.height);
+        igd.drawScaledColoured(0, 0, base.width, base.height, 0, 0, base.width, base.height, base, 0, 0, 0, 1);
+        fontBlack = igd.convertToImmutable("fontBlack");
         this.charWidth = charWidth;
         this.charHeight = charHeight;
         this.charsPerRow = charsPerRow;

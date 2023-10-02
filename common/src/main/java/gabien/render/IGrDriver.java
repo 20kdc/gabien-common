@@ -371,6 +371,13 @@ public abstract class IGrDriver extends RenderTarget {
         drawRotatedScaled(0, 0, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL, 0);
     }
 
+    public final void drawScaledColoured(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable ITexRegion iU, float r, float g, float b, float a) {
+        drawScaledColoured(srcx, srcy, srcw, srch, x, y, w, h, iU, BLEND_NORMAL, 0, r, g, b, a);
+    }
+
+    // -- clear/fill APIs --
+    // these use integer colour channels for legacy reasons
+
     public final void clearRect(int r, int g, int b, float x, float y, float width, float height) {
         drawScaledColoured(0, 0, 0, 0, x, y, width, height, null, BLEND_NONE, 0, r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
     }

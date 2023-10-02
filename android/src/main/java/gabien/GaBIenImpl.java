@@ -69,6 +69,12 @@ public final class GaBIenImpl implements IGaBIEn {
 
     @Override
     @NonNull
+    public String getDefaultNativeFontName() {
+        return "Nautilus";
+    }
+
+    @Override
+    @NonNull
     public ITypeface getDefaultTypeface() {
         return new TypefaceKinda();
     }
@@ -82,7 +88,7 @@ public final class GaBIenImpl implements IGaBIEn {
     @Override
     public String[] getFontOverrides() {
         return new String[] {
-                "Nautilus"
+            getDefaultNativeFontName()
         };
     }
 

@@ -13,6 +13,8 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.zip.InflaterInputStream;
 
+import gabien.uslx.append.MathsX;
+
 /**
  * PVA file structure.
  * For further details please see https://20kdc.gitlab.io/scrapheap/pva/
@@ -32,6 +34,11 @@ public class PVAFile {
     public final Texture[] textures;
     public final ImageHeader[] imageHeaders;
     public final byte[][] imageDatas;
+
+    /**
+     * The duration of the file in milliseconds.
+     */
+    public final double duration;
 
     /**
      * Reads a PVA file.
@@ -55,16 +62,10 @@ public class PVAFile {
         int imgCount = imageHeaders.length;
         for (int i = 0; i < imgCount; i++)
             imageDatas[i] = CABS.readChunk(inp);
-    }
-
-    /**
-     * Gets the duration of the file in milliseconds.
-     */
-    public double getDuration() {
         double total = 0;
         for (SequenceElm se : sequence)
             total += se.delay;
-        return total;
+        duration = total;
     }
 
     /**
@@ -80,6 +81,25 @@ public class PVAFile {
             frameStartTime = frameEndTime;
         }
         return -1;
+    }
+
+    /**
+     * Given a time in milliseconds, returns the corresponding frame index.
+     * On failure, returns the last frame in the sequence, if any, or -1.
+     */
+    public int frameOfClamped(double time) {
+        int res = frameOf(time);
+        if (res == -1 && sequence.length > 0)
+            return sequence[sequence.length - 1].frameIndex;
+        return res;
+    }
+
+    /**
+     * Given a time in milliseconds, returns the corresponding frame index.
+     * On failure, returns the last frame in the sequence, if any, or -1.
+     */
+    public int frameOfLooped(double time) {
+        return frameOfClamped(MathsX.seqModulo(time, duration));
     }
 
     public static abstract class Struct<T extends Struct<T>> {

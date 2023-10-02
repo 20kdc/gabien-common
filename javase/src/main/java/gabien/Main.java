@@ -58,8 +58,8 @@ abstract class Main {
         		e.printStackTrace();
         	}
         }
-
         initializeEmbedded(isDebug, isTimeLogging);
+        // System.err.println("GJSEStartProfile after initializeEmbedded: " + GaBIEn.getTime());
         if (GaBIEnImpl.mobileEmulation) {
         	WindowSpecs ws = new WindowSpecs(GaBIEn.internal);
         	ws.resizable = false;
@@ -108,6 +108,7 @@ abstract class Main {
         GaBIEn.mutableDataFS = new JavaIOFSBackend();
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
+        // pretty much all the startup time goes here
         GaBIEn.setupNativesAndAssets(isDebug, isTimeLogging);
     }
 }

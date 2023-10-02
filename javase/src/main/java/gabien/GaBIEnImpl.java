@@ -151,6 +151,12 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
 
     @Override
     @NonNull
+    public String getDefaultNativeFontName() {
+        return getDefaultFont();
+    }
+
+    @Override
+    @NonNull
     public ITypeface getDefaultTypeface() {
         return AWTTypeface.getDefaultTypeface();
     }

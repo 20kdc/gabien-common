@@ -15,7 +15,7 @@ import gabien.datum.*;
 
 /**
  * This is holding all the stuff that's being pulled out of UIBorderedElement.
- * Please don't access this.
+ * Please don't access this. Only, you kind of have to to get themes. Hm.
  * Created 17th February 2023.
  */
 public class ThemingCentral {

@@ -17,7 +17,7 @@ import gabien.text.ITypeface;
  * Created 16th February 2023.
  */
 public final class NativeFontCache {
-    private final ITypeface defaultTypeface;
+    private ITypeface defaultTypeface;
 
     private String lastTypefaceName = null;
     private ITypeface lastTypeface = null;
@@ -34,7 +34,6 @@ public final class NativeFontCache {
     public NativeFontCache(IGaBIEn backend) {
         this.backend = backend;
         GaBIEn.verify(backend);
-        defaultTypeface = backend.getDefaultTypeface();
     }
 
     private ITypeface getTypeface(@NonNull String name) {
@@ -62,7 +61,13 @@ public final class NativeFontCache {
                 if (lastDefaultFontSize == size)
                     return lastDefaultFont;
         }
-        IFixedSizeFont res = defaultTypeface.derive(size);
+        ITypeface gdt;
+        synchronized (this) {
+            if (defaultTypeface == null)
+                defaultTypeface = backend.getDefaultTypeface();
+            gdt = defaultTypeface;
+        }
+        IFixedSizeFont res = gdt.derive(size);
         synchronized (this) {
             lastDefaultFontSize = size;
             lastDefaultFont = res;

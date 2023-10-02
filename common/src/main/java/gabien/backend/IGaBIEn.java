@@ -58,6 +58,11 @@ public interface IGaBIEn {
     WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height);
 
     /**
+     * Gets the name of the font referred to by getDefaultTypeface.
+     */
+    @NonNull String getDefaultNativeFontName();
+
+    /**
      * Gets font overrides UILabel can use.
      * Note that IGrDriver is expected to honor UILabel font override if given.
      * The first font override is the default font (if drawText is called on a driver without an override)

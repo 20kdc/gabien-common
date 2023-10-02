@@ -56,4 +56,60 @@ public final class MathsX {
         return Math.min(Math.max(val, min), max);
     }
 
+    /**
+     * Modulo, but handling negative values in the first parameter in a way that makes sense for positions in looped sequences.
+     * For example, seqModulo(-1, 4) is 3.
+     */
+    public static int seqModulo(int x, int length) {
+        int base = x % length;
+        if (x < 0) {
+            base += length;
+            if (base >= length)
+                base -= length;
+        }
+        return base;
+    }
+
+    /**
+     * Modulo, but handling negative values in the first parameter in a way that makes sense for positions in looped sequences.
+     * For example, saneModulo(-1, 4) is 3.
+     */
+    public static long seqModulo(long x, long length) {
+        long base = x % length;
+        if (x < 0) {
+            base += length;
+            if (base >= length)
+                base -= length;
+        }
+        return base;
+    }
+
+    /**
+     * Modulo, but handling negative values in the first parameter in a way that makes sense for positions in looped sequences.
+     * For example, saneModulo(-1, 4) is 3.
+     */
+    public static float seqModulo(float x, float length) {
+        float base = x % length;
+        if (x < 0) {
+            base += length;
+            if (base >= length)
+                base -= length;
+        }
+        return base;
+    }
+
+    /**
+     * Modulo, but handling negative values in the first parameter in a way that makes sense for positions in looped sequences.
+     * For example, saneModulo(-1, 4) is 3.
+     */
+    public static double seqModulo(double x, double length) {
+        double base = x % length;
+        if (x < 0) {
+            base += length;
+            if (base >= length)
+                base -= length;
+        }
+        return base;
+    }
+
 }

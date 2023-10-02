@@ -10,8 +10,10 @@ import java.io.InputStream;
 import java.util.HashMap;
 
 import gabien.GaBIEn;
+import gabien.natives.BadGPU;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
+import gabien.vopeks.VopeksImage;
 
 /**
  * Getting this code put here.
@@ -52,17 +54,22 @@ public final class ImageCache {
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
         } else {
-            int[] data = img.getPixels();
-            int colourKey = tb | (tg << 8) | (tr << 16);
-            for (int i = 0; i < data.length; i++) {
-                int c = data[i];
-                if ((c & 0xFFFFFF) != colourKey) {
-                    data[i] = c | 0xFF000000;
-                } else {
-                    data[i] = 0;
-                }
-            }
-            resImg = GaBIEn.createImage("ImageCache:" + ki, data, img.width, img.height);
+            // do the conversion on the VOPEKS thread
+            resImg = new VopeksImage(GaBIEn.vopeks, "ImageCache:" + ki, img.width, img.height, (consumer) -> {
+                GaBIEn.vopeks.putTask((instance) -> {
+                    int[] data = img.getPixels();
+                    int colourKey = tb | (tg << 8) | (tr << 16);
+                    for (int i = 0; i < data.length; i++) {
+                        int c = data[i];
+                        if ((c & 0xFFFFFF) != colourKey) {
+                            data[i] = c | 0xFF000000;
+                        } else {
+                            data[i] = 0;
+                        }
+                    }
+                    consumer.accept(instance.newTexture(img.width, img.height, BadGPU.TextureLoadFormat.ARGBI32, data, 0));
+                });
+            });
         }
         loadedImages.put(ki, resImg);
         return resImg;

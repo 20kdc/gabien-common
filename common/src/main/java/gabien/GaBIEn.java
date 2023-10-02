@@ -406,6 +406,13 @@ public final class GaBIEn {
     }
 
     /**
+     * Gets the name of the default native font.
+     */
+    public static @NonNull String getDefaultNativeFontName() {
+        return internal.getDefaultNativeFontName();
+    }
+
+    /**
      * Returns the list of native font names.
      */
     public static @NonNull String[] getFontOverrides() {
