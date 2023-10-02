@@ -11,12 +11,16 @@ import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.IConsumer;
+
+import java.io.IOException;
+
 import gabien.GaBIEn;
 import gabien.atlas.AtlasSet;
 import gabien.atlas.BinaryTreeAtlasStrategy;
 import gabien.atlas.ImageAtlasDrawable;
 import gabien.atlas.SimpleAtlasBuilder;
 import gabien.media.RIFFNode;
+import gabien.pva.PVAFile;
 import gabien.render.AtlasPage;
 import gabien.render.ITexRegion;
 import gabien.ui.Rect;
@@ -36,6 +40,19 @@ public class UIMainMenu extends UIProxy {
     public UIMainMenu(WindowCreatingUIElementConsumer ui) {
         this.ui = ui;
         proxySetElement(vsl, false);
+        vsl.panelsAdd(new UITextButton("Open PVA File...", 16, () -> {
+            GaBIEn.startFileBrowser("Open PVA File", false, "", (str) -> {
+                if (str != null) {
+                    PVAFile pf = new PVAFile();
+                    try {
+                        pf.read(GaBIEn.getInFile(str));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    ui.accept(new UIPVAViewer(pf));
+                }
+            });
+        }));
         vsl.panelsAdd(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));
         }));

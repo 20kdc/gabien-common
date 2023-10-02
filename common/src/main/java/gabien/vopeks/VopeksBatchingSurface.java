@@ -58,8 +58,6 @@ public final class VopeksBatchingSurface extends IGrDriver {
         super(id, w, h);
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
-            // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
-            // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
             texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
         });
         halfWF = w / 2.0f;

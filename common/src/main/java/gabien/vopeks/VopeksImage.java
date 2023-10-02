@@ -31,13 +31,22 @@ public final class VopeksImage extends IImage {
     /**
      * Creates a new VopeksImage.
      */
-    public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
+    public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, BadGPU.TextureLoadFormat tlf, int[] init) {
         super(id, w, h);
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
-            // DO NOT REMOVE BadGPU.TextureFlags.HasAlpha
-            // NOT HAVING ALPHA KILLS PERF. ON ANDROID FOR SOME REASON.
-            texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
+            texture = instance.newTexture(w, h, tlf, init, 0);
+        });
+    }
+
+    /**
+     * Creates a new VopeksImage.
+     */
+    public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, BadGPU.TextureLoadFormat tlf, byte[] init) {
+        super(id, w, h);
+        this.vopeks = vopeks;
+        vopeks.putTask((instance) -> {
+            texture = instance.newTexture(w, h, tlf, init, 0);
         });
     }
 

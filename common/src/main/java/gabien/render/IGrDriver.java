@@ -432,10 +432,52 @@ public abstract class IGrDriver extends RenderTarget {
     }
 
     /**
-     * Restores TRS Y.
+     * Restores TRS X and Y.
      */
     public final void trsTXYE(float x, float y) {
         trs[0] = x;
         trs[1] = y;
+    }
+
+    /**
+     * Scales TRS X.
+     * Returns old value.
+     */
+    public final float trsSXS(float x) {
+        float old = trs[2];
+        trs[2] *= x;
+        return old;
+    }
+
+    /**
+     * Scales TRS Y.
+     * Returns old value.
+     */
+    public final float trsSYS(float y) {
+        float old = trs[3];
+        trs[3] *= y;
+        return old;
+    }
+
+    /**
+     * Restores TRS SX.
+     */
+    public final void trsSXE(float x) {
+        trs[2] = x;
+    }
+
+    /**
+     * Restores TRS SY.
+     */
+    public final void trsSYE(float y) {
+        trs[3] = y;
+    }
+
+    /**
+     * Restores TRS SX and SY.
+     */
+    public final void trsSXYE(float x, float y) {
+        trs[2] = x;
+        trs[3] = y;
     }
 }

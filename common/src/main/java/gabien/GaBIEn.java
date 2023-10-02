@@ -387,7 +387,7 @@ public final class GaBIEn {
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksImage(GaBIEn.vopeks, debugId, width, height, colours);
+        return new VopeksImage(GaBIEn.vopeks, debugId, width, height, BadGPU.TextureLoadFormat.ARGBI32, colours);
     }
 
     /**

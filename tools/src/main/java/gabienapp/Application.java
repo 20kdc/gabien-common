@@ -19,7 +19,7 @@ public class Application {
         WindowCreatingUIElementConsumer wcuiec = new WindowCreatingUIElementConsumer();
         wcuiec.accept(new UIMainMenu(wcuiec));
         while (wcuiec.runningWindowCount() > 0) {
-            double time = GaBIEn.endFrame(0.05d);
+            double time = GaBIEn.endFrame(1.0d / 30.0d);
             wcuiec.runTick(time);
         }
         GaBIEn.ensureQuit();
