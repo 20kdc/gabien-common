@@ -84,7 +84,7 @@ public class PVARenderer {
                 PVAFile.PaletteElm pB = pvaFile.palette[loopB.palIndex];
                 PVAFile.PaletteElm pC = pvaFile.palette[loopC.palIndex];
                 IImage img = null;
-                int blendMode = IGrDriver.BLEND_NONE;//IGrDriver.BLEND_NORMAL;
+                int blendMode = IGrDriver.BLEND_NORMAL;
                 int drawFlagsEx = 0;
                 float sM = 1;
                 float tM = 1;
