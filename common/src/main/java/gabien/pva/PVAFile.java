@@ -22,22 +22,23 @@ import java.util.zip.InflaterInputStream;
  */
 public class PVAFile {
     public final Header header = new Header();
-    public SequenceElm[] sequence;
-    public FrameElm[][] frames;
-    public Triangle[] triangles;
-    public Matrix[] matrices;
-    public Loop[] loops;
-    public PaletteElm[] palette;
-    public Vertex[] vertices;
-    public Texture[] textures;
-    public ImageHeader[] imageHeaders;
-    public byte[][] imageDatas;
+    public final SequenceElm[] sequence;
+    public final FrameElm[][] frames;
+    public final Triangle[] triangles;
+    public final Matrix[] matrices;
+    public final Loop[] loops;
+    public final PaletteElm[] palette;
+    public final Vertex[] vertices;
+    public final Texture[] textures;
+    public final ImageHeader[] imageHeaders;
+    public final byte[][] imageDatas;
 
-    public void read(InputStream inp) throws IOException {
-        readDecompressed(new InflaterInputStream(inp));
-    }
-
-    public void readDecompressed(InputStream inp) throws IOException {
+    /**
+     * Reads a PVA file.
+     */
+    public PVAFile(InputStream inp, boolean decompressed) throws IOException {
+        if (!decompressed)
+            inp = new InflaterInputStream(inp);
         header.read(CABS.readChunk(inp));
         sequence = new SequenceElm().readArray(CABS.readChunk(inp)).toArray(new SequenceElm[0]);
         frames = new FrameElm[header.frameCount][];

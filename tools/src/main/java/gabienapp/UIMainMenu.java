@@ -43,13 +43,12 @@ public class UIMainMenu extends UIProxy {
         vsl.panelsAdd(new UITextButton("Open PVA File...", 16, () -> {
             GaBIEn.startFileBrowser("Open PVA File", false, "", (str) -> {
                 if (str != null) {
-                    PVAFile pf = new PVAFile();
                     try {
-                        pf.read(GaBIEn.getInFile(str));
+                        PVAFile pf = new PVAFile(GaBIEn.getInFile(str), false);
+                        ui.accept(new UIPVAViewer(pf));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    ui.accept(new UIPVAViewer(pf));
                 }
             });
         }));

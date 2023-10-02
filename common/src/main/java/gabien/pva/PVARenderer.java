@@ -6,6 +6,9 @@
  */
 package gabien.pva;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import gabien.GaBIEn;
 import gabien.natives.BadGPU;
 import gabien.render.IGrDriver;
@@ -20,6 +23,10 @@ import gabien.vopeks.VopeksImage;
 public class PVARenderer {
     public final PVAFile pvaFile;
     public final VopeksImage[] images;
+
+    public PVARenderer(InputStream inp) throws IOException {
+        this(new PVAFile(inp, false));
+    }
 
     public PVARenderer(PVAFile pva) {
         pvaFile = pva;
