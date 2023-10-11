@@ -20,13 +20,11 @@ import gabien.wsi.IPeripherals;
 public class UIPVAViewer extends UIElement {
     public final PVAFile pva;
     public final PVARenderer ren;
-    public final double duration;
 
     public UIPVAViewer(PVAFile pf) {
         super(pf.header.width, pf.header.height);
         pva = pf;
         ren = new PVARenderer(pva);
-        duration = pva.getDuration();
     }
 
     @Override
@@ -38,8 +36,8 @@ public class UIPVAViewer extends UIElement {
         Size sz = getSize();
         int w = sz.width;
         int h = sz.height;
-        double time = (GaBIEn.getTime() * 1000) % duration;
-        int whichFrameToRender = pva.frameOf(time);
+        double time = GaBIEn.getTime() * 1000;
+        int whichFrameToRender = pva.frameOfLooped(time);
         if (whichFrameToRender != -1)
             ren.renderInline(pva.frames[whichFrameToRender], igd, 0, 0, w, h);
     }
