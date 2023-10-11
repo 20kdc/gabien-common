@@ -32,7 +32,8 @@ public class WavIO {
         ris.readListOrRiffTypeAndVerify("WAVE", "wave");
         return readWAVInterior(ris, close ? fis : null);
     }
-    public static AudioIOSource readWAVInterior(@NonNull final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
+    @SuppressWarnings("resource")
+	public static AudioIOSource readWAVInterior(@NonNull final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
         AudioIOCRFmt fmt = null;
         while (ris.available() > 0) {
             RIFFInputStream chk = new RIFFInputStream(ris);
@@ -129,31 +130,29 @@ public class WavIO {
         // Details of the format.
         AudioIOCRSet cr = dataSource.crSet;
         AudioIOFormat fmt = dataSource.format;
-        // fmt {
-        RIFFOutputStream fmtChunk = new RIFFOutputStream(fos, "fmt ", fmtSize);
-        fmtChunk.writeShort(fmtSize == 0x28 ? 0xFFFE : fmt.formatCode);
-        fmtChunk.writeShort(cr.channels);
-        fmtChunk.writeInt(cr.sampleRate);
-        fmtChunk.writeInt(cr.sampleRate * fmt.bytesPerSample * cr.channels);
-        fmtChunk.writeShort(fmt.bytesPerSample * cr.channels);
-        fmtChunk.writeShort(fmt.bitsPerSample);
-        if (fmtSize == 0x10) {
-            // nothing to do here!
-        } else if (fmtSize == 0x12) {
-            fmtChunk.writeShort(0);
-        } else if (fmtSize == 0x28) {
-            fmtChunk.writeShort(0x16);
-            fmtChunk.writeShort(fmt.bitsPerSample);
-            fmtChunk.writeInt(cr.channelMask);
-            // apparently a GUID
-            fmtChunk.writeInt(fmt.formatCode);
-            fmtChunk.writeInt(0);
-            fmtChunk.writeLong(0);
-        } else {
-            throw new UnsupportedOperationException("How'd you do this then, hmm?");
+        try (RIFFOutputStream fmtChunk = new RIFFOutputStream(fos, "fmt ", fmtSize)) {
+	        fmtChunk.writeShort(fmtSize == 0x28 ? 0xFFFE : fmt.formatCode);
+	        fmtChunk.writeShort(cr.channels);
+	        fmtChunk.writeInt(cr.sampleRate);
+	        fmtChunk.writeInt(cr.sampleRate * fmt.bytesPerSample * cr.channels);
+	        fmtChunk.writeShort(fmt.bytesPerSample * cr.channels);
+	        fmtChunk.writeShort(fmt.bitsPerSample);
+	        if (fmtSize == 0x10) {
+	            // nothing to do here!
+	        } else if (fmtSize == 0x12) {
+	            fmtChunk.writeShort(0);
+	        } else if (fmtSize == 0x28) {
+	            fmtChunk.writeShort(0x16);
+	            fmtChunk.writeShort(fmt.bitsPerSample);
+	            fmtChunk.writeInt(cr.channelMask);
+	            // apparently a GUID
+	            fmtChunk.writeInt(fmt.formatCode);
+	            fmtChunk.writeInt(0);
+	            fmtChunk.writeLong(0);
+	        } else {
+	            throw new UnsupportedOperationException("How'd you do this then, hmm?");
+	        }
         }
-        fmtChunk.close();
-        // }
     }
 
     public static void writeWAVInteriorFACT(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {
