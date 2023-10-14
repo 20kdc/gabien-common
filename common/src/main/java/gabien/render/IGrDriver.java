@@ -37,9 +37,23 @@ public abstract class IGrDriver extends RenderTarget {
         BlendWeight.One, BlendWeight.Zero, BlendOp.Add,
         BlendWeight.One, BlendWeight.Zero, BlendOp.Add
     );
+    /**
+     * Beware! This equation doesn't work properly for a transparent target buffer.
+     * This is a known thing that can't be fixed.
+     * In theory you would use PMA instead, and then composite that onto an opaque final framebuffer.
+     */
     public static final int BLEND_NORMAL = BadGPU.blendProgram(
-        BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add,
-        BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add
+            BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add,
+            BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add
+        );
+    /*
+     * Pre-multiplied alpha over operation.
+     * This also works for compositing a PMA buffer onto any opaque buffer.
+     * (Since compositing *onto* a straight alpha buffer is a bad idea, this is a good thing)
+     */
+    public static final int BLEND_NORMAL_PMA = BadGPU.blendProgram(
+        BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add,
+        BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add
     );
     public static final int BLEND_ADD = BadGPU.blendProgram(
         BlendWeight.One, BlendWeight.One, BlendOp.Add,
@@ -48,6 +62,13 @@ public abstract class IGrDriver extends RenderTarget {
     public static final int BLEND_SUB = BadGPU.blendProgram(
         BlendWeight.One, BlendWeight.One, BlendOp.ReverseSub,
         BlendWeight.Zero, BlendWeight.One, BlendOp.Add
+    );
+    /*
+     * Overwriting operation converting from straight alpha source to PMA destination.
+     */
+    public static final int BLEND_STRAIGHT2PMA = BadGPU.blendProgram(
+        BlendWeight.SrcA, BlendWeight.Zero, BlendOp.Add,
+        BlendWeight.One, BlendWeight.Zero, BlendOp.Add
     );
 
     // -- Image stuff --
