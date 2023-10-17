@@ -8,16 +8,16 @@ package gabien.atlas;
 
 import java.util.LinkedList;
 
-import gabien.render.AtlasPage;
+import gabien.render.IGrDriver;
 
 /**
  * Created 18th July, 2023.
  */
 public final class AtlasSet {
-    public final LinkedList<AtlasPage> pages = new LinkedList<>();
+    public final LinkedList<IGrDriver> pages = new LinkedList<>();
 
     public void shutdown() {
-        for (AtlasPage ap : pages)
+        for (IGrDriver ap : pages)
             ap.shutdown();
     }
 }

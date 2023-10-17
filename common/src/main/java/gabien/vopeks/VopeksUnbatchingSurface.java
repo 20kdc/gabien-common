@@ -21,7 +21,7 @@ import gabien.render.IImgRegion;
  * BEWARE: The batching methods are unsynchronized, except batchFlush (because it's externally called).
  * Use them in synchronized blocks or something, please.
  *
- * Created 7th June, 2023.
+ * Copied from VopeksBatchingSurface 17th October 2023.
  */
 public final class VopeksUnbatchingSurface extends IGrDriver {
     /**
@@ -30,8 +30,6 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
     public final Vopeks vopeks;
 
     private volatile boolean wasDisposed;
-
-    private final VopeksBatchPool batchPool;
 
     /**
      * State of the crop registers for the group that is being prepared right now.
@@ -47,7 +45,6 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
     public VopeksUnbatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
         super(id, w, h);
         this.vopeks = vopeks;
-        batchPool = new VopeksBatchPool(vopeks, this, 1);
         vopeks.putTask((instance) -> {
             texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
         });
@@ -168,14 +165,7 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
             tex = iU.pickImgRegion(null);
         if (tex != null)
             srf = tex.getSurface();
-        // calculate this here so that it can be pushed forward if necessary
-        // in particular matchesState may be happier if this is pushed all the way...
-        // Setup the reference.
-        // Note that we only have to worry about this at the start of a batch.
-        // If something happens, it'll reference-barrier, which will flush us, so we'll re-reference next group.
-        if (srf != null)
-            srf.batchReference(this);
-        VopeksBatch currentBatch = batchPool.get();
+        VopeksBatch currentBatch = new VopeksBatch(vopeks, this, null);
         currentBatch.hasColours = hasColours;
         currentBatch.vertexCount = vertexCount;
         if (cropEssential) {
@@ -211,8 +201,12 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
                 data[posT + 1] = tex.getT(s, t);
             }
         }
-        // put!
+        // Actually insert the task and do tex ref/unref etc.
+        if (srf != null)
+            srf.batchReference(this);
         vopeks.putTask(currentBatch);
+        if (srf != null)
+            srf.batchUnreference(this);
     }
 
     @Override

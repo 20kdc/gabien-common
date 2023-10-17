@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
-import gabien.render.AtlasPage;
+import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
@@ -50,7 +50,7 @@ public final class SimpleAtlasBuilder {
                     Entry e = entriesArray[i];
                     if (e == null)
                         continue;
-                    AtlasPage ap = GaBIEn.makeAtlasPage(e.sz.width, e.sz.height);
+                    IGrDriver ap = GaBIEn.makeAtlasPage(e.sz.width, e.sz.height);
                     e.tex.drawTo(ap, 0, 0);
                     e.key.accept(ap);
                     res.pages.add(ap);
@@ -125,7 +125,7 @@ public final class SimpleAtlasBuilder {
     }
 
     private int finishCompilePage(AtlasSet res, Rect[] currentBest, Entry[] currentBestContents) {
-        AtlasPage ap = GaBIEn.makeAtlasPage(pageSize.width, pageSize.height);
+        IGrDriver ap = GaBIEn.makeAtlasPage(pageSize.width, pageSize.height);
         for (int i = 0; i < currentBest.length; i++) {
             Rect r = currentBest[i];
             Entry e = currentBestContents[i];

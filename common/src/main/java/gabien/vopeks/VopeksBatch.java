@@ -6,6 +6,9 @@
  */
 package gabien.vopeks;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
 import gabien.natives.BadGPU.Instance;
@@ -25,10 +28,7 @@ class VopeksBatch implements ITask {
 
     private final ObjectPool<VopeksBatch> srcPool;
 
-    /**
-     * @param vopeksBatchingSurface
-     */
-    VopeksBatch(Vopeks vopeks, IImage parent, ObjectPool<VopeksBatch> pool) {
+    VopeksBatch(@NonNull Vopeks vopeks, @NonNull IImage parent, @Nullable ObjectPool<VopeksBatch> pool) {
         this.vopeks = vopeks;
         this.parent = parent;
         this.srcPool = pool;
@@ -75,7 +75,8 @@ class VopeksBatch implements ITask {
                 null, 0, alphaComp, 0,
                 blendMode);
         vopeks.floatPool.finish(megabuffer);
-        srcPool.finish(this);
+        if (srcPool != null)
+            srcPool.finish(this);
     }
 
     public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, IImage tex) {

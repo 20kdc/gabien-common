@@ -7,7 +7,7 @@
 
 package gabien.atlas;
 
-import gabien.render.AtlasPage;
+import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
 
 /**
@@ -23,7 +23,7 @@ public final class ImageAtlasDrawable extends AtlasDrawable {
     }
 
     @Override
-    public void drawTo(AtlasPage ap, int x, int y) {
-        ap.copyFrom(0, 0, width, height, x, y, source);
+    public void drawTo(IGrDriver ap, int x, int y) {
+        ap.blitImage(0, 0, width, height, x, y, source, IGrDriver.BLEND_NONE, 0);
     }
 }

@@ -7,7 +7,7 @@
 
 package gabien.atlas;
 
-import gabien.render.AtlasPage;
+import gabien.render.IGrDriver;
 
 /**
  * Something that can be drawn to an AtlasPage.
@@ -21,5 +21,5 @@ public abstract class AtlasDrawable {
         height = h;
     }
 
-    public abstract void drawTo(AtlasPage ap, int x, int y);
+    public abstract void drawTo(IGrDriver ap, int x, int y);
 }

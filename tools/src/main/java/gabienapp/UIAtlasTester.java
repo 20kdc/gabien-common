@@ -11,7 +11,6 @@ import java.util.Random;
 import gabien.GaBIEn;
 import gabien.atlas.AllAtlasStrategies;
 import gabien.atlas.IAtlasStrategy;
-import gabien.render.AtlasPage;
 import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
 import gabien.uslx.append.Rect;
@@ -29,7 +28,7 @@ public class UIAtlasTester extends UIElement {
     private int st = 0;
     private Random random = new Random();
     private Rect[] atlas;
-    private AtlasPage ap;
+    private IGrDriver ap;
 
     public UIAtlasTester() {
         super(512, 512 + 32);
@@ -100,8 +99,8 @@ public class UIAtlasTester extends UIElement {
             if (r != null)
                 igd.fillRect(0, 0, 0, 128, r.x + 1, r.y + 1, r.width - 2, r.height - 2);
         GaBIEn.engineFonts.f16.drawLine(igd, 0, 512, "fulfillment: " + amount + "/" + atlas.length, false);
-        ap.copyFrom(0, 0, 512, 512, 0, 0, igd);
-        ap.copyFrom(0, 512, 128, 16, 16, 16, igd);
+        ap.blitImage(0, 0, 512, 512, 0, 0, igd, IGrDriver.BLEND_NONE, 0);
+        ap.blitImage(0, 512, 128, 16, 16, 16, igd, IGrDriver.BLEND_NONE, 0);
         igd.blitImage(0, 512 + 16, ap);
     }
 }

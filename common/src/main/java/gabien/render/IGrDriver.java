@@ -360,6 +360,10 @@ public abstract class IGrDriver extends RenderTarget {
         blitScaledImage(0, 0, srcw, srch, x, y, srcw, srch, i, BLEND_NORMAL, 0);
     }
 
+    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, @NonNull ITexRegion i, int blendMode, int drawFlagsEx) {
+        blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, blendMode, drawFlagsEx);
+    }
+
     private final int DRAWFLAGS_WRAPST = BadGPU.DrawFlags.WrapS | BadGPU.DrawFlags.WrapT;
 
     public final void blitTiledImage(float x, float y, float w, float h, @Nullable IImage cachedTile) {

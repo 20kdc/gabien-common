@@ -23,7 +23,7 @@ import gabien.atlas.ImageAtlasDrawable;
 import gabien.atlas.SimpleAtlasBuilder;
 import gabien.media.RIFFNode;
 import gabien.pva.PVAFile;
-import gabien.render.AtlasPage;
+import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.UILabel;
@@ -69,7 +69,7 @@ public class UIMainMenu extends UIProxy {
             sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere256.png")));
             sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere512.png")));
             AtlasSet as = sab.compile();
-            for (AtlasPage ap : as.pages) {
+            for (IGrDriver ap : as.pages) {
                 UIPublicPanel upp = new UIPublicPanel(ap.width, ap.height);
                 upp.baseImage = ap;
                 upp.imageSW = ap.width;
