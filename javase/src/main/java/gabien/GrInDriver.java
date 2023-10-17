@@ -10,7 +10,7 @@ package gabien;
 import gabien.backend.WSIDownloadPair;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
-import gabien.uslx.append.IFunction;
+import gabien.uslx.append.Function;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.ITextEditingSession;
@@ -383,7 +383,7 @@ class GrInDriver implements IGrInDriver {
 		return uiGuessScaleTenths;
 	}
 
-    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, boolean multiLine, int textHeight, IFunction<String, String> fun) {
+    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, boolean multiLine, int textHeight, Function<String, String> fun) {
         if (currentEditingSession != null)
             currentEditingSession.endSession();
         return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, multiLine, textHeight, fun);

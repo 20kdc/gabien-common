@@ -12,11 +12,11 @@ import gabien.uslx.append.*;
 /**
  * Created on 13/04/16, Change @ feb 17, 2018
  */
-public class UIAdjuster extends UIElement.UIPanel implements IConsumer<String> {
+public class UIAdjuster extends UIElement.UIPanel implements Consumer<String> {
     public final UITextButton incButton, decButton;
     public final UINumberBox numberDisplay;
 
-    public UIAdjuster(int h, long initial, final IFunction<Long, Long> write) {
+    public UIAdjuster(int h, long initial, final Function<Long, Long> write) {
         // Not entirely correct, but reduces time wasted on word-wrapping
         super(h * 16, h);
         incButton = new UITextButton("+", h, new Runnable() {

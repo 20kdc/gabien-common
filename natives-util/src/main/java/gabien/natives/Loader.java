@@ -16,7 +16,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import gabien.uslx.append.IFunction;
+import gabien.uslx.append.Function;
 
 /**
  * Loader for gabien-natives.
@@ -46,7 +46,7 @@ public abstract class Loader {
         return defaultLoader(Loader::assetLookupJavaSE, Loader::destinationSetupJavaSE);
     }
 
-    public static boolean defaultLoader(IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup) {
+    public static boolean defaultLoader(Function<String, InputStream> assetLookup, Function<String, File> destinationSetup) {
         StringWriter errors = new StringWriter();
         PrintWriter errorsP = new PrintWriter(errors);
         // all supported CPUs
@@ -128,14 +128,14 @@ public abstract class Loader {
         }
         return false;
     }
-    private static boolean defaultLoaderConfigTmpWithBackpathCheck(String config, IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup, PrintWriter errorsP) {
+    private static boolean defaultLoaderConfigTmpWithBackpathCheck(String config, Function<String, InputStream> assetLookup, Function<String, File> destinationSetup, PrintWriter errorsP) {
         // Backup mechanism laying around to run this on EGL even on systems that don't traditionally do that.
         if (System.getenv("BADGPU_EGL_LIBRARY") != null)
             if (loadWithTmpfile(config + ".CX_BackPath", assetLookup, destinationSetup, errorsP))
                 return true;
         return loadWithTmpfile(config, assetLookup, destinationSetup, errorsP);
     }
-    private static boolean loadWithTmpfile(String config, IFunction<String, InputStream> assetLookup, IFunction<String, File> destinationSetup, PrintWriter errorsP) {
+    private static boolean loadWithTmpfile(String config, Function<String, InputStream> assetLookup, Function<String, File> destinationSetup, PrintWriter errorsP) {
         String fn = "natives." + config;
         String fnf = "gabien-natives/" + fn;
         try {

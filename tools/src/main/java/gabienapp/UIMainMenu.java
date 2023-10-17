@@ -10,7 +10,7 @@ import gabien.ui.UIScrollLayout;
 import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.uslx.append.EmptyLambdas;
-import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 
 import java.io.IOException;
@@ -61,7 +61,7 @@ public class UIMainMenu extends UIProxy {
         }));
         vsl.panelsAdd(new UITextButton("Compile Sphere Atlases", 16, () -> {
             SimpleAtlasBuilder sab = new SimpleAtlasBuilder(512, 512, BinaryTreeAtlasStrategy.INSTANCE);
-            IConsumer<ITexRegion> itr = EmptyLambdas.emptyConsumer();
+            Consumer<ITexRegion> itr = EmptyLambdas.emptyConsumer();
             sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere32.png")));
             for (int i = 0; i < 32; i++)
                 sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere64.png")));

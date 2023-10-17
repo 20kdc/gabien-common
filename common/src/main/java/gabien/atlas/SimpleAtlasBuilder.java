@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import gabien.GaBIEn;
 import gabien.render.AtlasPage;
 import gabien.render.ITexRegion;
-import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 
@@ -31,7 +31,7 @@ public final class SimpleAtlasBuilder {
         this.pageStrategy = pageStrategy;
     }
 
-    public void add(IConsumer<ITexRegion> result, AtlasDrawable src) {
+    public void add(Consumer<ITexRegion> result, AtlasDrawable src) {
         entries.add(new Entry(result, src));
     }
 
@@ -137,10 +137,10 @@ public final class SimpleAtlasBuilder {
     }
 
     private static class Entry {
-        final IConsumer<ITexRegion> key;
+        final Consumer<ITexRegion> key;
         final Size sz;
         final AtlasDrawable tex;
-        Entry(IConsumer<ITexRegion> key, AtlasDrawable tex) {
+        Entry(Consumer<ITexRegion> key, AtlasDrawable tex) {
             this.key = key;
             this.tex = tex;
             this.sz = new Size(tex.width, tex.height);

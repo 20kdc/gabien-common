@@ -10,7 +10,7 @@ package gabien;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.uslx.append.IFunction;
+import gabien.uslx.append.Function;
 import gabien.wsi.ITextEditingSession;
 
 /**
@@ -24,9 +24,9 @@ public class TextEditingSession implements ITextEditingSession {
     private final boolean multiLine;
     private String lastTextSentToTextbox;
     private String lastTextReceivedFromTextbox;
-    private IFunction<String, String> lastFeedback;
+    private Function<String, String> lastFeedback;
 
-    public TextEditingSession(Peripherals par, @NonNull String text, boolean ml, int textHeight, @Nullable IFunction<String, String> feedback) {
+    public TextEditingSession(Peripherals par, @NonNull String text, boolean ml, int textHeight, @Nullable Function<String, String> feedback) {
         parent = par;
         if (parent.currentTextEditingSession != null)
             parent.currentTextEditingSession.endSession();

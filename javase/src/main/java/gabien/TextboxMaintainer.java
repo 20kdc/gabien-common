@@ -38,7 +38,7 @@ public class TextboxMaintainer implements ITextEditingSession {
     public boolean sessionIsDead = false;
     public boolean enterFlag = false;
 
-    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, boolean ml, int textHeight, final IFunction<String, String> feedback) {
+    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, boolean ml, int textHeight, final Function<String, String> feedback) {
         peripheralsInternal = pi;
         if (textHeight < 16)
             textHeight = 16;

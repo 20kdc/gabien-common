@@ -25,7 +25,7 @@ public class TextboxImplObject implements ITextboxImplementation {
     private final EditText tf;
     private final TextView tv;
     private final LinearLayout host;
-    private IFunction<String, String> lastFeedback = null;
+    private Function<String, String> lastFeedback = null;
     private String lastKnownContents = "";
     // UI thread
     private boolean lastMultiLine;
@@ -109,7 +109,7 @@ public class TextboxImplObject implements ITextboxImplementation {
     }
 
     @Override
-    public void setActive(final String contents, final boolean multiLine, final IFunction<String, String> feedback) {
+    public void setActive(final String contents, final boolean multiLine, final Function<String, String> feedback) {
         lastKnownContents = contents;
         lastFeedback = feedback;
         okay = true;
@@ -190,7 +190,7 @@ public class TextboxImplObject implements ITextboxImplementation {
         public void setInactive() {
         }
         @Override
-        public void setActive(String contents, boolean multiLine, IFunction<String, String> feedback) {
+        public void setActive(String contents, boolean multiLine, Function<String, String> feedback) {
         }
         @Override
         public String getLastKnownText() {

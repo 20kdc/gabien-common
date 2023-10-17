@@ -8,8 +8,9 @@
 package gabien.uslx.append;
 
 /**
+ * replacement for 1.8 stuff
  * Created on 22/04/16.
  */
-public interface ISupplier<T> {
-    T get();
+public interface Consumer<T> {
+    void accept(T t);
 }

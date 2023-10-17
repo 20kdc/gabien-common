@@ -211,7 +211,7 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
     }
 
     @Override
-    public void startFileBrowser(String text, boolean saving, String exts, final IConsumer<String> result, String initialName) {
+    public void startFileBrowser(String text, boolean saving, String exts, final Consumer<String> result, String initialName) {
         Frame f = null;
         GraphicsDevice gd = getFSDevice();
         if (gd != null) {

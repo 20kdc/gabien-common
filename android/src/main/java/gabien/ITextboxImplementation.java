@@ -13,7 +13,7 @@ public interface ITextboxImplementation {
     String getLastKnownText();
     // Makes the textbox active, overwriting text/etc.
     // Immediately updates last known text.
-    void setActive(final String contents, final boolean multiLine, final IFunction<String, String> feedback);
+    void setActive(final String contents, final boolean multiLine, final Function<String, String> feedback);
     // Makes the textbox inactive.
     void setInactive();
     // Returns true if the textbox is currently active, false otherwise.

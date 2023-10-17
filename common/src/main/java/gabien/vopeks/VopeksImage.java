@@ -11,7 +11,7 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
 import gabien.render.IImage;
-import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Consumer;
 import gabien.uslx.append.TimeLogger;
 
 /**
@@ -53,7 +53,7 @@ public final class VopeksImage extends IImage {
     /**
      * This promises that a Vopeks task will be created on behalf of the image.
      */
-    public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, IConsumer<IConsumer<BadGPU.Texture>> grabber) {
+    public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, Consumer<Consumer<BadGPU.Texture>> grabber) {
         super(id, w, h);
         this.vopeks = vopeks;
         grabber.accept((res) -> texture = res);

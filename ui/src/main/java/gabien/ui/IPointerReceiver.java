@@ -72,9 +72,9 @@ public interface IPointerReceiver {
     class RelativeResizePointerReceiver implements IPointerReceiver {
         public final Size firstSize;
         public int xSt, ySt;
-        public final IConsumer<Size> consumer;
+        public final Consumer<Size> consumer;
         public Size lastSize;
-        public RelativeResizePointerReceiver(int w, int h, IConsumer<Size> iConsumer) {
+        public RelativeResizePointerReceiver(int w, int h, Consumer<Size> iConsumer) {
             lastSize = firstSize = new Size(w, h);
             consumer = iConsumer;
         }

@@ -79,7 +79,7 @@ public class Peripherals implements IPeripherals {
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback) {
         return new TextEditingSession(this, text, multiLine, textHeight, feedback);
     }
 

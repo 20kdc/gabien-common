@@ -15,7 +15,7 @@ import gabien.ui.UIScrollLayout;
 import gabien.ui.UIScrollbar;
 import gabien.ui.UISplitterLayout;
 import gabien.uslx.append.HexByteEncoding;
-import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 import gabien.wsi.IPeripherals;
 
@@ -32,7 +32,7 @@ public class UIBytesEditor extends UIProxy {
     UIScrollLayout usl = new UIScrollLayout(true, 16);
     UIScrollbar usb = new UIScrollbar(true, 16);
 
-    public UIBytesEditor(byte[] init, IConsumer<byte[]> res) {
+    public UIBytesEditor(byte[] init, Consumer<byte[]> res) {
         data = init;
         setRowCount(1);
         proxySetElement(new UISplitterLayout(usl, usb, false, 1), false);

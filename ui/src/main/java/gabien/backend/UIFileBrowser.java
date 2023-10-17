@@ -23,7 +23,7 @@ import java.util.LinkedList;
  */
 public class UIFileBrowser extends UIElement.UIProxy {
     private boolean done;
-    private IConsumer<String> run;
+    private Consumer<String> run;
     private UILabel upperSection;
     private UIScrollLayout basicLayout;
     private UISplitterLayout outerLayout;
@@ -34,7 +34,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
     private String strTP;
     private String defaultFileName;
 
-    public UIFileBrowser(String actPath, IConsumer<String> r, String titlePrefix, boolean saving, int fSize, int scrollerSize, String dfn) {
+    public UIFileBrowser(String actPath, Consumer<String> r, String titlePrefix, boolean saving, int fSize, int scrollerSize, String dfn) {
         this.saving = saving;
         defaultFileName = dfn;
         run = r;

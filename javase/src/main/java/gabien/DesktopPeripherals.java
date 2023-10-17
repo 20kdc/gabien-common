@@ -93,7 +93,7 @@ public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripherals
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> fun) {
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> fun) {
         return parent.openEditingSession(this, multiLine, textHeight, fun);
     }
 

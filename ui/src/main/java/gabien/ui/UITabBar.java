@@ -401,7 +401,7 @@ public class UITabBar extends UIElement.UIPanel {
                         return null;
                     parentView.selectTab(w.contents);
                     if (canDragTabs) {
-                        IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new IConsumer<Size>() {
+                        IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new Consumer<Size>() {
                             @Override
                             public void accept(Size size) {
                                 if (tabs.contains(w)) {

@@ -38,5 +38,5 @@ public interface IPeripherals {
      * Starts a new text editing session (any previous session will automatically be ended).
      * feedback provides live editing feedback.
      */
-    ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback);
+    ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback);
 }

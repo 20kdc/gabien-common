@@ -29,7 +29,7 @@ import gabien.wsi.WindowSpecs;
  * and take the highest resolution you can get.
  * Created on 12/30/16.
  */
-public class WindowCreatingUIElementConsumer implements IConsumer<UIElement> {
+public class WindowCreatingUIElementConsumer implements Consumer<UIElement> {
     private LinkedList<ActiveWindow> activeWindows = new LinkedList<ActiveWindow>();
     private LinkedList<ActiveWindow> incomingWindows = new LinkedList<ActiveWindow>();
 

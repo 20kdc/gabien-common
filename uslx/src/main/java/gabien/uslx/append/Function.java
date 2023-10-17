@@ -10,6 +10,6 @@ package gabien.uslx.append;
 /**
  * Created on 22/04/16.
  */
-public interface IFunction<A, R> {
+public interface Function<A, R> {
     R apply(A a);
 }

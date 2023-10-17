@@ -11,14 +11,14 @@ package gabien.uslx.append;
  */
 public final class EmptyLambdas {
     public static final Runnable emptyRunnable = () -> {};
-    private static final IConsumer<?> emptyConsumer = (res) -> {};
+    private static final Consumer<?> emptyConsumer = (res) -> {};
 
     private EmptyLambdas() {
         
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> IConsumer<T> emptyConsumer() {
-        return (IConsumer<T>) emptyConsumer;
+    public static <T> Consumer<T> emptyConsumer() {
+        return (Consumer<T>) emptyConsumer;
     }
 }

@@ -23,7 +23,7 @@ public class UITextBox extends UILabel {
     private String textLastSeen = "";
     private String textCStr = "";
     public Runnable onEdit = EmptyLambdas.emptyRunnable;
-    public IFunction<String, String> feedback;
+    public Function<String, String> feedback;
     public boolean multiLine;
 
     private boolean tempDisableSelection = false;

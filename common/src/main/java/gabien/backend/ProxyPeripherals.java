@@ -43,7 +43,7 @@ public class ProxyPeripherals<T extends IPeripherals> implements IPeripherals {
     }
 
     @Override
-    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable IFunction<String, String> feedback) {
+    public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback) {
         return target.openTextEditingSession(text, multiLine, textHeight, feedback);
     }
 }

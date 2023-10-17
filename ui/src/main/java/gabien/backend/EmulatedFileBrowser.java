@@ -33,7 +33,7 @@ public class EmulatedFileBrowser implements IGaBIEnFileBrowser {
     }
 
     @Override
-    public void startFileBrowser(String text, boolean saving, String exts, IConsumer<String> result, String initialName) {
+    public void startFileBrowser(String text, boolean saving, String exts, Consumer<String> result, String initialName) {
         // Need to setup an environment for a file browser.
         final WindowCreatingUIElementConsumer wc = new WindowCreatingUIElementConsumer() {
             @Override

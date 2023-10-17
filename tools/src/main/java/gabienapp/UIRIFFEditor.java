@@ -19,7 +19,7 @@ import gabien.ui.UIScrollLayout;
 import gabien.ui.UISplitterLayout;
 import gabien.ui.UITextBox;
 import gabien.ui.UITextButton;
-import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 
 /**
@@ -113,7 +113,7 @@ public class UIRIFFEditor extends UIProxy {
             addPasteButton(" " + indent, cd, idx);
         }
     }
-    public Runnable cidEditor(UITextBox tb, IConsumer<String> res) {
+    public Runnable cidEditor(UITextBox tb, Consumer<String> res) {
         return () -> {
             char[] tmp = new char[4];
             int l = tb.text.length();

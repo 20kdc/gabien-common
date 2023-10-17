@@ -223,7 +223,7 @@ public class UIWindowView extends UIElement {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
                 if (!UITabBar.clickInTab(this, x - framebar.x, y - framebar.y, framebar.width, fh))
-                    return new IPointerReceiver.RelativeResizePointerReceiver(r.x, r.y, new IConsumer<Size>() {
+                    return new IPointerReceiver.RelativeResizePointerReceiver(r.x, r.y, new Consumer<Size>() {
                         @Override
                         public void accept(Size size) {
                             Size cs = contents.getSize();
@@ -268,7 +268,7 @@ public class UIWindowView extends UIElement {
                 }
                 final int tfx = ttx;
                 final int tfy = tty;
-                return new IPointerReceiver.RelativeResizePointerReceiver(rw, rh, new IConsumer<Size>() {
+                return new IPointerReceiver.RelativeResizePointerReceiver(rw, rh, new Consumer<Size>() {
                     @Override
                     public void accept(Size size) {
                         Rect basis = contents.getParentRelativeBounds();

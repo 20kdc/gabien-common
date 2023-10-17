@@ -22,7 +22,7 @@ import gabien.wsi.ITextEditingSession;
  */
 public class UIChatBox extends UILabel {
     private String history = "";
-    public IConsumer<String> onSubmit = (text) -> {};
+    public Consumer<String> onSubmit = (text) -> {};
 
     private boolean tempDisableSelection = false;
     private ITextEditingSession editingSession;
