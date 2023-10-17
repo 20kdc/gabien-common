@@ -13,13 +13,10 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUUnsafe;
-import gabien.natives.BadGPU.Instance;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.ITexRegion;
 import gabien.render.IImgRegion;
-import gabien.uslx.append.ObjectPool;
-import gabien.vopeks.Vopeks.ITask;
 
 /**
  * IGrDriver implements nice wrappers on top of these core operations.
@@ -36,8 +33,8 @@ public final class VopeksBatchingSurface extends IGrDriver {
 
     private volatile boolean wasDisposed;
 
-    private final BatchPool batchPool = new BatchPool(1);
-    private Batch currentBatch = null;
+    private final VopeksBatchPool batchPool;
+    private VopeksBatch currentBatch = null;
     private final int maxVerticesInBatch;
     private final float[] stagingV;
     private final float[] stagingC;
@@ -56,6 +53,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
     public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init, int maxVerticesInBatch) {
         super(id, w, h);
         this.vopeks = vopeks;
+        batchPool = new VopeksBatchPool(vopeks, this, 1);
         if (maxVerticesInBatch < 6)
             throw new RuntimeException("To function properly, there must be at least 6 vertices supported per batch.");
         this.maxVerticesInBatch = maxVerticesInBatch;
@@ -314,105 +312,5 @@ public final class VopeksBatchingSurface extends IGrDriver {
             stagingC[vertexBase4 + 3] = a;
         }
         currentBatch.vertexCount++;
-    }
-
-    private class BatchPool extends ObjectPool<Batch> {
-        public BatchPool(int expandChunkSize) {
-            super(expandChunkSize);
-        }
-
-        @Override
-        protected @NonNull Batch gen() {
-            return new Batch();
-        }
-        @Override
-        public void reset(@NonNull Batch element) {
-            element.cropL = 0;
-            element.cropU = 0;
-            element.cropR = 0;
-            element.cropD = 0;
-            element.cropEssential = false;
-            element.vertexCount = 0;
-            element.blendMode = IGrDriver.BLEND_NONE;
-            element.drawFlagsEx = 0;
-            element.tex = null;
-            element.megabuffer = null;
-            element.verticesOfs = 0;
-            element.coloursOfs = 0;
-            element.texCoordsOfs = 0;
-            element.hasColours = false;
-        }
-    }
-
-    private class Batch implements ITask {
-        int cropL, cropU, cropR, cropD;
-        int vertexCount;
-        int blendMode = IGrDriver.BLEND_NONE;
-        int drawFlagsEx = 0;
-        IImage tex;
-        float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
-        boolean hasColours;
-        boolean cropEssential;
-
-        @Override
-        public void run(Instance instance) {
-            if (texture == null) {
-                System.err.println("VopeksBatchingSurface: Texture disappeared from " + VopeksBatchingSurface.this + ". Someone try something silly?");
-                return;
-            }
-
-            BadGPU.Texture tx = tex != null ? tex.getTextureFromTask() : null;
-            long tx2 = tx != null ? tx.pointer : 0;
-            int alphaComp = BadGPU.Compare.Always.value;
-            int drawFlags = 0;
-            if (blendMode != IGrDriver.BLEND_NONE)
-                drawFlags |= BadGPU.DrawFlags.Blend;
-            // In the normal blend mode, an alpha of 0 leads to a NOP, so discard those pixels.
-            if (blendMode == IGrDriver.BLEND_NORMAL)
-                alphaComp = BadGPU.Compare.Greater.value;
-
-            drawFlags |= drawFlagsEx;
-
-            BadGPUUnsafe.drawGeomNoDS(texture.pointer, BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor,
-                    cropL, cropU, cropR - cropL, cropD - cropU,
-                    drawFlags,
-                    2, megabuffer, verticesOfs, hasColours ? megabuffer : null, coloursOfs, 2, tx == null ? null : megabuffer, texCoordsOfs,
-                    BadGPU.PrimitiveType.Triangles.value, 1,
-                    0, vertexCount, null, 0,
-                    null, 0,
-                    0, 0, width, height,
-                    tx2, null, 0,
-                    null, 0, alphaComp, 0,
-                    blendMode);
-            vopeks.floatPool.finish(megabuffer);
-            batchPool.finish(this);
-        }
-
-        public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, IImage tex) {
-            if (cropEssential) {
-                if (cropL != this.cropL || cropU != this.cropU || cropR != this.cropR || cropD != this.cropD) {
-                    // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropR + "," + cropD + " -> " + this.cropL + "," + this.cropU + "," + this.cropR + "," + this.cropD);
-                    return false;
-                }
-            } else if (this.cropEssential) {
-                if (cropL > this.cropL || cropU > this.cropU || cropR < this.cropR || cropD < this.cropD) {
-                    // System.out.println("break batch: SCO on a non-essential crop");
-                    return false;
-                }
-            }
-            if (tex != this.tex) {
-                // System.out.println("break batch: tex: " + tex + " -> " + this.tex);
-                return false;
-            }
-            if (blendMode != this.blendMode) {
-                // System.out.println("break batch: blendMode: " + blendMode + " -> " + this.blendMode);
-                return false;
-            }
-            if (drawFlagsEx != this.drawFlagsEx) {
-                // System.out.println("break batch: tilingMode: " + tilingMode + " -> " + this.tilingMode);
-                return false;
-            }
-            return true;
-        }
     }
 }
