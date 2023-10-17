@@ -22,8 +22,7 @@ import gabien.uslx.append.ObjectPool;
 import gabien.vopeks.Vopeks.ITask;
 
 /**
- * This is a parent of VopeksGrDriver to separate out the batching code.
- * At some point it might be nice for IGrDriver to use default methods on top of this.
+ * IGrDriver implements nice wrappers on top of these core operations.
  * BEWARE: The batching methods are unsynchronized, except batchFlush (because it's externally called).
  * Use them in synchronized blocks or something, please.
  *
@@ -37,12 +36,12 @@ public final class VopeksBatchingSurface extends IGrDriver {
 
     private volatile boolean wasDisposed;
 
-    private static final int MAX_VERTICES_IN_BATCH = 65536;
     private final BatchPool batchPool = new BatchPool(1);
     private Batch currentBatch = null;
-    private final float[] stagingV = new float[MAX_VERTICES_IN_BATCH * 4];
-    private final float[] stagingC = new float[MAX_VERTICES_IN_BATCH * 4];
-    private final float[] stagingT = new float[MAX_VERTICES_IN_BATCH * 4];
+    private final int maxVerticesInBatch;
+    private final float[] stagingV;
+    private final float[] stagingC;
+    private final float[] stagingT;
     private final float halfWF, halfHF;
 
     /**
@@ -54,9 +53,15 @@ public final class VopeksBatchingSurface extends IGrDriver {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
+    public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init, int maxVerticesInBatch) {
         super(id, w, h);
         this.vopeks = vopeks;
+        if (maxVerticesInBatch < 6)
+            throw new RuntimeException("To function properly, there must be at least 6 vertices supported per batch.");
+        this.maxVerticesInBatch = maxVerticesInBatch;
+        stagingV = new float[maxVerticesInBatch * 4];
+        stagingC = new float[maxVerticesInBatch * 4];
+        stagingT = new float[maxVerticesInBatch * 4];
         vopeks.putTask((instance) -> {
             texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
         });
@@ -206,7 +211,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
         //  and by that point it's too late to split the two groups.
         batchReferenceBarrier();
         if (currentBatch != null)
-            if ((currentBatch.vertexCount + vertices) > MAX_VERTICES_IN_BATCH)
+            if ((currentBatch.vertexCount + vertices) > maxVerticesInBatch)
                 batchFlush();
         // ok, so now that the current batch is dealt with, do the pick here
         IImgRegion tex = null;

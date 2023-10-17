@@ -268,7 +268,7 @@ public final class GaBIEn {
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksBatchingSurface(GaBIEn.vopeks, id, width, height, null);
+        return new VopeksBatchingSurface(GaBIEn.vopeks, id, width, height, null, 65536);
     }
 
     /**
