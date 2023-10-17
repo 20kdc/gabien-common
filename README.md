@@ -29,6 +29,8 @@ When choosing which sub-projects to import, you may wish to deselect the parent 
 
 *You may need to get Eclipse to ignore the toolchain plugin.*
 
+Also be sure to import the style file!
+
 ## History
 
 "gabien" (Graphics And Basic Input ENgine was at least one of the acronyms) was originally developed as a part of an unofficial map editor for an old freeware game.
@@ -58,4 +60,18 @@ Pedantic, I know.
 Otherwise, 4-spaces indentation, and do NOT use any "rearrange definitions" feature.
 
 Sometimes there's a method to the definition order. (Sometimes there isn't, but still.)
+
+## Sub-projects
+
+* uslx: Universal Java utilities, NonNull/Nullable annotations, profiler.
+* natives: This is where all the native code goes, including BadGPU, a library which is kind of like WebGPU but if it was targetting ancient phones and had to deal with JNI.
+* natives-util: JNI wrappers for natives. These are in a separate package so that changes to the JNI wrapping don't have to be tightly bound to the compiled and separately released natives (in case of bugs/etc.)
+* natives-examples: This ideally would be moved into tools, but this was the prototyping area where the more advanced capabilities of BadGPU were tested. Because the nature of the AWT WSI hadn't been figured out yet, this uses its own "not-gabien" WSI.
+* datum: "mostly Scheme-compatible" S-expression format for easy to type and modify human-readable data with a minimalist specification.
+* media: USLX, but for media formats!
+* common: "Core engine APIs" - this is the "core engine" that android/javase primarily implement.
+* ui: Utilities & UI framework, built around common. In general if an API isn't closely bound to the "core wrapper" it should probably go here. Backends need this for the emulated file browser (and ONLY for that, so it may get loosely bound in future)
+* android: Android backend & Java 8 polyfill.
+* javase: JavaSE (AWT) backend.
+* tools: Tools for debugging gabien and messing around with stuff.
 
