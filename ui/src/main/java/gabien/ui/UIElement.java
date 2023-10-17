@@ -8,6 +8,8 @@
 package gabien.ui;
 
 import gabien.render.IGrDriver;
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
 

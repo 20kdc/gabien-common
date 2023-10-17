@@ -7,6 +7,9 @@
 
 package gabien.ui;
 
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
+
 /**
  * Covers simple cases where you want to split something into two.
  * With the introduction of IPCRESS,

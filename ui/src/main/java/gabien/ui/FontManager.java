@@ -10,6 +10,7 @@ package gabien.ui;
 import gabien.GaBIEn;
 import gabien.text.IFixedSizeFont;
 import gabien.text.TextTools;
+import gabien.uslx.append.Size;
 
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantLock;

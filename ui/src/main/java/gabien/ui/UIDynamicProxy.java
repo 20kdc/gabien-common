@@ -9,6 +9,9 @@ package gabien.ui;
 
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
+
 /**
  * It's the usual business - you need a dynamic "replace me!" element sometimes.
  * Created on 24th May, 2022.

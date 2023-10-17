@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.uslx.append;
 
 /**
  * Created on February 16th 2018 to be a superclass to Rect, to avoid breaking relativity.

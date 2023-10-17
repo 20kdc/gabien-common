@@ -9,7 +9,6 @@ package gabienapp;
 import gabien.ui.UIElement.UIProxy;
 
 import gabien.GaBIEnUI;
-import gabien.ui.Rect;
 import gabien.ui.UIBorderedElement;
 import gabien.ui.UILabel;
 import gabien.ui.UIScrollLayout;
@@ -17,6 +16,7 @@ import gabien.ui.UIScrollbar;
 import gabien.ui.UISplitterLayout;
 import gabien.uslx.append.HexByteEncoding;
 import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Rect;
 import gabien.wsi.IPeripherals;
 
 /**

@@ -9,7 +9,7 @@ package gabien.ui.theming;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.ITexRegion;
-import gabien.ui.Rect;
+import gabien.uslx.append.Rect;
 
 /**
  * Tiled-background border.

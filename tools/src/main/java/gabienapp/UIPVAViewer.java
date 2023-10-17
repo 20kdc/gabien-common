@@ -10,8 +10,8 @@ import gabien.GaBIEn;
 import gabien.pva.PVAFile;
 import gabien.pva.PVARenderer;
 import gabien.render.IGrDriver;
-import gabien.ui.Size;
 import gabien.ui.UIElement;
+import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
 /**

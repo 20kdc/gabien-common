@@ -12,6 +12,8 @@ import gabien.render.IGrDriver;
 import gabien.text.TextTools;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
 /**

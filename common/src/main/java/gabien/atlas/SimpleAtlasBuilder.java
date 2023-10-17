@@ -13,9 +13,9 @@ import java.util.LinkedList;
 import gabien.GaBIEn;
 import gabien.render.AtlasPage;
 import gabien.render.ITexRegion;
-import gabien.ui.Rect;
-import gabien.ui.Size;
 import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
 
 /**
  * 

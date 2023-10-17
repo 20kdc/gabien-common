@@ -17,7 +17,7 @@ import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumTreeUtils;
 import gabien.datum.DatumVisitor;
 import gabien.render.ITexRegion;
-import gabien.ui.Rect;
+import gabien.uslx.append.Rect;
 
 /**
  * This is theming internal magical stuff.

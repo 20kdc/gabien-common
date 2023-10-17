@@ -7,6 +7,8 @@
 
 package gabien.ui;
 
+import gabien.uslx.append.Intersector;
+
 /**
  * A GC-friendly and MT-friendly utility singleton for intersecting rectangles.
  * NOTE - as a singleton, assume that when you call out, this gets altered.

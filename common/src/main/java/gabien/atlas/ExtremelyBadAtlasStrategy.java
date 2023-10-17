@@ -11,8 +11,8 @@ import java.util.Comparator;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.ui.Rect;
-import gabien.ui.Size;
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
 
 /**
  * This is not how you atlas.

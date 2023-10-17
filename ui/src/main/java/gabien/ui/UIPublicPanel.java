@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
+import gabien.uslx.append.Size;
 
 /**
  * Subclass of UIPanel for use in inner classes and such

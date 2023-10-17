@@ -11,6 +11,7 @@ import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Rect;
 
 import java.io.IOException;
 
@@ -24,7 +25,6 @@ import gabien.media.RIFFNode;
 import gabien.pva.PVAFile;
 import gabien.render.AtlasPage;
 import gabien.render.ITexRegion;
-import gabien.ui.Rect;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.UILabel;
 import gabien.ui.UIPublicPanel;

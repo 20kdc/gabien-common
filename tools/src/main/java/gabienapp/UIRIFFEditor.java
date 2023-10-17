@@ -12,7 +12,6 @@ import java.io.OutputStream;
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
 import gabien.media.RIFFNode;
-import gabien.ui.Rect;
 import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.UILabel;
@@ -21,6 +20,7 @@ import gabien.ui.UISplitterLayout;
 import gabien.ui.UITextBox;
 import gabien.ui.UITextButton;
 import gabien.uslx.append.IConsumer;
+import gabien.uslx.append.Rect;
 
 /**
  * Created 19th June, 2023.

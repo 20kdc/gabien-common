@@ -7,6 +7,8 @@
 
 package gabien.ui;
 
+import gabien.uslx.append.Rect;
+import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
 /**
