@@ -7,7 +7,7 @@
 
 package gabien.ui;
 
-import gabien.GaBIEn;
+import gabien.GaBIEnUI;
 import gabien.render.IGrDriver;
 import gabien.text.TextTools;
 import gabien.ui.theming.IBorder;
@@ -34,7 +34,7 @@ public class UILabel extends UIBorderedElement {
         text = txt;
 
         // Using the sysThemeRoot here is cheating, but the alternative is summoning bugs that won't be found until too late.
-        setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEn.sysThemeRoot.getTheme(), text, h)));
+        setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEnUI.sysThemeRoot.getTheme(), text, h)));
         runLayout();
         setForcedBounds(null, new Rect(getWantedSize()));
     }

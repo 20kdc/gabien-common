@@ -8,7 +8,7 @@ package gabienapp;
 
 import gabien.ui.UIElement.UIProxy;
 
-import gabien.GaBIEn;
+import gabien.GaBIEnUI;
 import gabien.ui.Rect;
 import gabien.ui.UIBorderedElement;
 import gabien.ui.UILabel;
@@ -37,7 +37,7 @@ public class UIBytesEditor extends UIProxy {
         setRowCount(1);
         proxySetElement(new UISplitterLayout(usl, usb, false, 1), false);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
-        setLAFParentOverride(GaBIEn.sysThemeRoot);
+        setLAFParentOverride(GaBIEnUI.sysThemeRoot);
         refresh();
     }
 

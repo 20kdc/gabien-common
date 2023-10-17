@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import gabien.GaBIEn;
+import gabien.GaBIEnUI;
 import gabien.media.RIFFNode;
 import gabien.ui.Rect;
 import gabien.ui.UIElement;
@@ -59,7 +60,7 @@ public class UIRIFFEditor extends UIProxy {
         regenerateContents();
         menuBarAndMainPanel.setForcedBounds(null, new Rect(0, 0, 640, 480));
         proxySetElement(menuBarAndMainPanel, false);
-        setLAFParentOverride(GaBIEn.sysThemeRoot);
+        setLAFParentOverride(GaBIEnUI.sysThemeRoot);
     }
     public void regenerateContents() {
         mainPanel.panelsClear();

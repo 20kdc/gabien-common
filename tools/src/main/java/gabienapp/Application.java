@@ -7,6 +7,7 @@
 package gabienapp;
 
 import gabien.GaBIEn;
+import gabien.GaBIEnUI;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.theming.ThemingCentral;
 
@@ -15,7 +16,7 @@ import gabien.ui.theming.ThemingCentral;
  */
 public class Application {
     public static void gabienmain() {
-        GaBIEn.sysThemeRoot.setThemeOverride(ThemingCentral.themes[1]);
+        GaBIEnUI.sysThemeRoot.setThemeOverride(ThemingCentral.themes[1]);
         WindowCreatingUIElementConsumer wcuiec = new WindowCreatingUIElementConsumer();
         wcuiec.accept(new UIMainMenu(wcuiec));
         while (wcuiec.runningWindowCount() > 0) {

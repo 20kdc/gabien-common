@@ -15,6 +15,7 @@ import gabien.uslx.append.IConsumer;
 import java.io.IOException;
 
 import gabien.GaBIEn;
+import gabien.GaBIEnUI;
 import gabien.atlas.AtlasSet;
 import gabien.atlas.BinaryTreeAtlasStrategy;
 import gabien.atlas.ImageAtlasDrawable;
@@ -78,7 +79,7 @@ public class UIMainMenu extends UIProxy {
         }));
         vsl.panelsAdd(lbl);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
-        setLAFParentOverride(GaBIEn.sysThemeRoot);
+        setLAFParentOverride(GaBIEnUI.sysThemeRoot);
     }
     public void copyRIFF(RIFFNode rn) {
         riffClipboard = rn.copy();

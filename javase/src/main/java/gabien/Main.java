@@ -110,5 +110,6 @@ abstract class Main {
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
         // pretty much all the startup time goes here
         GaBIEn.setupNativesAndAssets(isDebug, isTimeLogging);
+        GaBIEnUI.setupAssets();
     }
 }

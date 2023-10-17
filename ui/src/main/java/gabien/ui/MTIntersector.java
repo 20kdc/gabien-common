@@ -12,12 +12,9 @@ package gabien.ui;
  * NOTE - as a singleton, assume that when you call out, this gets altered.
  * Created on 10th February 2018.
  */
-public class MTIntersector {
-    public static MTIntersector INSTANCE = new MTIntersector();
+public enum MTIntersector {
+	INSTANCE;
     private ThreadLocal<Intersector> intersect = new ThreadLocal<Intersector>();
-    private MTIntersector() {
-
-    }
     public Intersector get() {
         Intersector it = intersect.get();
         if (it == null) {

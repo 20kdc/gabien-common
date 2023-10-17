@@ -22,8 +22,6 @@ import gabien.render.IImage;
 import gabien.render.WSIImage;
 import gabien.text.IFixedSizeFont;
 import gabien.text.EngineFonts;
-import gabien.ui.LAFChain;
-import gabien.ui.theming.ThemingCentral;
 import gabien.uslx.append.*;
 import gabien.uslx.vfs.FSBackend;
 import gabien.uslx.vfs.FSBackend.DirectoryState;
@@ -120,11 +118,6 @@ public final class GaBIEn {
      * Font size used by internal UI.
      */
     public static int sysCoreFontSize = 8;
-
-    /**
-     * Theme root used by internal UI.
-     */
-    public static final LAFChain.Node sysThemeRoot = new LAFChain.Node();
 
     private static double lastDt;
     private static long startup = System.currentTimeMillis();
@@ -614,6 +607,7 @@ public final class GaBIEn {
 
     /**
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
+     * All callers of this must call GaBIEnUI.setupAssets if that still exists.
      */
     static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger) {
         try {
@@ -661,7 +655,6 @@ public final class GaBIEn {
         imageCache = new ImageCache(internal);
         // These will hold references to dead assets if not reinitialized.
         engineFonts = new EngineFonts(internal);
-        ThemingCentral.setupAssets(internal);
     }
 
     /**
