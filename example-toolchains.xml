@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Would be installed at ~/.m2/toolchains.xml -->
+<!--
+Would be installed at ~/.m2/toolchains.xml
+This is out of date because it's no longer necessary to use the 1.8 toolchain since targetting Java 8.
+Mainly this was removed because the IDE isn't cooperating correctly.
+-->
 <toolchains>
 	<toolchain>
 		<type>jdk</type>
