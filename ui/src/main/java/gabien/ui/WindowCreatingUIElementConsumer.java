@@ -14,6 +14,8 @@ import gabien.ui.theming.Theme;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
+import java.util.function.Consumer;
+
 import gabien.uslx.append.*;
 import gabien.wsi.IDesktopPeripherals;
 import gabien.wsi.IGrInDriver;

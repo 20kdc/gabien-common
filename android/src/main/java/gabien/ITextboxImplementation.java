@@ -6,7 +6,7 @@
  */
 package gabien;
 
-import gabien.uslx.append.*;
+import java.util.function.Function;
 
 public interface ITextboxImplementation {
     // Gets the last known text.

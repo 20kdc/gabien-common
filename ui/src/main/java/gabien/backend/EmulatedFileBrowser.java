@@ -6,9 +6,10 @@
  */
 package gabien.backend;
 
+import java.util.function.Consumer;
+
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
-import gabien.uslx.append.*;
 import gabien.wsi.WindowSpecs;
 import gabien.ui.UIElement;
 import gabien.ui.WindowCreatingUIElementConsumer;

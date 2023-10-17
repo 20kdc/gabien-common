@@ -15,8 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import gabien.uslx.append.Function;
+import java.util.function.Function;
 
 /**
  * Loader for gabien-natives.

@@ -6,12 +6,13 @@
  */
 package gabien.vopeks;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
 import gabien.render.IImage;
-import gabien.uslx.append.Consumer;
 import gabien.uslx.append.TimeLogger;
 
 /**

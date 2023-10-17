@@ -10,10 +10,10 @@ import gabien.ui.UIScrollLayout;
 import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.uslx.append.EmptyLambdas;
-import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;

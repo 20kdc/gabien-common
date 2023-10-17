@@ -7,6 +7,9 @@
 
 package gabien.ui;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import gabien.uslx.append.*;
 
 /**

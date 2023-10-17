@@ -6,7 +6,7 @@
  */
 package gabien.backend;
 
-import gabien.uslx.append.*;
+import java.util.function.Consumer;
 
 /**
  * This abstracts specifically file browser functionality,

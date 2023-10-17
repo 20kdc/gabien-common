@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;

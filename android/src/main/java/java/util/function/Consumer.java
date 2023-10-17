@@ -5,12 +5,27 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.uslx.append;
+package java.util.function;
 
 /**
- * replacement for 1.8 stuff
- * Created on 22/04/16.
+ * replacement for 1.8 stuff Created on 22/04/16.
+ * Turned into Java 8 polyfill 17th October 2023.
  */
+@FunctionalInterface
 public interface Consumer<T> {
+    /**
+     * The actual consumer itself: receives an object.
+     */
     void accept(T t);
+
+    /**
+     * Chains Consumers.
+     * You usually never want to call this API.
+     */
+    default Consumer<T> andThen(Consumer<? super T> next) {
+        return (v) -> {
+            this.accept(v);
+            next.accept(v);
+        };
+    }
 }

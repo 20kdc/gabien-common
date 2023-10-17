@@ -13,7 +13,6 @@ import gabien.backend.IGaBIEnFileBrowser;
 import gabien.backend.IGaBIEnMultiWindow;
 import gabien.render.WSIImage;
 import gabien.text.ITypeface;
-import gabien.uslx.append.*;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.WindowSpecs;
 
@@ -28,6 +27,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.HashSet;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

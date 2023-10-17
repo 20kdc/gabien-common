@@ -9,11 +9,11 @@ package gabien.atlas;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.function.Consumer;
 
 import gabien.GaBIEn;
 import gabien.render.AtlasPage;
 import gabien.render.ITexRegion;
-import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 

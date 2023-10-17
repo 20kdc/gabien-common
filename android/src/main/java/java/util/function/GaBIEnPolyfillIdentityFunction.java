@@ -5,11 +5,18 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.uslx.append;
+package java.util.function;
 
 /**
- * Created on 22/04/16.
+ * Identity function implementation.
+ * You should never access or even see this class outside of the java.util.function.Function implementation.
+ * Created 17th October 2023.
  */
-public interface Supplier<T> {
-    T get();
+enum GaBIEnPolyfillIdentityFunction implements Function<Object, Object> {
+    I;
+
+    @Override
+    public Object apply(Object a) {
+        return a;
+    }
 }

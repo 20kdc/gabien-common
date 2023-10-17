@@ -4,23 +4,14 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-package gabien.uslx.append;
 
-import java.util.function.Consumer;
+package java.util.function;
 
 /**
- * Created on 28th July 2022.
+ * Created on 22/04/16.
+ * Turned into Java 8 polyfill 17th October 2023.
  */
-public final class EmptyLambdas {
-    public static final Runnable emptyRunnable = () -> {};
-    private static final Consumer<?> emptyConsumer = (res) -> {};
-
-    private EmptyLambdas() {
-        
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> Consumer<T> emptyConsumer() {
-        return (Consumer<T>) emptyConsumer;
-    }
+@FunctionalInterface
+public interface Supplier<T> {
+    T get();
 }

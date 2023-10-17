@@ -7,10 +7,11 @@
 
 package gabien;
 
+import java.util.function.Function;
+
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.uslx.append.Function;
 import gabien.wsi.ITextEditingSession;
 
 /**

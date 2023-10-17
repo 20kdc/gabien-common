@@ -12,6 +12,8 @@ import gabien.ui.theming.Theme;
 
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.function.Consumer;
+
 import gabien.uslx.append.*;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;

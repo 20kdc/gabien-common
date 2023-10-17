@@ -7,13 +7,13 @@
 
 package gabien;
 
-import gabien.uslx.append.*;
 import gabien.wsi.IDesktopPeripherals;
 import gabien.wsi.IPointer;
 import gabien.wsi.ITextEditingSession;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;

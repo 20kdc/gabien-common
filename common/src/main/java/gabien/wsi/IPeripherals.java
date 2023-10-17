@@ -7,9 +7,8 @@
 
 package gabien.wsi;
 
-import gabien.uslx.append.*;
-
 import java.util.HashSet;
+import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;

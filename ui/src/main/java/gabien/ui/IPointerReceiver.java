@@ -7,6 +7,8 @@
 
 package gabien.ui;
 
+import java.util.function.Consumer;
+
 import gabien.uslx.append.*;
 import gabien.wsi.IPointer;
 

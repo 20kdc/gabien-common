@@ -10,7 +10,6 @@ package gabien;
 import gabien.backend.WSIDownloadPair;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
-import gabien.uslx.append.Function;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.ITextEditingSession;
@@ -24,6 +23,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 /**
  * Wow, this code dates back a long time.

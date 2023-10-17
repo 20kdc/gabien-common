@@ -7,6 +7,8 @@
 
 package gabien;
 
+import java.util.function.Function;
+
 import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,7 +19,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import gabien.uslx.append.*;
 
 public class TextboxImplObject implements ITextboxImplementation {
 

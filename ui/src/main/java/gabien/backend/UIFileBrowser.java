@@ -13,6 +13,7 @@ import gabien.uslx.append.*;
 
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.function.Consumer;
 
 /**
  * Forgot when this was made initially, but now, February 17th, 2018:

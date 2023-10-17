@@ -7,7 +7,6 @@
 
 package gabien;
 
-import gabien.uslx.append.*;
 import gabien.wsi.ITextEditingSession;
 
 import javax.swing.*;
@@ -21,6 +20,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.Function;
 
 /**
  * Maintains a textbox.

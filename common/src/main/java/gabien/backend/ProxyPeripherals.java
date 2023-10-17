@@ -7,11 +7,11 @@
 package gabien.backend;
 
 import java.util.HashSet;
+import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.uslx.append.*;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
 import gabien.wsi.ITextEditingSession;

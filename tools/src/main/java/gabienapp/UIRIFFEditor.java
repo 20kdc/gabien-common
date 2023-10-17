@@ -8,6 +8,7 @@ package gabienapp;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.function.Consumer;
 
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
@@ -19,7 +20,6 @@ import gabien.ui.UIScrollLayout;
 import gabien.ui.UISplitterLayout;
 import gabien.ui.UITextBox;
 import gabien.ui.UITextButton;
-import gabien.uslx.append.Consumer;
 import gabien.uslx.append.Rect;
 
 /**
