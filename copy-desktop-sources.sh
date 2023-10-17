@@ -16,6 +16,7 @@ cp -r uslx/src/main/* $1 &&
 cp -r datum/src/main/* $1 &&
 cp -r media/src/main/* $1 &&
 cp -r common/src/main/* $1 &&
+cp -r ui/src/main/* $1 &&
 cp -r natives-util/src/main/* $1 &&
 mkdir -p $1/c &&
 cp natives/c/*.c natives/c/*.h natives/c/badgpu/*.c natives/c/badgpu/*.h $1/c &&

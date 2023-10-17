@@ -20,6 +20,7 @@
 		<module>datum</module>
 		<module>media</module>
 		<module>common</module>
+		<module>ui</module>
 		<module>javase</module>
 		<module>android</module>
 		<!-- natives not included, install via natives-sdk release -->
