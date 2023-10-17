@@ -45,19 +45,19 @@ public final class Rect extends Size {
     }
 
     public boolean intersects(Rect rect) {
-        if (Intersector.intersects1i(rect.x, rect.width, x, width))
-            if (Intersector.intersects1i(rect.y, rect.height, y, height))
+        if (RectIntersector.intersects1i(rect.x, rect.width, x, width))
+            if (RectIntersector.intersects1i(rect.y, rect.height, y, height))
                 return true;
         return false;
     }
 
     public Rect getIntersection(Rect rect) {
-        if (Intersector.intersects1i(rect.x, rect.width, x, width)) {
+        if (RectIntersector.intersects1i(rect.x, rect.width, x, width)) {
             int xStart = Math.max(rect.x, x);
-            int xW = Intersector.intersect1iWidth(rect.x, rect.width, x, width, xStart);
-            if (Intersector.intersects1i(rect.y, rect.height, y, height)) {
+            int xW = RectIntersector.intersect1iWidth(rect.x, rect.width, x, width, xStart);
+            if (RectIntersector.intersects1i(rect.y, rect.height, y, height)) {
                 int yStart = Math.max(rect.y, y);
-                int yH = Intersector.intersect1iWidth(rect.y, rect.height, y, height, yStart);
+                int yH = RectIntersector.intersect1iWidth(rect.y, rect.height, y, height, yStart);
                 return new Rect(xStart, yStart, xW, yH);
             }
         }

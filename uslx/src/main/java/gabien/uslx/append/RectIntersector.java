@@ -12,8 +12,15 @@ package gabien.uslx.append;
  * NOTE: Not MT-friendly, so use ThreadLocal if you're particularly worried about MT.
  * Created on 10th February 2018.
  */
-public class Intersector {
-    public int x, y, width, height;
+public final class RectIntersector {
+	public final static TemporaryResultsBuffer<RectIntersector> THREAD_LOCAL = new TemporaryResultsBuffer<RectIntersector>() {
+		@Override
+		protected RectIntersector make() {
+			return new RectIntersector();
+		}
+	};
+
+	public int x, y, width, height;
 
     public void set(Rect viewRct) {
         set(viewRct.x, viewRct.y, viewRct.width, viewRct.height);
