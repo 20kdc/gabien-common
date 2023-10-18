@@ -72,6 +72,9 @@
 //      - you may now pass NULL for "error" to the open function
 //      - _pushdata suffix removed from relevant functions
 //      - header section reordered to make sense
+//     step 5: testing finished
+//      - the modified library actually works now (fixed bug from step 3)
+//      - comments fixes
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -119,7 +122,7 @@ extern "C" {
 
 ///////////   THREAD SAFETY
 
-// Individual stb_vorbis* handles are not thread-safe; you cannot decode from
+// Individual stb_vorbis_g* handles are not thread-safe; you cannot decode from
 // them from multiple threads at the same time. However, you can have multiple
 // stb_vorbis* handles and decode from them independently in multiple thrads.
 
@@ -179,7 +182,7 @@ extern stb_vorbis_g *stb_vorbis_g_open(
 
 // decode a packet and possibly output audio sample data if possible
 //
-// return value: number of bytes we used from datablock, or 0 if null
+// return value: number of bytes we used from datablock, 0 on error
 //
 // possible cases:
 //     0 bytes used, 0 samples output (error)
@@ -202,11 +205,11 @@ extern stb_vorbis_g *stb_vorbis_g_open(
 extern size_t stb_vorbis_g_decode_frame(
          stb_vorbis_g *f,
          const unsigned char *datablock, size_t datablock_length_in_bytes,
-         float ***output,           // place to write float ** array of float * buffers
-         int *samples               // place to write number of output samples
+         float ***output,   // place to write float ** array of float * buffers
+         int *samples       // place to write number of output samples
      );
 
-// inform stb_vorbis_g that your next packet will not be contiguous with
+// inform stb_vorbis that your next packet will not be contiguous with
 // previous ones (e.g. you've seeked in the data).
 extern void stb_vorbis_g_flush(stb_vorbis_g *f);
 
