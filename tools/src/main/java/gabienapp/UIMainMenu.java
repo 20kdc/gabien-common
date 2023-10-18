@@ -9,6 +9,7 @@ package gabienapp;
 import gabien.ui.UIScrollLayout;
 import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
+import gabien.ui.dialogs.UICredits;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
 
@@ -76,6 +77,11 @@ public class UIMainMenu extends UIProxy {
                 upp.imageSH = ap.height;
                 ui.accept(upp);
             }
+        }));
+        vsl.panelsAdd(new UITextButton("GaBIEn Credits", 16, () -> {
+            UICredits uic = new UICredits(16, 16);
+            uic.setLAFParentOverride(GaBIEnUI.sysThemeRoot);
+            ui.accept(uic);
         }));
         vsl.panelsAdd(lbl);
         setForcedBounds(null, new Rect(0, 0, 640, 480));

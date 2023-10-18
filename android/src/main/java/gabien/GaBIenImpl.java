@@ -115,6 +115,23 @@ public final class GaBIenImpl implements IGaBIEn {
         return false;
     }
 
+    @Override
+    public boolean tryStartBrowser(String url) {
+        AndroidPortGlobals.mainActivityLock.lock();
+        final Context appCtx = AndroidPortGlobals.applicationContext;
+        AndroidPortGlobals.mainActivity.runOnUiThread(() -> {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                appCtx.startActivity(intent);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        AndroidPortGlobals.mainActivityLock.unlock();
+        return true;
+    }
+
     public InputStream getResource(String resource) {
         AssetManager am = AndroidPortGlobals.applicationContext.getAssets();
         try {

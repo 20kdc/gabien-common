@@ -170,6 +170,29 @@ public final class GaBIEn {
     }
 
     /**
+     * Convenience wrapper over getTextResource.
+     * @return Resource decoded as UTF-8
+     */
+    public static @Nullable String getTextResourceAsString(@NonNull String resource) {
+        try (InputStreamReader isr = getTextResource(resource)) {
+            if (isr == null)
+                return null;
+            StringBuilder sb = new StringBuilder();
+            while (true) {
+                int i = isr.read();
+                if (i == -1)
+                    break;
+                sb.append((char) i);
+            }
+            return sb.toString();
+        } catch (Exception ex) {
+            // mu.
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * Wraps mutableDataFS. Opens a file for input. If an error occurs, returns null.
      * @return The InputStream, or null on error.
      */
@@ -497,6 +520,13 @@ public final class GaBIEn {
      */
     public static boolean tryStartTextEditor(@NonNull String fpath) {
         return internal.tryStartTextEditor(fpath);
+    }
+
+    /**
+     * Attempts to start a web browser. Returns false on failure.
+     */
+    public static boolean tryStartBrowser(@NonNull String url) {
+        return internal.tryStartBrowser(url);
     }
 
     /**

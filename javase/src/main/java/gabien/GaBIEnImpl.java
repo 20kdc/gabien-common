@@ -25,6 +25,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -196,6 +197,17 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         try {
             // edit fails here, for some reason?
             Desktop.getDesktop().open(new File(fpath));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean tryStartBrowser(String url) {
+        try {
+            Desktop.getDesktop().browse(new URI(url));
         } catch (Exception e) {
             e.printStackTrace();
             return false;

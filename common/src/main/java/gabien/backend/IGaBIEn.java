@@ -82,7 +82,15 @@ public interface IGaBIEn {
      */
     @NonNull ITypeface getDefaultTypeface();
 
+    /**
+     * Tries to start a text editor for the given file path.
+     */
     boolean tryStartTextEditor(String fpath);
+
+    /**
+     * Tries to start a browser for the given URL.
+     */
+    boolean tryStartBrowser(String url);
 
     /**
      * Works out a location for a native with the given name.
