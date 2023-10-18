@@ -8,6 +8,10 @@ All thirdparty dependencies must be under reasonably equivalent licenses.
 
 However, their individual licenses will still be respected and reproduced.
 
+Current list of thirdparty stuff:
+
+* stb\_vorbis ( https://github.com/nothings/stb/ ) - *modified*, at `thirdparty/stb_vorbis_modified`
+
 ## Build Instructions (Command-Line)
 
 Ensure Maven is installed and functional. At the present time, I'm using Apache Maven 3.8.4.
