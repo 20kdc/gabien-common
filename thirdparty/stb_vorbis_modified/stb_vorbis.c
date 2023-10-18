@@ -62,10 +62,9 @@
 //      - using const properly
 //      - "_g" suffix on library symbol prefix to avoid symbol conflicts (it could happen)
 //      - moved stream setup into start_decoder & removed the consumed amount return, ready for full de-encap
-//     TODO: everything should use deencapsulated packets (remove comment support here)
-//           perhaps even substitute header read for the values:
-//            audio_channels, blocksize_0, blocksize_1
-//           from the header
+//     step 3: de-encapsulation
+//      - the library now works with individual Vorbis packets rather than with Ogg data
+//        this allows for greater flexibility, muxing, and so on and so forth
 //     TODO: test bench using libogg to confirm before hooking into gabien-natives
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -161,7 +160,8 @@ extern void stb_vorbis_g_close(stb_vorbis_g *f);
 // specification does not bound the size of an individual frame.
 
 extern stb_vorbis_g *stb_vorbis_g_open_pushdata(
-         const unsigned char * datablock, size_t datablock_length_in_bytes,
+         const unsigned char *id, size_t id_len,
+         const unsigned char *setup, size_t setup_len,
          int *error);
 // create a vorbis decoder by passing in the initial data block containing
 //    the ogg&vorbis headers (you don't need to do parse them, just provide
@@ -241,11 +241,8 @@ enum STBVorbisError
 
    // ogg errors:
    VORBIS_missing_capture_pattern=30,
-   VORBIS_invalid_stream_structure_version,
-   VORBIS_continued_packet_flag_invalid,
    VORBIS_invalid_first_page,
-   VORBIS_bad_packet_type,
-   VORBIS_ogg_skeleton_not_supported
+   VORBIS_bad_packet_type
 };
 
 
@@ -519,11 +516,6 @@ typedef struct
    uint16 transformtype;
 } Mode;
 
-typedef struct
-{
-   uint32 last_decoded_sample;
-} ProbedPage;
-
 struct stb_vorbis_g
 {
   // user-accessible info
@@ -577,21 +569,9 @@ struct stb_vorbis_g
    uint16 *bit_reverse[2];
 
   // current page/packet/segment streaming info
-   uint32 serial; // stream serial number for verification
-   int last_page;
-   int segment_count;
-   uint8 segments[255];
-   uint8 page_flag;
-   uint8 bytes_in_seg;
    uint8 first_decode;
-   int next_seg;
-   int last_seg;  // flag that we're on the last segment
-   int last_seg_which; // what was the segment number of the last seg?
    uint32 acc;
    int valid_bits;
-   int packet_bytes;
-   int end_seg_with_known_loc;
-   uint32 known_loc_for_packet;
    int discard_samples_deferred;
 };
 
@@ -975,20 +955,35 @@ static int STBV_CDECL point_compare(const void *p, const void *q)
 //
 /////////////////////// END LEAF SETUP FUNCTIONS //////////////////////////
 
+static void start_packet(vorb *f, const unsigned char *data, size_t data_len)
+{
+   f->stream     = data;
+   f->stream_end = data + data_len;
+   f->eof = FALSE;
+   f->valid_bits = 0;
+}
 
-static uint8 get8(vorb *z)
+static __forceinline uint8 get8_raw(vorb *z)
 {
    if (z->stream >= z->stream_end) { z->eof = TRUE; return 0; }
    return *z->stream++;
 }
 
-static uint32 get32(vorb *f)
+static int get8(vorb *f)
+{
+   int x = get8_raw(f);
+   f->valid_bits = 0;
+   return x;
+}
+
+static int get32(vorb *f)
 {
    uint32 x;
-   x = get8(f);
-   x += get8(f) << 8;
-   x += get8(f) << 16;
-   x += (uint32) get8(f) << 24;
+   x = get8_raw(f);
+   x += get8_raw(f) << 8;
+   x += get8_raw(f) << 16;
+   x += (uint32) get8_raw(f) << 24;
+   f->valid_bits = 0;
    return x;
 }
 
@@ -997,6 +992,7 @@ static int getn(vorb *z, uint8 *data, int n)
    if (z->stream+n > z->stream_end) { z->eof = 1; return 0; }
    memcpy(data, z->stream, n);
    z->stream += n;
+   z->valid_bits = 0;
    return 1;
 }
 
@@ -1007,161 +1003,7 @@ static void skip(vorb *z, int n)
    return;
 }
 
-static uint8 ogg_page_header[4] = { 0x4f, 0x67, 0x67, 0x53 };
-
-static int capture_pattern(vorb *f)
-{
-   if (0x4f != get8(f)) return FALSE;
-   if (0x67 != get8(f)) return FALSE;
-   if (0x67 != get8(f)) return FALSE;
-   if (0x53 != get8(f)) return FALSE;
-   return TRUE;
-}
-
-#define PAGEFLAG_continued_packet   1
-#define PAGEFLAG_first_page         2
-#define PAGEFLAG_last_page          4
-
-static int start_page_no_capturepattern(vorb *f)
-{
-   uint32 loc0,loc1,n;
-   // stream structure version
-   if (0 != get8(f)) return error(f, VORBIS_invalid_stream_structure_version);
-   // header flag
-   f->page_flag = get8(f);
-   // absolute granule position
-   loc0 = get32(f);
-   loc1 = get32(f);
-   // @TODO: validate loc0,loc1 as valid positions?
-   // stream serial number -- vorbis doesn't interleave, so discard
-   get32(f);
-   //if (f->serial != get32(f)) return error(f, VORBIS_incorrect_stream_serial_number);
-   // page sequence number
-   n = get32(f);
-   f->last_page = n;
-   // CRC32
-   get32(f);
-   // page_segments
-   f->segment_count = get8(f);
-   if (!getn(f, f->segments, f->segment_count))
-      return error(f, VORBIS_unexpected_eof);
-   // assume we _don't_ know any the sample position of any segments
-   f->end_seg_with_known_loc = -2;
-   if (loc0 != ~0U || loc1 != ~0U) {
-      int i;
-      // determine which packet is the last one that will complete
-      for (i=f->segment_count-1; i >= 0; --i)
-         if (f->segments[i] < 255)
-            break;
-      // 'i' is now the index of the _last_ segment of a packet that ends
-      if (i >= 0) {
-         f->end_seg_with_known_loc = i;
-         f->known_loc_for_packet   = loc0;
-      }
-   }
-   f->next_seg = 0;
-   return TRUE;
-}
-
-static int start_page(vorb *f)
-{
-   if (!capture_pattern(f)) return error(f, VORBIS_missing_capture_pattern);
-   return start_page_no_capturepattern(f);
-}
-
-static int start_packet(vorb *f)
-{
-   while (f->next_seg == -1) {
-      if (!start_page(f)) return FALSE;
-      if (f->page_flag & PAGEFLAG_continued_packet)
-         return error(f, VORBIS_continued_packet_flag_invalid);
-   }
-   f->last_seg = FALSE;
-   f->valid_bits = 0;
-   f->packet_bytes = 0;
-   f->bytes_in_seg = 0;
-   // f->next_seg is now valid
-   return TRUE;
-}
-
-static int maybe_start_packet(vorb *f)
-{
-   if (f->next_seg == -1) {
-      int x = get8(f);
-      if (f->eof) return FALSE; // EOF at page boundary is not an error!
-      if (0x4f != x      ) return error(f, VORBIS_missing_capture_pattern);
-      if (0x67 != get8(f)) return error(f, VORBIS_missing_capture_pattern);
-      if (0x67 != get8(f)) return error(f, VORBIS_missing_capture_pattern);
-      if (0x53 != get8(f)) return error(f, VORBIS_missing_capture_pattern);
-      if (!start_page_no_capturepattern(f)) return FALSE;
-      if (f->page_flag & PAGEFLAG_continued_packet) {
-         // set up enough state that we can read this packet if we want,
-         // e.g. during recovery
-         f->last_seg = FALSE;
-         f->bytes_in_seg = 0;
-         return error(f, VORBIS_continued_packet_flag_invalid);
-      }
-   }
-   return start_packet(f);
-}
-
-static int next_segment(vorb *f)
-{
-   int len;
-   if (f->last_seg) return 0;
-   if (f->next_seg == -1) {
-      f->last_seg_which = f->segment_count-1; // in case start_page fails
-      if (!start_page(f)) { f->last_seg = 1; return 0; }
-      if (!(f->page_flag & PAGEFLAG_continued_packet)) return error(f, VORBIS_continued_packet_flag_invalid);
-   }
-   len = f->segments[f->next_seg++];
-   if (len < 255) {
-      f->last_seg = TRUE;
-      f->last_seg_which = f->next_seg-1;
-   }
-   if (f->next_seg >= f->segment_count)
-      f->next_seg = -1;
-   assert(f->bytes_in_seg == 0);
-   f->bytes_in_seg = len;
-   return len;
-}
-
-#define EOP    (-1)
 #define INVALID_BITS  (-1)
-
-static int get8_packet_raw(vorb *f)
-{
-   if (!f->bytes_in_seg) {  // CLANG!
-      if (f->last_seg) return EOP;
-      else if (!next_segment(f)) return EOP;
-   }
-   assert(f->bytes_in_seg > 0);
-   --f->bytes_in_seg;
-   ++f->packet_bytes;
-   return get8(f);
-}
-
-static int get8_packet(vorb *f)
-{
-   int x = get8_packet_raw(f);
-   f->valid_bits = 0;
-   return x;
-}
-
-static int get32_packet(vorb *f)
-{
-   uint32 x;
-   x = get8_packet(f);
-   x += get8_packet(f) << 8;
-   x += get8_packet(f) << 16;
-   x += (uint32) get8_packet(f) << 24;
-   return x;
-}
-
-static void flush_packet(vorb *f)
-{
-   while (get8_packet_raw(f) != EOP);
-}
 
 // @OPTIMIZE: this is the secondary bit decoder, so it's probably not as important
 // as the huffman decoder?
@@ -1179,8 +1021,8 @@ static uint32 get_bits(vorb *f, int n)
       }
       if (f->valid_bits == 0) f->acc = 0;
       while (f->valid_bits < n) {
-         int z = get8_packet_raw(f);
-         if (z == EOP) {
+         int z = get8_raw(f);
+         if (f->eof) {
             f->valid_bits = INVALID_BITS;
             return 0;
          }
@@ -1206,9 +1048,8 @@ static __forceinline void prep_huffman(vorb *f)
       if (f->valid_bits == 0) f->acc = 0;
       do {
          int z;
-         if (f->last_seg && !f->bytes_in_seg) return;
-         z = get8_packet_raw(f);
-         if (z == EOP) return;
+         z = get8(f);
+         if (f->eof) return;
          f->acc += (unsigned) z << f->valid_bits;
          f->valid_bits += 8;
       } while (f->valid_bits <= 24);
@@ -1352,9 +1193,8 @@ static int codebook_decode_start(vorb *f, Codebook *c)
       DECODE_VQ(z,f,c);
       if (c->sparse) assert(z < c->sorted_entries);
       if (z < 0) {  // check for EOP
-         if (!f->bytes_in_seg)
-            if (f->last_seg)
-               return z;
+         if (f->eof)
+            return z;
          error(f, VORBIS_invalid_stream);
       }
    }
@@ -1446,11 +1286,7 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
       #ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
       assert(!c->sparse || z < c->sorted_entries);
       #endif
-      if (z < 0) {
-         if (!f->bytes_in_seg)
-            if (f->last_seg) return FALSE;
-         return error(f, VORBIS_invalid_stream);
-      }
+      if (f->eof)             return error(f, VORBIS_invalid_stream);
 
       // if this will take us off the end of the buffers, stop short!
       // we check by computing the length of the virtual interleaved
@@ -1711,7 +1547,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   Codebook *c = f->codebooks+r->classbook;
                   int q;
                   DECODE(q,f,c);
-                  if (q == EOP) goto done;
+                  if (f->eof) goto done;
                   #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[0][class_set] = r->classdata[q];
                   #else
@@ -1757,7 +1593,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   Codebook *c = f->codebooks+r->classbook;
                   int q;
                   DECODE(q,f,c);
-                  if (q == EOP) goto done;
+                  if (f->eof) goto done;
                   #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[0][class_set] = r->classdata[q];
                   #else
@@ -1804,7 +1640,7 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
                   Codebook *c = f->codebooks+r->classbook;
                   int temp;
                   DECODE(temp,f,c);
-                  if (temp == EOP) goto done;
+                  if (f->eof) goto done;
                   #ifndef STB_VORBIS_DIVIDES_IN_RESIDUE
                   part_classdata[j][class_set] = r->classdata[temp];
                   #else
@@ -2691,14 +2527,11 @@ static int vorbis_decode_initial(vorb *f, int *p_left_start, int *p_left_end, in
    Mode *m;
    int i, n, prev, next, window_center;
 
-   if (f->eof) return FALSE;
-   if (!maybe_start_packet(f))
-      return FALSE;
    // check packet type
    if (get_bits(f,1) != 0) return error(f,VORBIS_bad_packet_type);
 
    i = get_bits(f, ilog(f->mode_count-1));
-   if (i == EOP) return FALSE;
+   if (f->eof) return FALSE;
    if (i >= f->mode_count) return FALSE;
    *mode = i;
    m = f->mode_config + i;
@@ -2925,10 +2758,6 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
       inverse_mdct(f->channel_buffers[i], n, f, m->blockflag);
    CHECK(f);
 
-   // this shouldn't be necessary, unless we exited on an error
-   // and want to flush to get to the next packet
-   flush_packet(f);
-
    if (f->first_decode) {
       // assume we start so first non-discarded sample is sample 0
       // this isn't to spec, but spec would require us to read ahead
@@ -2956,9 +2785,10 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
    return TRUE;
 }
 
-static int vorbis_decode_packet(vorb *f, int *len, int *p_left, int *p_right)
+static int vorbis_decode_packet(vorb *f, const unsigned char *data, size_t data_len, int *len, int *p_left, int *p_right)
 {
    int mode, left_end, right_end;
+   start_packet(f, data, data_len);
    if (!vorbis_decode_initial(f, p_left, &left_end, p_right, &right_end, &mode)) return 0;
    return vorbis_decode_packet_rest(f, len, f->mode_config + mode, *p_left, left_end, *p_right, right_end, p_left);
 }
@@ -3014,76 +2844,16 @@ static int vorbis_finish_frame(vorb *f, int len, int left, int right)
    return right - left;
 }
 
-static int vorbis_pump_first_frame(vorb *f)
+static int vorbis_pump_first_frame(vorb *f, const unsigned char *data, size_t data_len)
 {
    int len, right, left, res;
-   res = vorbis_decode_packet(f, &len, &left, &right);
+   res = vorbis_decode_packet(f, data, data_len, &len, &left, &right);
    if (res)
       vorbis_finish_frame(f, len, left, right);
    return res;
 }
 
-static int is_whole_packet_present(vorb *f)
-{
-   // make sure that we have the packet available before continuing...
-   // this requires a full ogg parse, but we know we can fetch from f->stream
-
-   // instead of coding this out explicitly, we could save the current read state,
-   // read the next packet with get8() until end-of-packet, check f->eof, then
-   // reset the state? but that would be slower, esp. since we'd have over 256 bytes
-   // of state to restore (primarily the page segment table)
-
-   int s = f->next_seg, first = TRUE;
-   const uint8 *p = f->stream;
-
-   if (s != -1) { // if we're not starting the packet with a 'continue on next page' flag
-      for (; s < f->segment_count; ++s) {
-         p += f->segments[s];
-         if (f->segments[s] < 255)               // stop at first short segment
-            break;
-      }
-      // either this continues, or it ends it...
-      if (s == f->segment_count)
-         s = -1; // set 'crosses page' flag
-      if (p > f->stream_end)                     return error(f, VORBIS_need_more_data);
-      first = FALSE;
-   }
-   for (; s == -1;) {
-      const uint8 *q;
-      int n;
-
-      // check that we have the page header ready
-      if (p + 26 >= f->stream_end)               return error(f, VORBIS_need_more_data);
-      // validate the page
-      if (memcmp(p, ogg_page_header, 4))         return error(f, VORBIS_invalid_stream);
-      if (p[4] != 0)                             return error(f, VORBIS_invalid_stream);
-      if (first) { // the first segment must NOT have 'continued_packet', later ones MUST
-         if (f->previous_length)
-            if ((p[5] & PAGEFLAG_continued_packet))  return error(f, VORBIS_invalid_stream);
-         // if no previous length, we're resynching, so we can come in on a continued-packet,
-         // which we'll just drop
-      } else {
-         if (!(p[5] & PAGEFLAG_continued_packet)) return error(f, VORBIS_invalid_stream);
-      }
-      n = p[26]; // segment counts
-      q = p+27;  // q points to segment table
-      p = q + n; // advance past header
-      // make sure we've read the segment table
-      if (p > f->stream_end)                     return error(f, VORBIS_need_more_data);
-      for (s=0; s < n; ++s) {
-         p += q[s];
-         if (q[s] < 255)
-            break;
-      }
-      if (s == n)
-         s = -1; // set 'crosses page' flag
-      if (p > f->stream_end)                     return error(f, VORBIS_need_more_data);
-      first = FALSE;
-   }
-   return TRUE;
-}
-
-static int start_decoder(vorb *f, const unsigned char *data, size_t data_len)
+static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const unsigned char *setup, size_t setup_len)
 {
    uint8 header[6], x,y;
    int len,i,j,k, max_submaps = 0;
@@ -3092,31 +2862,7 @@ static int start_decoder(vorb *f, const unsigned char *data, size_t data_len)
    // first page, first packet
    f->first_decode = TRUE;
 
-   f->stream     = data;
-   f->stream_end = data + data_len;
-
-   if (!start_page(f))                              return FALSE;
-   // validate page flag
-   if (!(f->page_flag & PAGEFLAG_first_page))       return error(f, VORBIS_invalid_first_page);
-   if (f->page_flag & PAGEFLAG_last_page)           return error(f, VORBIS_invalid_first_page);
-   if (f->page_flag & PAGEFLAG_continued_packet)    return error(f, VORBIS_invalid_first_page);
-   // check for expected packet length
-   if (f->segment_count != 1)                       return error(f, VORBIS_invalid_first_page);
-   if (f->segments[0] != 30) {
-      // check for the Ogg skeleton fishead identifying header to refine our error
-      if (f->segments[0] == 64 &&
-          getn(f, header, 6) &&
-          header[0] == 'f' &&
-          header[1] == 'i' &&
-          header[2] == 's' &&
-          header[3] == 'h' &&
-          header[4] == 'e' &&
-          header[5] == 'a' &&
-          get8(f)   == 'd' &&
-          get8(f)   == '\0')                        return error(f, VORBIS_ogg_skeleton_not_supported);
-      else
-                                                    return error(f, VORBIS_invalid_first_page);
-   }
+   start_packet(f, id, id_len);
 
    // read packet
    // check packet header
@@ -3146,21 +2892,10 @@ static int start_decoder(vorb *f, const unsigned char *data, size_t data_len)
    x = get8(f);
    if (!(x & 1))                                    return error(f, VORBIS_invalid_first_page);
 
-   // second packet!
-   if (!start_page(f))                              return FALSE;
+   start_packet(f, setup, setup_len);
 
-   // third packet!
-   if (!start_packet(f))                            return FALSE;
-
-   if (!is_whole_packet_present(f)) {
-      // convert error in ogg header to write type
-      if (f->error == VORBIS_invalid_stream)
-         f->error = VORBIS_invalid_setup;
-      return FALSE;
-   }
-
-   if (get8_packet(f) != VORBIS_packet_setup)       return error(f, VORBIS_invalid_setup);
-   for (i=0; i < 6; ++i) header[i] = get8_packet(f);
+   if (get8(f) != VORBIS_packet_setup)       return error(f, VORBIS_invalid_setup);
+   for (i=0; i < 6; ++i) header[i] = get8(f);
    if (!vorbis_validate(header))                    return error(f, VORBIS_invalid_setup);
 
    // codebooks
@@ -3312,7 +3047,7 @@ static int start_decoder(vorb *f, const unsigned char *data, size_t data_len)
          if (mults == NULL) return error(f, VORBIS_outofmem);
          for (j=0; j < (int) c->lookup_values; ++j) {
             int q = get_bits(f, c->value_bits);
-            if (q == EOP) { setup_temp_free(f,mults,sizeof(mults[0])*c->lookup_values); return error(f, VORBIS_invalid_setup); }
+            if (f->eof) { setup_temp_free(f,mults,sizeof(mults[0])*c->lookup_values); return error(f, VORBIS_invalid_setup); }
             mults[j] = q;
          }
 
@@ -3571,8 +3306,6 @@ static int start_decoder(vorb *f, const unsigned char *data, size_t data_len)
       if (m->mapping >= f->mapping_count)     return error(f, VORBIS_invalid_setup);
    }
 
-   flush_packet(f);
-
    f->previous_length = 0;
 
    for (i=0; i < f->channels; ++i) {
@@ -3707,34 +3440,9 @@ size_t stb_vorbis_g_decode_frame_pushdata(
    f->stream_end = data + data_len;
    f->error      = VORBIS__no_error;
 
-   // check that we have the entire packet in memory
-   if (!is_whole_packet_present(f)) {
-      *samples = 0;
-      return 0;
-   }
-
-   if (!vorbis_decode_packet(f, &len, &left, &right)) {
+   if (!vorbis_decode_packet(f, data, data_len, &len, &left, &right)) {
       // save the actual error we encountered
       enum STBVorbisError error = f->error;
-      if (error == VORBIS_bad_packet_type) {
-         // flush and resynch
-         f->error = VORBIS__no_error;
-         while (get8_packet(f) != EOP)
-            if (f->eof) break;
-         *samples = 0;
-         return f->stream - data;
-      }
-      if (error == VORBIS_continued_packet_flag_invalid) {
-         if (f->previous_length == 0) {
-            // we may be resynching, in which case it's ok to hit one
-            // of these; just discard the packet
-            f->error = VORBIS__no_error;
-            while (get8_packet(f) != EOP)
-               if (f->eof) break;
-            *samples = 0;
-            return f->stream - data;
-         }
-      }
       // if we get an error while parsing, what to do?
       // well, it DEFINITELY won't work to continue from where we are!
       stb_vorbis_g_flush_pushdata(f);
@@ -3756,12 +3464,13 @@ size_t stb_vorbis_g_decode_frame_pushdata(
 }
 
 stb_vorbis_g *stb_vorbis_g_open_pushdata(
-         const unsigned char *data, size_t data_len, // the memory available for decoding
+         const unsigned char *id, size_t id_len,
+         const unsigned char *setup, size_t setup_len,
          int *error)
 {
    stb_vorbis_g *f, p;
    memset(&p, 0, sizeof(p)); // NULL out all to start
-   if (!start_decoder(&p, data, data_len)) {
+   if (!start_decoder(&p, id, id_len, setup, setup_len)) {
       if (p.eof)
          *error = VORBIS_need_more_data;
       else
