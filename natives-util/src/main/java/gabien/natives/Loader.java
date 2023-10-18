@@ -17,12 +17,22 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.function.Function;
 
+import gabien.uslx.licensing.LicenseComponent;
+import gabien.uslx.licensing.LicenseManager;
+
 /**
  * Loader for gabien-natives.
  * Created 25th May, 2023.
  */
 public abstract class Loader {
     private Loader() {
+    }
+
+    public static final LicenseComponent LC_STB_VORBIS = new LicenseComponent("stb_vorbis", "https://github.com/nothings/stb/", "gabien/licensing/stb_vorbis/COPYING.txt", null);
+
+    static {
+        LicenseManager.I.register(LC_STB_VORBIS);
+        LicenseManager.I.dependency(LicenseComponent.LC_GABIEN, LC_STB_VORBIS);
     }
 
     public static InputStream assetLookupJavaSE(String str) {

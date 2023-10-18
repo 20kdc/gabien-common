@@ -31,6 +31,7 @@ public class UICredits extends UIProxy {
     private final UILabel labelLicense;
     private final UILabel labelCredits;
     private @Nullable String lastURL;
+
     public UICredits(int sc, int textHeight) {
         labelHeader = new UILabel("", textHeight);
         urlButton = new UITextButton("", textHeight, () -> {
@@ -51,16 +52,28 @@ public class UICredits extends UIProxy {
         mainUSL.panelsAdd(urlButton);
         mainUSL.panelsAdd(labelLicense);
         mainUSL.panelsAdd(labelCredits);
-        proxySetElement(new UISplitterLayout(buttons, mainUSL, false, 0), true);
+        proxySetElement(new UISplitterLayout(new UILabel("Presence in this list does not imply endorsement by the involved parties.", textHeight), new UISplitterLayout(buttons, mainUSL, false, 0), true, 0), true);
         setForcedBounds(null, new Rect(0, 0, textHeight * 32, textHeight * 16));
         if (lcl.size() > 0)
             loadLicenseComponent(lcl.getFirst());
     }
+
     private void loadLicenseComponent(LicenseComponent lc) {
         labelHeader.text = lc.name;
         urlButton.text = lc.url;
         lastURL = lc.url;
-        labelLicense.text = GaBIEn.getTextResourceAsString(lc.licenseFile);
-        labelCredits.text = GaBIEn.getTextResourceAsString(lc.creditsFile);
+        String lf = GaBIEn.getTextResourceAsString(lc.licenseFile);
+        String cf = null;
+        if (lc.creditsFile == null) {
+            cf = "";
+        } else {
+            cf = GaBIEn.getTextResourceAsString(lc.creditsFile);
+        }
+        if (lf == null)
+            lf = "<license file missing>";
+        if (cf == null)
+            cf = "<credits file missing>";
+        labelLicense.text = lf;
+        labelCredits.text = cf;
     }
 }

@@ -22,7 +22,7 @@ public enum LicenseManager {
     private final HashSet<LicenseComponent> components = new HashSet<>();
 
     private LicenseManager() {
-        register(LicenseComponent.GABIEN_COMMON);
+        register(LicenseComponent.LC_GABIEN);
     }
 
     /**

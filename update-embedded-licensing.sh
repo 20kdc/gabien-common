@@ -7,5 +7,6 @@
 # Updates gabien license data embedded into USLX.
 
 cp COPYING.txt uslx/src/main/resources/assets/gabien/licensing/common/COPYING.txt &&
+cp thirdparty/stb_vorbis_modified/COPYING.txt natives-util/src/main/resources/assets/gabien/licensing/stb_vorbis/COPYING.txt &&
 cp CREDITS.txt uslx/src/main/resources/assets/gabien/licensing/common/CREDITS.txt
 

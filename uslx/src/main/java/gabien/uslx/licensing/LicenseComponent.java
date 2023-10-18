@@ -34,7 +34,7 @@ public final class LicenseComponent {
      */
     final HashSet<LicenseComponent> dependencies = new HashSet<>();
 
-    public static final LicenseComponent GABIEN_COMMON = new LicenseComponent(
+    public static final LicenseComponent LC_GABIEN = new LicenseComponent(
             "gabien-common",
             "https://github.com/20kdc/gabien-common/",
             "gabien/licensing/common/COPYING.txt",
