@@ -999,7 +999,7 @@ static __forceinline void prep_huffman(vorb *f)
       if (f->valid_bits == 0) f->acc = 0;
       do {
          int z;
-         z = get8(f);
+         z = get8_raw(f);
          if (f->eof) return;
          f->acc += (unsigned) z << f->valid_bits;
          f->valid_bits += 8;
