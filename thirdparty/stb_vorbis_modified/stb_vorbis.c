@@ -75,6 +75,10 @@
 //     step 5: testing finished
 //      - the modified library actually works now (fixed bug from step 3)
 //      - comments fixes
+//     step 6: JNI stuff
+//      - ditch the info struct in favour of 3 separate functions, it's easier on JNI that way
+//      - split up the results of decoding to be easier to manage
+//      - reorder functions
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -143,32 +147,6 @@ extern "C" {
 
 typedef struct stb_vorbis_g stb_vorbis_g;
 
-typedef struct
-{
-   unsigned int sample_rate;
-   int channels;
-
-   int max_frame_size;
-} stb_vorbis_g_info;
-
-// get general information about the file
-extern stb_vorbis_g_info stb_vorbis_g_get_info(stb_vorbis_g *f);
-
-// get the last error detected (clears it, too)
-extern int stb_vorbis_g_get_error(stb_vorbis_g *f);
-
-// close an ogg vorbis file and free all memory in use
-extern void stb_vorbis_g_close(stb_vorbis_g *f);
-
-///////////   PUSHDATA API
-
-// this API allows you to get blocks of data from any source and hand
-// them to stb_vorbis. you have to buffer them; stb_vorbis will tell
-// you how much it used, and you have to give it the rest next time;
-// and stb_vorbis may not have enough data to work with and you will
-// need to give it the same data again PLUS more. Note that the Vorbis
-// specification does not bound the size of an individual frame.
-
 // create a vorbis decoder by passing in the ID and Setup packets
 //    (skip the Comment packet).
 // on success, returns an stb_vorbis_g *, does not set error.
@@ -180,19 +158,30 @@ extern stb_vorbis_g *stb_vorbis_g_open(
          const unsigned char *setup, size_t setup_len,
          int *error);
 
-// decode a packet and possibly output audio sample data if possible
+// get sample rate
+extern unsigned int stb_vorbis_g_get_sample_rate(stb_vorbis_g *f);
+
+// get channel count
+extern int stb_vorbis_g_get_channels(stb_vorbis_g *f);
+
+// get maximum samples that can be output by stb_vorbis_g_decode_frame
+// (a "sample" is used here in the same way some may refer to a "frame".
+// i.e. four values for four channels is one sample.)
+extern int stb_vorbis_g_get_max_frame_size(stb_vorbis_g *f);
+
+// decode a packet and output audio sample data if possible
 //
-// return value: number of bytes we used from datablock, 0 on error
+// return value: number of samples output (0 to max_frame_size).
+// you can determine if an error occurred using stb_vorbis_g_get_error.
 //
 // possible cases:
-//     0 bytes used, 0 samples output (error)
-//     N bytes used, 0 samples output (various, keep going)
-//     N bytes used, M samples output (one frame of data)
+//     error, 0 samples output (error)
+//     no error, 0 samples output (various, keep going)
+//     no error, M samples output (one frame of data)
 // note that after opening a file, you will ALWAYS get one N-bytes,0-sample
 // frame, because Vorbis always "discards" the first frame.
 //
 // *output will contain an array of float* buffers, one per channel.
-// (See get_info.)
 // In other words, (*output)[0][0] contains the first sample from
 // the first channel, and (*output)[1][0] contains the first sample from
 // the second channel.
@@ -202,16 +191,28 @@ extern stb_vorbis_g *stb_vorbis_g_open(
 // them or modify their contents. They are transient and will be overwritten
 // once you ask for more data to get decoded, so be sure to grab any data
 // you need before then.
-extern size_t stb_vorbis_g_decode_frame(
+//
+// The amount of samples per decode will never be more than max_frame_size.
+extern int stb_vorbis_g_decode_frame(
          stb_vorbis_g *f,
          const unsigned char *datablock, size_t datablock_length_in_bytes,
-         float ***output,   // place to write float ** array of float * buffers
-         int *samples       // place to write number of output samples
+         float ***output   // place to write float ** array of float * buffers
      );
+
+// get the last error detected (clears it, too)
+extern int stb_vorbis_g_get_error(stb_vorbis_g *f);
+
+// get the amount of bytes read last frame
+// undefined if no frame has been read
+// on error it *MAY* point to a useful location (or not!)
+extern size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f);
 
 // inform stb_vorbis that your next packet will not be contiguous with
 // previous ones (e.g. you've seeked in the data).
 extern void stb_vorbis_g_flush(stb_vorbis_g *f);
+
+// close an ogg vorbis file and free all memory in use
+extern void stb_vorbis_g_close(stb_vorbis_g *f);
 
 ////////   ERROR CODES
 
@@ -482,6 +483,7 @@ struct stb_vorbis_g
 
   // input config
    const uint8 *stream;
+   const uint8 *stream_start; // for get_last_frame_read
    const uint8 *stream_end;
 
   // run-time results
@@ -911,7 +913,8 @@ static int STBV_CDECL point_compare(const void *p, const void *q)
 
 static void start_packet(vorb *f, const unsigned char *data, size_t data_len)
 {
-   f->stream     = data;
+   f->stream       = data;
+   f->stream_start = data;
    f->stream_end = data + data_len;
    f->eof = FALSE;
    f->valid_bits = 0;
@@ -3282,13 +3285,20 @@ void stb_vorbis_g_close(stb_vorbis_g *p)
    setup_free(p,p);
 }
 
-stb_vorbis_g_info stb_vorbis_g_get_info(stb_vorbis_g *f)
+
+unsigned int stb_vorbis_g_get_sample_rate(stb_vorbis_g *f)
 {
-   stb_vorbis_g_info d;
-   d.channels = f->channels;
-   d.sample_rate = f->sample_rate;
-   d.max_frame_size = f->blocksize_1 >> 1;
-   return d;
+   return f->sample_rate;
+}
+
+int stb_vorbis_g_get_channels(stb_vorbis_g *f)
+{
+   return f->channels;
+}
+
+int stb_vorbis_g_get_max_frame_size(stb_vorbis_g *f)
+{
+   return f->blocksize_1 >> 1;
 }
 
 int stb_vorbis_g_get_error(stb_vorbis_g *f)
@@ -3296,6 +3306,11 @@ int stb_vorbis_g_get_error(stb_vorbis_g *f)
    int e = f->error;
    f->error = VORBIS__no_error;
    return e;
+}
+
+size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f)
+{
+   return f->stream - f->stream_start;
 }
 
 static stb_vorbis_g * vorbis_alloc(stb_vorbis_g *f)
@@ -3311,12 +3326,11 @@ void stb_vorbis_g_flush(stb_vorbis_g *f)
    f->first_decode = FALSE;
 }
 
-// return value: number of bytes we used, or 0 on error
-size_t stb_vorbis_g_decode_frame(
+// return value: samples
+int stb_vorbis_g_decode_frame(
          stb_vorbis_g *f,                   // the file we're decoding
          const uint8 *data, size_t data_len, // the memory available for decoding
-         float ***output,                 // place to write float ** array of float * buffers
-         int *samples                     // place to write number of output samples
+         float ***output                 // place to write float ** array of float * buffers
      )
 {
    int i;
@@ -3324,19 +3338,16 @@ size_t stb_vorbis_g_decode_frame(
 
    f->error      = VORBIS__no_error;
 
-   if (!vorbis_decode_packet(f, data, data_len, &len, &left, &right)) {
-      *samples = 0;
+   if (!vorbis_decode_packet(f, data, data_len, &len, &left, &right))
       return 0;
-   }
 
    // success!
    len = vorbis_finish_frame(f, len, left, right);
    for (i=0; i < f->channels; ++i)
       f->outputs[i] = f->channel_buffers[i] + left;
 
-   *samples = len;
    *output = f->outputs;
-   return f->stream - data;
+   return len;
 }
 
 stb_vorbis_g *stb_vorbis_g_open(

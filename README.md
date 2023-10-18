@@ -73,7 +73,7 @@ Sometimes there's a method to the definition order. (Sometimes there isn't, but 
 * natives-util: JNI wrappers for natives. These are in a separate package so that changes to the JNI wrapping don't have to be tightly bound to the compiled and separately released natives (in case of bugs/etc.)
 * natives-examples: This ideally would be moved into tools, but this was the prototyping area where the more advanced capabilities of BadGPU were tested. Because the nature of the AWT WSI hadn't been figured out yet, this uses its own "not-gabien" WSI.
 * datum: "mostly Scheme-compatible" S-expression format for easy to type and modify human-readable data with a minimalist specification.
-* media: USLX, but for media formats!
+* media: USLX, but for media formats! As such, requires natives-util.
 * common: "Core engine APIs" - this is the "core engine" that android/javase primarily implement.
 * ui: Utilities & UI framework, built around common. In general if an API isn't closely bound to the "core wrapper" it should probably go here. Backends need this for the emulated file browser (and ONLY for that, so it may get loosely bound in future)
 * android: Android backend & Java 8 polyfill.

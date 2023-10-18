@@ -14,6 +14,7 @@ extern const char una_version[];
 
 #define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x
 #define J_LOADER(x) Java_gabien_natives_Loader_ ## x
+#define J_VORBIS(x) Java_gabien_natives_Vorbis_ ## x
 
 #define C_PTR(l) ((void *) (intptr_t) (l))
 #define J_PTR(l) ((int64_t) (intptr_t) (l))

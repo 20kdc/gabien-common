@@ -82,18 +82,18 @@ int main(int argc, char ** argv) {
       printf("stb_vorbis_g error %i!\n", errid);
    }
 
-   stb_vorbis_g_info info = stb_vorbis_g_get_info(vbg);
-   printf("%ihz %ich // play -r %i -e float -b 32 -c %i %s\n", info.sample_rate, info.channels, info.sample_rate, info.channels, argv[2]);
+   unsigned int sample_rate = stb_vorbis_g_get_sample_rate(vbg);
+   int channels = stb_vorbis_g_get_channels(vbg);
+   printf("%ihz %ich // play -r %i -e float -b 32 -c %i %s\n", sample_rate, channels, sample_rate, channels, argv[2]);
 
    fo = fopen(argv[2], "wb");
    if (!fo)
       puts("unable to open output file");
    for (int i = 3; i < packet_count; i++) {
       float ** output = NULL;
-      int samples = 0;
-      stb_vorbis_g_decode_frame(vbg, packets[i].packet, packets[i].bytes, &output, &samples);
+      int samples = stb_vorbis_g_decode_frame(vbg, packets[i].packet, packets[i].bytes, &output);
       for (int j = 0; j < samples; j++) {
-         for (int k = 0; k < info.channels; k++) {
+         for (int k = 0; k < channels; k++) {
             fwrite(&output[k][j], 1, 4, fo);
          }
       }
