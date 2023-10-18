@@ -5,8 +5,12 @@
 !COPYING.txt
 !.gitignore
 !IDEA-Code-Style.xml
-
+!eclipse-style.xml
+!example-toolchains.xml
 !ready.sh
+!unzip-desktop-jars.sh
+!copy-desktop-sources.sh
+!update-embedded-licensing.sh
 
 !uslx
 !uslx/
@@ -30,6 +34,12 @@
 !common/src
 !common/src/
 !common/src/**
+
+!ui
+!ui/
+!ui/src
+!ui/src/
+!ui/src/**
 
 !datum
 !datum/
@@ -116,9 +126,4 @@
 !tools/
 !tools/src
 !tools/src/**
-
-!example-toolchains.xml
-
-!unzip-desktop-jars.sh
-!copy-desktop-sources.sh
 
