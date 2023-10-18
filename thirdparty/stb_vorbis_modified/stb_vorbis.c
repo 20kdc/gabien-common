@@ -19,10 +19,10 @@
 // Limitations:
 //
 //   - floor 0 not supported (used in old ogg vorbis files pre-2004)
-//   - lossless sample-truncation at beginning ignored
-//   - cannot concatenate multiple vorbis streams
-//   - sample positions are 32-bit, limiting seekable 192Khz
-//       files to around 6 hours (Ogg supports 64-bit)
+//   - this modified version is intentionally *just* a Vorbis decoder. no Ogg!
+//     since this version of the library shifts Ogg packet decoding onto the user,
+//      the responsibility of implementing Vorbis I: A.2. Encapsulation is on the user.
+//     this is why support for these things is no longer a *library* issue.
 //
 // Feature contributors:
 //    Dougall Johnson (sample-exact seeking)
@@ -65,7 +65,14 @@
 //     step 3: de-encapsulation
 //      - the library now works with individual Vorbis packets rather than with Ogg data
 //        this allows for greater flexibility, muxing, and so on and so forth
-//     TODO: test bench using libogg to confirm before hooking into gabien-natives
+//     step 4: testing/final cleanup
+//      - fixed some outdated (because of the above steps) API documentation
+//      - removed STB_VORBIS_DIVIDE_TABLE and a few other bits and pieces
+//        removed STB_VORBIS_NO_DEFER_FLOOR because it doesn't work
+//      - you may now pass NULL for "error" to the open function
+//      - _pushdata suffix removed from relevant functions
+//      - header section reordered to make sense
+//
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
 //    1.20    - 2020-07-11 - several small fixes
@@ -159,46 +166,31 @@ extern void stb_vorbis_g_close(stb_vorbis_g *f);
 // need to give it the same data again PLUS more. Note that the Vorbis
 // specification does not bound the size of an individual frame.
 
-extern stb_vorbis_g *stb_vorbis_g_open_pushdata(
+// create a vorbis decoder by passing in the ID and Setup packets
+//    (skip the Comment packet).
+// on success, returns an stb_vorbis_g *, does not set error.
+// on failure, returns NULL and sets *error (if it is not NULL).
+// if returns NULL and *error is VORBIS_need_more_data, then the input packet
+// was truncated.
+extern stb_vorbis_g *stb_vorbis_g_open(
          const unsigned char *id, size_t id_len,
          const unsigned char *setup, size_t setup_len,
          int *error);
-// create a vorbis decoder by passing in the initial data block containing
-//    the ogg&vorbis headers (you don't need to do parse them, just provide
-//    the first N bytes of the file--you're told if it's not enough, see below)
-// on success, returns an stb_vorbis *, does not set error, returns the amount of
-//    data parsed/consumed on this call in *datablock_memory_consumed_in_bytes;
-// on failure, returns NULL on error and sets *error, does not change *datablock_memory_consumed
-// if returns NULL and *error is VORBIS_need_more_data, then the input block was
-//       incomplete and you need to pass in a larger block from the start of the file
 
-extern size_t stb_vorbis_g_decode_frame_pushdata(
-         stb_vorbis_g *f,
-         const unsigned char *datablock, size_t datablock_length_in_bytes,
-         int *channels,             // place to write number of float * buffers
-         float ***output,           // place to write float ** array of float * buffers
-         int *samples               // place to write number of output samples
-     );
-// decode a frame of audio sample data if possible from the passed-in data block
+// decode a packet and possibly output audio sample data if possible
 //
-// return value: number of bytes we used from datablock
+// return value: number of bytes we used from datablock, or 0 if null
 //
 // possible cases:
-//     0 bytes used, 0 samples output (need more data)
-//     N bytes used, 0 samples output (resynching the stream, keep going)
+//     0 bytes used, 0 samples output (error)
+//     N bytes used, 0 samples output (various, keep going)
 //     N bytes used, M samples output (one frame of data)
 // note that after opening a file, you will ALWAYS get one N-bytes,0-sample
 // frame, because Vorbis always "discards" the first frame.
 //
-// Note that on resynch, stb_vorbis will rarely consume all of the buffer,
-// instead only datablock_length_in_bytes-3 or less. This is because it wants
-// to avoid missing parts of a page header if they cross a datablock boundary,
-// without writing state-machiney code to record a partial detection.
-//
-// The number of channels returned are stored in *channels (which can be
-// NULL--it is always the same as the number of channels reported by
-// get_info). *output will contain an array of float* buffers, one per
-// channel. In other words, (*output)[0][0] contains the first sample from
+// *output will contain an array of float* buffers, one per channel.
+// (See get_info.)
+// In other words, (*output)[0][0] contains the first sample from
 // the first channel, and (*output)[1][0] contains the first sample from
 // the second channel.
 //
@@ -207,44 +199,30 @@ extern size_t stb_vorbis_g_decode_frame_pushdata(
 // them or modify their contents. They are transient and will be overwritten
 // once you ask for more data to get decoded, so be sure to grab any data
 // you need before then.
+extern size_t stb_vorbis_g_decode_frame(
+         stb_vorbis_g *f,
+         const unsigned char *datablock, size_t datablock_length_in_bytes,
+         float ***output,           // place to write float ** array of float * buffers
+         int *samples               // place to write number of output samples
+     );
 
-extern void stb_vorbis_g_flush_pushdata(stb_vorbis_g *f);
-// inform stb_vorbis that your next datablock will not be contiguous with
-// previous ones (e.g. you've seeked in the data); future attempts to decode
-// frames will cause stb_vorbis to resynchronize (as noted above), and
-// once it sees a valid Ogg page (typically 4-8KB, as large as 64KB), it
-// will begin decoding the _next_ frame.
-//
-// if you want to seek using pushdata, you need to seek in your file, then
-// call stb_vorbis_flush_pushdata(), then start calling decoding, then once
-// decoding is returning you data, call stb_vorbis_get_sample_offset, and
-// if you don't like the result, seek your file again and repeat.
+// inform stb_vorbis_g that your next packet will not be contiguous with
+// previous ones (e.g. you've seeked in the data).
+extern void stb_vorbis_g_flush(stb_vorbis_g *f);
 
 ////////   ERROR CODES
 
 enum STBVorbisError
 {
-   VORBIS__no_error,
-
-   VORBIS_need_more_data=1,             // not a real error
-
-   VORBIS_outofmem,                     // not enough memory
-
-   VORBIS_unexpected_eof=10,            // file is truncated?
-
-   // decoding errors (corrupt/invalid stream) -- you probably
-   // don't care about the exact details of these
-
-   // vorbis errors:
-   VORBIS_invalid_setup=20,
+   VORBIS__no_error = 0,
+   VORBIS_outofmem = 1,
+   // everything past here is basically just "some kinda decoding error"
+   VORBIS_unexpected_eof = 10,
+   VORBIS_invalid_setup,
    VORBIS_invalid_stream,
-
-   // ogg errors:
-   VORBIS_missing_capture_pattern=30,
    VORBIS_invalid_first_page,
    VORBIS_bad_packet_type
 };
-
 
 #ifdef __cplusplus
 }
@@ -274,11 +252,6 @@ enum STBVorbisError
 #ifndef STB_VORBIS_FAST_HUFFMAN_LENGTH
 #define STB_VORBIS_FAST_HUFFMAN_LENGTH   10
 #endif
-
-// STB_VORBIS_FAST_BINARY_LENGTH [number]
-//     sets the log size of the binary-search acceleration table. this
-//     is used in similar fashion to the fast-huffman size to set initial
-//     parameters for the binary search
 
 // STB_VORBIS_FAST_HUFFMAN_INT
 //     The fast huffman tables are much more efficient if they can be
@@ -313,28 +286,10 @@ enum STBVorbisError
 //     trade off storage for speed.
 //#define STB_VORBIS_DIVIDES_IN_CODEBOOK
 
-#ifdef STB_VORBIS_CODEBOOK_SHORTS
-#error "STB_VORBIS_CODEBOOK_SHORTS is no longer supported as it produced incorrect results for some input formats"
-#endif
-
-// STB_VORBIS_DIVIDE_TABLE
-//     this replaces small integer divides in the floor decode loop with
-//     table lookups. made less than 1% difference, so disabled by default.
-
 // STB_VORBIS_NO_INLINE_DECODE
 //     disables the inlining of the scalar codebook fast-huffman decode.
 //     might save a little codespace; useful for debugging
 // #define STB_VORBIS_NO_INLINE_DECODE
-
-// STB_VORBIS_NO_DEFER_FLOOR
-//     Normally we only decode the floor without synthesizing the actual
-//     full curve. We can instead synthesize the curve immediately. This
-//     requires more memory and is very likely slower, so I don't think
-//     you'd ever want to do it except for debugging.
-// #define STB_VORBIS_NO_DEFER_FLOOR
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -555,11 +510,7 @@ struct stb_vorbis_g
    float *previous_window[STB_VORBIS_MAX_CHANNELS];
    int previous_length;
 
-   #ifndef STB_VORBIS_NO_DEFER_FLOOR
    int16 *finalY[STB_VORBIS_MAX_CHANNELS];
-   #else
-   float *floor_buffers[STB_VORBIS_MAX_CHANNELS];
-   #endif
 
   // per-blocksize precomputed data
 
@@ -580,7 +531,7 @@ typedef struct stb_vorbis_g vorb;
 static int error(vorb *f, enum STBVorbisError e)
 {
    f->error = e;
-   if (!f->eof && e != VORBIS_need_more_data) {
+   if (!f->eof) {
       f->error=e; // breakpoint for debugging
    }
    return 0;
@@ -1059,7 +1010,6 @@ static __forceinline void prep_huffman(vorb *f)
 enum
 {
    VORBIS_packet_id = 1,
-   VORBIS_packet_comment = 3,
    VORBIS_packet_setup = 5
 };
 
@@ -1424,17 +1374,6 @@ static float inverse_db_table[256] =
 // expects to be exactly the same)
 //     ... also, isn't the whole point of Bresenham's algorithm to NOT
 // have to divide in the setup? sigh.
-#ifndef STB_VORBIS_NO_DEFER_FLOOR
-#define LINE_OP(a,b)   a *= b
-#else
-#define LINE_OP(a,b)   a = b
-#endif
-
-#ifdef STB_VORBIS_DIVIDE_TABLE
-#define DIVTAB_NUMER   32
-#define DIVTAB_DENOM   64
-int8 integer_divide_table[DIVTAB_NUMER][DIVTAB_DENOM]; // 2KB
-#endif
 
 static __forceinline void draw_line(float *output, int x0, int y0, int x1, int y1, int n)
 {
@@ -1446,33 +1385,15 @@ static __forceinline void draw_line(float *output, int x0, int y0, int x1, int y
    int err = 0;
    int sy;
 
-#ifdef STB_VORBIS_DIVIDE_TABLE
-   if (adx < DIVTAB_DENOM && ady < DIVTAB_NUMER) {
-      if (dy < 0) {
-         base = -integer_divide_table[ady][adx];
-         sy = base-1;
-      } else {
-         base =  integer_divide_table[ady][adx];
-         sy = base+1;
-      }
-   } else {
-      base = dy / adx;
-      if (dy < 0)
-         sy = base - 1;
-      else
-         sy = base+1;
-   }
-#else
    base = dy / adx;
    if (dy < 0)
       sy = base - 1;
    else
       sy = base+1;
-#endif
    ady -= abs(base) * adx;
    if (x1 > n) x1 = n;
    if (x < x1) {
-      LINE_OP(output[x], inverse_db_table[y&255]);
+      output[x] *= inverse_db_table[y&255];
       for (++x; x < x1; ++x) {
          err += ady;
          if (err >= adx) {
@@ -1480,7 +1401,7 @@ static __forceinline void draw_line(float *output, int x0, int y0, int x1, int y
             y += sy;
          } else
             y += base;
-         LINE_OP(output[x], inverse_db_table[y&255]);
+         output[x] *= inverse_db_table[y&255];
       }
    }
 }
@@ -2465,12 +2386,7 @@ static float *get_window(vorb *f, int len)
    return NULL;
 }
 
-#ifndef STB_VORBIS_NO_DEFER_FLOOR
-typedef int16 YTYPE;
-#else
-typedef int YTYPE;
-#endif
-static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, YTYPE *finalY, uint8 *step2_flag)
+static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, int16 *finalY)
 {
    int n2 = n >> 1;
    int s = map->chan[i].mux, floor;
@@ -2483,12 +2399,7 @@ static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, YTYPE *f
       int lx = 0, ly = finalY[0] * g->floor1_multiplier;
       for (q=1; q < g->values; ++q) {
          j = g->sorted_order[q];
-         #ifndef STB_VORBIS_NO_DEFER_FLOOR
-         STBV_NOTUSED(step2_flag);
          if (finalY[j] >= 0)
-         #else
-         if (step2_flag[j])
-         #endif
          {
             int hy = finalY[j] * g->floor1_multiplier;
             int hx = g->Xlist[j];
@@ -2501,7 +2412,7 @@ static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, YTYPE *f
       if (lx < n2) {
          // optimization of: draw_line(target, lx,ly, n,ly, n2);
          for (j=lx; j < n2; ++j)
-            LINE_OP(target[j], inverse_db_table[ly]);
+            target[j] *= inverse_db_table[ly];
          CHECK(f);
       }
    }
@@ -2592,7 +2503,7 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
       } else {
          Floor1 *g = &f->floor_config[floor].floor1;
          if (get_bits(f, 1)) {
-            short *finalY;
+            int16 *finalY;
             uint8 step2_flag[256];
             static int range_list[4] = { 256, 128, 86, 64 };
             int range = range_list[g->floor1_multiplier-1];
@@ -2656,15 +2567,11 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
                }
             }
 
-#ifdef STB_VORBIS_NO_DEFER_FLOOR
-            do_floor(f, map, i, n, f->floor_buffers[i], finalY, step2_flag);
-#else
             // defer final floor computation until _after_ residue
             for (j=0; j < g->values; ++j) {
                if (!step2_flag[j])
                   finalY[j] = -1;
             }
-#endif
          } else {
            error:
             zero_channel[i] = TRUE;
@@ -2733,24 +2640,13 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
    CHECK(f);
 
    // finish decoding the floors
-#ifndef STB_VORBIS_NO_DEFER_FLOOR
    for (i=0; i < f->channels; ++i) {
       if (really_zero_channel[i]) {
          memset(f->channel_buffers[i], 0, sizeof(*f->channel_buffers[i]) * n2);
       } else {
-         do_floor(f, map, i, n, f->channel_buffers[i], f->finalY[i], NULL);
+         do_floor(f, map, i, n, f->channel_buffers[i], f->finalY[i]);
       }
    }
-#else
-   for (i=0; i < f->channels; ++i) {
-      if (really_zero_channel[i]) {
-         memset(f->channel_buffers[i], 0, sizeof(*f->channel_buffers[i]) * n2);
-      } else {
-         for (j=0; j < n2; ++j)
-            f->channel_buffers[i][j] *= f->floor_buffers[i][j];
-      }
-   }
-#endif
 
 // INVERSE MDCT
    CHECK(f);
@@ -2859,9 +2755,9 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
    int len,i,j,k, max_submaps = 0;
    int longest_floorlist=0;
 
-   // first page, first packet
    f->first_decode = TRUE;
 
+   // -- Identification --
    start_packet(f, id, id_len);
 
    // read packet
@@ -2892,6 +2788,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
    x = get8(f);
    if (!(x & 1))                                    return error(f, VORBIS_invalid_first_page);
 
+   // -- Setup --
    start_packet(f, setup, setup_len);
 
    if (get8(f) != VORBIS_packet_setup)       return error(f, VORBIS_invalid_setup);
@@ -3314,10 +3211,6 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
       f->finalY[i]          = (int16 *) setup_malloc(f, sizeof(int16) * longest_floorlist);
       if (f->channel_buffers[i] == NULL || f->previous_window[i] == NULL || f->finalY[i] == NULL) return error(f, VORBIS_outofmem);
       memset(f->channel_buffers[i], 0, sizeof(float) * f->blocksize_1);
-      #ifdef STB_VORBIS_NO_DEFER_FLOOR
-      f->floor_buffers[i]   = (float *) setup_malloc(f, sizeof(float) * f->blocksize_1/2);
-      if (f->floor_buffers[i] == NULL) return error(f, VORBIS_outofmem);
-      #endif
    }
 
    if (!init_blocksize(f, 0, f->blocksize_0)) return FALSE;
@@ -3325,12 +3218,6 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
    f->blocksize[0] = f->blocksize_0;
    f->blocksize[1] = f->blocksize_1;
 
-#ifdef STB_VORBIS_DIVIDE_TABLE
-   if (integer_divide_table[1][1]==0)
-      for (i=0; i < DIVTAB_NUMER; ++i)
-         for (j=1; j < DIVTAB_DENOM; ++j)
-            integer_divide_table[i][j] = i / j;
-#endif
    return TRUE;
 }
 
@@ -3374,9 +3261,6 @@ static void vorbis_deinit(vorb *p)
    for (i=0; i < p->channels && i < STB_VORBIS_MAX_CHANNELS; ++i) {
       setup_free(p, p->channel_buffers[i]);
       setup_free(p, p->previous_window[i]);
-      #ifdef STB_VORBIS_NO_DEFER_FLOOR
-      setup_free(p, p->floor_buffers[i]);
-      #endif
       setup_free(p, p->finalY[i]);
    }
    for (i=0; i < 2; ++i) {
@@ -3417,18 +3301,17 @@ static stb_vorbis_g * vorbis_alloc(stb_vorbis_g *f)
    return p;
 }
 
-void stb_vorbis_g_flush_pushdata(stb_vorbis_g *f)
+void stb_vorbis_g_flush(stb_vorbis_g *f)
 {
    f->previous_length = 0;
    f->discard_samples_deferred = 0;
    f->first_decode = FALSE;
 }
 
-// return value: number of bytes we used
-size_t stb_vorbis_g_decode_frame_pushdata(
+// return value: number of bytes we used, or 0 on error
+size_t stb_vorbis_g_decode_frame(
          stb_vorbis_g *f,                   // the file we're decoding
          const uint8 *data, size_t data_len, // the memory available for decoding
-         int *channels,                   // place to write number of float * buffers
          float ***output,                 // place to write float ** array of float * buffers
          int *samples                     // place to write number of output samples
      )
@@ -3436,20 +3319,11 @@ size_t stb_vorbis_g_decode_frame_pushdata(
    int i;
    int len,right,left;
 
-   f->stream     = data;
-   f->stream_end = data + data_len;
    f->error      = VORBIS__no_error;
 
    if (!vorbis_decode_packet(f, data, data_len, &len, &left, &right)) {
-      // save the actual error we encountered
-      enum STBVorbisError error = f->error;
-      // if we get an error while parsing, what to do?
-      // well, it DEFINITELY won't work to continue from where we are!
-      stb_vorbis_g_flush_pushdata(f);
-      // restore the error that actually made us bail
-      f->error = error;
       *samples = 0;
-      return 1;
+      return 0;
    }
 
    // success!
@@ -3457,13 +3331,12 @@ size_t stb_vorbis_g_decode_frame_pushdata(
    for (i=0; i < f->channels; ++i)
       f->outputs[i] = f->channel_buffers[i] + left;
 
-   if (channels) *channels = f->channels;
    *samples = len;
    *output = f->outputs;
    return f->stream - data;
 }
 
-stb_vorbis_g *stb_vorbis_g_open_pushdata(
+stb_vorbis_g *stb_vorbis_g_open(
          const unsigned char *id, size_t id_len,
          const unsigned char *setup, size_t setup_len,
          int *error)
@@ -3471,17 +3344,14 @@ stb_vorbis_g *stb_vorbis_g_open_pushdata(
    stb_vorbis_g *f, p;
    memset(&p, 0, sizeof(p)); // NULL out all to start
    if (!start_decoder(&p, id, id_len, setup, setup_len)) {
-      if (p.eof)
-         *error = VORBIS_need_more_data;
-      else
-         *error = p.error;
+      if (error) *error = p.error;
       vorbis_deinit(&p);
       return NULL;
    }
+   if (error) *error = 0;
    f = vorbis_alloc(&p);
    if (f) {
       *f = p;
-      *error = 0;
       return f;
    } else {
       vorbis_deinit(&p);
