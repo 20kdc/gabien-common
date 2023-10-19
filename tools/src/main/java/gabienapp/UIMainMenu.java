@@ -12,9 +12,17 @@ import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.dialogs.UICredits;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
+import gabien.uslx.append.XEDataOutputStream;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.function.Consumer;
+
+import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
@@ -23,6 +31,13 @@ import gabien.atlas.BinaryTreeAtlasStrategy;
 import gabien.atlas.ImageAtlasDrawable;
 import gabien.atlas.SimpleAtlasBuilder;
 import gabien.media.RIFFNode;
+import gabien.media.audio.AudioIOCRSet;
+import gabien.media.audio.AudioIOFormat;
+import gabien.media.audio.AudioIOSource;
+import gabien.media.audio.WavIO;
+import gabien.media.ogg.OggPacketsFromSegments;
+import gabien.media.ogg.OggReader;
+import gabien.natives.VorbisUnsafe;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
@@ -48,6 +63,69 @@ public class UIMainMenu extends UIProxy {
                     try {
                         PVAFile pf = new PVAFile(GaBIEn.getInFile(str), false);
                         ui.accept(new UIPVAViewer(pf));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }));
+        vsl.panelsAdd(new UITextButton("Convert OGG Vorbis To WAV...", 16, () -> {
+            GaBIEn.startFileBrowser("Convert OGG Vorbis File", false, "", (str) -> {
+                if (str != null) {
+                    try {
+                        InputStream inp = GaBIEn.getInFile(str);
+                        OggReader or = new OggReader();
+                        LinkedList<byte[]> packets = new LinkedList<>();
+                        OggPacketsFromSegments opfs = new OggPacketsFromSegments((data, ofs, len) -> {
+                            byte[] res = new byte[len];
+                            System.arraycopy(data, ofs, res, 0, len);
+                            packets.add(res);
+                        });
+                        while (true) {
+                            int ib = inp.read();
+                            if (ib == -1)
+                                break;
+                            or.addByteToSyncWindow((byte) ib);
+                            if (or.isPageValid()) {
+                                or.sendSegmentsTo(opfs, false);
+                                or.skipSyncWindow(or.getPageLength());
+                            }
+                        }
+                        inp.close();
+                        byte[] id = packets.removeFirst();
+                        packets.removeFirst();
+                        byte[] setup = packets.removeFirst();
+                        long res = VorbisUnsafe.open(id, 0, id.length, setup, 0, setup.length);
+                        final int channels = VorbisUnsafe.getChannels(res);
+                        int sr = VorbisUnsafe.getSampleRate(res);
+                        AudioIOCRSet crs = new AudioIOCRSet(channels, sr);
+                        int mfs = VorbisUnsafe.getMaxFrameSize(res);
+                        float[] resBuf = new float[channels * mfs];
+                        ByteArrayOutputStream baosTmp = new ByteArrayOutputStream();
+                        XEDataOutputStream xe = new XEDataOutputStream(baosTmp);
+                        while (packets.size() > 0) {
+                            byte[] pkt = packets.removeFirst();
+                            int sampleFrames = VorbisUnsafe.decodeFrame(res, pkt, 0, pkt.length, resBuf, 0);
+                            for (int i = 0; i < sampleFrames; i++)
+                                for (int j = 0; j < channels; j++)
+                                    xe.writeFloat(resBuf[(j * mfs) + i]);
+                        }
+                        OutputStream os = GaBIEn.getOutFile("tmp.wav");
+                        byte[] baosFin = baosTmp.toByteArray();
+                        WavIO.writeWAV(os, new AudioIOSource(crs, AudioIOFormat.F_F32) {
+                            int ptr = 0;
+                            @Override
+                            public void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException {
+                                System.arraycopy(baosFin, ptr, frame.array(), frame.arrayOffset() + at, channels * 4);
+                                ptr += channels * 4;
+                            }
+                            
+                            @Override
+                            public int frameCount() {
+                                return baosFin.length / (channels * 4);
+                            }
+                        });
+                        os.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

@@ -81,6 +81,10 @@
 //      - reorder functions
 //     step 7: making it compile
 //      - added STB_VORBIS_USER_WILL_DO_INCLUDES_THEMSELVES
+//     step 8: even more removal of unused stuff
+//      - removed unused old IMDCT functions
+//      - since the library doesn't have the built-in allocator, alignment is no longer a library problem
+//      - setup_temp_free no longer takes a size
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -144,7 +148,7 @@ extern "C" {
 // vs. size. In my test files the maximal-size usage is ~150KB.)
 //
 // You can modify the wrapper functions in the source (setup_malloc,
-// setup_temp_malloc, temp_malloc) to change this behavior.
+// setup_temp_malloc, temp_alloc) to change this behavior.
 // (gabien-common patch: stripped out the other stuff)
 
 ///////////   FUNCTIONS USEABLE WITH ALL INPUT MODES
@@ -581,7 +585,6 @@ static void *make_block_array(void *mem, int count, int size)
 
 static void *setup_malloc(vorb *f, int sz)
 {
-   sz = (sz+7) & ~7; // round up to nearest 8 for alignment of future allocs.
    return sz ? malloc(sz) : NULL;
 }
 
@@ -592,11 +595,10 @@ static void setup_free(vorb *f, void *p)
 
 static void *setup_temp_malloc(vorb *f, int sz)
 {
-   sz = (sz+7) & ~7; // round up to nearest 8 for alignment of future allocs.
    return malloc(sz);
 }
 
-static void setup_temp_free(vorb *f, void *p, int sz)
+static void setup_temp_free(vorb *f, void *p)
 {
    free(p);
 }
@@ -1624,124 +1626,8 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
    #endif
 }
 
-
-#if 0
-// slow way for debugging
-void inverse_mdct_slow(float *buffer, int n)
-{
-   int i,j;
-   int n2 = n >> 1;
-   float *x = (float *) malloc(sizeof(*x) * n2);
-   memcpy(x, buffer, sizeof(*x) * n2);
-   for (i=0; i < n; ++i) {
-      float acc = 0;
-      for (j=0; j < n2; ++j)
-         // formula from paper:
-         //acc += n/4.0f * x[j] * (float) cos(M_PI / 2 / n * (2 * i + 1 + n/2.0)*(2*j+1));
-         // formula from wikipedia
-         //acc += 2.0f / n2 * x[j] * (float) cos(M_PI/n2 * (i + 0.5 + n2/2)*(j + 0.5));
-         // these are equivalent, except the formula from the paper inverts the multiplier!
-         // however, what actually works is NO MULTIPLIER!?!
-         //acc += 64 * 2.0f / n2 * x[j] * (float) cos(M_PI/n2 * (i + 0.5 + n2/2)*(j + 0.5));
-         acc += x[j] * (float) cos(M_PI / 2 / n * (2 * i + 1 + n/2.0)*(2*j+1));
-      buffer[i] = acc;
-   }
-   free(x);
-}
-#elif 0
-// same as above, but just barely able to run in real time on modern machines
-void inverse_mdct_slow(float *buffer, int n, vorb *f, int blocktype)
-{
-   float mcos[16384];
-   int i,j;
-   int n2 = n >> 1, nmask = (n << 2) -1;
-   float *x = (float *) malloc(sizeof(*x) * n2);
-   memcpy(x, buffer, sizeof(*x) * n2);
-   for (i=0; i < 4*n; ++i)
-      mcos[i] = (float) cos(M_PI / 2 * i / n);
-
-   for (i=0; i < n; ++i) {
-      float acc = 0;
-      for (j=0; j < n2; ++j)
-         acc += x[j] * mcos[(2 * i + 1 + n2)*(2*j+1) & nmask];
-      buffer[i] = acc;
-   }
-   free(x);
-}
-#elif 0
-// transform to use a slow dct-iv; this is STILL basically trivial,
-// but only requires half as many ops
-void dct_iv_slow(float *buffer, int n)
-{
-   float mcos[16384];
-   float x[2048];
-   int i,j;
-   int n2 = n >> 1, nmask = (n << 3) - 1;
-   memcpy(x, buffer, sizeof(*x) * n);
-   for (i=0; i < 8*n; ++i)
-      mcos[i] = (float) cos(M_PI / 4 * i / n);
-   for (i=0; i < n; ++i) {
-      float acc = 0;
-      for (j=0; j < n; ++j)
-         acc += x[j] * mcos[((2 * i + 1)*(2*j+1)) & nmask];
-      buffer[i] = acc;
-   }
-}
-
-void inverse_mdct_slow(float *buffer, int n, vorb *f, int blocktype)
-{
-   int i, n4 = n >> 2, n2 = n >> 1, n3_4 = n - n4;
-   float temp[4096];
-
-   memcpy(temp, buffer, n2 * sizeof(float));
-   dct_iv_slow(temp, n2);  // returns -c'-d, a-b'
-
-   for (i=0; i < n4  ; ++i) buffer[i] = temp[i+n4];            // a-b'
-   for (   ; i < n3_4; ++i) buffer[i] = -temp[n3_4 - i - 1];   // b-a', c+d'
-   for (   ; i < n   ; ++i) buffer[i] = -temp[i - n3_4];       // c'+d
-}
-#endif
-
-#ifndef LIBVORBIS_MDCT
-#define LIBVORBIS_MDCT 0
-#endif
-
-#if LIBVORBIS_MDCT
-// directly call the vorbis MDCT using an interface documented
-// by Jeff Roberts... useful for performance comparison
-typedef struct
-{
-  int n;
-  int log2n;
-
-  float *trig;
-  int   *bitrev;
-
-  float scale;
-} mdct_lookup;
-
-extern void mdct_init(mdct_lookup *lookup, int n);
-extern void mdct_clear(mdct_lookup *l);
-extern void mdct_backward(mdct_lookup *init, float *in, float *out);
-
-mdct_lookup M1,M2;
-
-void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
-{
-   mdct_lookup *M;
-   if (M1.n == n) M = &M1;
-   else if (M2.n == n) M = &M2;
-   else if (M1.n == 0) { mdct_init(&M1, n); M = &M1; }
-   else {
-      if (M2.n) __asm int 3;
-      mdct_init(&M2, n);
-      M = &M2;
-   }
-
-   mdct_backward(M, buffer, buffer);
-}
-#endif
-
+// (gabien-common: removed historical other inverse_mdct implementations.
+// if you need them you can always grab them from the original stb_vorbis.c)
 
 // the following were split out into separate functions while optimizing;
 // they could be pushed back up but eh. __forceinline showed no change;
@@ -2267,134 +2153,6 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype)
    temp_free(f,buf2);
 }
 
-#if 0
-// this is the original version of the above code, if you want to optimize it from scratch
-void inverse_mdct_naive(float *buffer, int n)
-{
-   float s;
-   float A[1 << 12], B[1 << 12], C[1 << 11];
-   int i,k,k2,k4, n2 = n >> 1, n4 = n >> 2, n8 = n >> 3, l;
-   int n3_4 = n - n4, ld;
-   // how can they claim this only uses N words?!
-   // oh, because they're only used sparsely, whoops
-   float u[1 << 13], X[1 << 13], v[1 << 13], w[1 << 13];
-   // set up twiddle factors
-
-   for (k=k2=0; k < n4; ++k,k2+=2) {
-      A[k2  ] = (float)  cos(4*k*M_PI/n);
-      A[k2+1] = (float) -sin(4*k*M_PI/n);
-      B[k2  ] = (float)  cos((k2+1)*M_PI/n/2);
-      B[k2+1] = (float)  sin((k2+1)*M_PI/n/2);
-   }
-   for (k=k2=0; k < n8; ++k,k2+=2) {
-      C[k2  ] = (float)  cos(2*(k2+1)*M_PI/n);
-      C[k2+1] = (float) -sin(2*(k2+1)*M_PI/n);
-   }
-
-   // IMDCT algorithm from "The use of multirate filter banks for coding of high quality digital audio"
-   // Note there are bugs in that pseudocode, presumably due to them attempting
-   // to rename the arrays nicely rather than representing the way their actual
-   // implementation bounces buffers back and forth. As a result, even in the
-   // "some formulars corrected" version, a direct implementation fails. These
-   // are noted below as "paper bug".
-
-   // copy and reflect spectral data
-   for (k=0; k < n2; ++k) u[k] = buffer[k];
-   for (   ; k < n ; ++k) u[k] = -buffer[n - k - 1];
-   // kernel from paper
-   // step 1
-   for (k=k2=k4=0; k < n4; k+=1, k2+=2, k4+=4) {
-      v[n-k4-1] = (u[k4] - u[n-k4-1]) * A[k2]   - (u[k4+2] - u[n-k4-3])*A[k2+1];
-      v[n-k4-3] = (u[k4] - u[n-k4-1]) * A[k2+1] + (u[k4+2] - u[n-k4-3])*A[k2];
-   }
-   // step 2
-   for (k=k4=0; k < n8; k+=1, k4+=4) {
-      w[n2+3+k4] = v[n2+3+k4] + v[k4+3];
-      w[n2+1+k4] = v[n2+1+k4] + v[k4+1];
-      w[k4+3]    = (v[n2+3+k4] - v[k4+3])*A[n2-4-k4] - (v[n2+1+k4]-v[k4+1])*A[n2-3-k4];
-      w[k4+1]    = (v[n2+1+k4] - v[k4+1])*A[n2-4-k4] + (v[n2+3+k4]-v[k4+3])*A[n2-3-k4];
-   }
-   // step 3
-   ld = ilog(n) - 1; // ilog is off-by-one from normal definitions
-   for (l=0; l < ld-3; ++l) {
-      int k0 = n >> (l+2), k1 = 1 << (l+3);
-      int rlim = n >> (l+4), r4, r;
-      int s2lim = 1 << (l+2), s2;
-      for (r=r4=0; r < rlim; r4+=4,++r) {
-         for (s2=0; s2 < s2lim; s2+=2) {
-            u[n-1-k0*s2-r4] = w[n-1-k0*s2-r4] + w[n-1-k0*(s2+1)-r4];
-            u[n-3-k0*s2-r4] = w[n-3-k0*s2-r4] + w[n-3-k0*(s2+1)-r4];
-            u[n-1-k0*(s2+1)-r4] = (w[n-1-k0*s2-r4] - w[n-1-k0*(s2+1)-r4]) * A[r*k1]
-                                - (w[n-3-k0*s2-r4] - w[n-3-k0*(s2+1)-r4]) * A[r*k1+1];
-            u[n-3-k0*(s2+1)-r4] = (w[n-3-k0*s2-r4] - w[n-3-k0*(s2+1)-r4]) * A[r*k1]
-                                + (w[n-1-k0*s2-r4] - w[n-1-k0*(s2+1)-r4]) * A[r*k1+1];
-         }
-      }
-      if (l+1 < ld-3) {
-         // paper bug: ping-ponging of u&w here is omitted
-         memcpy(w, u, sizeof(u));
-      }
-   }
-
-   // step 4
-   for (i=0; i < n8; ++i) {
-      int j = bit_reverse(i) >> (32-ld+3);
-      assert(j < n8);
-      if (i == j) {
-         // paper bug: original code probably swapped in place; if copying,
-         //            need to directly copy in this case
-         int i8 = i << 3;
-         v[i8+1] = u[i8+1];
-         v[i8+3] = u[i8+3];
-         v[i8+5] = u[i8+5];
-         v[i8+7] = u[i8+7];
-      } else if (i < j) {
-         int i8 = i << 3, j8 = j << 3;
-         v[j8+1] = u[i8+1], v[i8+1] = u[j8 + 1];
-         v[j8+3] = u[i8+3], v[i8+3] = u[j8 + 3];
-         v[j8+5] = u[i8+5], v[i8+5] = u[j8 + 5];
-         v[j8+7] = u[i8+7], v[i8+7] = u[j8 + 7];
-      }
-   }
-   // step 5
-   for (k=0; k < n2; ++k) {
-      w[k] = v[k*2+1];
-   }
-   // step 6
-   for (k=k2=k4=0; k < n8; ++k, k2 += 2, k4 += 4) {
-      u[n-1-k2] = w[k4];
-      u[n-2-k2] = w[k4+1];
-      u[n3_4 - 1 - k2] = w[k4+2];
-      u[n3_4 - 2 - k2] = w[k4+3];
-   }
-   // step 7
-   for (k=k2=0; k < n8; ++k, k2 += 2) {
-      v[n2 + k2 ] = ( u[n2 + k2] + u[n-2-k2] + C[k2+1]*(u[n2+k2]-u[n-2-k2]) + C[k2]*(u[n2+k2+1]+u[n-2-k2+1]))/2;
-      v[n-2 - k2] = ( u[n2 + k2] + u[n-2-k2] - C[k2+1]*(u[n2+k2]-u[n-2-k2]) - C[k2]*(u[n2+k2+1]+u[n-2-k2+1]))/2;
-      v[n2+1+ k2] = ( u[n2+1+k2] - u[n-1-k2] + C[k2+1]*(u[n2+1+k2]+u[n-1-k2]) - C[k2]*(u[n2+k2]-u[n-2-k2]))/2;
-      v[n-1 - k2] = (-u[n2+1+k2] + u[n-1-k2] + C[k2+1]*(u[n2+1+k2]+u[n-1-k2]) - C[k2]*(u[n2+k2]-u[n-2-k2]))/2;
-   }
-   // step 8
-   for (k=k2=0; k < n4; ++k,k2 += 2) {
-      X[k]      = v[k2+n2]*B[k2  ] + v[k2+1+n2]*B[k2+1];
-      X[n2-1-k] = v[k2+n2]*B[k2+1] - v[k2+1+n2]*B[k2  ];
-   }
-
-   // decode kernel to output
-   // determined the following value experimentally
-   // (by first figuring out what made inverse_mdct_slow work); then matching that here
-   // (probably vorbis encoder premultiplies by n or n/2, to save it on the decoder?)
-   s = 0.5; // theoretically would be n4
-
-   // [[[ note! the s value of 0.5 is compensated for by the B[] in the current code,
-   //     so it needs to use the "old" B values to behave correctly, or else
-   //     set s to 1.0 ]]]
-   for (i=0; i < n4  ; ++i) buffer[i] = s * X[i+n4];
-   for (   ; i < n3_4; ++i) buffer[i] = -s * X[n3_4 - i - 1];
-   for (   ; i < n   ; ++i) buffer[i] = -s * X[i - n3_4];
-}
-#endif
-
 static float *get_window(vorb *f, int len)
 {
    len <<= 1;
@@ -2876,7 +2634,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
          c->codeword_lengths = (uint8 *) setup_malloc(f, c->entries);
          if (c->codeword_lengths == NULL) return error(f, VORBIS_outofmem);
          memcpy(c->codeword_lengths, lengths, c->entries);
-         setup_temp_free(f, lengths, c->entries); // note this is only safe if there have been no intervening temp mallocs!
+         setup_temp_free(f, lengths); // note this is only safe if there have been no intervening temp mallocs!
          lengths = c->codeword_lengths;
          c->sparse = 0;
       }
@@ -2914,7 +2672,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
       }
 
       if (!compute_codewords(c, lengths, c->entries, values)) {
-         if (c->sparse) setup_temp_free(f, values, 0);
+         if (c->sparse) setup_temp_free(f, values);
          return error(f, VORBIS_invalid_setup);
       }
 
@@ -2932,9 +2690,9 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
       }
 
       if (c->sparse) {
-         setup_temp_free(f, values, sizeof(*values)*c->sorted_entries);
-         setup_temp_free(f, c->codewords, sizeof(*c->codewords)*c->sorted_entries);
-         setup_temp_free(f, lengths, c->entries);
+         setup_temp_free(f, values);
+         setup_temp_free(f, c->codewords);
+         setup_temp_free(f, lengths);
          c->codewords = NULL;
       }
 
@@ -2961,7 +2719,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
          if (mults == NULL) return error(f, VORBIS_outofmem);
          for (j=0; j < (int) c->lookup_values; ++j) {
             int q = get_bits(f, c->value_bits);
-            if (f->eof) { setup_temp_free(f,mults,sizeof(mults[0])*c->lookup_values); return error(f, VORBIS_invalid_setup); }
+            if (f->eof) { setup_temp_free(f,mults); return error(f, VORBIS_invalid_setup); }
             mults[j] = q;
          }
 
@@ -2975,7 +2733,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
                c->multiplicands = (codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->sorted_entries * c->dimensions);
             } else
                c->multiplicands = (codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->entries        * c->dimensions);
-            if (c->multiplicands == NULL) { setup_temp_free(f,mults,sizeof(mults[0])*c->lookup_values); return error(f, VORBIS_outofmem); }
+            if (c->multiplicands == NULL) { setup_temp_free(f,mults); return error(f, VORBIS_outofmem); }
             len = sparse ? c->sorted_entries : c->entries;
             for (j=0; j < len; ++j) {
                unsigned int z = sparse ? c->sorted_values[j] : j;
@@ -2988,7 +2746,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
                      last = val;
                   if (k+1 < c->dimensions) {
                      if (div > UINT_MAX / (unsigned int) c->lookup_values) {
-                        setup_temp_free(f, mults,sizeof(mults[0])*c->lookup_values);
+                        setup_temp_free(f, mults);
                         return error(f, VORBIS_invalid_setup);
                      }
                      div *= c->lookup_values;
@@ -3003,7 +2761,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
             float last=0;
             CHECK(f);
             c->multiplicands = (codetype *) setup_malloc(f, sizeof(c->multiplicands[0]) * c->lookup_values);
-            if (c->multiplicands == NULL) { setup_temp_free(f, mults,sizeof(mults[0])*c->lookup_values); return error(f, VORBIS_outofmem); }
+            if (c->multiplicands == NULL) { setup_temp_free(f, mults); return error(f, VORBIS_outofmem); }
             for (j=0; j < (int) c->lookup_values; ++j) {
                float val = mults[j] * c->delta_value + c->minimum_value + last;
                c->multiplicands[j] = val;
@@ -3014,7 +2772,7 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
 #ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
         skip:;
 #endif
-         setup_temp_free(f, mults, sizeof(mults[0])*c->lookup_values);
+         setup_temp_free(f, mults);
 
          CHECK(f);
       }
@@ -3324,12 +3082,6 @@ size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f)
    return f->stream - f->stream_start;
 }
 
-static stb_vorbis_g * vorbis_alloc(stb_vorbis_g *f)
-{
-   stb_vorbis_g *p = (stb_vorbis_g *) setup_malloc(f, sizeof(*p));
-   return p;
-}
-
 void stb_vorbis_g_flush(stb_vorbis_g *f)
 {
    f->previous_length = 0;
@@ -3374,7 +3126,7 @@ stb_vorbis_g *stb_vorbis_g_open(
       return NULL;
    }
    if (error) *error = 0;
-   f = vorbis_alloc(&p);
+   f = (stb_vorbis_g *) setup_malloc(f, sizeof(p));
    if (f) {
       *f = p;
       return f;

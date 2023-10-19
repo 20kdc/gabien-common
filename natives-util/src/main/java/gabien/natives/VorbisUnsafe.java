@@ -15,7 +15,7 @@ public abstract class VorbisUnsafe extends VorbisEnum {
     private VorbisUnsafe() {
     }
 
-    public static native long open(long instance, byte[] id, int idOfs, int idLen, byte[] setup, int setupOfs, int setupLen);
+    public static native long open(byte[] id, int idOfs, int idLen, byte[] setup, int setupOfs, int setupLen);
     public static native int getSampleRate(long instance);
     public static native int getChannels(long instance);
     public static native int getMaxFrameSize(long instance);
