@@ -33,6 +33,7 @@ public final class OggPacketsFromSegments implements OggSegmentReceiver {
     public final void end() {
         byte[] data = collation.toByteArray();
         output.packet(data, 0, data.length);
+        collation.reset();
     }
 
     @Override

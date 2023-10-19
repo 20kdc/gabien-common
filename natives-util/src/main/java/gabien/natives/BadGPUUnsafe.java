@@ -19,7 +19,9 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native long ref(long obj);
     public static native boolean unref(long obj);
     // IM
-    // The passed-in class is used for the instance creation failure exception.
+    /**
+     * The passed-in class is used for the instance creation failure exception.
+     */
     public static native long newInstance(int flags, Class<?> ex);
     public static native String getMetaInfo(long instance, int type);
     public static native boolean bindInstance(long instance);

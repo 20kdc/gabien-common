@@ -15,10 +15,22 @@ public abstract class VorbisUnsafe extends VorbisEnum {
     private VorbisUnsafe() {
     }
 
-    public static native long open(byte[] id, int idOfs, int idLen, byte[] setup, int setupOfs, int setupLen);
+    /**
+     * The passed in class is used for the open error exception.
+     */
+    public static native long open(byte[] id, int idOfs, int idLen, byte[] setup, int setupOfs, int setupLen, Class<?> ex);
     public static native int getSampleRate(long instance);
     public static native int getChannels(long instance);
     public static native int getMaxFrameSize(long instance);
+    /**
+     * Important difference!
+     * Output is expected to be maxFrameSize * channels floats in length.
+     * Data is written there pre-interleaved. This interleaving is done in the JNI layer.
+     * As such the first (returnedSamples * channels) floats are modified and the rest are unchanged.
+     * It's done this way because I hear rumours of "unsafe" JNI functions being removed soon.
+     * And DirectByteBuffer is on that list.
+     * Never mind all the projects that will no longer be able to have sane APIs because of this...
+     */
     public static native int decodeFrame(long instance, byte[] packet, int packetOfs, int packetLen, float[] output, int outputOfs);
     public static native int getError(long instance);
     public static native long getLastFrameRead(long instance);

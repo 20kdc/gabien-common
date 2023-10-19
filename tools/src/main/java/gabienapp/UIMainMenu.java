@@ -95,7 +95,7 @@ public class UIMainMenu extends UIProxy {
                         byte[] id = packets.removeFirst();
                         packets.removeFirst();
                         byte[] setup = packets.removeFirst();
-                        long res = VorbisUnsafe.open(id, 0, id.length, setup, 0, setup.length);
+                        long res = VorbisUnsafe.open(id, 0, id.length, setup, 0, setup.length, RuntimeException.class);
                         final int channels = VorbisUnsafe.getChannels(res);
                         int sr = VorbisUnsafe.getSampleRate(res);
                         AudioIOCRSet crs = new AudioIOCRSet(channels, sr);
@@ -106,9 +106,9 @@ public class UIMainMenu extends UIProxy {
                         while (packets.size() > 0) {
                             byte[] pkt = packets.removeFirst();
                             int sampleFrames = VorbisUnsafe.decodeFrame(res, pkt, 0, pkt.length, resBuf, 0);
-                            for (int i = 0; i < sampleFrames; i++)
-                                for (int j = 0; j < channels; j++)
-                                    xe.writeFloat(resBuf[(j * mfs) + i]);
+                            int total = sampleFrames * channels;
+                            for (int i = 0; i < total; i++)
+                                xe.writeFloat(resBuf[i]);
                         }
                         OutputStream os = GaBIEn.getOutFile("tmp.wav");
                         byte[] baosFin = baosTmp.toByteArray();

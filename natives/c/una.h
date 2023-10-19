@@ -19,6 +19,8 @@
 
 #define assert(x)
 
+extern int sprintf(char *, const char *, ...);
+
 extern double exp(double);
 extern double log(double);
 extern double floor(double);
@@ -28,15 +30,15 @@ extern int abs(int);
 extern double pow(double, double);
 extern double ldexp(double, int);
 extern void qsort(void *, size_t, size_t, int (*)(const void *, const void *));
-int memcmp(const void *, const void *, size_t);
+extern int memcmp(const void *, const void *, size_t);
 
 //
 
 extern const char una_version[];
 
 #define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x
+#define J_VORBIS(x) Java_gabien_natives_VorbisUnsafe_ ## x
 #define J_LOADER(x) Java_gabien_natives_Loader_ ## x
-#define J_VORBIS(x) Java_gabien_natives_Vorbis_ ## x
 
 #define C_PTR(l) ((void *) (intptr_t) (l))
 #define J_PTR(l) ((int64_t) (intptr_t) (l))

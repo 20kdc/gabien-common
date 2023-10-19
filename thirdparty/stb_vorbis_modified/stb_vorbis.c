@@ -3067,7 +3067,10 @@ int stb_vorbis_g_get_channels(stb_vorbis_g *f)
 
 int stb_vorbis_g_get_max_frame_size(stb_vorbis_g *f)
 {
-   return f->blocksize_1 >> 1;
+   // intentional difference in the meaning of max_frame_size to prevent a
+   //  potential footgun. "frame size" != "max samples returned" in the original
+   //  decoder and that means you have no way of preallocating a buffer.
+   return f->blocksize_1;
 }
 
 int stb_vorbis_g_get_error(stb_vorbis_g *f)
