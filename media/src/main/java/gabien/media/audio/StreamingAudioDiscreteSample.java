@@ -8,8 +8,6 @@
 package gabien.media.audio;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.LinkedList;
 
 /**
@@ -25,7 +23,7 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
      * All chunks are little-endian.
      * The positions are used to track frames being read in.
      */
-    private final LinkedList<ByteBuffer> chunks = new LinkedList<ByteBuffer>();
+    private final LinkedList<byte[]> chunks = new LinkedList<byte[]>();
     private final int frameSize;
     private final int chunkSize;
     private int framesCached;
@@ -50,8 +48,7 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
             framesInThisChunk = remainingFramesToCache;
         if (framesInThisChunk <= 0)
             return false;
-        ByteBuffer chunkContent = ByteBuffer.allocate(framesInThisChunk * frameSize);
-        chunkContent.order(ByteOrder.LITTLE_ENDIAN);
+        byte[] chunkContent = new byte[framesInThisChunk * frameSize];
         try {
             int positionInStagingBuffer = 0;
             for (int i = 0; i < framesInThisChunk; i++) {
@@ -67,48 +64,46 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
         return true;
     }
 
-    private ByteBuffer locateFrame(int frame) {
+    private void locateFrame(int frame, Object buffer, boolean wantsF32) {
         while (frame >= framesCached) {
             if (!addChunk())
-                return null;
+                return;
         }
         int chunkIdx = frame / chunkSize;
         if ((chunkIdx < 0) || (chunkIdx >= chunks.size()))
-            return null;
-        ByteBuffer chk = chunks.get(chunkIdx);
+            return;
+        byte[] chk = chunks.get(chunkIdx);
         frame -= chunkIdx * chunkSize;
-        int chunkFrames = chk.limit() / frameSize;
+        int chunkFrames = chk.length / frameSize;
         if (frame >= chunkFrames)
-            return null;
-        chk.position(frame * frameSize);
-        return chk;
+            return;
+        int chkOfs = frame * frameSize;
+        if (wantsF32) {
+            float[] buf = (float[]) buffer;
+            for (int i = 0; i < channels; i++) {
+                buf[i] = (float) baseSource.format.asF64(chk, chkOfs);
+                chkOfs += baseSource.format.bytesPerSample;
+            }
+        } else {
+            int[] buf = (int[]) buffer;
+            for (int i = 0; i < channels; i++) {
+                buf[i] = baseSource.format.asS32(chk, chkOfs);
+                chkOfs += baseSource.format.bytesPerSample;
+            }
+        }
     }
 
     @Override
     public void getF32(int frame, float[] buffer) {
         synchronized (this) {
-            ByteBuffer target = locateFrame(frame);
-            if (target == null)
-                return;
-            int pos = target.position();
-            for (int i = 0; i < channels; i++) {
-                buffer[i] = (float) baseSource.format.asF64(target, pos);
-                pos += baseSource.format.bytesPerSample;
-            }
+            locateFrame(frame, buffer, true);
         }
     }
 
     @Override
     public void getS32(int frame, int[] buffer) {
         synchronized (this) {
-            ByteBuffer target = locateFrame(frame);
-            if (target == null)
-                return;
-            int pos = target.position();
-            for (int i = 0; i < channels; i++) {
-                buffer[i] = baseSource.format.asS32(target, pos);
-                pos += baseSource.format.bytesPerSample;
-            }
+            locateFrame(frame, buffer, false);
         }
     }
 }

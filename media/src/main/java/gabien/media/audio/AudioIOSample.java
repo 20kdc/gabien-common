@@ -8,8 +8,6 @@
 package gabien.media.audio;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -19,14 +17,13 @@ import org.eclipse.jdt.annotation.NonNull;
  */
 public final class AudioIOSample extends DiscreteSample {
     public final AudioIOFormat format;
-    public final ByteBuffer data;
+    public final byte[] data;
     public final int bytesPerFrame;
 
     public AudioIOSample(AudioIOSource src) throws IOException {
         this(src.crSet, src.format, src.frameCount());
         int at = 0;
-        int cap = data.capacity();
-        while (at < cap) {
+        while (at < data.length) {
             src.nextFrame(data, at);
             at += bytesPerFrame;
         }
@@ -36,17 +33,15 @@ public final class AudioIOSample extends DiscreteSample {
         super(crs, len);
         format = fmt;
         bytesPerFrame = crs.channels * fmt.bytesPerSample;
-        data = ByteBuffer.allocate(length * bytesPerFrame);
-        data.order(ByteOrder.LITTLE_ENDIAN);
+        data = new byte[length * bytesPerFrame];
     }
 
     public AudioIOSource getSource() {
         return new AudioIOSource(this, format) {
             int ptr = 0;
             @Override
-            public void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException {
-                data.position(ptr);
-                data.get(frame.array(), frame.arrayOffset() + at, bytesPerFrame);
+            public void nextFrame(@NonNull byte[] frame, int at) throws IOException {
+                System.arraycopy(data, ptr, frame, at, bytesPerFrame);
                 ptr += bytesPerFrame;
             }
             

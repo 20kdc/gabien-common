@@ -11,8 +11,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -75,8 +73,8 @@ public class WavIO {
             }
 
             @Override
-            public void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException {
-                data.readFully(frame.array(), frame.arrayOffset() + at, frameBytes);
+            public void nextFrame(@NonNull byte[] frame, int at) throws IOException {
+                data.readFully(frame, at, frameBytes);
             }
 
             @Override
@@ -175,11 +173,9 @@ public class WavIO {
         RIFFOutputStream dataChunk = new RIFFOutputStream(fos, "data", totalSampleBytes);
         // And now for the sample data!
         byte[] data = new byte[frameBytes];
-        ByteBuffer bb = ByteBuffer.wrap(data);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
         for (int i = 0; i < frameCount; i++) {
             // Stereo data.
-            dataSource.nextFrame(bb, 0);
+            dataSource.nextFrame(data, 0);
             dataChunk.write(data);
         }
         dataChunk.close();

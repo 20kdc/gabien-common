@@ -8,8 +8,6 @@ package gabien.media.audio;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -38,9 +36,9 @@ public abstract class AudioIOSource implements Closeable {
      * Retrieves the next frame into the given byte buffer at the given position.
      * Length is channels * format.bytesPerSample bytes.
      * Order is of course little-endian.
-     * @param frame Buffer to fill with the next frame of data. Must support array().
+     * @param frame Buffer to fill with the next frame of data.
      */
-    public abstract void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException;
+    public abstract void nextFrame(@NonNull byte[] frame, int at) throws IOException;
 
     /**
      * Retrieves all frames as signed 32-bit PCM.
@@ -51,13 +49,11 @@ public abstract class AudioIOSource implements Closeable {
         int frames = frameCount();
         int[] res = new int[frames * crSet.channels];
         byte[] frame = new byte[format.bytesPerSample * crSet.channels];
-        ByteBuffer frameBuffer = ByteBuffer.wrap(frame);
-        frameBuffer.order(ByteOrder.LITTLE_ENDIAN);
         int resPtr = 0;
         for (int i = 0; i < frames; i++) {
-            nextFrame(frameBuffer, 0);
+            nextFrame(frame, 0);
             for (int c = 0; c < crSet.channels; c++)
-                res[resPtr++] = format.asS32(frameBuffer, c * format.bytesPerSample);
+                res[resPtr++] = format.asS32(frame, c * format.bytesPerSample);
         }
         return res;
     }
@@ -71,13 +67,11 @@ public abstract class AudioIOSource implements Closeable {
         int frames = frameCount();
         double[] res = new double[frames * crSet.channels];
         byte[] frame = new byte[format.bytesPerSample * crSet.channels];
-        ByteBuffer frameBuffer = ByteBuffer.wrap(frame);
-        frameBuffer.order(ByteOrder.LITTLE_ENDIAN);
         int resPtr = 0;
         for (int i = 0; i < frames; i++) {
-            nextFrame(frameBuffer, 0);
+            nextFrame(frame, 0);
             for (int c = 0; c < crSet.channels; c++)
-                res[resPtr++] = format.asF64(frameBuffer, c * format.bytesPerSample);
+                res[resPtr++] = format.asF64(frame, c * format.bytesPerSample);
         }
         return res;
     }
@@ -105,10 +99,11 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public void nextFrame(@NonNull ByteBuffer frame, int at) {
+        public void nextFrame(@NonNull byte[] frame, int at) {
             nextFrame(tmpBuf);
             for (short s : tmpBuf) {
-                frame.putShort(at, s);
+                frame[at] = (byte) s;
+                frame[at + 1] = (byte) (s >> 8);
                 at += 2;
             }
         }
@@ -129,10 +124,14 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public void nextFrame(@NonNull ByteBuffer frame, int at) {
+        public void nextFrame(@NonNull byte[] frame, int at) {
             nextFrame(tmpBuf);
             for (float s : tmpBuf) {
-                frame.putFloat(at, s);
+                int v = Float.floatToRawIntBits(s);
+                frame[at] = (byte) v;
+                frame[at + 1] = (byte) (v >> 8);
+                frame[at + 2] = (byte) (v >> 16);
+                frame[at + 3] = (byte) (v >> 24);
                 at += 4;
             }
         }

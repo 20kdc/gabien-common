@@ -6,8 +6,6 @@
  */
 package gabien.media.audio;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jdt.annotation.NonNull;
 
 /**
@@ -86,25 +84,44 @@ public abstract class AudioIOFormat {
         throw new UnsupportedOperationException("Unable to comprehend WAV format code " + fmt + ".");
     }
 
-    public abstract int asS32(@NonNull ByteBuffer from, int at);
-    public abstract double asF64(@NonNull ByteBuffer from, int at);
-    public abstract void ofS32(@NonNull ByteBuffer from, int at, int val);
-    public abstract void ofF64(@NonNull ByteBuffer from, int at, double val);
+    /**
+     * Retrieves the data from the ByteBuffer as a signed 32-bit PCM value.
+     */
+    public abstract int asS32(@NonNull byte[] from, int at);
+
+    /**
+     * Retrieves the data from the ByteBuffer as a 64-bit floating-point value.
+     */
+    public abstract double asF64(@NonNull byte[] from, int at);
+
+    /**
+     * Writes a signed 32-bit PCM value to the ByteBuffer in this format.
+     */
+    public abstract void ofS32(@NonNull byte[] from, int at, int val);
+
+    /**
+     * Writes a 64-bit floating point value to the ByteBuffer in this format.
+     */
+    public abstract void ofF64(@NonNull byte[] from, int at, double val);
 
     public static class NoConv extends AudioIOFormat {
         public NoConv(int fmt, int req, int bitsPS, int bytesPS) {
             super(fmt, req, bitsPS, bytesPS);
         }
-        public int asS32(@NonNull ByteBuffer from, int at) {
+        @Override
+        public int asS32(@NonNull byte[] from, int at) {
             throw new UnsupportedOperationException("Can't convert this format");
         }
-        public double asF64(@NonNull ByteBuffer from, int at) {
+        @Override
+        public double asF64(@NonNull byte[] from, int at) {
             throw new UnsupportedOperationException("Can't convert this format");
         }
-        public void ofS32(@NonNull ByteBuffer from, int at, int val) {
+        @Override
+        public void ofS32(@NonNull byte[] from, int at, int val) {
             throw new UnsupportedOperationException("Can't convert this format");
         }
-        public void ofF64(@NonNull ByteBuffer from, int at, double val) {
+        @Override
+        public void ofF64(@NonNull byte[] from, int at, double val) {
             throw new UnsupportedOperationException("Can't convert this format");
         }
     }
@@ -136,51 +153,65 @@ public abstract class AudioIOFormat {
             super(FC_PCM, req, bitsPS, bytesPS);
             signed = s;
         }
-        public int asS32(@NonNull ByteBuffer from, int at) {
+        @Override
+        public int asS32(@NonNull byte[] from, int at) {
             int val;
             if (bytesPerSample == 1) {
-                val = from.get(at) & 0xFF;
+                val = from[at] & 0xFF;
                 val |= val << 8;
                 val |= val << 16;
                 val ^= signed ? 0x00808080 : 0x80000000;
             } else if (bytesPerSample == 2) {
-                val = from.getShort(at) & 0xFFFF;
+                val = from[at] & 0xFF;
+                val |= (from[at + 1] & 0xFF) << 8;
                 val |= val << 16;
                 val ^= signed ? 0x00008000 : 0x80000000;
             } else if (bytesPerSample == 3) {
-                val = (from.getShort(at) & 0xFFFF) << 8;
-                int hb = from.get(at + 2) & 0xFF;
+                val = from[at] & 0xFF;
+                val |= (from[at + 1] & 0xFF) << 8;
+                int hb = from[at + 2] & 0xFF;
                 val |= hb << 24;
                 val |= hb;
                 val ^= signed ? 0x00000080 : 0x80000000;
             } else if (bytesPerSample == 4) {
-                val = from.getInt(at);
+                val = from[at] & 0xFF;
+                val |= (from[at + 1] & 0xFF) << 8;
+                val |= (from[at + 2] & 0xFF) << 16;
+                val |= (from[at + 3] & 0xFF) << 24;
                 val ^= signed ? 0x00000000 : 0x80000000;
             } else {
                 throw new UnsupportedOperationException("Can't convert this width");
             }
             return val;
         }
-        public double asF64(@NonNull ByteBuffer from, int at) {
+        @Override
+        public double asF64(@NonNull byte[] from, int at) {
             return cS32toF64(asS32(from, at));
         }
-        public void ofS32(@NonNull ByteBuffer from, int at, int val) {
+        @Override
+        public void ofS32(@NonNull byte[] from, int at, int val) {
             if (!signed)
                 val ^= 0x80000000;
             if (bytesPerSample == 1) {
-                from.put(at, (byte) (val >> 24));
+                from[at] = (byte) (val >> 24);
             } else if (bytesPerSample == 2) {
-                from.putShort(at, (short) (val >> 16));
+                from[at] = (byte) (val >> 16);
+                from[at + 1] = (byte) (val >> 24);
             } else if (bytesPerSample == 3) {
-                from.putShort(at, (short) (val >> 8));
-                from.put(at + 2, (byte) (val >> 24));
+                from[at] = (byte) (val >> 8);
+                from[at + 1] = (byte) (val >> 16);
+                from[at + 2] = (byte) (val >> 24);
             } else if (bytesPerSample == 4) {
-                from.putInt(at, val);
+                from[at] = (byte) val;
+                from[at + 1] = (byte) (val >> 8);
+                from[at + 2] = (byte) (val >> 16);
+                from[at + 3] = (byte) (val >> 24);
             } else {
                 throw new UnsupportedOperationException("Can't convert this width");
             }
         }
-        public void ofF64(@NonNull ByteBuffer from, int at, double val) {
+        @Override
+        public void ofF64(@NonNull byte[] from, int at, double val) {
             ofS32(from, at, cF64toS32(val));
         }
     }
@@ -191,20 +222,53 @@ public abstract class AudioIOFormat {
             super(FC_FLOAT, REQ_FACT, d ? 64 : 32, d ? 8 : 4);
             dbl = d;
         }
-        public int asS32(@NonNull ByteBuffer from, int at) {
+        @Override
+        public int asS32(@NonNull byte[] from, int at) {
             return cF64toS32(asF64(from, at));
         }
-        public double asF64(@NonNull ByteBuffer from, int at) {
-            return dbl ? from.getDouble(at) : from.getFloat(at);
+        @Override
+        public double asF64(@NonNull byte[] from, int at) {
+            if (dbl) {
+                long val = from[at] & 0xFFL;
+                val |= (from[at + 1] & 0xFFL) << 8;
+                val |= (from[at + 2] & 0xFFL) << 16;
+                val |= (from[at + 3] & 0xFFL) << 24;
+                val |= (from[at + 4] & 0xFFL) << 32;
+                val |= (from[at + 5] & 0xFFL) << 40;
+                val |= (from[at + 6] & 0xFFL) << 48;
+                val |= (from[at + 7] & 0xFFL) << 56;
+                return Double.longBitsToDouble(val);
+            } else {
+                int val = from[at] & 0xFF;
+                val |= (from[at + 1] & 0xFF) << 8;
+                val |= (from[at + 2] & 0xFF) << 16;
+                val |= (from[at + 3] & 0xFF) << 24;
+                return Float.intBitsToFloat(val);
+            }
         }
-        public void ofS32(@NonNull ByteBuffer from, int at, int val) {
+        @Override
+        public void ofS32(@NonNull byte[] from, int at, int val) {
             ofF64(from, at, cS32toF64(val));
         }
-        public void ofF64(@NonNull ByteBuffer from, int at, double val) {
-            if (dbl)
-                from.putDouble(at, val);
-            else
-                from.putFloat(at, (float) val);
+        @Override
+        public void ofF64(@NonNull byte[] from, int at, double val) {
+            if (dbl) {
+                long val2 = Double.doubleToRawLongBits(val);
+                from[at] = (byte) val2;
+                from[at + 1] = (byte) (val2 >> 8);
+                from[at + 2] = (byte) (val2 >> 16);
+                from[at + 3] = (byte) (val2 >> 24);
+                from[at + 4] = (byte) (val2 >> 32);
+                from[at + 5] = (byte) (val2 >> 40);
+                from[at + 6] = (byte) (val2 >> 48);
+                from[at + 7] = (byte) (val2 >> 56);
+            } else {
+                int val2 = Float.floatToRawIntBits((float) val);
+                from[at] = (byte) val2;
+                from[at + 1] = (byte) (val2 >> 8);
+                from[at + 2] = (byte) (val2 >> 16);
+                from[at + 3] = (byte) (val2 >> 24);
+            }
         }
     }
 }

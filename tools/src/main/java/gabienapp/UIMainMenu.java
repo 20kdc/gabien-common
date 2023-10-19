@@ -18,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.function.Consumer;
 
@@ -115,8 +114,8 @@ public class UIMainMenu extends UIProxy {
                         WavIO.writeWAV(os, new AudioIOSource(crs, AudioIOFormat.F_F32) {
                             int ptr = 0;
                             @Override
-                            public void nextFrame(@NonNull ByteBuffer frame, int at) throws IOException {
-                                System.arraycopy(baosFin, ptr, frame.array(), frame.arrayOffset() + at, channels * 4);
+                            public void nextFrame(@NonNull byte[] frame, int at) throws IOException {
+                                System.arraycopy(baosFin, ptr, frame, at, channels * 4);
                                 ptr += channels * 4;
                             }
                             
