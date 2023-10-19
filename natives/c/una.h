@@ -10,6 +10,28 @@
 // So we have printf, etc.
 #include "badgpu/badgpu_internal.h"
 
+// things not included there:
+#include <limits.h>
+
+#ifndef alloca
+#define alloca(s) __builtin_alloca(s)
+#endif
+
+#define assert(x)
+
+extern double exp(double);
+extern double log(double);
+extern double floor(double);
+extern double cos(double);
+extern double sin(double);
+extern int abs(int);
+extern double pow(double, double);
+extern double ldexp(double, int);
+extern void qsort(void *, size_t, size_t, int (*)(const void *, const void *));
+int memcmp(const void *, const void *, size_t);
+
+//
+
 extern const char una_version[];
 
 #define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x

@@ -79,6 +79,8 @@
 //      - ditch the info struct in favour of 3 separate functions, it's easier on JNI that way
 //      - split up the results of decoding to be easier to manage
 //      - reorder functions
+//     step 7: making it compile
+//      - added STB_VORBIS_USER_WILL_DO_INCLUDES_THEMSELVES
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -122,7 +124,9 @@
 extern "C" {
 #endif
 
+#ifndef STB_VORBIS_USER_WILL_DO_INCLUDES_THEMSELVES
 #include <stddef.h>
+#endif
 
 ///////////   THREAD SAFETY
 
@@ -295,8 +299,14 @@ enum STBVorbisError
 //     might save a little codespace; useful for debugging
 // #define STB_VORBIS_NO_INLINE_DECODE
 
+// STB_VORBIS_WILL_DO_INCLUDES_OURSELVES
+//     the user knows better than the library regarding includes
+//     due to, i.e. cross-compilation workarounds
+// #define STB_VORBIS_WILL_DO_INCLUDES_OURSELVES
+
 //////////////////////////////////////////////////////////////////////////////
 
+#ifndef STB_VORBIS_USER_WILL_DO_INCLUDES_THEMSELVES
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -311,6 +321,7 @@ enum STBVorbisError
 #endif
 
 #include <limits.h>
+#endif
 
 #ifdef __MINGW32__
    // eff you mingw:
