@@ -28,8 +28,13 @@ public abstract class ReadAnySupportedAudioSource {
         pb.unread(b);
         if (b == 'O') {
             return OggVorbisSource.fromInputStream(pb, close);
-        } else {
+        } else if (b == 'R') {
             return WavIO.readWAV(pb, close);
+        } else if (b == 'M') {
+            throw new IOException("MIDI not (yet?) supported");
+        } else {
+            // chances are high it's MP3
+            throw new IOException("unknown (MP3?) - not (yet?) supported");
         }
     }
 }
