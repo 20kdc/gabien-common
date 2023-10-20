@@ -54,7 +54,7 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
         byte[] chunkContent = new byte[framesInThisChunk * frameSize];
         try {
             baseSource.nextFramesInFormat(storageFormat, chunkContent, 0, framesInThisChunk);
-        } catch (IOException ioe) {
+        } catch (Exception ioe) {
             // well, we tried
         }
         chunks.add(chunkContent);
