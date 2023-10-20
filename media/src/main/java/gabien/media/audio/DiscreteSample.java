@@ -31,6 +31,7 @@ public abstract class DiscreteSample extends AudioIOCRSet {
      * Writes the contents of each channel on the given frame into the buffer.
      */
     public abstract void getS32(int frame, int[] buffer);
+
     /**
      * Writes the contents of each channel on the given frame into the buffer.
      */

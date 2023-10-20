@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
-import gabien.media.RIFFNode;
+import gabien.media.riff.RIFFNode;
 import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.UILabel;

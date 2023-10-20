@@ -17,6 +17,8 @@ import java.util.LinkedList;
  */
 public class StreamingAudioDiscreteSample extends DiscreteSample {
     public final AudioIOSource baseSource;
+    private final AudioIOFormat storageFormat;
+
     /**
      * List of chunk byte buffers.
      * All chunks except the last must contain CHUNK_SIZE frames.
@@ -29,14 +31,15 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
     private int framesCached;
     private int remainingFramesToCache;
 
-    public StreamingAudioDiscreteSample(AudioIOSource source) {
-        this(source, 0x1000);
+    public StreamingAudioDiscreteSample(AudioIOSource source, AudioIOFormat fmt) {
+        this(source, fmt, 0x1000);
     }
 
-    public StreamingAudioDiscreteSample(AudioIOSource source, int cs) {
+    public StreamingAudioDiscreteSample(AudioIOSource source, AudioIOFormat fmt, int cs) {
         super(source.crSet, source.frameCount());
+        storageFormat = fmt;
         chunkSize = cs;
-        frameSize = channels * source.format.bytesPerSample;
+        frameSize = channels * fmt.bytesPerSample;
         baseSource = source;
         framesCached = 0;
         remainingFramesToCache = length;
@@ -50,11 +53,7 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
             return false;
         byte[] chunkContent = new byte[framesInThisChunk * frameSize];
         try {
-            int positionInStagingBuffer = 0;
-            for (int i = 0; i < framesInThisChunk; i++) {
-                baseSource.nextFrame(chunkContent, positionInStagingBuffer);
-                positionInStagingBuffer += frameSize;
-            }
+            baseSource.nextFramesInFormat(storageFormat, chunkContent, 0, framesInThisChunk);
         } catch (IOException ioe) {
             // well, we tried
         }
@@ -81,14 +80,14 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
         if (wantsF32) {
             float[] buf = (float[]) buffer;
             for (int i = 0; i < channels; i++) {
-                buf[i] = (float) baseSource.format.asF64(chk, chkOfs);
-                chkOfs += baseSource.format.bytesPerSample;
+                buf[i] = (float) storageFormat.asF64(chk, chkOfs);
+                chkOfs += storageFormat.bytesPerSample;
             }
         } else {
             int[] buf = (int[]) buffer;
             for (int i = 0; i < channels; i++) {
-                buf[i] = baseSource.format.asS32(chk, chkOfs);
-                chkOfs += baseSource.format.bytesPerSample;
+                buf[i] = storageFormat.asS32(chk, chkOfs);
+                chkOfs += storageFormat.bytesPerSample;
             }
         }
     }

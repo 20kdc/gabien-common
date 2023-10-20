@@ -20,13 +20,9 @@ public final class AudioIOSample extends DiscreteSample {
     public final byte[] data;
     public final int bytesPerFrame;
 
-    public AudioIOSample(AudioIOSource src) throws IOException {
-        this(src.crSet, src.format, src.frameCount());
-        int at = 0;
-        while (at < data.length) {
-            src.nextFrame(data, at);
-            at += bytesPerFrame;
-        }
+    public AudioIOSample(AudioIOSource src, AudioIOFormat fmt) throws IOException {
+        this(src.crSet, fmt, src.frameCount());
+        src.nextFramesInFormat(fmt, data, 0, data.length / bytesPerFrame);
     }
 
     public AudioIOSample(AudioIOCRSet crs, AudioIOFormat fmt, int len) {
@@ -37,14 +33,15 @@ public final class AudioIOSample extends DiscreteSample {
     }
 
     public AudioIOSource getSource() {
-        return new AudioIOSource(this, format) {
+        return new AudioIOSource.SourceBytes(this, format) {
             int ptr = 0;
+
             @Override
-            public void nextFrame(@NonNull byte[] frame, int at) throws IOException {
+            public void nextFrames(@NonNull byte[] frame, int at, int frames) throws IOException {
                 System.arraycopy(data, ptr, frame, at, bytesPerFrame);
                 ptr += bytesPerFrame;
             }
-            
+
             @Override
             public int frameCount() {
                 return length;

@@ -29,13 +29,13 @@ import gabien.atlas.AtlasSet;
 import gabien.atlas.BinaryTreeAtlasStrategy;
 import gabien.atlas.ImageAtlasDrawable;
 import gabien.atlas.SimpleAtlasBuilder;
-import gabien.media.RIFFNode;
 import gabien.media.audio.AudioIOCRSet;
 import gabien.media.audio.AudioIOFormat;
 import gabien.media.audio.AudioIOSource;
-import gabien.media.audio.WavIO;
+import gabien.media.audio.fileio.WavIO;
 import gabien.media.ogg.OggPacketsFromSegments;
 import gabien.media.ogg.OggReader;
+import gabien.media.riff.RIFFNode;
 import gabien.natives.VorbisUnsafe;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
@@ -97,7 +97,7 @@ public class UIMainMenu extends UIProxy {
                         long res = VorbisUnsafe.open(id, 0, id.length, setup, 0, setup.length, RuntimeException.class);
                         final int channels = VorbisUnsafe.getChannels(res);
                         int sr = VorbisUnsafe.getSampleRate(res);
-                        AudioIOCRSet crs = new AudioIOCRSet(channels, sr);
+                        AudioIOCRSet crSet = new AudioIOCRSet(channels, sr);
                         int mfs = VorbisUnsafe.getMaxFrameSize(res);
                         float[] resBuf = new float[channels * mfs];
                         ByteArrayOutputStream baosTmp = new ByteArrayOutputStream();
@@ -111,19 +111,20 @@ public class UIMainMenu extends UIProxy {
                         }
                         OutputStream os = GaBIEn.getOutFile("tmp.wav");
                         byte[] baosFin = baosTmp.toByteArray();
-                        WavIO.writeWAV(os, new AudioIOSource(crs, AudioIOFormat.F_F32) {
+                        WavIO.writeWAV(os, new AudioIOSource.SourceBytes(crSet, AudioIOFormat.F_F32) {
                             int ptr = 0;
+
                             @Override
-                            public void nextFrame(@NonNull byte[] frame, int at) throws IOException {
-                                System.arraycopy(baosFin, ptr, frame, at, channels * 4);
-                                ptr += channels * 4;
+                            public void nextFrames(@NonNull byte[] frame, int at, int frames) throws IOException {
+                                System.arraycopy(baosFin, ptr, frame, at, channels * 4 * frames);
+                                ptr += channels * 4 * frames;
                             }
-                            
+
                             @Override
                             public int frameCount() {
                                 return baosFin.length / (channels * 4);
                             }
-                        });
+                        }, AudioIOFormat.F_F32);
                         os.close();
                     } catch (IOException e) {
                         e.printStackTrace();
