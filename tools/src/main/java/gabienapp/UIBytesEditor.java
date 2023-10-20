@@ -16,8 +16,8 @@ import gabien.ui.UILabel;
 import gabien.ui.UIScrollLayout;
 import gabien.ui.UIScrollbar;
 import gabien.ui.UISplitterLayout;
-import gabien.uslx.append.HexByteEncoding;
 import gabien.uslx.append.Rect;
+import gabien.uslx.io.HexByteEncoding;
 import gabien.wsi.IPeripherals;
 
 /**

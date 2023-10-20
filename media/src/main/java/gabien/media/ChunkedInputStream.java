@@ -12,13 +12,13 @@ import java.io.InputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.uslx.append.XEDataInputStream;
+import gabien.uslx.io.LEDataInputStream;
 
 /**
  * Base class for chunked file input streams.
  * Created on 6th June 2022 as part of project VE2Bun
  */
-public abstract class ChunkedInputStream extends XEDataInputStream {
+public abstract class ChunkedInputStream extends LEDataInputStream {
     public final int chunkLen;
     protected int chunkPos;
     protected int resetPos;

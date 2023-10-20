@@ -21,7 +21,7 @@ import gabien.media.audio.AudioIOFormat;
 import gabien.media.audio.AudioIOSource;
 import gabien.media.riff.RIFFInputStream;
 import gabien.media.riff.RIFFOutputStream;
-import gabien.uslx.append.*;
+import gabien.uslx.io.LEDataInputStream;
 
 /**
  * Contains a streaming WAV reader and writer.
@@ -51,7 +51,7 @@ public class WavIO {
         }
         throw new IOException("Never found 'data' chunk");
     }
-    public static AudioIOCRFmt readFMT(@NonNull XEDataInputStream fmtChk) throws IOException {
+    public static AudioIOCRFmt readFMT(@NonNull LEDataInputStream fmtChk) throws IOException {
         int fmtTag = fmtChk.readUnsignedShort();
         int channels = fmtChk.readUnsignedShort();
         int channelMask = 0;

@@ -13,7 +13,7 @@ import gabien.ui.dialogs.UICredits;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.QADStopwatch;
 import gabien.uslx.append.Rect;
-import gabien.uslx.append.XEDataOutputStream;
+import gabien.uslx.io.LEDataOutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -107,7 +107,7 @@ public class UIMainMenu extends UIProxy {
                             channels = res.channels;
                             crSet = new AudioIOCRSet(channels, res.sampleRate);
                             float[] resBuf = new float[res.outputLength];
-                            XEDataOutputStream xe = new XEDataOutputStream(baosTmp);
+                            LEDataOutputStream xe = new LEDataOutputStream(baosTmp);
                             try (QADStopwatch profile = new QADStopwatch("vorbis decode loop")) {
                                 while (packets.size() > 0) {
                                     byte[] pkt = packets.removeFirst();

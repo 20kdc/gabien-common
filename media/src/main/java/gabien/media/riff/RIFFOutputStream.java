@@ -13,15 +13,15 @@ import java.io.OutputStream;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.uslx.append.XEDataOutputStream;
+import gabien.uslx.io.LEDataOutputStream;
 
 /**
  * NOTE: Creating a RIFFOutputStream implicitly starts a RIFF chunk.
  * Closing one does NOT close the parent OutputStream.
  * Created on 6th June 2022 as part of project VE2Bun
  */
-public class RIFFOutputStream extends XEDataOutputStream {
-    private @NonNull final XEDataOutputStream targetDos;
+public class RIFFOutputStream extends LEDataOutputStream {
+    private @NonNull final LEDataOutputStream targetDos;
     private @Nullable final ByteArrayOutputStream buffer;
     private final int plannedLength;
 
@@ -33,7 +33,7 @@ public class RIFFOutputStream extends XEDataOutputStream {
      * @throws IOException
      */
     public RIFFOutputStream(@NonNull OutputStream base, @NonNull String id) throws IOException {
-        this(new XEDataOutputStream(base), id);
+        this(new LEDataOutputStream(base), id);
     }
 
     /**
@@ -43,7 +43,7 @@ public class RIFFOutputStream extends XEDataOutputStream {
      * @param id RIFF chunk ID.
      * @throws IOException
      */
-    public RIFFOutputStream(@NonNull XEDataOutputStream base, @NonNull String id) throws IOException {
+    public RIFFOutputStream(@NonNull LEDataOutputStream base, @NonNull String id) throws IOException {
         super(new ByteArrayOutputStream());
         targetDos = base;
         buffer = (ByteArrayOutputStream) out;
@@ -84,7 +84,7 @@ public class RIFFOutputStream extends XEDataOutputStream {
      * @throws IOException
      */
     public static void putChunk(OutputStream os, String id, byte[] content) throws IOException {
-        putChunk(new XEDataOutputStream(os), id, content);
+        putChunk(new LEDataOutputStream(os), id, content);
     }
 
     /**
@@ -94,7 +94,7 @@ public class RIFFOutputStream extends XEDataOutputStream {
      * @param content Contents.
      * @throws IOException
      */
-    public static void putChunk(XEDataOutputStream os, String id, byte[] content) throws IOException {
+    public static void putChunk(LEDataOutputStream os, String id, byte[] content) throws IOException {
         if (id.length() != 4)
             throw new IOException("RIFF chunk ID must be 4 characters.");
         os.writeBytes(id);
