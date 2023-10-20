@@ -88,6 +88,16 @@
 //     step 9: post-integration reflection
 //      - vorbis_pump_first_frame was yet another unused function, removed
 //      - added stb_vorbis_g_get_packet_sample_count - pretty critical tool all things considered
+//     step 10: ????
+//      - removed discard_samples_deferred - I am reasonably sure this was a mistake.
+//        best guess: I believe this was a misinterpretation of 4.3.8. overlap_add, paragraph 2.
+//        if the returned data could NEVER contain lapped samples from the first frame,
+//        then two thoughts apply:
+//        1. why even "prime" the decode engine in the first place???
+//        2. surely this would *always* have to be non-zero on second frame, rather than only sometimes a concern?
+//        test files I checked have discard_samples_deferred = 0 so whatever.
+//        it breaks if you seek to 0 anyway (upstream, too!).
+//        finally, it breaks get_packet_sample_count at a conceptual level.
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -560,10 +570,8 @@ struct stb_vorbis_g
    uint16 *bit_reverse[2];
 
   // current page/packet/segment streaming info
-   uint8 first_decode;
    uint32 acc;
    int valid_bits;
-   int discard_samples_deferred;
 };
 
 typedef struct stb_vorbis_g vorb;
@@ -2454,27 +2462,6 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
       inverse_mdct(f->channel_buffers[i], n, f, m->blockflag);
    CHECK(f);
 
-   if (f->first_decode) {
-      // assume we start so first non-discarded sample is sample 0
-      // this isn't to spec, but spec would require us to read ahead
-      // and decode the size of all current frames--could be done,
-      // but presumably it's not a commonly used feature
-      // we might have to discard samples "from" the next frame too,
-      // if we're lapping a large block then a small at the start?
-      f->discard_samples_deferred = n - right_end;
-      f->first_decode = FALSE;
-   } else if (f->discard_samples_deferred) {
-      if (f->discard_samples_deferred >= right_start - left_start) {
-         f->discard_samples_deferred -= (right_start - left_start);
-         left_start = right_start;
-         *p_left = left_start;
-      } else {
-         left_start += f->discard_samples_deferred;
-         *p_left = left_start;
-         f->discard_samples_deferred = 0;
-      }
-   }
-
    *len = right_end;  // ignore samples after the window goes to 0
    CHECK(f);
 
@@ -2554,8 +2541,6 @@ static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const 
    uint8 header[6], x,y;
    int len,i,j,k, max_submaps = 0;
    int longest_floorlist=0;
-
-   f->first_decode = TRUE;
 
    // -- Identification --
    start_packet(f, id, id_len);
@@ -3113,8 +3098,6 @@ size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f)
 void stb_vorbis_g_flush(stb_vorbis_g *f)
 {
    f->previous_length = 0;
-   f->discard_samples_deferred = 0;
-   f->first_decode = FALSE;
 }
 
 // return value: samples
