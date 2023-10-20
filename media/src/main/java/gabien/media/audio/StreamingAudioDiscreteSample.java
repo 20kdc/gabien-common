@@ -7,7 +7,6 @@
 
 package gabien.media.audio;
 
-import java.io.IOException;
 import java.util.LinkedList;
 
 /**
