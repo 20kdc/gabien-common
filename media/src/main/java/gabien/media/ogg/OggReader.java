@@ -73,6 +73,28 @@ public final class OggReader {
     }
 
     /**
+     * Gets the absolute granule position from the page.
+     */
+    public long getPageGranulePos() {
+        long a = syncWindow[6] & 0xFFL;
+        long b = syncWindow[7] & 0xFFL;
+        long c = syncWindow[8] & 0xFFL;
+        long d = syncWindow[9] & 0xFFL;
+        long e = syncWindow[10] & 0xFFL;
+        long f = syncWindow[11] & 0xFFL;
+        long g = syncWindow[12] & 0xFFL;
+        long h = syncWindow[13] & 0xFFL;
+        a |= b << 8;
+        a |= c << 16;
+        a |= d << 24;
+        a |= e << 32;
+        a |= f << 40;
+        a |= g << 48;
+        a |= h << 56;
+        return a;
+    }
+
+    /**
      * Returns true if the current page is valid.
      */
     public boolean isPageValid() {

@@ -11,18 +11,12 @@ import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.dialogs.UICredits;
 import gabien.uslx.append.EmptyLambdas;
-import gabien.uslx.append.QADStopwatch;
 import gabien.uslx.append.Rect;
-import gabien.uslx.io.LEDataOutputStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.LinkedList;
 import java.util.function.Consumer;
-
-import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
@@ -30,14 +24,10 @@ import gabien.atlas.AtlasSet;
 import gabien.atlas.BinaryTreeAtlasStrategy;
 import gabien.atlas.ImageAtlasDrawable;
 import gabien.atlas.SimpleAtlasBuilder;
-import gabien.media.audio.AudioIOCRSet;
 import gabien.media.audio.AudioIOFormat;
-import gabien.media.audio.AudioIOSource;
+import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
 import gabien.media.audio.fileio.WavIO;
-import gabien.media.ogg.OggPacketsFromSegments;
-import gabien.media.ogg.OggReader;
 import gabien.media.riff.RIFFNode;
-import gabien.natives.VorbisDecoder;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
@@ -69,71 +59,13 @@ public class UIMainMenu extends UIProxy {
                 }
             });
         }));
-        vsl.panelsAdd(new UITextButton("Convert OGG Vorbis To WAV...", 16, () -> {
-            GaBIEn.startFileBrowser("Convert OGG Vorbis File", false, "", (str) -> {
+        vsl.panelsAdd(new UITextButton("Convert To WAV...", 16, () -> {
+            GaBIEn.startFileBrowser("Convert Audio File", false, "", (str) -> {
                 if (str != null) {
                     try {
                         InputStream inp = GaBIEn.getInFile(str);
-                        OggReader or = new OggReader();
-                        LinkedList<byte[]> packets = new LinkedList<>();
-                        OggPacketsFromSegments opfs = new OggPacketsFromSegments((data, ofs, len) -> {
-                            byte[] res = new byte[len];
-                            System.arraycopy(data, ofs, res, 0, len);
-                            packets.add(res);
-                        });
-                        try (QADStopwatch profile = new QADStopwatch("ogg sync loop")) {
-                            byte[] chunk = new byte[512];
-                            while (true) {
-                                int amount = inp.read(chunk);
-                                if (amount == -1)
-                                    break;
-                                for (byte ib : chunk) {
-                                    or.addByteToSyncWindow(ib);
-                                    if (or.isPageValid()) {
-                                        or.sendSegmentsTo(opfs, false);
-                                        or.skipSyncWindow(or.getPageLength());
-                                    }
-                                }
-                            }
-                        }
-                        inp.close();
-                        byte[] id = packets.removeFirst();
-                        packets.removeFirst();
-                        byte[] setup = packets.removeFirst();
-                        ByteArrayOutputStream baosTmp = new ByteArrayOutputStream();
-                        AudioIOCRSet crSet;
-                        final int channels;
-                        try (VorbisDecoder res = new VorbisDecoder(id, 0, id.length, setup, 0, setup.length)) {
-                            channels = res.channels;
-                            crSet = new AudioIOCRSet(channels, res.sampleRate);
-                            float[] resBuf = new float[res.outputLength];
-                            LEDataOutputStream xe = new LEDataOutputStream(baosTmp);
-                            try (QADStopwatch profile = new QADStopwatch("vorbis decode loop")) {
-                                while (packets.size() > 0) {
-                                    byte[] pkt = packets.removeFirst();
-                                    int sampleFrames = res.decodeFrame(pkt, 0, pkt.length, resBuf, 0);
-                                    int total = sampleFrames * channels;
-                                    for (int i = 0; i < total; i++)
-                                        xe.writeFloat(resBuf[i]);
-                                }
-                            }
-                        }
                         OutputStream os = GaBIEn.getOutFile("tmp.wav");
-                        byte[] baosFin = baosTmp.toByteArray();
-                        WavIO.writeWAV(os, new AudioIOSource.SourceBytes(crSet, AudioIOFormat.F_F32) {
-                            int ptr = 0;
-
-                            @Override
-                            public void nextFrames(@NonNull byte[] frame, int at, int frames) throws IOException {
-                                System.arraycopy(baosFin, ptr, frame, at, channels * 4 * frames);
-                                ptr += channels * 4 * frames;
-                            }
-
-                            @Override
-                            public int frameCount() {
-                                return baosFin.length / (channels * 4);
-                            }
-                        }, AudioIOFormat.F_F32);
+                        WavIO.writeWAV(os, ReadAnySupportedAudioSource.open(inp, true), AudioIOFormat.F_F32);
                         os.close();
                     } catch (IOException e) {
                         e.printStackTrace();
