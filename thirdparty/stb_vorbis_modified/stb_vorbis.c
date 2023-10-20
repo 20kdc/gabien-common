@@ -85,6 +85,9 @@
 //      - removed unused old IMDCT functions
 //      - since the library doesn't have the built-in allocator, alignment is no longer a library problem
 //      - setup_temp_free no longer takes a size
+//     step 9: post-integration reflection
+//      - vorbis_pump_first_frame was yet another unused function, removed
+//      - added stb_vorbis_g_get_packet_sample_count - pretty critical tool all things considered
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -177,6 +180,19 @@ extern int stb_vorbis_g_get_channels(stb_vorbis_g *f);
 // i.e. four values for four channels is one sample.)
 extern int stb_vorbis_g_get_max_frame_size(stb_vorbis_g *f);
 
+// Gets the amount of samples in an audio packet using the setup of a decoder.
+// Importantly:
+// 1. Does not mutate decoder state EXCEPT for:
+//     * last error
+//     * stb_vorbis_g_get_last_frame_read (undefined)
+// 2. Consider this as having returned 0 for the first audio packet.
+// However if these are understood, this tool can be used to reliably measure
+//  the length of a Vorbis stream without fully decoding it.
+extern int stb_vorbis_g_get_packet_sample_count(
+         stb_vorbis_g *f,
+         const unsigned char *data, size_t data_len
+);
+
 // decode a packet and output audio sample data if possible
 //
 // return value: number of samples output (0 to max_frame_size).
@@ -211,12 +227,16 @@ extern int stb_vorbis_g_decode_frame(
 extern int stb_vorbis_g_get_error(stb_vorbis_g *f);
 
 // get the amount of bytes read last frame
-// undefined if no frame has been read
+// undefined if:
+//  * no frame has been read
+//  * stb_vorbis_g_get_packet_sample_count was called since the frame was read
 // on error it *MAY* point to a useful location (or not!)
 extern size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f);
 
 // inform stb_vorbis that your next packet will not be contiguous with
 // previous ones (e.g. you've seeked in the data).
+// notably, the next packet will generate no samples; packets after will still
+// generate samples as normal. this is required & expected behaviour.
 extern void stb_vorbis_g_flush(stb_vorbis_g *f);
 
 // close an ogg vorbis file and free all memory in use
@@ -2208,6 +2228,11 @@ static int do_floor(vorb *f, Mapping *map, int i, int n, float *target, int16 *f
 //        has to be the same as frame N+1's left_end-left_start (which they are by
 //        construction)
 
+// IMPORTANT! This function does not change decoder state outside of the error value.
+// Further, it does not depend on per-packet decoder state.
+// This is dreadfully important!
+// It allows the function to be used to query the length of packets.
+
 static int vorbis_decode_initial(vorb *f, int *p_left_start, int *p_left_end, int *p_right_start, int *p_right_end, int *mode)
 {
    Mode *m;
@@ -2464,6 +2489,15 @@ static int vorbis_decode_packet(vorb *f, const unsigned char *data, size_t data_
    return vorbis_decode_packet_rest(f, len, f->mode_config + mode, *p_left, left_end, *p_right, right_end, p_left);
 }
 
+int stb_vorbis_g_get_packet_sample_count(stb_vorbis_g *f, const unsigned char *data, size_t data_len)
+{
+   int mode, left_start, left_end, right_start, right_end;
+   f->error      = VORBIS__no_error;
+   start_packet(f, data, data_len);
+   if (!vorbis_decode_initial(f, &left_start, &left_end, &right_start, &right_end, &mode)) return 0;
+   return right_start - left_start;
+}
+
 static int vorbis_finish_frame(vorb *f, int len, int left, int right)
 {
    int prev,i,j;
@@ -2513,15 +2547,6 @@ static int vorbis_finish_frame(vorb *f, int len, int left, int right)
    if (len < right) right = len;
 
    return right - left;
-}
-
-static int vorbis_pump_first_frame(vorb *f, const unsigned char *data, size_t data_len)
-{
-   int len, right, left, res;
-   res = vorbis_decode_packet(f, data, data_len, &len, &left, &right);
-   if (res)
-      vorbis_finish_frame(f, len, left, right);
-   return res;
 }
 
 static int start_decoder(vorb *f, const unsigned char *id, size_t id_len, const unsigned char *setup, size_t setup_len)

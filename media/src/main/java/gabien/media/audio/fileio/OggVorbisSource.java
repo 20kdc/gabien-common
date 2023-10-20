@@ -30,14 +30,29 @@ public class OggVorbisSource extends AudioIOSource.SourceF32 {
     private final float[] buffer;
     private int bufferPosition = 0;
     private int bufferRemainingFrames = 0;
-    private OggVorbisSource(VorbisDecoder res, LinkedList<byte[]> packets, long igp, long lgp) throws IOException {
+    private OggVorbisSource(VorbisDecoder res, LinkedList<byte[]> packets, long igp) throws IOException {
         super(new AudioIOCRSet(res.channels, res.sampleRate));
         this.res = res;
         this.packets = packets;
         this.buffer = new float[res.outputLength];
         if (igp < 0)
             framesToDiscard = (int) -igp;
-        frameCount = (int) (lgp - igp);
+        boolean isFirst = true;
+        // Since we have all samples, we can measure the stream by inspecting packet headers.
+        // This doesn't require we actually *decode* it.
+        // The code to do this could be written in Java.
+        // However, treating stb_vorbis_g as a semi-independent project, having it there makes more sense.
+        // stb_vorbis_g doesn't know about Ogg and we don't know about Vorbis.
+        int tfc = 0;
+        for (byte[] b : packets) {
+            if (isFirst) {
+                isFirst = false;
+                continue;
+            }
+            tfc += res.getPacketSampleCount(b, 0, b.length);
+        }
+        tfc -= framesToDiscard;
+        frameCount = tfc;
     }
 
     public static OggVorbisSource fromInputStream(InputStream inp, boolean close) throws IOException {
@@ -52,13 +67,12 @@ public class OggVorbisSource extends AudioIOSource.SourceF32 {
             long initGranulePos = isr.lastGranulePos;
             // grab all packets
             while (isr.readNextPage());
-            long lastGranulePos = isr.lastGranulePos;
             // do setup
             byte[] id = isr.packets.removeFirst();
             isr.packets.removeFirst();
             byte[] setup = isr.packets.removeFirst();
             VorbisDecoder res = new VorbisDecoder(id, 0, id.length, setup, 0, setup.length);
-            return new OggVorbisSource(res, packets, initGranulePos, lastGranulePos);
+            return new OggVorbisSource(res, packets, initGranulePos);
         } finally {
             if (close)
                 inp.close();

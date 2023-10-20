@@ -86,12 +86,20 @@ int main(int argc, char ** argv) {
    int channels = stb_vorbis_g_get_channels(vbg);
    printf("%ihz %ich // play -r %i -e float -b 32 -c %i %s\n", sample_rate, channels, sample_rate, channels, argv[2]);
 
+   int expected_total_samples = 0;
+   // starting from 4 is *intentional* to skip first (discarded) packet!
+   for (int i = 4; i < packet_count; i++)
+      expected_total_samples += stb_vorbis_g_get_packet_sample_count(vbg, packets[i].packet, packets[i].bytes);
+   printf("expected total samples: %i\n", expected_total_samples);
+
+   int actual_total_samples = 0;
    fo = fopen(argv[2], "wb");
    if (!fo)
       puts("unable to open output file");
    for (int i = 3; i < packet_count; i++) {
       float ** output = NULL;
       int samples = stb_vorbis_g_decode_frame(vbg, packets[i].packet, packets[i].bytes, &output);
+      actual_total_samples += samples;
       for (int j = 0; j < samples; j++) {
          for (int k = 0; k < channels; k++) {
             fwrite(&output[k][j], 1, 4, fo);
@@ -99,6 +107,7 @@ int main(int argc, char ** argv) {
       }
    }
    fclose(fo);
+   printf("actual total samples: %i\n", actual_total_samples);
    return 0;
 }
 

@@ -18,9 +18,9 @@ public final class VorbisDecoder implements AutoCloseable {
     private AtomicBoolean valid = new AtomicBoolean(true);
 
     public VorbisDecoder(byte[] idPacket, int idPacketOffset, int idPacketLength, byte[] setupPacket, int setupPacketOffset, int setupPacketLength) {
-        if (idPacketOffset < 0 || idPacketOffset > idPacket.length || idPacketLength - idPacketOffset > idPacket.length)
+        if (idPacketOffset < 0 || idPacketOffset > idPacket.length || idPacketLength - idPacketOffset > idPacket.length || idPacketLength < 0)
             throw new IndexOutOfBoundsException("idPacket out of bounds");
-        if (setupPacketOffset < 0 || setupPacketOffset > setupPacket.length || setupPacketLength - setupPacketOffset > setupPacket.length)
+        if (setupPacketOffset < 0 || setupPacketOffset > setupPacket.length || setupPacketLength - setupPacketOffset > setupPacket.length || setupPacketLength < 0)
             throw new IndexOutOfBoundsException("setupPacket out of bounds");
         instance = VorbisUnsafe.open(idPacket, idPacketOffset, idPacketLength, setupPacket, setupPacketOffset, setupPacketLength, DecoderErrorException.class);
         if (instance == 0)
@@ -31,10 +31,18 @@ public final class VorbisDecoder implements AutoCloseable {
         outputLength = channels * maxFrameSize;
     }
 
+    public final synchronized int getPacketSampleCount(byte[] packet, int packetOffset, int packetLength) {
+        if (!valid.get())
+            throw new InvalidatedPointerException(this);
+        if (packetOffset < 0 || packetOffset > packet.length || packetLength - packetOffset > packet.length || packetLength < 0)
+            throw new IndexOutOfBoundsException("packet out of bounds");
+        return VorbisUnsafe.getPacketSampleCount(instance, packet, packetOffset, packetLength);
+    }
+
     public final synchronized int decodeFrame(byte[] packet, int packetOffset, int packetLength, float[] output, int outputOffset) {
         if (!valid.get())
             throw new InvalidatedPointerException(this);
-        if (packetOffset < 0 || packetOffset > packet.length || packetLength - packetOffset > packet.length)
+        if (packetOffset < 0 || packetOffset > packet.length || packetLength - packetOffset > packet.length || packetLength < 0)
             throw new IndexOutOfBoundsException("packet out of bounds");
         if (outputOffset < 0 || outputOffset > output.length || outputLength - outputOffset > output.length)
             throw new IndexOutOfBoundsException("output out of bounds");

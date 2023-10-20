@@ -22,6 +22,7 @@ public abstract class VorbisUnsafe extends VorbisEnum {
     public static native int getSampleRate(long instance);
     public static native int getChannels(long instance);
     public static native int getMaxFrameSize(long instance);
+    public static native int getPacketSampleCount(long instance, byte[] packet, int packetOfs, int packetLen);
     /**
      * Important difference!
      * Output is expected to be maxFrameSize * channels floats in length.
