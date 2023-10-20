@@ -11,6 +11,7 @@ import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.dialogs.UICredits;
 import gabien.uslx.append.EmptyLambdas;
+import gabien.uslx.append.QADStopwatch;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.XEDataOutputStream;
 
@@ -36,7 +37,7 @@ import gabien.media.audio.fileio.WavIO;
 import gabien.media.ogg.OggPacketsFromSegments;
 import gabien.media.ogg.OggReader;
 import gabien.media.riff.RIFFNode;
-import gabien.natives.VorbisUnsafe;
+import gabien.natives.VorbisDecoder;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
@@ -80,34 +81,42 @@ public class UIMainMenu extends UIProxy {
                             System.arraycopy(data, ofs, res, 0, len);
                             packets.add(res);
                         });
-                        while (true) {
-                            int ib = inp.read();
-                            if (ib == -1)
-                                break;
-                            or.addByteToSyncWindow((byte) ib);
-                            if (or.isPageValid()) {
-                                or.sendSegmentsTo(opfs, false);
-                                or.skipSyncWindow(or.getPageLength());
+                        try (QADStopwatch profile = new QADStopwatch("ogg sync loop")) {
+                            byte[] chunk = new byte[512];
+                            while (true) {
+                                int amount = inp.read(chunk);
+                                if (amount == -1)
+                                    break;
+                                for (byte ib : chunk) {
+                                    or.addByteToSyncWindow(ib);
+                                    if (or.isPageValid()) {
+                                        or.sendSegmentsTo(opfs, false);
+                                        or.skipSyncWindow(or.getPageLength());
+                                    }
+                                }
                             }
                         }
                         inp.close();
                         byte[] id = packets.removeFirst();
                         packets.removeFirst();
                         byte[] setup = packets.removeFirst();
-                        long res = VorbisUnsafe.open(id, 0, id.length, setup, 0, setup.length, RuntimeException.class);
-                        final int channels = VorbisUnsafe.getChannels(res);
-                        int sr = VorbisUnsafe.getSampleRate(res);
-                        AudioIOCRSet crSet = new AudioIOCRSet(channels, sr);
-                        int mfs = VorbisUnsafe.getMaxFrameSize(res);
-                        float[] resBuf = new float[channels * mfs];
                         ByteArrayOutputStream baosTmp = new ByteArrayOutputStream();
-                        XEDataOutputStream xe = new XEDataOutputStream(baosTmp);
-                        while (packets.size() > 0) {
-                            byte[] pkt = packets.removeFirst();
-                            int sampleFrames = VorbisUnsafe.decodeFrame(res, pkt, 0, pkt.length, resBuf, 0);
-                            int total = sampleFrames * channels;
-                            for (int i = 0; i < total; i++)
-                                xe.writeFloat(resBuf[i]);
+                        AudioIOCRSet crSet;
+                        final int channels;
+                        try (VorbisDecoder res = new VorbisDecoder(id, 0, id.length, setup, 0, setup.length)) {
+                            channels = res.channels;
+                            crSet = new AudioIOCRSet(channels, res.sampleRate);
+                            float[] resBuf = new float[res.outputLength];
+                            XEDataOutputStream xe = new XEDataOutputStream(baosTmp);
+                            try (QADStopwatch profile = new QADStopwatch("vorbis decode loop")) {
+                                while (packets.size() > 0) {
+                                    byte[] pkt = packets.removeFirst();
+                                    int sampleFrames = res.decodeFrame(pkt, 0, pkt.length, resBuf, 0);
+                                    int total = sampleFrames * channels;
+                                    for (int i = 0; i < total; i++)
+                                        xe.writeFloat(resBuf[i]);
+                                }
+                            }
                         }
                         OutputStream os = GaBIEn.getOutFile("tmp.wav");
                         byte[] baosFin = baosTmp.toByteArray();
