@@ -134,10 +134,11 @@ public class UIScrollLayout extends UIElement.UIPanel {
 
         int screenLength = scrollbar.vertical ? r.height : r.width;
 
-        if (hasScrollbar) {
+        if (hasScrollbar)
             scrollbar.wheelScale = (screenLength / 4.0d) / (double) scrollLength;
-            scrollBreadth += sbSize;
-        }
+        // This was made unconditional to fix a "funny" R48 UI bug.
+        // This introduces other awkward UI bugs, but, better at least
+        scrollBreadth += sbSize;
 
         layoutScrollbounds();
     }
