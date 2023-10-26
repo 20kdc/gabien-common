@@ -27,6 +27,7 @@ public interface ITexRegion extends IDrawable {
     /**
      * Creates a subregion.
      */
+    @Override
     @NonNull ITexRegion subRegion(float x, float y, float w, float h);
 
     /**
@@ -51,7 +52,12 @@ public interface ITexRegion extends IDrawable {
      * Performs a standard draw.
      */
     @Override
-    default void draw(float x, float y, float w, float h, IGrDriver igd) {
+    default void drawTo(float x, float y, float w, float h, IGrDriver igd) {
         igd.blitScaledImage(x, y, w, h, this);
+    }
+
+    @Override
+    default void drawScissoredTo(float x, float y, float w, float h, IGrDriver target) {
+        drawTo(x, y, w, h, target);
     }
 }

@@ -21,8 +21,10 @@ mkdir -p ../natives-sdk || exit
 cp sdk-install ../natives-sdk/ || exit
 cp sdk-install.cmd ../natives-sdk/ || exit
 cp natives.jar ../natives-sdk/natives.jar || exit
-cp ../COPYING.txt ../natives-sdk/ || exit
-cp ../CREDITS.txt ../natives-sdk/ || exit
+cp ../COPYING.txt ../natives-sdk/gabien-COPYING.txt || exit
+cp ../CREDITS.txt ../natives-sdk/gabien-CREDITS.txt || exit
+cp ../thirdparty/stb_vorbis_modified/COPYING.txt ../natives-sdk/stb_vorbis_modified-COPYING.txt || exit
+cp ../thirdparty/stb_vorbis_modified/README.md ../natives-sdk/stb_vorbis_modified-README.md || exit
 cp README.md ../natives-sdk/ || exit
 cd ../natives-sdk || exit
 ../natives/ktsz * > ../natives-sdk.zip || exit
