@@ -414,6 +414,15 @@ public final class GaBIEn {
     }
 
     /**
+     * Decodes an image to a WSIImage using the system image loader.
+     * This supports at least PNG, JPEG, and *maybe* BMP.
+     * Anything else gets increasingly less likely.
+     */
+    public static @Nullable WSIImage decodeWSIImage(@NonNull InputStream a) {
+        return internal.decodeWSIImage(a);
+    }
+
+    /**
      * Clears the image cache.
      */
     public static void hintFlushAllTheCaches() {
