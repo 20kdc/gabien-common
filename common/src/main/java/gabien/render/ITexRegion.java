@@ -18,21 +18,7 @@ import gabien.GaBIEn;
  * This is because the atlas texture can host multiple copies of common textures, stopping ABAC cycles.
  * Created 23rd June, 2023.
  */
-public interface ITexRegion {
-    /**
-     * Gets the theoretical width of this region.
-     * This is metadata only and not necessarily accurate.
-     * In theory, the region encompasses 0 to width.
-     */
-    float getRegionWidth();
-
-    /**
-     * Gets the theoretical width of this region.
-     * This is metadata only and not necessarily accurate.
-     * In theory, the region encompasses 0 to height.
-     */
-    float getRegionHeight();
-
+public interface ITexRegion extends IDrawable {
     /**
      * Tries to pick an optimal source based on the current batch surface.
      */
@@ -59,5 +45,13 @@ public interface ITexRegion {
      */
     default @NonNull IImage copy() {
         return copy(0, 0, (int) getRegionWidth(), (int) getRegionHeight());
+    }
+
+    /**
+     * Performs a standard draw.
+     */
+    @Override
+    default void draw(float x, float y, float w, float h, IGrDriver igd) {
+        igd.blitScaledImage(x, y, w, h, this);
     }
 }
