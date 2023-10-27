@@ -16,6 +16,7 @@ import gabien.wsi.IPointer;
 
 import java.util.LinkedList;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -39,19 +40,16 @@ public abstract class UIElement extends LAFChain {
     private @Nullable UIElement parent;
 
     private Size wantedSize = Size.ZERO;
-    // Used during construction & setForcedBounds.
-    // In the first case, this prevents accidentally calling runLayout before the object is ready.
-    // In the second case, this prevents a sub-element from calling a parent element's runLayout...
-    //  during that same runLayout.
-    private boolean currentlyLayouting = false;
-    // Fun fact: This confuses IDEA and/or the compiler. It thinks this is convertable to a local,
-    //  but what happens here is that a runLayoutLoop indirectly (via setWantedSize in a subelement) causes another runLayoutLoop call
-    //  in the same instance, which sets the variable to true, signalling to the first call that we need to keep going.
-    private boolean weNeedToKeepLayouting = false;
+    private boolean wantedSizeIsOverride = false;
+
     // Used rather than a HashSet.
     private boolean visibleFlag = false;
     // Used for textboxes
     private boolean attachedToRootFlag;
+    // Used to detect bad code
+    private boolean layoutingFlag;
+    // Used to detect bad code
+    private boolean metrickingFlag;
 
     public UIElement() {
         // This is sufficient.
@@ -66,10 +64,8 @@ public abstract class UIElement extends LAFChain {
         // Simplifies things.
         this();
         Rect sz = new Rect(0, 0, width, height);
-        currentlyLayouting = true;
-        setWantedSize(sz);
-        setForcedBounds(null, sz);
-        currentlyLayouting = false;
+        wantedSize = sz;
+        elementBounds = sz;
     }
 
     /**
@@ -78,11 +74,8 @@ public abstract class UIElement extends LAFChain {
     public final void setForcedBounds(UIElement mustBeThis, Rect r) {
         if (mustBeThis != parent)
             throw new RuntimeException("You aren't allowed to do that, must be " + parent);
-        boolean relayout = !r.sizeEquals(elementBounds);
         elementBounds = r;
-        // Oh, *this* is a mindbender.
-        if (relayout)
-            runLayoutLoop();
+        layoutRun();
     }
 
     /**
@@ -90,35 +83,42 @@ public abstract class UIElement extends LAFChain {
      * Since this messes with layout, it can't be used while a parent is allowed.
      */
     public final void forceToRecommended() {
-        runLayoutLoop();
-        // Now that the wanted size is non-zero, let it stabilize
-        Size lastWantedSize = getWantedSize();
-        for (int i = 0; i < 16; i++) {
-            setForcedBounds(null, new Rect(lastWantedSize));
-            Size nextWantedSize = getWantedSize();
-            if (lastWantedSize.sizeEquals(nextWantedSize))
-                break;
-            lastWantedSize = nextWantedSize;
-        }
+        // as this gets called in the constructor a good few times...
+        layoutRecalculateMetrics();
+        setForcedBounds(null, new Rect(getWantedSize()));
     }
 
     public final Rect getParentRelativeBounds() {
+        if (metrickingFlag)
+            System.err.println("GaBIEnUI: WARNING: " + this + ".getParentRelativeBounds() called during metricking.");
         return elementBounds;
     }
 
     public final Size getSize() {
+        if (metrickingFlag)
+            System.err.println("GaBIEnUI: WARNING: " + this + ".getSize() called during metricking.");
         return elementBounds;
     }
 
-    public void setWantedSize(Size size) {
-        boolean relayout = !wantedSize.sizeEquals(size);
-        wantedSize = size;
-        // The !currentlyLayouting is balanced out in runLayoutLoop
-        if (relayout && !currentlyLayouting)
-            if (parent != null)
-                parent.runLayoutLoop();
+    /**
+     * Gets the width for the given height.
+     * Defaults to always returning the wanted width.
+     */
+    public int layoutGetWForH(int height) {
+        return getWantedSize().width;
     }
 
+    /**
+     * Gets the height for the given width.
+     * Defaults to always returning the wanted height.
+     */
+    public int layoutGetHForW(int width) {
+        return getWantedSize().height;
+    }
+
+    /**
+     * Gets the current ideal size.
+     */
     public final Size getWantedSize() {
         return wantedSize;
     }
@@ -147,45 +147,108 @@ public abstract class UIElement extends LAFChain {
     }
 
     /**
-     * How you should call runLayout.
-     * Failure to call it this way can result in *stuff* not getting updated properly.
-     * In particular, this is now NON-FINAL.
+     * This method repositions all elements inside this element.
+     * To be clear: This method MUST reposition all elements inside this element.
+     * This method is private. It should only be called in rare cases.
+     * If you're independently calling your own relayout method, use layoutRunImpl.
+     * setForcedBounds calls this because the bounds have changed.
+     * layoutRecalculateMetrics calls this to begin the relayouting process.
      */
-    public void runLayoutLoop() {
-        Size oldWS = getWantedSize();
-        if (currentlyLayouting) {
-            weNeedToKeepLayouting = true;
+    private final void layoutRun() {
+        if (layoutingFlag) {
+            System.err.println("GaBIEnUI: WARNING: Recursive layout attempted. ni li ike suli! >:( @ " + this);
             return;
         }
-        currentlyLayouting = true;
-        weNeedToKeepLayouting = true;
-        for (int i = 0; i < 16; i++) {
-            if (!weNeedToKeepLayouting)
-                break;
-            weNeedToKeepLayouting = false;
-            runLayout();
-        }
-        if (weNeedToKeepLayouting) {
-            System.err.println("UI: weNeedToKeepLayouting overload @ " + this.getClass() + " ( " + this + " )!");
-            weNeedToKeepLayouting = false;
-        }
-        currentlyLayouting = false;
-        if (!oldWS.sizeEquals(getWantedSize()))
-            if (parent != null)
-                parent.runLayoutLoop();
+        layoutingFlag = true;
+        // System.out.println("Layout in " + this);
+        layoutRunImpl();
+        layoutingFlag = false;
     }
 
     /**
-     * This method *SHOULD* work like this:
-     * 1. Get all wanted sizes
-     * 2. Adjust controls inside
-     * Step 2 will trigger "pleaseContinueLayingOut" to be set if necessary.
-     * UNDER NO CIRCUMSTANCES should this be non-super-called anywhere except from UIElement,
-     *  or classes with an understanding of what they're calling, i.e. their own runLayout method.
-     * It is HIGHLY DISCOURAGED to add UI elements from this function; their parameters will change as they change LAF.
+     * Repositions all elements inside this element.
+     * It also may perform any tasks that need to occur when the size of the element changes.
+     * Does NOT recalculate metrics. Will NOT cause metrics to be recalculated.
+     * Do not call this for non-this instances.
      */
-    public void runLayout() {
+    protected void layoutRunImpl() {
+    }
 
+    /**
+     * This is called to recalculate this element's metrics.
+     * Note that it should NOT call layoutRecalculateMetrics[Impl] on subelements!
+     * Elements are expected to self-report metric changes.
+     * Returns the new wanted size.
+     * If this returns null, limits did not change, so layout can stop here.
+     * This is rarely useful and an optimization ONLY.
+     * If you are unsure, do not use this feature.
+     */
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        return null;
+    }
+
+    /**
+     * Way to override layout wanted size stuff.
+     */
+    public final void setWantedSizeOverride(@Nullable Size adj) {
+        // Disabling?
+        if (adj == null) {
+            wantedSizeIsOverride = false;
+            layoutRecalculateMetrics();
+            return;
+        }
+        // Enabling
+        wantedSize = adj;
+        wantedSizeIsOverride = true;
+        // Metrics changed, parent needs to know.
+        if (parent != null) {
+            parent.layoutRecalculateMetrics();
+        } else {
+            layoutRun();
+        }
+    }
+
+    /**
+     * Alternate (legacy) API to supply metrics changes.
+     */
+    public final void setWantedSize(@NonNull Size adj) {
+        if (!wantedSizeIsOverride)
+            wantedSize = adj;
+        // Metrics changed, parent needs to know.
+        if (parent != null) {
+            parent.layoutRecalculateMetrics();
+        } else {
+            layoutRun();
+        }
+    }
+
+    /**
+     * Recalculates metrics.
+     * Assuming invariants hold, this will *always* eventually cause layoutRun to be called.
+     */
+    protected final void layoutRecalculateMetrics() {
+        if (metrickingFlag) {
+            System.err.println("GaBIEnUI: WARNING: Recursive metricking implementation found. ni li ike suli! >:( @ " + this);
+            return;
+        }
+        metrickingFlag = true;
+        Size adj = layoutRecalculateMetricsImpl();
+        metrickingFlag = false;
+        if (adj != null) {
+            if (!wantedSizeIsOverride)
+                wantedSize = adj;
+            // Metrics changed, parent needs to know.
+            if (parent != null) {
+                parent.layoutRecalculateMetrics();
+            } else {
+                layoutRun();
+            }
+        } else {
+            // Metrics did not change, so the parent isn't affected.
+            // This + non-iterative layout should make layout faster.
+            // layoutRun is still called though.
+            layoutRun();
+        }
     }
 
     // Only processed for window-level elements.
@@ -459,7 +522,7 @@ public abstract class UIElement extends LAFChain {
 
         // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.
         @Override
-        public abstract void runLayout();
+        protected abstract void layoutRunImpl();
 
         @Override
         public void handleMousewheel(int x, int y, boolean north) {
@@ -540,7 +603,22 @@ public abstract class UIElement extends LAFChain {
             //  not the other way around. Also, if this fails with a "you can't do that",
             //  I'm not sure what you're trying to do, but it sounds fun!
             setForcedBounds(null, new Rect(wanted ? currentElement.getWantedSize() : element.getSize()));
-            setWantedSize(currentElement.getWantedSize());
+            layoutRecalculateMetrics();
+        }
+
+        @Override
+        public final int layoutGetHForW(int width) {
+            return currentElement.layoutGetHForW(width);
+        }
+
+        @Override
+        public final int layoutGetWForH(int height) {
+            return currentElement.layoutGetWForH(height);
+        }
+
+        @Override
+        protected @Nullable Size layoutRecalculateMetricsImpl() {
+            return currentElement.getSize();
         }
 
         protected final UIElement proxyGetElement() {
@@ -569,17 +647,10 @@ public abstract class UIElement extends LAFChain {
         }
 
         @Override
-        public void runLayout() {
+        protected void layoutRunImpl() {
             boolean cannotSFB = currentElement.getSize().sizeEquals(getSize());
             if (!cannotSFB)
                 currentElement.setForcedBounds(this, new Rect(getSize()));
-            currentElement.runLayoutLoop();
-            setWantedSize(currentElement.getWantedSize());
-        }
-
-        @Override
-        public void runLayoutLoop() {
-            runLayout();
         }
 
         @Override

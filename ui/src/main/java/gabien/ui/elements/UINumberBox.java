@@ -5,8 +5,9 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
 
+import gabien.ui.IPointerReceiver;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
 import gabien.wsi.IPeripherals;
@@ -43,9 +44,9 @@ public class UINumberBox extends UILabel {
     private ITextEditingSession editingSession;
 
     @Override
-    public void runLayout() {
+    public void labelDoUpdate() {
         text = Long.toString(number);
-        super.runLayout();
+        super.labelDoUpdate();
     }
 
     @Override

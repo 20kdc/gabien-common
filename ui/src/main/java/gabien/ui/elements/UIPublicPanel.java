@@ -5,10 +5,12 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
 
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
+import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.uslx.append.Size;
 
 /**
@@ -32,8 +34,9 @@ public class UIPublicPanel extends UIElement.UIPanel {
     }
 
     @Override
-    public void runLayout() {
-
+    protected void layoutRunImpl() {
+        // TODO Auto-generated method stub
+        
     }
 
     @Override

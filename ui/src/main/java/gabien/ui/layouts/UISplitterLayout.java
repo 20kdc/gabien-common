@@ -5,8 +5,11 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.layouts;
 
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.ui.UIElement;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 
@@ -19,6 +22,7 @@ import gabien.uslx.append.Size;
  * If this fails (insufficient room), the old ... "weighted-concession algorithm"? is used.
  *
  * Created on 6/17/17. Updated for IPCRESS probably February 16th 2017, it's now February 18th 2017.
+ * Updated for Accelerator 27th October 2023.
  */
 public class UISplitterLayout extends UIElement.UIPanel {
     public final UIElement a;
@@ -39,7 +43,7 @@ public class UISplitterLayout extends UIElement.UIPanel {
         layoutAddElement(b);
         splitPoint = weight;
 
-        runLayout();
+        layoutRecalculateMetrics();
         setForcedBounds(null, new Rect(getWantedSize()));
     }
 
@@ -63,22 +67,41 @@ public class UISplitterLayout extends UIElement.UIPanel {
         }
     }
 
-    @Override
-    public void runLayout() {
-        int room, allSpace;
-        Size r = getSize();
+    /**
+     * Gets the "ideal split point" between elements A & B for the given length assuming infinite breadth.
+     */
+    private int getSplitPointPixels(int allSpace) {
         Size aWanted = a.getWantedSize(), bWanted = b.getWantedSize();
         int aInitial;
         int bInitial;
         if (vertical) {
-            allSpace = room = r.height;
             aInitial = aWanted.height;
             bInitial = bWanted.height;
         } else {
-            allSpace = room = r.width;
             aInitial = aWanted.width;
             bInitial = bWanted.width;
         }
+        return getSplitPointPixelsWithInitial(allSpace, aInitial, bInitial);
+    }
+
+    /**
+     * Get the actual split point for a finite length/breadth combo.
+     */
+    private int getSplitPointPixels(int allSpace, int breadth) {
+        int aInitial;
+        int bInitial;
+        if (vertical) {
+            aInitial = a.layoutGetHForW(breadth);
+            bInitial = b.layoutGetHForW(breadth);
+        } else {
+            aInitial = a.layoutGetWForH(breadth);
+            bInitial = b.layoutGetWForH(breadth);
+        }
+        return getSplitPointPixelsWithInitial(allSpace, aInitial, bInitial);
+    }
+
+    private int getSplitPointPixelsWithInitial(int allSpace, int aInitial, int bInitial) {
+        int room = allSpace;
         room -= aInitial + bInitial;
         // Room is now the amount of spare space available.
         int exactPos = (int) (splitPoint * allSpace);
@@ -100,16 +123,60 @@ public class UISplitterLayout extends UIElement.UIPanel {
             if ((exactPos < 0) || (exactPos > allSpace))
                 exactPos = allSpace / 2;
         }
-        Size newWanted;
+        return exactPos;
+    }
+
+    @Override
+    public int layoutGetWForH(int height) {
+        if (vertical) {
+            int splitPx = getSplitPointPixels(height);
+            int remainder = height - splitPx;
+            return Math.max(a.layoutGetWForH(splitPx), b.layoutGetWForH(remainder));
+        } else {
+            return a.layoutGetWForH(height) + b.layoutGetWForH(height);
+        }
+    }
+
+    @Override
+    public int layoutGetHForW(int width) {
+        if (vertical) {
+            return a.layoutGetHForW(width) + b.layoutGetHForW(width);
+        } else {
+            int splitPx = getSplitPointPixels(width);
+            int remainder = width - splitPx;
+            return Math.max(a.layoutGetHForW(splitPx), b.layoutGetHForW(remainder));
+        }
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        Size aWanted = a.getWantedSize();
+        Size bWanted = b.getWantedSize();
+        if (vertical) {
+            return new Size(Math.max(aWanted.width, bWanted.width), aWanted.height + bWanted.height);
+        } else {
+            return new Size(aWanted.width + bWanted.width, Math.max(aWanted.height, bWanted.height));
+        }
+    }
+
+    @Override
+    protected void layoutRunImpl() {
+        int allSpace, breadth;
+        Size r = getSize();
+        if (vertical) {
+            allSpace = r.height;
+            breadth = r.width;
+        } else {
+            allSpace = r.width;
+            breadth = r.height;
+        }
+        int exactPos = getSplitPointPixels(allSpace, breadth);
         if (vertical) {
             a.setForcedBounds(this, new Rect(0, 0, r.width, exactPos));
             b.setForcedBounds(this, new Rect(0, exactPos, r.width, allSpace - exactPos));
-            newWanted = new Size(Math.max(aWanted.width, bWanted.width), aInitial + bInitial);
         } else {
             a.setForcedBounds(this, new Rect(0, 0, exactPos, r.height));
             b.setForcedBounds(this, new Rect(exactPos, 0, allSpace - exactPos, r.height));
-            newWanted = new Size(aInitial + bInitial, Math.max(aWanted.height, bWanted.height));
         }
-        setWantedSize(newWanted);
     }
 }

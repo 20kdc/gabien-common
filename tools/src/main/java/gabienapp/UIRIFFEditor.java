@@ -11,15 +11,14 @@ import java.io.OutputStream;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
-import gabien.GaBIEnUI;
 import gabien.media.riff.RIFFNode;
 import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
-import gabien.ui.UILabel;
-import gabien.ui.UIScrollLayout;
-import gabien.ui.UISplitterLayout;
-import gabien.ui.UITextBox;
-import gabien.ui.UITextButton;
+import gabien.ui.elements.UILabel;
+import gabien.ui.elements.UITextBox;
+import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UIScrollLayout;
+import gabien.ui.layouts.UISplitterLayout;
 import gabien.uslx.append.Rect;
 
 /**

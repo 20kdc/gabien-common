@@ -5,7 +5,9 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEnUI;
 import gabien.render.IGrDriver;
@@ -37,22 +39,26 @@ public class UITextButton extends UIButton<UITextButton> {
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         super.updateContents(deltaTime, selected, peripherals);
         // See UILabel for the reasoning here.
-        runLayout();
+        Size sz = contents.update(getTheme(), getSize(), getBorderWidth(), text);
+        if (sz != null)
+            setWantedSize(sz);
     }
 
     @Override
     public void onThemeChanged() {
         super.onThemeChanged();
         // Same as with updateContents.
-        runLayout();
+        layoutRecalculateMetrics();
     }
 
     @Override
-    public void runLayout() {
-        super.runLayout();
-        Size p = contents.update(getTheme(), getSize(), getBorderWidth(), text);
-        if (p != null)
-            setWantedSize(p);
+    public int layoutGetHForW(int width) {
+        return contents.getHForW(getTheme(), getBorderWidth(), text, width);
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        return null;
     }
 
     @Override

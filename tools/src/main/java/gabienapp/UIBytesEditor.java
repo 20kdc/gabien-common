@@ -7,15 +7,14 @@
 package gabienapp;
 
 import gabien.ui.UIElement.UIProxy;
+import gabien.ui.elements.UIBorderedElement;
+import gabien.ui.elements.UILabel;
+import gabien.ui.elements.UIScrollbar;
+import gabien.ui.layouts.UIScrollLayout;
+import gabien.ui.layouts.UISplitterLayout;
 
 import java.util.function.Consumer;
 
-import gabien.GaBIEnUI;
-import gabien.ui.UIBorderedElement;
-import gabien.ui.UILabel;
-import gabien.ui.UIScrollLayout;
-import gabien.ui.UIScrollbar;
-import gabien.ui.UISplitterLayout;
 import gabien.uslx.append.Rect;
 import gabien.uslx.io.HexByteEncoding;
 import gabien.wsi.IPeripherals;
@@ -60,11 +59,11 @@ public class UIBytesEditor extends UIProxy {
     }
 
     @Override
-    public void runLayout() {
+    protected void layoutRunImpl() {
         int h = getSize().height;
         int rh = UIBorderedElement.getBorderedTextHeight(getTheme(), 16);
         setRowCount(h / rh);
-        super.runLayout();
+        super.layoutRunImpl();
     }
 
     @Override

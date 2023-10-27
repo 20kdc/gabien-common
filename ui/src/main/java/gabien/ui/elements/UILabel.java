@@ -5,11 +5,15 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEnUI;
 import gabien.render.IGrDriver;
 import gabien.text.TextTools;
+import gabien.ui.FontManager;
+import gabien.ui.LAFChain;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.Rect;
@@ -35,9 +39,7 @@ public class UILabel extends UIBorderedElement {
         contents = new Contents(h, spacer);
         text = txt;
 
-        // Using the sysThemeRoot here is cheating, but the alternative is summoning bugs that won't be found until too late.
-        setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEnUI.sysThemeRoot.getTheme(), text, h)));
-        runLayout();
+        layoutRecalculateMetrics();
         setForcedBounds(null, new Rect(getWantedSize()));
     }
 
@@ -49,29 +51,40 @@ public class UILabel extends UIBorderedElement {
 
     @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
-        runLayout();
+        // Spamming this is fine because if nothing actually changes it becomes a no-op
+        labelDoUpdate();
     }
 
     @Override
     public void onThemeChanged() {
         super.onThemeChanged();
-        // important because the label render can change based on theme now
-        runLayout();
+        layoutRecalculateMetrics();
     }
 
-    // This just gets spammed every frame, in order to update text at every possible time.
-    // It's not perfect, but contents.update checks enough so everything's :ok_hand:
     @Override
-    public void runLayout() {
-        super.runLayout();
-        Size p = contents.update(getTheme(), getSize(), getBorderWidth(), text);
-        if (p != null)
-            setWantedSize(p);
+    public int layoutGetHForW(int width) {
+        return contents.getHForW(getTheme(), getBorderWidth(), text, width);
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        return null;
     }
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
         contents.render(textBlack, 0, 0, igd, alignX, alignY);
+    }
+
+    public void setText(String didThing) {
+        text = didThing;
+        labelDoUpdate();
+    }
+
+    public void labelDoUpdate() {
+        Size sz = contents.update(getTheme(), getSize(), getBorderWidth(), text);
+        if (sz != null)
+            setWantedSize(sz);
     }
 
     /**
@@ -99,6 +112,12 @@ public class UILabel extends UIBorderedElement {
             spacerText = st;
         }
 
+        public int getHForW(Theme theme, int bw, String text, int width) {
+            FontManager fm = Theme.FM_GLOBAL.get(theme);
+            String formattedText = fm.formatTextFor(text, textHeight, width - (bw * 2));
+            return getRecommendedTextSize(theme, formattedText, textHeight, bw).height;
+        }
+
         public Size update(Theme theme, Size sz, int bw, String text) {
             // run formatting...
             Size sz2 = null;
@@ -114,9 +133,9 @@ public class UILabel extends UIBorderedElement {
                 // The answer is simply that B's height is what we need to be given the width,
                 //  and A is what we want to be, width and height alike.
                 Size a = getRecommendedTextSize(theme, text, textHeight, bw);
-                Size b = lastActSize = getRecommendedTextSize(theme, textFormatted, textHeight, bw);
+                lastActSize = getRecommendedTextSize(theme, textFormatted, textHeight, bw);
                 lastSpacerSize = getRecommendedTextSize(theme, spacerText, textHeight, bw);
-                sz2 = new Size(a.width, b.height);
+                sz2 = a;
                 sz2 = sz2.sizeMax(lastSpacerSize);
                 paragraph.font = fm.getFontForText(textFormatted, textHeight);
                 paragraph.text = textFormatted;
@@ -140,11 +159,14 @@ public class UILabel extends UIBorderedElement {
     }
 
     // Sort of a "lite" UILabel.
-    public static class StatusLine extends LAFChain {
+    public static class StatusLine {
+        public LAFChain themeSource = GaBIEnUI.sysThemeRoot;
+
         private Contents statusLine;
         // used to prevent allocating Size objects
         private Size lastSize = new Size(0, 0);
         private int height = 0;
+
         public void draw(String text, int textHeight, IGrDriver igd, int x, int y, int w) {
             // Status line stuff
             if (statusLine == null) {
@@ -154,12 +176,12 @@ public class UILabel extends UIBorderedElement {
             }
             int bw = UIBorderedElement.getRecommendedBorderWidth(textHeight);
             pokeLastSize(w, height);
-            Size sz = statusLine.update(getTheme(), lastSize, bw, text);
+            Theme theme = themeSource.getTheme();
+            Size sz = statusLine.update(theme, lastSize, bw, text);
             if (sz != null) {
                 height = sz.height;
                 pokeLastSize(w, height);
             }
-            Theme theme = getTheme();
             UIBorderedElement.drawBorder(theme, igd, Theme.B_LABEL, bw, x, y, w, height);
             boolean statusLineBT = UIBorderedElement.getBlackTextFlag(theme, Theme.B_LABEL);
             statusLine.render(statusLineBT, x, y, igd, false);

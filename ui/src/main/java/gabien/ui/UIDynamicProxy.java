@@ -27,21 +27,23 @@ public class UIDynamicProxy extends UIElement.UIPanel {
         if (content != null) {
             layoutRemoveElement(content);
             content = null;
-            setWantedSize(new Size(0, 0));
         }
         content = uie;
-        if (content != null) {
+        if (content != null)
             layoutAddElement(content);
-            setWantedSize(content.getWantedSize());
-        }
-        runLayoutLoop();
+        layoutRecalculateMetrics();
     }
 
     @Override
-    public void runLayout() {
-        if (content != null) {
+    protected void layoutRunImpl() {
+        if (content != null)
             content.setForcedBounds(this, new Rect(getSize()));
-            setWantedSize(content.getWantedSize());
-        }
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        if (content != null)
+            return content.getWantedSize();
+        return null;
     }
 }

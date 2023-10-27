@@ -9,6 +9,7 @@ package gabien.ui;
 
 import gabien.*;
 import gabien.render.IGrDriver;
+import gabien.ui.elements.UIBorderedElement;
 import gabien.ui.theming.Theme;
 
 import java.util.HashSet;

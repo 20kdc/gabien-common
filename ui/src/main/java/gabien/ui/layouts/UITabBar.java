@@ -5,10 +5,16 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.layouts;
 
 import gabien.render.IGrDriver;
 import gabien.text.TextTools;
+import gabien.ui.FontManager;
+import gabien.ui.IPointerReceiver;
+import gabien.ui.UIElement;
+import gabien.ui.UILayer;
+import gabien.ui.elements.UIBorderedElement;
+import gabien.ui.elements.UIScrollbar;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 
@@ -16,6 +22,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.append.*;
 import gabien.wsi.IPointer;
@@ -91,7 +99,7 @@ public class UITabBar extends UIElement.UIPanel {
             tabs.removeAll(outgoingTabs2);
 
             if (willUpdateLater)
-                parentView.runLayout();
+                parentView.tightlyCoupledLayoutRecalculateMetrics();
         }
         if (layer == UILayer.Base)
             renderTabPass(theme, igd, false, true, false);
@@ -166,9 +174,8 @@ public class UITabBar extends UIElement.UIPanel {
     }
 
     @Override
-    public void runLayout() {
+    protected void layoutRunImpl() {
         Size bounds = getSize();
-        Size wantedSize = null;
 
         for (int pass = ((tabScroller == null) ? 1 : 0); pass < ((tabScroller == null) ? 2 : 3); pass++) {
             // Pass 0: With scrollbar
@@ -222,8 +229,6 @@ public class UITabBar extends UIElement.UIPanel {
                 }
             }
 
-            wantedSize = new Size(longestWidth, fullWantedHeight);
-
             // Implement pass sufficiency rules
             if (pass == 0) {
                 // Scroll area > 0: scrollbar definitely needed, break now as one is setup now
@@ -237,7 +242,18 @@ public class UITabBar extends UIElement.UIPanel {
                     break;
             }
         }
-        setWantedSize(wantedSize);
+    }
+
+    @Override
+    public int layoutGetHForW(int width) {
+        if (width < calculateTabBarWidth())
+            return wantedHeight + tabScroller.getWantedSize().height;
+        return wantedHeight;
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        return new Size(calculateTabBarWidth(), wantedHeight);
     }
 
     // Used as a base for drawing.
@@ -270,7 +286,7 @@ public class UITabBar extends UIElement.UIPanel {
             incomingTabs.clear();
             if (parentView.selectedTab == null)
                 parentView.selectTab(tabs.getFirst().contents);
-            runLayoutLoop();
+            layoutRecalculateMetrics();
             return true;
         }
         return false;

@@ -5,9 +5,14 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.layouts;
 
 import gabien.render.IGrDriver;
+import gabien.ui.FontManager;
+import gabien.ui.IPointerReceiver;
+import gabien.ui.UIElement;
+import gabien.ui.UILayer;
+import gabien.ui.elements.UIBorderedElement;
 import gabien.ui.theming.Theme;
 
 import java.util.LinkedList;

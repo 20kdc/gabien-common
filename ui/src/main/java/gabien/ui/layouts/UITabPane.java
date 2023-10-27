@@ -5,15 +5,19 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.layouts;
 
 import gabien.render.IGrDriver;
+import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
 import java.util.LinkedList;
 import java.util.Random;
+
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * NOTE: You have to implement your environment, and stuff like closing a window, on top of this.
@@ -125,7 +129,7 @@ public class UITabPane extends UIElement.UIPanel {
     }
 
     @Override
-    public void runLayout() {
+    protected void layoutRunImpl() {
         Size r = getSize();
         Size w = tabManager.getWantedSize();
         tabOverheadHeight = w.height;
@@ -150,13 +154,22 @@ public class UITabPane extends UIElement.UIPanel {
         tabManager.setForcedBounds(this, new Rect(tmLeftMargin, 0, r.width - (tmLeftMargin + tmRightMargin), tabOverheadHeight));
 
 
+        if (selectedTab != null) {
+            UIElement uie = selectedTab.contents;
+            uie.setForcedBounds(this, new Rect(0, tabOverheadHeight, r.width, r.height - tabOverheadHeight));
+        }
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        Size w = tabManager.getWantedSize();
+
         Size uhoh = new Size(0, 0);
         if (selectedTab != null) {
             UIElement uie = selectedTab.contents;
             uhoh = uie.getWantedSize();
-            uie.setForcedBounds(this, new Rect(0, tabOverheadHeight, r.width, r.height - tabOverheadHeight));
         }
-        setWantedSize(new Size(Math.max(w.width, uhoh.width), w.height + uhoh.height));
+        return new Size(Math.max(w.width, uhoh.width), w.height + uhoh.height);
     }
 
     public void selectTab(UIElement target) {
@@ -177,7 +190,7 @@ public class UITabPane extends UIElement.UIPanel {
                     selectedTab = wv;
                     layoutAddElement(selectedTab.contents);
                     layoutSelect(selectedTab.contents);
-                    runLayout();
+                    layoutRecalculateMetrics();
                     return;
                 }
             }
@@ -185,7 +198,7 @@ public class UITabPane extends UIElement.UIPanel {
             // Basically, prefer the chance of concurrent modification to the certainty of complete failure.
             // (Concurrent modification shouldn't really ever happen, but...)
             if (handleIncoming())
-                runLayout();
+                layoutRecalculateMetrics();
         }
         throw new RuntimeException("The tab being selected was not available in this pane.");
     }
@@ -234,5 +247,12 @@ public class UITabPane extends UIElement.UIPanel {
         wv.addAll(tabManager.tabs);
         wv.addAll(tabManager.incomingTabs);
         return wv;
+    }
+
+    /**
+     * From UITabBar
+     */
+    void tightlyCoupledLayoutRecalculateMetrics() {
+        layoutRecalculateMetrics();
     }
 }

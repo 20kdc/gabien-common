@@ -5,9 +5,12 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
 
 import gabien.render.IGrDriver;
+import gabien.ui.FontManager;
+import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.ui.theming.*;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
@@ -93,8 +96,7 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     @Override
-    public void runLayout() {
-        super.runLayout();
+    protected void layoutRunImpl() {
         updateContentsRelativeInputBounds();
     }
 

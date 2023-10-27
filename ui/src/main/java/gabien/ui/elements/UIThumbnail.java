@@ -6,6 +6,8 @@
  */
 package gabien.ui.elements;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
@@ -45,11 +47,22 @@ public class UIThumbnail extends UIElement {
     }
 
     @Override
-    public void runLayout() {
+    protected void layoutRunImpl() {
         float irW = viewedImage.getRegionWidth(), irH = viewedImage.getRegionHeight();
         drawRect = getDrawRect(getSize(), irW, irH);
-        int efW = Math.min(getSize().width, wantedW);
-        setWantedSize(new Size(wantedW, (int) ((irH * efW) / irW)));
+    }
+
+    @Override
+    public int layoutGetHForW(int width) {
+        float irW = viewedImage.getRegionWidth(), irH = viewedImage.getRegionHeight();
+        int efW = Math.min(width, wantedW);
+        return (int) ((irH * efW) / irW);
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        float irW = viewedImage.getRegionWidth(), irH = viewedImage.getRegionHeight();
+        return new Size(wantedW, (int) ((irH * wantedW) / irW));
     }
 
     @Override

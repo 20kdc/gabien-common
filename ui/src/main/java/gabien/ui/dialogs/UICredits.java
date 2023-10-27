@@ -7,10 +7,6 @@
 package gabien.ui.dialogs;
 
 import gabien.GaBIEn;
-import gabien.ui.UILabel;
-import gabien.ui.UIScrollLayout;
-import gabien.ui.UISplitterLayout;
-import gabien.ui.UITextButton;
 import gabien.uslx.append.Rect;
 import gabien.uslx.licensing.LicenseComponent;
 import gabien.uslx.licensing.LicenseManager;
@@ -20,6 +16,10 @@ import java.util.LinkedList;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.ui.UIElement.UIProxy;
+import gabien.ui.elements.UILabel;
+import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UIScrollLayout;
+import gabien.ui.layouts.UISplitterLayout;
 
 /**
  * Credits.

@@ -5,68 +5,61 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
+import gabien.GaBIEn;
+import gabien.ui.IPointerReceiver;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.*;
+import gabien.wsi.IDesktopPeripherals;
+import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
 import gabien.wsi.ITextEditingSession;
 
-// This serves a dual purpose:
-// 1. text is *always* the current text in the box.
-//    It is only reverted a frame after deselection.
-//    (This makes it useful for dialogue boxes where the selection behavior is non-obvious.)
-// 2. onEdit is called when enter is pressed, and otherwise the text will revert.
-//    (This makes it useful for property-editor interfaces which need that kind of confirmation.)
-public class UITextBox extends UILabel {
-    private String textLastSeen = "";
-    private String textCStr = "";
-    public Runnable onEdit = EmptyLambdas.emptyRunnable;
-    public Function<String, String> feedback;
-    public boolean multiLine;
+/**
+ * For consoles and the like.
+ * Created 28th February 2023.
+ */
+public class UIChatBox extends UILabel {
+    private String history = "";
+    public Consumer<String> onSubmit = (text) -> {};
 
     private boolean tempDisableSelection = false;
     private ITextEditingSession editingSession;
 
-    public UITextBox(String text, int h) {
+    public UIChatBox(String text, int h) {
         super(text, h);
         setBorderType(Theme.B_TEXTBOX);
-    }
-
-    public UITextBox setMultiLine() {
-        multiLine = true;
-        return this;
     }
 
     @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         selected &= !tempDisableSelection;
 
-        if (!textLastSeen.equals(text)) {
-            textCStr = text;
-            textLastSeen = text;
-        }
         if (selected) {
             // ensure we have an editing session
             if (editingSession == null)
-                editingSession = peripherals.openTextEditingSession(text, multiLine, contents.textHeight, feedback);
+                editingSession = peripherals.openTextEditingSession(text, false, contents.textHeight, null);
             Rect crib = getContentsRelativeInputBounds();
-            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text);
-            // Update storage.
-            text = ss;
-            textLastSeen = ss;
-            if (!multiLine) {
-                // Enter confirmation.
-                if (editingSession.isEnterJustPressed()) {
-                    textCStr = text;
-                    // warning: can bamboozle and cause editingSession loss!
-                    onEdit.run();
-                    peripherals.clearKeys();
+            if (peripherals instanceof IDesktopPeripherals)
+                if (((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_UP))
+                    text = history;
+            text = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text);
+            // Enter confirmation.
+            if (editingSession.isEnterJustPressed()) {
+                history = text;
+                text = "";
+                onSubmit.accept(history);
+                // shut down the editing session, just to restart it again
+                // this is to clear the isEnterJustPressed flag
+                editingSession.endSession();
+                editingSession = null;
+                // this is a workaround to stop Android seizing up
+                if (GaBIEn.singleWindowApp())
                     tempDisableSelection = true;
-                }
             }
             if ((editingSession != null) && editingSession.isSessionDead()) {
                 // clean up if the session died
@@ -76,17 +69,11 @@ public class UITextBox extends UILabel {
         } else {
             // close off any editing session going on
             if (editingSession != null) {
-                if (multiLine) {
-                    textCStr = text;
-                    onEdit.run();
-                }
                 if (editingSession != null) {
                     editingSession.endSession();
                     editingSession = null;
                 }
             }
-            // restore text from backup
-            text = textCStr;
         }
         setBorderType(selected ? Theme.B_TEXTBOXF : Theme.B_TEXTBOX);
         super.updateContents(deltaTime, selected, peripherals);

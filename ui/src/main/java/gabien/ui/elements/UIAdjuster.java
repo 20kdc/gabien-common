@@ -5,11 +5,14 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.Nullable;
+
+import gabien.ui.UIElement;
 import gabien.uslx.append.*;
 
 /**
@@ -49,7 +52,7 @@ public class UIAdjuster extends UIElement.UIPanel implements Consumer<String> {
     }
 
     @Override
-    public void runLayout() {
+    protected void layoutRunImpl() {
         Size decButtonSize = decButton.getWantedSize();
         Size numberDisplaySize = numberDisplay.getWantedSize();
         Size incButtonSize = incButton.getWantedSize();
@@ -62,8 +65,15 @@ public class UIAdjuster extends UIElement.UIPanel implements Consumer<String> {
         decButton.setForcedBounds(this, new Rect(0, 0, dbw, decButtonSize.height));
         numberDisplay.setForcedBounds(this, new Rect(dbw, 0, m.width - (dbw + ibw), numberDisplaySize.height));
         incButton.setForcedBounds(this, new Rect(m.width - ibw, 0, ibw, incButtonSize.height));
+    }
 
-        setWantedSize(new Rect(0, 0, incButtonSize.width + numberDisplaySize.width + decButtonSize.width, Math.max(incButtonSize.height, Math.max(numberDisplaySize.height, decButtonSize.height))));
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        Size decButtonSize = decButton.getWantedSize();
+        Size numberDisplaySize = numberDisplay.getWantedSize();
+        Size incButtonSize = incButton.getWantedSize();
+
+        return new Size(incButtonSize.width + numberDisplaySize.width + decButtonSize.width, Math.max(incButtonSize.height, Math.max(numberDisplaySize.height, decButtonSize.height)));
     }
 
     @Override

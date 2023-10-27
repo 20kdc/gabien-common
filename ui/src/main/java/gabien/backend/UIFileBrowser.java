@@ -9,6 +9,11 @@ package gabien.backend;
 
 import gabien.GaBIEn;
 import gabien.ui.*;
+import gabien.ui.elements.UILabel;
+import gabien.ui.elements.UITextBox;
+import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UIScrollLayout;
+import gabien.ui.layouts.UISplitterLayout;
 import gabien.uslx.append.*;
 
 import java.util.Collections;
@@ -48,7 +53,6 @@ public class UIFileBrowser extends UIElement.UIProxy {
         outerLayout = new UISplitterLayout(upperSection, new UISplitterLayout(basicLayout, lowerSection, true, 1), true, 0);
         rebuild();
         outerLayout.setForcedBounds(null, new Rect(outerLayout.getWantedSize()));
-        outerLayout.runLayout();
         proxySetElement(outerLayout, true);
     }
 
@@ -188,9 +192,6 @@ public class UIFileBrowser extends UIElement.UIProxy {
             }), false, 1.0d);
             lowerSection.dynProxySet(new UISplitterLayout(mainLine, statusLine, true, 0.5d));
         }
-        basicLayout.runLayoutLoop();
-        lowerSection.runLayoutLoop();
-        outerLayout.runLayoutLoop();
     }
 
     @Override

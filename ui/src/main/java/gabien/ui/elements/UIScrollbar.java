@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabien.ui;
+package gabien.ui.elements;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -13,6 +13,8 @@ import gabien.GaBIEn;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.text.SimpleImageGridFont;
+import gabien.ui.IPointerReceiver;
+import gabien.ui.UIElement;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.Rect;
@@ -44,6 +46,9 @@ public class UIScrollbar extends UIElement {
     private double negativeButtonTimer;
     private double positiveButtonTimer;
 
+    // used during metrics recalc.
+    private int sbSize;
+
     // zones
     private Rect boxNegative = Rect.ZERO;
     private @Nullable Rect boxCarriage;
@@ -58,7 +63,7 @@ public class UIScrollbar extends UIElement {
     }
 
     @Override
-    public void runLayout() {
+    protected void layoutRunImpl() {
         Size size = getSize();
 
         barSize = vertical ? size.width : size.height;
@@ -232,6 +237,12 @@ public class UIScrollbar extends UIElement {
     }
 
     public void setSBSize(int sbSize) {
-        setWantedSize(new Size(vertical ? sbSize : sbSize * 4, vertical ? sbSize * 4 : sbSize));
+        this.sbSize = sbSize;
+        layoutRecalculateMetrics();
+    }
+
+    @Override
+    protected @Nullable Size layoutRecalculateMetricsImpl() {
+        return new Size(vertical ? sbSize : sbSize * 4, vertical ? sbSize * 4 : sbSize);
     }
 }

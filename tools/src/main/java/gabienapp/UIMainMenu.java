@@ -6,10 +6,12 @@
  */
 package gabienapp;
 
-import gabien.ui.UIScrollLayout;
-import gabien.ui.UITextButton;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.dialogs.UICredits;
+import gabien.ui.elements.UILabel;
+import gabien.ui.elements.UIPublicPanel;
+import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UIScrollLayout;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
 
@@ -32,8 +34,6 @@ import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
 import gabien.ui.UIElement.UIProxy;
-import gabien.ui.UILabel;
-import gabien.ui.UIPublicPanel;
 
 /**
  * Main menu!
