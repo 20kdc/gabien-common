@@ -11,15 +11,13 @@ package gabien.media.ogg;
  * Some definitions:
  * Sync window: area from syncWindow[0] to syncWindow[amountOfDataInSyncWindow - 1].
  * Current page: The page at the head of the sync window.
- * TODO: Verify CRC32. Fields that I just totally ignore right now.
  * Created 19th October, 2023
  */
 public final class OggReader {
     /**
      * Ogg page
-     * 27 header + 255 lacing values + 255 segments of 255 bytes
      */
-    public final byte[] syncWindow = new byte[65307];
+    public final byte[] syncWindow = new byte[OggPage.MAX_PAGE_LENGTH];
 
     /**
      * Before the sync window is full, it may have uninitialized (zero) areas.
@@ -57,68 +55,6 @@ public final class OggReader {
             throw new RuntimeException("Can't skip more bytes than are in the sync window!");
         System.arraycopy(syncWindow, len, syncWindow, 0, amountOfDataInSyncWindow - len);
         amountOfDataInSyncWindow -= len;
-    }
-
-    /**
-     * Returns the length of the current page.
-     * Note that this does not verify said page is valid.
-     * It only returns the length of a hypothetical page.
-     */
-    public int getPageLength() {
-        int segmentCount = syncWindow[26] & 0xFF;
-        int totalLength = 27 + segmentCount;
-        for (int i = 0; i < segmentCount; i++)
-            totalLength += syncWindow[27 + i] & 0xFF;
-        return totalLength;
-    }
-
-    /**
-     * Gets the absolute granule position from the page.
-     */
-    public long getPageGranulePos() {
-        long a = syncWindow[6] & 0xFFL;
-        long b = syncWindow[7] & 0xFFL;
-        long c = syncWindow[8] & 0xFFL;
-        long d = syncWindow[9] & 0xFFL;
-        long e = syncWindow[10] & 0xFFL;
-        long f = syncWindow[11] & 0xFFL;
-        long g = syncWindow[12] & 0xFFL;
-        long h = syncWindow[13] & 0xFFL;
-        a |= b << 8;
-        a |= c << 16;
-        a |= d << 24;
-        a |= e << 32;
-        a |= f << 40;
-        a |= g << 48;
-        a |= h << 56;
-        return a;
-    }
-
-    /**
-     * Returns true if the current page is valid.
-     */
-    public boolean isPageValid() {
-        // The page cannot be valid if the header is missing.
-        // However, an empty page is still valid.
-        if (amountOfDataInSyncWindow < 27)
-            return false;
-        // Check for sync pattern & version.
-        if (syncWindow[0] != 'O')
-            return false;
-        if (syncWindow[1] != 'g')
-            return false;
-        if (syncWindow[2] != 'g')
-            return false;
-        if (syncWindow[3] != 'S')
-            return false;
-        if (syncWindow[4] != 0)
-            return false;
-        // Check length makes sense.
-        if (amountOfDataInSyncWindow < getPageLength())
-            return false;
-        // Ok, so we have a complete byte array that looks like an Ogg page.
-        // This means it's probably an Ogg page.
-        return true;
     }
 
     /**

@@ -40,10 +40,11 @@ public class OggBufferingInputStreamReader {
             if (chunkBufferRemaining > 0) {
                 or.addByteToSyncWindow(chunkBuffer[chunkBufferPosition++]);
                 chunkBufferRemaining--;
-                if (or.isPageValid()) {
-                    lastGranulePos = or.getPageGranulePos();
+                int len = OggPage.verifyAndGetLength(or.syncWindow, 0, or.amountOfDataInSyncWindow);
+                if (len > 0) {
+                    lastGranulePos = OggPage.getGranulePos(or.syncWindow, 0);
                     or.sendSegmentsTo(opfs, false);
-                    or.skipSyncWindow(or.getPageLength());
+                    or.skipSyncWindow(len);
                     return true;
                 }
             } else {

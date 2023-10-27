@@ -10,17 +10,17 @@ package gabien.uslx.io;
  * CRC32!
  * Created 19th October, 2023.
  */
-public final class CRC32 {
+public final class CRC32Reversed implements ImmutableChecksum32 {
     public final int polynomialReversed;
 
     private final int[] crc32tab = new int[256];
 
     /**
-     * Pretty much the standard CRC32
+     * CRC32 as used in PNG
      */
-    public static final CRC32 CRC32_04C11DB7 = new CRC32(0xEDB88320);
+    public static final CRC32Reversed CRC32_EDB88320 = new CRC32Reversed(0xEDB88320);
 
-    public CRC32(int p) {
+    public CRC32Reversed(int p) {
         polynomialReversed = p;
         for (int i = 0; i < crc32tab.length; i++) {
             int crc = i;
@@ -35,14 +35,17 @@ public final class CRC32 {
         }
     }
 
-    public int update(int v, byte[] data) {
-        for (byte b : data) {
-            int lb = (b & 0xFF) ^ (v & 0xFF);
+    @Override
+    public int update(int v, byte[] data, int offset, int length) {
+        while (length > 0) {
+            int lb = (data[offset++] & 0xFF) ^ (v & 0xFF);
             v = crc32tab[lb] ^ (v >>> 8);
-         }
+            length--;
+        }
         return v;
     }
 
+    @Override
     public int update(int v, byte b) {
         int lb = (b & 0xFF) ^ (v & 0xFF);
         v = crc32tab[lb] ^ (v >>> 8);
