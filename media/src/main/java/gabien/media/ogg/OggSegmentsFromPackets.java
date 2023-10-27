@@ -19,16 +19,13 @@ public final class OggSegmentsFromPackets implements OggPacketReceiver {
 
     @Override
     public void packet(byte[] data, int ofs, int len) {
-        // preceding segments
-        while (len > 255) {
+        // handle chunks of 255
+        while (len >= 255) {
             output.segment(data, ofs, (byte) 255);
             len -= 255;
             ofs += 255;
         }
-        // final segment
-        if (len > 0)
-            output.segment(data, ofs, (byte) len);
-        // done!
-        output.end();
+        // handle the remaining *non-255* len (including 0)
+        output.segment(data, ofs, (byte) len);
     }
 }

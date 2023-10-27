@@ -17,6 +17,7 @@ public interface OggSegmentReceiver {
      * Beware the sign of len!
      * The data array will remain untouched until invalidateStorage is called.
      * (This may allow zero-copy shenanigans.)
+     * As per Ogg, a segment with length that is not 255 ends the packet.
      */
     void segment(byte[] data, int ofs, byte len);
 
@@ -26,14 +27,16 @@ public interface OggSegmentReceiver {
     void invalidateStorage();
 
     /**
-     * Ends a packet and submits it.
+     * Splits off the discard functionality into a separate interface.
+     * Code that's writing data pages doesn't need to support discard and it could mean having to "revert" pages.
+     * Since reverting a written page is impossible, that's bad.
      */
-    void end();
-
-    /**
-     * Discard the current packet, if any.
-     * This is used on any page that doesn't announce a continued packet.
-     * It's also a general anti-corruption measure.
-     */
-    void discard();
+    interface Discardable extends OggSegmentReceiver {
+        /**
+         * Discard the current packet, if any.
+         * This is used on any page that doesn't announce a continued packet.
+         * It's also a general anti-corruption measure.
+         */
+        void discard();
+    }
 }

@@ -166,7 +166,7 @@ public abstract class OggPage {
      * As such, if the return value is 0, and you passed ignoreContinued = true, continue to do so.
      * Otherwise, set ignoreContinued = false.
      */
-    public static int sendSegmentsTo(byte[] syncWindow, int at, OggSegmentReceiver osr, boolean ignoreContinued) {
+    public static int sendSegmentsTo(byte[] syncWindow, int at, OggSegmentReceiver.Discardable osr, boolean ignoreContinued) {
         boolean ignoreFirstPacket = false;
         if ((syncWindow[at + OggPage.FIELD_FLAGS] & OggPage.FLAG_CONTINUED) == 0) {
             // not continued
@@ -181,11 +181,8 @@ public abstract class OggPage {
         for (int i = 0; i < segmentCount; i++) {
             int len = syncWindow[at + 27 + i] & 0xFF;
             // pass to segment receiver if not withheld
-            if (!ignoreFirstPacket) {
+            if (!ignoreFirstPacket)
                 osr.segment(syncWindow, ofs, (byte) len);
-                if (len != 255)
-                    osr.end();
-            }
             // update for finished packets
             if (len != 255) {
                 ignoreFirstPacket = false;
