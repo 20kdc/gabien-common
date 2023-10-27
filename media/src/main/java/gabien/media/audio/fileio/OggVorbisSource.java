@@ -16,6 +16,7 @@ import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.media.audio.AudioIOCRSet;
 import gabien.media.audio.AudioIOSource;
+import gabien.media.ogg.OggBufferedDemux;
 import gabien.media.ogg.OggBufferingInputStreamReader;
 import gabien.natives.VorbisDecoder;
 
@@ -57,20 +58,61 @@ public class OggVorbisSource extends AudioIOSource.SourceF32 {
 
     public static OggVorbisSource fromInputStream(InputStream inp, boolean close) throws IOException {
         try {
-            OggBufferingInputStreamReader isr = new OggBufferingInputStreamReader(inp);
-            LinkedList<byte[]> packets = isr.packets;
-            while (isr.packets.size() < 4) {
+            OggBufferingInputStreamReader isr;
+            OggBufferedDemux.Stream stream;
+            {
+                OggBufferedDemux demux = new OggBufferedDemux();
+                isr = new OggBufferingInputStreamReader(inp, demux);
+                // Assume a compliant unchained stream.
+                // This procedure should be able to deal with (read: ignore) Ogg Skeleton and other odd cases.
+                // It can't handle chained streams, but chained streams are weird.
+                isr.readStartingBOSPages();
+                // Attempt to identify a Vorbis stream (i.e. the one we'll be using)
+                // Do this by peeking at first packet of each stream
+                stream = null;
+                for (OggBufferedDemux.Stream st : demux.streams) {
+                    if (st.packets.size() > 0) {
+                        byte[] packet1 = st.packets.getFirst();
+                        if (packet1.length < 7)
+                            continue;
+                        if (packet1[0] != 1)
+                            continue;
+                        if (packet1[1] != 'v')
+                            continue;
+                        if (packet1[2] != 'o')
+                            continue;
+                        if (packet1[3] != 'r')
+                            continue;
+                        if (packet1[4] != 'b')
+                            continue;
+                        if (packet1[5] != 'i')
+                            continue;
+                        if (packet1[6] != 's')
+                            continue;
+                        stream = st;
+                        break;
+                    }
+                }
+                // That stream is now the only stream we will buffer
+                // (all other streams can now be GC'd)
+                if (stream == null)
+                    throw new IOException("No Vorbis stream could be identified from the BOS pages.");
+                isr.out = stream;
+            }
+            // Finish setup
+            LinkedList<byte[]> packets = stream.packets;
+            while (packets.size() < 4) {
                 if (!isr.readNextPage())
                     throw new IOException("Was unable to get header packets and a single data packet");
             }
             // granule pos of packet 4 (1st audio packet)
-            long initGranulePos = isr.lastGranulePos;
+            long initGranulePos = stream.lastGranulePos;
             // grab all packets
             while (isr.readNextPage());
             // do setup
-            byte[] id = isr.packets.removeFirst();
-            isr.packets.removeFirst();
-            byte[] setup = isr.packets.removeFirst();
+            byte[] id = packets.removeFirst();
+            packets.removeFirst();
+            byte[] setup = packets.removeFirst();
             VorbisDecoder res = new VorbisDecoder(id, 0, id.length, setup, 0, setup.length);
             return new OggVorbisSource(res, packets, initGranulePos);
         } finally {

@@ -156,4 +156,45 @@ public abstract class OggPage {
             return 0;
         return length;
     }
+
+    /**
+     * Forwards the current page's segments to the target receiver.
+     * Does not verify the page is valid.
+     * ignoreContinued is useful when seeking to avoid getting a first "half a packet".
+     * The return value indicates the amount of finished packets.
+     * This includes packets ignored by ignoreContinued.
+     * As such, if the return value is 0, and you passed ignoreContinued = true, continue to do so.
+     * Otherwise, set ignoreContinued = false.
+     */
+    public static int sendSegmentsTo(byte[] syncWindow, int at, OggSegmentReceiver osr, boolean ignoreContinued) {
+        boolean ignoreFirstPacket = false;
+        if ((syncWindow[at + OggPage.FIELD_FLAGS] & OggPage.FLAG_CONTINUED) == 0) {
+            // not continued
+            osr.discard();
+        } else {
+            // continued
+            ignoreFirstPacket = ignoreContinued;
+        }
+        int segmentCount = syncWindow[at + 26] & 0xFF;
+        int ofs = at + 27 + segmentCount;
+        int finishedPackets = 0;
+        for (int i = 0; i < segmentCount; i++) {
+            int len = syncWindow[at + 27 + i] & 0xFF;
+            // pass to segment receiver if not withheld
+            if (!ignoreFirstPacket) {
+                osr.segment(syncWindow, ofs, (byte) len);
+                if (len != 255)
+                    osr.end();
+            }
+            // update for finished packets
+            if (len != 255) {
+                ignoreFirstPacket = false;
+                finishedPackets++;
+            }
+            // and advance in data
+            ofs += len;
+        }
+        osr.invalidateStorage();
+        return finishedPackets;
+    }
 }

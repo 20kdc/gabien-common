@@ -8,28 +8,49 @@ package gabien.media.ogg;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedList;
 
 /**
- * Does less verification than it really should, but whatever...
+ * Separates an InputStream into Ogg pages.
  * Created 20th October, 2023.
  */
 public class OggBufferingInputStreamReader {
-    public final LinkedList<byte[]> packets = new LinkedList<>();
     private final byte[] chunkBuffer = new byte[512];
     private int chunkBufferPosition, chunkBufferRemaining;
     private final OggReader or = new OggReader();
+    // can't really change this around safely due to the chunk buffer...
     private final InputStream inp;
-    public long lastGranulePos;
+    // ...but can change this!
+    public OggPageReceiver out;
 
-    private final OggPacketsFromSegments opfs = new OggPacketsFromSegments((data, ofs, len) -> {
-        byte[] res = new byte[len];
-        System.arraycopy(data, ofs, res, 0, len);
-        packets.add(res);
-    });
-
-    public OggBufferingInputStreamReader(InputStream inp) {
+    public OggBufferingInputStreamReader(InputStream inp, OggPageReceiver opr) {
         this.inp = inp;
+        out = opr;
+    }
+
+    /**
+     * Reads initial BOS pages in a physical bitstream.
+     * Notably, does NOT consume the first 'data page'.
+     * Chaining is poorly-specified anyway.
+     * Does the language imply the logical bitstreams are concatenated or the physical bitstreams?
+     */
+    public void readStartingBOSPages() throws IOException {
+        while (true) {
+            if (chunkBufferRemaining > 0) {
+                or.addByteToSyncWindow(chunkBuffer[chunkBufferPosition++]);
+                chunkBufferRemaining--;
+                int len = OggPage.verifyAndGetLength(or.syncWindow, 0, or.amountOfDataInSyncWindow);
+                if (len > 0) {
+                    int flags = or.syncWindow[OggPage.FIELD_FLAGS];
+                    boolean isBOS = (flags & OggPage.FLAG_BOS) != 0;
+                    if (!isBOS)
+                        return;
+                    out.page(or.syncWindow, 0, len);
+                    or.skipSyncWindow(len);
+                }
+            } else if (!refillChunkBuffer()) {
+                return;
+            }
+        }
     }
 
     /**
@@ -42,18 +63,25 @@ public class OggBufferingInputStreamReader {
                 chunkBufferRemaining--;
                 int len = OggPage.verifyAndGetLength(or.syncWindow, 0, or.amountOfDataInSyncWindow);
                 if (len > 0) {
-                    lastGranulePos = OggPage.getGranulePos(or.syncWindow, 0);
-                    or.sendSegmentsTo(opfs, false);
+                    out.page(or.syncWindow, 0, len);
                     or.skipSyncWindow(len);
                     return true;
                 }
-            } else {
-                int amount = inp.read(chunkBuffer);
-                if (amount == -1)
-                    return false;
-                chunkBufferPosition = 0;
-                chunkBufferRemaining = amount;
+            } else if (!refillChunkBuffer()) {
+                return false;
             }
         }
+    }
+
+    /**
+     * Refills chunk buffer for more reading.
+     */
+    private boolean refillChunkBuffer() throws IOException {
+        int amount = inp.read(chunkBuffer);
+        if (amount == -1)
+            return false;
+        chunkBufferPosition = 0;
+        chunkBufferRemaining = amount;
+        return true;
     }
 }
