@@ -399,6 +399,13 @@ public abstract class UIElement extends LAFChain {
             return new LinkedList<UIElement>(allElements);
         }
 
+        /**
+         * Gets an Iterable. You promise not to mess with it while you're reading it.
+         */
+        protected final Iterable<UIElement> layoutGetElementsIterable() {
+            return allElements;
+        }
+
         @Override
         public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
             if (released)

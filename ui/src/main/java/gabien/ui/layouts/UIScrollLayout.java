@@ -62,17 +62,16 @@ public class UIScrollLayout extends UIElement.UIPanel {
      * Used in the two layout handlers below. 
      */
     private int getLengthForBreadth(int breadth) {
+        int total = 0;
+        Iterable<UIElement> contentsIterable = layoutGetElementsIterable();
         if (scrollbar.vertical) {
-            int total = 0;
-            for (UIElement p : layoutGetElements())
+            for (UIElement p : contentsIterable)
                 total += p.layoutGetHForW(breadth);
-            return total;
         } else {
-            int total = 0;
-            for (UIElement p : layoutGetElements())
+            for (UIElement p : contentsIterable)
                 total += p.layoutGetWForH(breadth);
-            return total;
         }
+        return total;
     }
 
     /**
@@ -119,14 +118,14 @@ public class UIScrollLayout extends UIElement.UIPanel {
         // The "layoutScrollbounds" at the bottom then fixes positions & allElements.
 
         if (scrollbar.vertical) {
-            for (UIElement p : layoutGetElements())
+            for (UIElement p : layoutGetElementsIterable())
                 if (p != scrollbar) {
                     Size pw = p.getWantedSize();
                     scrollBreadth = Math.max(scrollBreadth, pw.width);
                     scrollLength += pw.height;
                 }
         } else {
-            for (UIElement p : layoutGetElements())
+            for (UIElement p : layoutGetElementsIterable())
                 if (p != scrollbar) {
                     Size pw = p.getWantedSize();
                     scrollBreadth = Math.max(scrollBreadth, pw.height);
@@ -145,25 +144,22 @@ public class UIScrollLayout extends UIElement.UIPanel {
     protected void layoutRunImpl() {
         lastScrollPoint = -1;
         Size r = getSize();
+        int availableBreadth = scrollbar.vertical ? r.width : r.height;
+        int availableLength = scrollbar.vertical ? r.height : r.width;
+        int expectedLengthAtThisBreadth = getLengthForBreadth(availableBreadth); 
 
-        // The UIScrollLayout here gives a scenario assuming the scrollbar is not in use.
-        // What's possible is that an element or group of elements might flip between the two states,
-        //  dependent on width, which is altered indirectly by height via the scrollbar's usage.
-        // Now, this shouldn't be an issue so long as a greater width does not lead to a greater height.
-        // If a greater width leads to a lesser height, then it stays off.
-        // If a greater width leads to a greater height, then it'll loop.
-        // (Interchange width/height as makes sense.)
-
-        // The "layoutScrollbounds" at the bottom then fixes positions & allElements.
-
-        // Since the scrollbar is about to be resized, make sure we're allowed to use it
-        boolean hasScrollbar = layoutContainsElement(scrollbar);
-        if (scrollbar.vertical) {
-            if (hasScrollbar)
+        boolean hasScrollbar = availableLength < expectedLengthAtThisBreadth;
+        if (hasScrollbar) {
+            if (!layoutContainsElement(scrollbar))
+                layoutAddElement(scrollbar);
+            if (scrollbar.vertical) {
                 scrollbar.setForcedBounds(this, new Rect(r.width - sbSize, 0, sbSize, r.height));
-        } else {
-            if (hasScrollbar)
+            } else {
                 scrollbar.setForcedBounds(this, new Rect(0, r.height - sbSize, r.width, sbSize));
+            }
+        } else {
+            if (layoutContainsElement(scrollbar))
+                layoutRemoveElement(scrollbar);
         }
 
         int screenLength = scrollbar.vertical ? r.height : r.width;
