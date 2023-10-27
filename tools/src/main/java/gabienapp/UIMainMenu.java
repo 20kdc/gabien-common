@@ -99,12 +99,11 @@ public class UIMainMenu extends UIProxy {
         }));
         vsl.panelsAdd(new UITextButton("GaBIEn Credits", 16, () -> {
             UICredits uic = new UICredits(16, 16);
-            uic.setLAFParentOverride(GaBIEnUI.sysThemeRoot);
+            uic.setLAFParent(GaBIEnUI.sysThemeRoot);
             ui.accept(uic);
         }));
         vsl.panelsAdd(lbl);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
-        setLAFParentOverride(GaBIEnUI.sysThemeRoot);
     }
     public void copyRIFF(RIFFNode rn) {
         riffClipboard = rn.copy();

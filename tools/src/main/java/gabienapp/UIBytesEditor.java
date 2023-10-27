@@ -38,7 +38,6 @@ public class UIBytesEditor extends UIProxy {
         setRowCount(1);
         proxySetElement(new UISplitterLayout(usl, usb, false, 1), false);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
-        setLAFParentOverride(GaBIEnUI.sysThemeRoot);
         refresh();
     }
 

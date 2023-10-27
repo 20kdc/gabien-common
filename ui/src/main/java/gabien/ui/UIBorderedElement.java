@@ -18,8 +18,6 @@ import gabien.wsi.IPeripherals;
  * Created on February 16th, 2018.
  */
 public abstract class UIBorderedElement extends UIElement {
-    public static final int BORDER_TYPES = 14;
-
     private Theme.Attr<IBorder> borderType;
     private int borderWidth;
 

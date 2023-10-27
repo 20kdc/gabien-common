@@ -21,11 +21,20 @@ public abstract class LAFChain {
         // Nothing here
     }
 
-    private @Nullable LAFChain.Node lafParentOverride;
+    LAFChain(LAFChain.Node lafParent) {
+        // to prevent running a theme update on an incompletely initialized element:
+        // calculate the theme locally!
+        this.lafParent = lafParent;
+        if (lafParent != null)
+            lafParentHolder = lafParent.children.addWeak(this);
+        theme = calculateTheme();
+    }
+
+    private @Nullable LAFChain.Node lafParent;
     // This is what holds the LAFChain to the parent.
     // If the LAFChain would be GC'd, the holder gets finalized.
     // This disconnects things upstream.
-    private RefSyncSet<LAFChain>.Holder lafParentOverrideHolder;
+    private RefSyncSet<LAFChain>.Holder lafParentHolder;
 
     /**
      * Actual calculated theme.
@@ -40,27 +49,22 @@ public abstract class LAFChain {
 
     /**
      * Gets the theming parent.
-     * This mustn't be publicly accessible because that might allow "weird" overrides that don't call themeUpdate.
      */
-    @Nullable LAFChain getLAFParentInternal() {
-        return lafParentOverride;
-    }
-
     public final @Nullable LAFChain getLAFParent() {
-        return getLAFParentInternal();
+        return lafParent;
     }
 
     /**
-     * Sets the theming parent override.
+     * Sets the theming parent and updates themes.
      */
-    public void setLAFParentOverride(@Nullable LAFChain.Node parent) {
-        if (lafParentOverrideHolder != null) {
-           lafParentOverride.children.remove(lafParentOverrideHolder);
-           lafParentOverrideHolder = null;
+    public void setLAFParent(@Nullable LAFChain.Node parent) {
+        if (lafParentHolder != null) {
+           lafParent.children.remove(lafParentHolder);
+           lafParentHolder = null;
         }
-        lafParentOverride = parent;
-        if (lafParentOverride != null)
-            lafParentOverrideHolder = lafParentOverride.children.addWeak(this);
+        lafParent = parent;
+        if (lafParent != null)
+            lafParentHolder = lafParent.children.addWeak(this);
         themeUpdate();
     }
 
@@ -87,23 +91,26 @@ public abstract class LAFChain {
         themeUpdate();
     }
 
+    private final @NonNull Theme calculateTheme() {
+        Theme override = themeOverride;
+        LAFChain parent = lafParent;
+        if (override != null) {
+            return override;
+        } else if (parent != null) {
+            return parent.theme;
+        } else {
+            return Theme.ROOT;
+        }
+    }
+
     /**
      * Called when something occurs that might change the theme.
-     * Package-private; this method is only called here and in UIElement.java
+     * Package-private; this method is only called here.
      * This has to be called by the element parents (UIPanel, UIProxy).
      * This is so their children magically update.
      */
-    final void themeUpdate() {
-        @NonNull Theme newTheme;
-        Theme override = themeOverride;
-        LAFChain parent = getLAFParentInternal();
-        if (override != null) {
-            newTheme = override;
-        } else if (parent != null) {
-            newTheme = parent.theme;
-        } else {
-            newTheme = Theme.ROOT;
-        }
+    private final void themeUpdate() {
+        @NonNull Theme newTheme = calculateTheme();
         if (newTheme != theme) {
             // System.out.println("theme change " + theme + " -> " + newTheme + " @ " + this);
             theme = newTheme;

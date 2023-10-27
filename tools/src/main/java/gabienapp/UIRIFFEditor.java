@@ -60,7 +60,6 @@ public class UIRIFFEditor extends UIProxy {
         regenerateContents();
         menuBarAndMainPanel.setForcedBounds(null, new Rect(0, 0, 640, 480));
         proxySetElement(menuBarAndMainPanel, false);
-        setLAFParentOverride(GaBIEnUI.sysThemeRoot);
     }
     public void regenerateContents() {
         mainPanel.panelsClear();

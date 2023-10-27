@@ -9,7 +9,6 @@ package gabien.backend;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
-import gabien.GaBIEnUI;
 import gabien.wsi.WindowSpecs;
 import gabien.ui.UIElement;
 import gabien.ui.WindowCreatingUIElementConsumer;
@@ -46,7 +45,6 @@ public class EmulatedFileBrowser implements IGaBIEnFileBrowser {
         };
         // if this crashes, you're pretty doomed
         UIFileBrowser fb = new UIFileBrowser(browserDirectory, result, text, saving, GaBIEn.sysCoreFontSize, GaBIEn.sysCoreFontSize, initialName);
-        fb.setLAFParentOverride(GaBIEnUI.sysThemeRoot);
         wc.accept(fb);
         final Runnable tick = new Runnable() {
             double lastTime = GaBIEn.getTime();

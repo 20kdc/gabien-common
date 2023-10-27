@@ -7,6 +7,7 @@
 
 package gabien.ui;
 
+import gabien.GaBIEnUI;
 import gabien.render.IGrDriver;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
@@ -35,9 +36,7 @@ public abstract class UIElement extends LAFChain {
 
     private Rect elementBounds = Rect.ZERO;
 
-    private UIElement parent;
-    // Parent for LAF purposes. Changes earlier or later so that LAF can happen without wreaking recursive havoc.
-    private UIElement lafTmpParent;
+    private @Nullable UIElement parent;
 
     private Size wantedSize = Size.ZERO;
     // Used during construction & setForcedBounds.
@@ -56,10 +55,16 @@ public abstract class UIElement extends LAFChain {
 
     public UIElement() {
         // This is sufficient.
+        this(GaBIEnUI.sysThemeRoot);
+    }
+
+    public UIElement(LAFChain.Node lafParent) {
+        super(lafParent);
     }
 
     public UIElement(int width, int height) {
         // Simplifies things.
+        this();
         Rect sz = new Rect(0, 0, width, height);
         currentlyLayouting = true;
         setWantedSize(sz);
@@ -197,20 +202,11 @@ public abstract class UIElement extends LAFChain {
      * Internal parent attach/detach logic, ensures root attach/detach is correct
      */
     private void internalSetParent(UIElement newParent) {
-        if (parent == null) {
-            // Update theme early before we attach.
-            lafTmpParent = newParent;
-            // System.out.println("Theme update because of internalSetParent @ " + this);
-            themeUpdate();
-        }
         parent = newParent;
         if (newParent != null) {
             setAttachedToRoot(newParent.attachedToRootFlag);
         } else {
             setAttachedToRoot(false);
-            // Update theme late now we're not attached. 
-            lafTmpParent = newParent;
-            themeUpdate();
         }
     }
 
@@ -258,15 +254,6 @@ public abstract class UIElement extends LAFChain {
 
     public final UIElement getParent() {
         return parent;
-    }
-
-    @Override
-    @Nullable
-    LAFChain getLAFParentInternal() {
-        LAFChain c1 = super.getLAFParentInternal();
-        if (c1 != null)
-            return c1;
-        return lafTmpParent;
     }
 
     /**
@@ -521,13 +508,6 @@ public abstract class UIElement extends LAFChain {
             allElementsChanged = true;
             released = true;
         }
-
-        @Override
-        public void themeUpdateChildren() {
-            recacheElements();
-            for (UIElement uie : cachedAllElements)
-                uie.themeUpdate();
-        }
     }
 
     /**
@@ -626,11 +606,6 @@ public abstract class UIElement extends LAFChain {
         @Override
         public void onWindowClose() {
             currentElement.onWindowClose();
-        }
-
-        @Override
-        public void themeUpdateChildren() {
-            currentElement.themeUpdate();
         }
     }
 }
