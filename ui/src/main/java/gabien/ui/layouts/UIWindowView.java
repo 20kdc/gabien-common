@@ -62,7 +62,9 @@ public class UIWindowView extends UIElement {
     }
 
     @Override
-    public void render(IGrDriver igd) {
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer != UILayer.Content)
+            return;
         updateDesktopCache();
         for (IShell shl : desktopCache)
             shl.render(igd);

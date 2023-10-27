@@ -11,6 +11,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
@@ -71,7 +72,9 @@ public class UIThumbnail extends UIElement {
     }
 
     @Override
-    public void render(IGrDriver igd) {
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer != UILayer.Content)
+            return;
         viewedImage.drawScissoredTo(drawRect.x, drawRect.y, drawRect.width, drawRect.height, igd);
     }
 }

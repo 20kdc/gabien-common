@@ -15,6 +15,7 @@ import gabien.render.IImage;
 import gabien.text.SimpleImageGridFont;
 import gabien.ui.IPointerReceiver;
 import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.Rect;
@@ -111,7 +112,9 @@ public class UIScrollbar extends UIElement {
     }
 
     @Override
-    public void render(IGrDriver igd) {
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer != UILayer.Content)
+            return;
         // Negative and Positive Buttons
         Theme theme = getTheme();
         drawNPB(theme, igd, negativeButtonTimer, boxNegative, vertical ? 0 : 21);

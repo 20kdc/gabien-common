@@ -13,6 +13,7 @@ import gabien.atlas.AllAtlasStrategies;
 import gabien.atlas.IAtlasStrategy;
 import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IDesktopPeripherals;
@@ -85,7 +86,9 @@ public class UIAtlasTester extends UIElement {
     }
 
     @Override
-    protected void render(IGrDriver igd) {
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer != UILayer.Content)
+            return;
         if (atlas == null)
             return;
         int amount = 0;

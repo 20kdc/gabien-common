@@ -126,24 +126,11 @@ public abstract class UIElement extends LAFChain {
     public abstract void update(double deltaTime, boolean selected, IPeripherals peripherals);
 
     public void renderLayer(IGrDriver igd, UILayer layer) {
-        if (layer == UILayer.Content)
-            render(igd);
     }
 
     public final void renderAllLayers(IGrDriver igd) {
         for (UILayer layer : LAYERS)
             renderLayer(igd, layer);
-    }
-
-    /**
-     * DO NOT CALL THIS ANYMORE. Call one of:
-     * 1. renderLayer
-     * 2. renderAllLayers
-     * DEPENDING ON USECASE.
-     * You're still okay to override this if you want to draw on the Content layer.
-     */
-    protected void render(IGrDriver igd) {
-        // Nothing here!
     }
 
     /**
@@ -447,11 +434,6 @@ public abstract class UIElement extends LAFChain {
         }
 
         @Override
-        protected final void render(IGrDriver igd) {
-            // Disabled to stop shenanigans
-        }
-
-        @Override
         public void setAttachedToRoot(boolean attached) {
             super.setAttachedToRoot(attached);
             recacheElements();
@@ -633,11 +615,6 @@ public abstract class UIElement extends LAFChain {
         @Override
         public void renderLayer(IGrDriver igd, UILayer layer) {
             currentElement.renderLayer(igd, layer);
-        }
-
-        @Override
-        protected final void render(IGrDriver igd) {
-            // Disabled to stop shenanigans
         }
 
         @Override

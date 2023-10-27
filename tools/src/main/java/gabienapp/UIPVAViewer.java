@@ -11,6 +11,7 @@ import gabien.pva.PVAFile;
 import gabien.pva.PVARenderer;
 import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
@@ -32,7 +33,9 @@ public class UIPVAViewer extends UIElement {
     }
 
     @Override
-    protected void render(IGrDriver igd) {
+    public void renderLayer(IGrDriver igd, UILayer layer) {
+        if (layer != UILayer.Content)
+            return;
         Size sz = getSize();
         int w = sz.width;
         int h = sz.height;

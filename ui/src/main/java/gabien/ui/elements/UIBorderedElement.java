@@ -122,11 +122,6 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     @Override
-    protected final void render(IGrDriver igd) {
-        // Disabled to stop shenanigans
-    }
-
-    @Override
     public final void update(double deltaTime, boolean selected, IPeripherals peripherals) {
         peripherals.performOffset(contentsRelativeInputBounds.x, contentsRelativeInputBounds.y);
         updateContents(deltaTime, selected, peripherals);
