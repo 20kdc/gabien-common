@@ -123,6 +123,10 @@
 !thirdparty/stb_vorbis_modified/stb_vorbis.c
 !thirdparty/stb_vorbis_modified/main.c
 !thirdparty/stb_vorbis_modified/make-vt
+!thirdparty/minimp3_modified
+!thirdparty/minimp3_modified/LICENSE
+!thirdparty/minimp3_modified/minimp3.h
+!thirdparty/minimp3_modified/README.md
 
 !tools
 !tools/
