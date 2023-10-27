@@ -29,6 +29,7 @@ public class UITextButton extends UIButton<UITextButton> {
         text = tex;
         onClick = click;
 
+        labelDoUpdate();
         // Same reasoning as in UILabel
         setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEnUI.sysThemeRoot.getTheme(), tex, h, getBorderWidth())));
         // This overrides the previous wanted size!
@@ -38,6 +39,10 @@ public class UITextButton extends UIButton<UITextButton> {
     @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         super.updateContents(deltaTime, selected, peripherals);
+        labelDoUpdate();
+    }
+
+    public void labelDoUpdate() {
         // See UILabel for the reasoning here.
         Size sz = contents.update(getTheme(), getSize(), getBorderWidth(), text);
         if (sz != null)

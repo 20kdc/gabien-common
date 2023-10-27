@@ -39,6 +39,7 @@ public class UILabel extends UIBorderedElement {
         contents = new Contents(h, spacer);
         text = txt;
 
+        labelDoUpdate();
         layoutRecalculateMetrics();
         setForcedBounds(null, new Rect(getWantedSize()));
     }
@@ -81,6 +82,7 @@ public class UILabel extends UIBorderedElement {
         labelDoUpdate();
     }
 
+    // Allows for overrides and such.
     public void labelDoUpdate() {
         Size sz = contents.update(getTheme(), getSize(), getBorderWidth(), text);
         if (sz != null)

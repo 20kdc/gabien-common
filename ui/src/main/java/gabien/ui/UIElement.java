@@ -648,9 +648,7 @@ public abstract class UIElement extends LAFChain {
 
         @Override
         protected void layoutRunImpl() {
-            boolean cannotSFB = currentElement.getSize().sizeEquals(getSize());
-            if (!cannotSFB)
-                currentElement.setForcedBounds(this, new Rect(getSize()));
+            currentElement.setForcedBounds(this, new Rect(getSize()));
         }
 
         @Override
