@@ -1,3 +1,5 @@
 #!/bin/sh
-gcc main.c -o vtest -lm -logg
+gcc -O4 main.c -o vtest -lm -logg
+# just outta curiousity
+gcc -O4 -S main.c 2> /dev/null
 
