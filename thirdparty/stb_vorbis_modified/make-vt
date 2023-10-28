@@ -1,5 +1,5 @@
 #!/bin/sh
-gcc -O4 main.c -o vtest -lm -logg
+clang -O3 main.c -o vtest -lm -logg
 # just outta curiousity
-gcc -O4 -S main.c 2> /dev/null
+clang -O3 -S main.c 2> /dev/null
 
