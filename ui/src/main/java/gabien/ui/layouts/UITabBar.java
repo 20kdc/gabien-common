@@ -246,8 +246,9 @@ public class UITabBar extends UIElement.UIPanel {
 
     @Override
     public int layoutGetHForW(int width) {
-        if (width < calculateTabBarWidth())
-            return wantedHeight + tabScroller.getWantedSize().height;
+        if (tabScroller != null)
+            if (width < calculateTabBarWidth())
+                return wantedHeight + tabScroller.getWantedSize().height;
         return wantedHeight;
     }
 

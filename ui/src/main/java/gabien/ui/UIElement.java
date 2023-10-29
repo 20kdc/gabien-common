@@ -323,11 +323,20 @@ public abstract class UIElement extends LAFChain {
         writer.visitBoolean(wantedSizeIsOverride, DatumSrcLoc.NONE);
         writer.visitComment("wantedSize");
         int wfh = layoutGetWForH(wantedSize.height);
+
         if (wfh != wantedSize.width)
             writer.visitComment("inconsistent getWforH = " + wfh);
         int hfw = layoutGetHForW(wantedSize.width);
         if (hfw != wantedSize.height)
             writer.visitComment("inconsistent getHforW = " + hfw);
+
+        wfh = layoutGetWForH(elementBounds.height);
+        if (wfh != elementBounds.width)
+            writer.visitComment(elementBounds.width + " != getWforH(" + elementBounds.height + ") = " + wfh);
+
+        hfw = layoutGetHForW(elementBounds.width);
+        if (hfw != elementBounds.height)
+            writer.visitComment(elementBounds.height + " != getHforW(" + elementBounds.width + ") = " + hfw);
     }
 
     /**
@@ -491,15 +500,9 @@ public abstract class UIElement extends LAFChain {
         public static void scissoredRender(UIElement uie, IGrDriver igd, UILayer layer) {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
-            // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
-            // YOU HAVE BEEN WARNED.
-            int left = x;
-            int top = y;
-            int right = left + uie.elementBounds.width;
-            int bottom = top + uie.elementBounds.height;
 
-            float[] trs = igd.getTRS();
-            int[] scissor = igd.getScissor();
+            float[] trs = igd.trs;
+            int[] scissor = igd.scissor;
             float osTX = trs[0];
             float osTY = trs[1];
             float osSX = trs[2];
@@ -509,20 +512,12 @@ public abstract class UIElement extends LAFChain {
             int osRight = scissor[2];
             int osBottom = scissor[3];
 
+            igd.applyScissor(x, y, uie.elementBounds.width, uie.elementBounds.height);
+
             float scaledX = x * osSX;
             float scaledY = y * osSY;
-
-            left = (int) Math.max(osTX + scaledX, Math.max(osLeft, 0));
-            top = (int) Math.max(osTY + scaledY, Math.max(osTop, 0));
-            right = (int) Math.min(osTX + (right * osSX), osRight);
-            bottom = (int) Math.min(osTY + (bottom * osSY), osBottom);
-
             trs[0] += scaledX;
             trs[1] += scaledY;
-            scissor[0] = left;
-            scissor[1] = top;
-            scissor[2] = Math.max(left, right);
-            scissor[3] = Math.max(top, bottom);
             uie.renderLayer(igd, layer);
 
             trs[0] = osTX;

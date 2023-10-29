@@ -422,6 +422,41 @@ public abstract class IGrDriver extends RenderTarget {
     }
 
     /**
+     * Alters the scissor rectangle to crop it further.
+     * Values are transformed based on the TRS buffer.
+     */
+    public final void applyScissor(float x, float y, float w, float h) {
+        // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
+        // YOU HAVE BEEN WARNED.
+        float left = x;
+        float top = y;
+        float right = left + w;
+        float bottom = top + h;
+
+        float osTX = trs[0];
+        float osTY = trs[1];
+        float osSX = trs[2];
+        float osSY = trs[3];
+        int osLeft = scissor[0];
+        int osTop = scissor[1];
+        int osRight = scissor[2];
+        int osBottom = scissor[3];
+
+        float scaledX = x * osSX;
+        float scaledY = y * osSY;
+
+        int leftI = (int) Math.max((int) (osTX + scaledX), osLeft);
+        int topI = (int) Math.max((int) (osTY + scaledY), osTop);
+        int rightI = (int) Math.min((int) (osTX + (right * osSX)), osRight);
+        int bottomI = (int) Math.min((int) (osTY + (bottom * osSY)), osBottom);
+
+        scissor[0] = leftI;
+        scissor[1] = topI;
+        scissor[2] = Math.max(leftI, rightI);
+        scissor[3] = Math.max(topI, bottomI);
+    }
+
+    /**
      * Gets the local translate/scale buffer, in the order: tX, tY, sX, sY
      * The translation is independent of the scale.
      */
