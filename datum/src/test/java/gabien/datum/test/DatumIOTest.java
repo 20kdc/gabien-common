@@ -134,7 +134,7 @@ public class DatumIOTest {
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
         dw.visitTree(input, DatumSrcLoc.NONE);
-        assertEquals("((moku sina)li(pona)(tawa mi)#t #f #{}# \\#escapethis \\1234 #nil 0.125\"Hello\\r\\n\\t\u5000\ud800\udc00\"(quote hi))", sw.toString());
+        assertEquals("((moku sina) li (pona) (tawa mi) #t #f #{}# \\#escapethis \\1234 #nil 0.125 \"Hello\\r\\n\\t\u5000\ud800\udc00\" (quote hi))", sw.toString());
     }
 
 }
