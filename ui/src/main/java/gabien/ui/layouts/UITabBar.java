@@ -16,6 +16,7 @@ import gabien.ui.UILayer;
 import gabien.ui.elements.UIBorderedElement;
 import gabien.ui.elements.UIScrollbar;
 import gabien.ui.theming.IBorder;
+import gabien.ui.theming.IIcon;
 import gabien.ui.theming.Theme;
 
 import java.util.HashSet;
@@ -466,9 +467,7 @@ public class UITabBar extends UIElement.UIPanel {
         super.handleMousewheel(x, y, north);
     }
 
-    public interface TabIcon {
-        void draw(IGrDriver igd, int x, int y, int size);
-
+    public interface TabIcon extends IIcon {
         // The 'parent' instance provided must be usable to remove the tab.
         void click(Tab parent);
     }
