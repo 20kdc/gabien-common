@@ -9,14 +9,12 @@ package gabien.ui.elements;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.GaBIEn;
 import gabien.render.IGrDriver;
-import gabien.render.IImage;
-import gabien.text.SimpleImageGridFont;
 import gabien.ui.IPointerReceiver;
 import gabien.ui.UIElement;
 import gabien.ui.UILayer;
 import gabien.ui.theming.IBorder;
+import gabien.ui.theming.IIcon;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
@@ -117,8 +115,8 @@ public class UIScrollbar extends UIElement {
             return;
         // Negative and Positive Buttons
         Theme theme = getTheme();
-        drawNPB(theme, igd, negativeButtonTimer, boxNegative, vertical ? 0 : 21);
-        drawNPB(theme, igd, positiveButtonTimer, boxPositive, vertical ? 7 : 14);
+        drawNPB(theme, igd, negativeButtonTimer, boxNegative, vertical ? Theme.IC_ARROW_UP : Theme.IC_ARROW_LEFT);
+        drawNPB(theme, igd, positiveButtonTimer, boxPositive, vertical ? Theme.IC_ARROW_DOWN : Theme.IC_ARROW_RIGHT);
         if (boxCarriage != null) {
             // Carriage
             UIBorderedElement.drawBorder(theme, igd, Theme.B_SBTRAY, carriageBorder, boxCarriage);
@@ -136,21 +134,16 @@ public class UIScrollbar extends UIElement {
         }
     }
 
-    private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, int bump) {
+    private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, Theme.Attr<IIcon> icoAttr) {
         boolean down = timer > 0;
         Theme.Attr<IBorder> borderId = down ? Theme.B_BTNP : Theme.B_BTN;
-        SimpleImageGridFont fontF = (SimpleImageGridFont) GaBIEn.engineFonts.f8;
-        IImage font = UIBorderedElement.getBlackTextFlag(theme, borderId) ? fontF.fontBlack : fontF.fontWhite;
-        int iconSize = 7;
-        int maxIconSize = Math.min(box.width, box.height) - (carriageBorder * 2);
-        int iconSizeScale = maxIconSize / iconSize;
-        if (iconSizeScale > 0)
-            iconSize *= iconSizeScale;
+        int iconSize = Math.min(box.width, box.height) - (carriageBorder * 2);
         int yOffset = 0;
         if (UIBorderedElement.getMoveDownFlag(theme, borderId))
             yOffset += carriageBorder;
         UIBorderedElement.drawBorder(theme, igd, borderId, carriageBorder, box.x, box.y + yOffset, box.width, box.height);
-        igd.blitScaledImage(56 + bump, 7, 7, 7, box.x + ((box.width - iconSize) / 2), box.y + yOffset + ((box.height - iconSize) / 2), iconSize, iconSize, font);
+        IIcon icon = icoAttr.get(getTheme());
+        icon.draw(igd, box.x + ((box.width - iconSize) / 2), box.y + yOffset + ((box.height - iconSize) / 2), iconSize);
     }
 
     @Override

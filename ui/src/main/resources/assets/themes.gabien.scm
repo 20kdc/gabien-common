@@ -9,6 +9,12 @@
 
 iThemes? (img "themes.png")
 
+; Define the four light-mode arrows.
+icLightDefaultArrowU? (defaultArrowIcon 0 0 0 0 1)
+icLightDefaultArrowR? (defaultArrowIcon 1 0 0 0 1)
+icLightDefaultArrowD? (defaultArrowIcon 2 0 0 0 1)
+icLightDefaultArrowL? (defaultArrowIcon 3 0 0 0 1)
+
 ; Define each individual theme as a region of the main PNG file.
 
 iT0? (reg iThemes (rect 0  0 168 18))
@@ -30,6 +36,15 @@ rB10? (rect 120 0 12 18)
 rB11? (rect 132 0 12 18)
 rB12? (rect 144 0 12 18)
 rB13? (rect 156 0 12 18)
+
+; Common light-mode definitions
+tLightModeCommon (theme
+	parent tRoot
+	arrowUp icLightDefaultArrowU
+	arrowRight icLightDefaultArrowR
+	arrowDown icLightDefaultArrowD
+	arrowLeft icLightDefaultArrowL
+)
 
 t0? (theme
 	parent tRoot
@@ -139,7 +154,7 @@ t1? (theme
 )
 
 t2? (theme
-	parent tRoot
+	parent tLightModeCommon
 	btn (border
 		(reg iT2 rB0)
 		tiled lightBkg

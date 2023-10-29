@@ -90,6 +90,32 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
         });
         handlers.put("theme", Theme.handler);
         handlers.put("border", Theme.brHandler);
+        handlers.put("defaultArrowIcon", (k, parent, resCtx) -> {
+            return new DatumSeqVisitor() {
+                public int rotation;
+                public float r, g, b, a;
+                @Override
+                public DatumVisitor handle(int idx) {
+                    if (idx == 0)
+                        return resCtx.genVisitor((val, ign) -> rotation = DatumTreeUtils.cInt(val), null);
+                    if (idx == 1)
+                        return resCtx.genVisitor((val, ign) -> r = DatumTreeUtils.cFloat(val), null);
+                    if (idx == 2)
+                        return resCtx.genVisitor((val, ign) -> g = DatumTreeUtils.cFloat(val), null);
+                    if (idx == 3)
+                        return resCtx.genVisitor((val, ign) -> b = DatumTreeUtils.cFloat(val), null);
+                    if (idx == 4)
+                        return resCtx.genVisitor((val, ign) -> a = DatumTreeUtils.cFloat(val), null);
+                    return DatumInvalidVisitor.INSTANCE;
+                }
+                @Override
+                public void visitEnd(DatumSrcLoc srcLoc) {
+                    if (seqPos != 5)
+                        throw new RuntimeException("Can't finish defaultArrowIcon yet @ " + srcLoc);
+                    parent.visitTree(new DefaultArrowIcon(rotation, r, g, b, a), srcLoc);
+                }
+            };
+        });
     }
 
     public ThemingResCtx() {
