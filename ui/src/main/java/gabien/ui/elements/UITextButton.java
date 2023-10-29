@@ -9,9 +9,7 @@ package gabien.ui.elements;
 
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.GaBIEnUI;
 import gabien.render.IGrDriver;
-import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
@@ -30,9 +28,6 @@ public class UITextButton extends UIButton<UITextButton> {
         onClick = click;
 
         labelDoUpdate();
-        // Same reasoning as in UILabel
-        setForcedBounds(null, new Rect(getRecommendedTextSize(GaBIEnUI.sysThemeRoot.getTheme(), tex, h, getBorderWidth())));
-        // This overrides the previous wanted size!
         forceToRecommended();
     }
 

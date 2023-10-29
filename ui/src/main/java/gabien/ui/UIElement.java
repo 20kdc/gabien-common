@@ -8,6 +8,8 @@
 package gabien.ui;
 
 import gabien.GaBIEnUI;
+import gabien.datum.DatumSrcLoc;
+import gabien.datum.DatumWriter;
 import gabien.render.IGrDriver;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
@@ -307,6 +309,28 @@ public abstract class UIElement extends LAFChain {
     }
 
     /**
+     * Dumps this UI element.
+     */
+    public void debugDumpUITree(DatumWriter writer) {
+        writer.visitId(getClass().getSimpleName(), DatumSrcLoc.NONE);
+        writer.visitInt(elementBounds.x, DatumSrcLoc.NONE);
+        writer.visitInt(elementBounds.y, DatumSrcLoc.NONE);
+        writer.visitInt(elementBounds.width, DatumSrcLoc.NONE);
+        writer.visitInt(elementBounds.height, DatumSrcLoc.NONE);
+        writer.visitComment(this.toString());
+        writer.visitInt(wantedSize.width, DatumSrcLoc.NONE);
+        writer.visitInt(wantedSize.height, DatumSrcLoc.NONE);
+        writer.visitBoolean(wantedSizeIsOverride, DatumSrcLoc.NONE);
+        writer.visitComment("wantedSize");
+        int wfh = layoutGetWForH(wantedSize.height);
+        if (wfh != wantedSize.width)
+            writer.visitComment("inconsistent getWforH = " + wfh);
+        int hfw = layoutGetHForW(wantedSize.width);
+        if (hfw != wantedSize.height)
+            writer.visitComment("inconsistent getHforW = " + hfw);
+    }
+
+    /**
      * UIPanel is the basis of all layouts.
      */
     public static abstract class UIPanel extends UIElement {
@@ -560,6 +584,19 @@ public abstract class UIElement extends LAFChain {
             allElementsChanged = true;
             released = true;
         }
+
+        @Override
+        public void debugDumpUITree(DatumWriter writer) {
+            super.debugDumpUITree(writer);
+            for (UIElement uie : cachedAllElements) {
+                writer.visitList(DatumSrcLoc.NONE);
+                writer.indent++;
+                uie.debugDumpUITree(writer);
+                writer.indent--;
+                writer.visitEnd(DatumSrcLoc.NONE);
+                writer.visitNewline();
+            }
+        }
     }
 
     /**
@@ -659,6 +696,17 @@ public abstract class UIElement extends LAFChain {
         @Override
         public void onWindowClose() {
             currentElement.onWindowClose();
+        }
+
+        @Override
+        public void debugDumpUITree(DatumWriter writer) {
+            super.debugDumpUITree(writer);
+            writer.visitList(DatumSrcLoc.NONE);
+            writer.indent++;
+            currentElement.debugDumpUITree(writer);
+            writer.indent--;
+            writer.visitEnd(DatumSrcLoc.NONE);
+            writer.visitNewline();
         }
     }
 }

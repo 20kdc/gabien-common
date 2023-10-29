@@ -11,16 +11,26 @@ import java.io.StringWriter;
 
 /**
  * Writes out a Datum (or a stream of them) to a Writer.
+ * Includes utilities for pretty-printed writing.
+ * But due to the formatting-varying nature of Datum, will not pretty-print totally automatically.
  * Created 15th February 2023.
  */
 public class DatumWriter extends DatumEncodingVisitor {
     protected final Appendable base;
-    protected boolean needSpacing = false;
+    protected SpacingState queued = SpacingState.None;
+
+    /**
+     * Current indentation level. Turns into tabs/etc.
+     */
+    public int indent = 0;
 
     public DatumWriter(Appendable base) {
         this.base = base;
     }
 
+    /**
+     * Converts an object to string with the minimum required spacing.
+     */
     public static String objectToString(Object obj) {
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
@@ -36,11 +46,14 @@ public class DatumWriter extends DatumEncodingVisitor {
         }
     }
 
-    protected void emitSpacingIfNeeded() {
-        if (needSpacing) {
+    protected void emitQueued(boolean listEnd) {
+        if (queued == SpacingState.QueuedIndent) {
+            for (int i = 0; i < indent; i++)
+                putChar('\t');
+        } else if (queued == SpacingState.AfterToken && !listEnd) {
             putChar(' ');
-            needSpacing = false;
         }
+        queued = SpacingState.None;
     }
 
     private void putStringContent(String content, char delimiter) {
@@ -63,39 +76,53 @@ public class DatumWriter extends DatumEncodingVisitor {
         }
     }
 
+    /**
+     * Writes a line comment (can contain newlines, these will be handled), followed by newline.
+     */
     public void visitComment(String comment) {
-        emitSpacingIfNeeded();
+        emitQueued(false);
         putChar(';');
         putChar(' ');
         for (char c : comment.toCharArray()) {
-            putChar(c);
             if (c == '\n') {
+                visitNewline();
+                emitQueued(false);
                 putChar(';');
                 putChar(' ');
+            } else {
+                putChar(c);
             }
         }
+        visitNewline();
+    }
+
+    /**
+     * Writes a newline.
+     */
+    public void visitNewline() {
         putChar('\n');
-        needSpacing = false;
+        queued = SpacingState.QueuedIndent;
     }
 
     @Override
     public void visitString(String s, DatumSrcLoc srcLoc) {
+        emitQueued(false);
         putChar('"');
         putStringContent(s, '"');
         putChar('"');
-        needSpacing = false;
+        queued = SpacingState.AfterToken;
     }
 
     @Override
     public void visitId(String s, DatumSrcLoc srcLoc) {
-        emitSpacingIfNeeded();
+        emitQueued(false);
         if (s.length() == 0) {
             // Emit #{}# to work around this
             putChar('#');
             putChar('{');
             putChar('}');
             putChar('#');
-            needSpacing = true;
+            queued = SpacingState.AfterToken;
             return;
         }
         boolean isFirst = true;
@@ -113,7 +140,7 @@ public class DatumWriter extends DatumEncodingVisitor {
             putChar(c);
             isFirst = false;
         }
-        needSpacing = true;
+        queued = SpacingState.AfterToken;
     }
 
     private void visitUnknownPID(DatumCharClass dcc, String s) {
@@ -121,7 +148,7 @@ public class DatumWriter extends DatumEncodingVisitor {
             throw new RuntimeException("Cannot write an empty " + dcc + ".");
         if (DatumCharClass.identify(s.charAt(0)) != dcc)
             throw new RuntimeException("Cannot write a " + dcc + " with '" + s.charAt(0) + "' at the start.");
-        emitSpacingIfNeeded();
+        emitQueued(false);
         // Write directly
         for (char c : s.toCharArray()) {
             DatumCharClass cc = DatumCharClass.identify(c);
@@ -129,7 +156,7 @@ public class DatumWriter extends DatumEncodingVisitor {
                 putChar('\\');
             putChar(c);
         }
-        needSpacing = true;
+        queued = SpacingState.AfterToken;
     }
 
     @Override
@@ -162,16 +189,32 @@ public class DatumWriter extends DatumEncodingVisitor {
         visitNumericUnknown(raw, srcLoc);
     }
 
+    /**
+     * Visits a list.
+     * For DatumWriter there is an API guarantee that the returned writer will always be the callee.
+     */
     @Override
-    public DatumVisitor visitList(DatumSrcLoc srcLoc) {
+    public DatumWriter visitList(DatumSrcLoc srcLoc) {
+        emitQueued(false);
         putChar('(');
-        needSpacing = false;
+        queued = SpacingState.None;
         return this;
     }
 
+    /**
+     * Ends a list.
+     */
     @Override
     public void visitEnd(DatumSrcLoc srcLoc) {
+        emitQueued(true);
         putChar(')');
-        needSpacing = false;
+        queued = SpacingState.AfterToken;
+    }
+
+    protected enum SpacingState {
+        None,
+        QueuedIndent,
+        // After a token (that isn't a list start, for "(example)" kinda thing)
+        AfterToken
     }
 }

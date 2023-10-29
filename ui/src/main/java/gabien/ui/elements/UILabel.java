@@ -16,7 +16,6 @@ import gabien.ui.FontManager;
 import gabien.ui.LAFChain;
 import gabien.ui.theming.IBorder;
 import gabien.ui.theming.Theme;
-import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
@@ -40,8 +39,7 @@ public class UILabel extends UIBorderedElement {
         text = txt;
 
         labelDoUpdate();
-        layoutRecalculateMetrics();
-        setForcedBounds(null, new Rect(getWantedSize()));
+        forceToRecommended();
     }
 
     public UILabel centred() {

@@ -7,6 +7,8 @@
 
 package gabien.ui.layouts;
 
+import gabien.datum.DatumSrcLoc;
+import gabien.datum.DatumWriter;
 import gabien.render.IGrDriver;
 import gabien.ui.FontManager;
 import gabien.ui.IPointerReceiver;
@@ -168,6 +170,19 @@ public class UIWindowView extends UIElement {
             s.setAttachedToRoot(attached);
     }
 
+    @Override
+    public void debugDumpUITree(DatumWriter writer) {
+        super.debugDumpUITree(writer);
+        for (IShell s : desktopCache) {
+            writer.visitList(DatumSrcLoc.NONE);
+            writer.indent++;
+            s.debugDumpUITree(writer);
+            writer.indent--;
+            writer.visitEnd(DatumSrcLoc.NONE);
+            writer.visitNewline();
+        }
+    }
+
     // Represents a surface that controls its own position and has complex hit detection.
     // Must be an interface so that an extension of Tab can implement it.
     public interface IShell {
@@ -183,6 +198,8 @@ public class UIWindowView extends UIElement {
         void removed(RemoveReason reason);
 
         void setAttachedToRoot(boolean attached);
+
+        void debugDumpUITree(DatumWriter writer);
     }
 
     public enum RemoveReason {
@@ -393,6 +410,11 @@ public class UIWindowView extends UIElement {
         public void setAttachedToRoot(boolean attached) {
             contents.setAttachedToRoot(attached);
         }
+
+        @Override
+        public void debugDumpUITree(DatumWriter writer) {
+            contents.debugDumpUITree(writer);
+        }
     }
 
     public static class ElementShell implements IShell {
@@ -459,6 +481,11 @@ public class UIWindowView extends UIElement {
         @Override
         public void setAttachedToRoot(boolean attached) {
             uie.setAttachedToRoot(attached);
+        }
+
+        @Override
+        public void debugDumpUITree(DatumWriter writer) {
+            uie.debugDumpUITree(writer);
         }
     }
 
