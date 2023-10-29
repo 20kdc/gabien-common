@@ -228,6 +228,10 @@ public abstract class UIElement extends LAFChain {
                 wantedSize = adj;
             // Metrics changed, parent needs to know.
             if (parent != null) {
+                // This being called when it shouldn't is bad for perf.
+                // In particular it should nearly never be called frame-by-frame.
+                // It should also nearly never be called when resizing.
+                //System.out.println("GaBIEnUI: escalating layout from " + this);
                 parent.layoutRecalculateMetrics();
             } else {
                 layoutRun();
