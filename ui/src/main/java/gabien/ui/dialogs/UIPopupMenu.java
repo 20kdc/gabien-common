@@ -36,15 +36,13 @@ public class UIPopupMenu extends UIElement.UIProxy {
         int i = 0;
         for (final Entry ent : entries) {
             final int fi = i++;
-            UITextButton utb = new UITextButton(ent.text, h, new Runnable() {
-                @Override
-                public void run() {
-                    optionExecute(fi);
-                    ent.action.run();
-                }
+            UITextButton utb = new UITextButton(ent.text, h, () -> {
+                optionExecute(fi);
+                ent.action.run();
             });
             usl.panelsAdd(utb);
         }
+        usl.panelsFinished();
         proxySetElement(usl, true);
         requestResize = rsz;
     }
@@ -56,15 +54,13 @@ public class UIPopupMenu extends UIElement.UIProxy {
         UIScrollLayout usl = new UIScrollLayout(true, sh);
         for (int i = 0; i < strings.length; i++) {
             final int fi = i;
-            UITextButton utb = new UITextButton(strings[i], h, new Runnable() {
-                @Override
-                public void run() {
-                    optionExecute(fi);
-                    tilesets[fi].run();
-                }
+            UITextButton utb = new UITextButton(strings[i], h, () -> {
+                optionExecute(fi);
+                tilesets[fi].run();
             });
             usl.panelsAdd(utb);
         }
+        usl.panelsFinished();
         proxySetElement(usl, true);
         requestResize = rsz;
     }

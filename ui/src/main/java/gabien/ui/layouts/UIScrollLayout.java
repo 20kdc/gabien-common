@@ -26,10 +26,9 @@ public class UIScrollLayout extends UIElement.UIPanel {
     // This is set to the scrollbar size, in full.
     private int sbSize;
     // The total 'vertical' (for a vscrollbar) area that the contents cover.
+    // This is dynamic (adjusted based on current breadth!!!).
+    // Thus it is calculated in layoutRunImpl.
     private int scrollLength = 0;
-    // Doesn't control any actual scrollbar, just used to control wanted size.
-    // Includes scrollbar.
-    private int scrollBreadth = 0;
 
     private double lastScrollPoint = -1;
     private boolean earlyForceRunLayout = false;
@@ -66,10 +65,12 @@ public class UIScrollLayout extends UIElement.UIPanel {
         Iterable<UIElement> contentsIterable = layoutGetElementsIterable();
         if (scrollbar.vertical) {
             for (UIElement p : contentsIterable)
-                total += p.layoutGetHForW(breadth);
+                if (p != scrollbar)
+                    total += p.layoutGetHForW(breadth);
         } else {
             for (UIElement p : contentsIterable)
-                total += p.layoutGetWForH(breadth);
+                if (p != scrollbar)
+                    total += p.layoutGetWForH(breadth);
         }
         return total;
     }
@@ -104,8 +105,8 @@ public class UIScrollLayout extends UIElement.UIPanel {
     @Override
     protected @Nullable Size layoutRecalculateMetricsImpl() {
         earlyForceRunLayout = false;
-        scrollLength = 0;
-        scrollBreadth = 0;
+        int idealLength = 0;
+        int idealBreadth = 0;
 
         // The UIScrollLayout here gives a scenario assuming the scrollbar is not in use.
         // What's possible is that an element or group of elements might flip between the two states,
@@ -121,35 +122,35 @@ public class UIScrollLayout extends UIElement.UIPanel {
             for (UIElement p : layoutGetElementsIterable())
                 if (p != scrollbar) {
                     Size pw = p.getWantedSize();
-                    scrollBreadth = Math.max(scrollBreadth, pw.width);
-                    scrollLength += pw.height;
+                    idealBreadth = Math.max(idealBreadth, pw.width);
+                    idealLength += pw.height;
                 }
         } else {
             for (UIElement p : layoutGetElementsIterable())
                 if (p != scrollbar) {
                     Size pw = p.getWantedSize();
-                    scrollBreadth = Math.max(scrollBreadth, pw.height);
-                    scrollLength += pw.width;
+                    idealBreadth = Math.max(idealBreadth, pw.height);
+                    idealLength += pw.width;
                 }
         }
 
         if (scrollbar.vertical) {
-            return new Size(scrollBreadth, scrollLength);
+            return new Size(idealBreadth, idealLength);
         } else {
-            return new Size(scrollLength, scrollBreadth);
+            return new Size(idealLength, idealBreadth);
         }
     }
 
     @Override
     protected void layoutRunImpl() {
-        lastScrollPoint = -1;
         Size r = getSize();
-        int availableBreadth = scrollbar.vertical ? r.width : r.height;
-        int availableLength = scrollbar.vertical ? r.height : r.width;
-        int expectedLengthAtThisBreadth = getLengthForBreadth(availableBreadth); 
+        int fullBreadth = scrollbar.vertical ? r.width : r.height;
+        int fullLength = scrollbar.vertical ? r.height : r.width;
+        scrollLength = getLengthForBreadth(fullBreadth); 
 
-        boolean hasScrollbar = availableLength < expectedLengthAtThisBreadth;
+        boolean hasScrollbar = fullLength < scrollLength;
         if (hasScrollbar) {
+            scrollLength = getLengthForBreadth(fullBreadth - sbSize);
             if (!layoutContainsElement(scrollbar))
                 layoutAddElement(scrollbar);
             if (scrollbar.vertical) {
@@ -162,10 +163,8 @@ public class UIScrollLayout extends UIElement.UIPanel {
                 layoutRemoveElement(scrollbar);
         }
 
-        int screenLength = scrollbar.vertical ? r.height : r.width;
-
         if (hasScrollbar)
-            scrollbar.wheelScale = (screenLength / 4.0d) / (double) scrollLength;
+            scrollbar.wheelScale = (fullLength / 4.0d) / (double) scrollLength;
 
         layoutScrollbounds();
     }
@@ -187,10 +186,12 @@ public class UIScrollLayout extends UIElement.UIPanel {
         lastScrollPoint = scrollbar.scrollPoint;
 
         Size bounds = getSize();
+        int boundsLength = scrollbar.vertical ? bounds.height : bounds.width;
         int scrollHeight = calcScrollHeight(bounds);
         int appliedScrollbarSz = sbSize;
 
         int rY = (int) (-scrollbar.scrollPoint * scrollHeight);
+        // System.out.println("scrollHeight: " + scrollHeight + "; rY: " + rY);
         if (!layoutContainsElement(scrollbar)) {
             rY = 0;
             appliedScrollbarSz = 0;
@@ -201,25 +202,21 @@ public class UIScrollLayout extends UIElement.UIPanel {
                 continue;
             layoutSetElementVis(p, false);
             int oRY = rY;
+            int elmLength;
             if (scrollbar.vertical) {
                 int breadth = bounds.width - appliedScrollbarSz;
-                int length = p.layoutGetHForW(breadth);
-                p.setForcedBounds(this, new Rect(0, rY, breadth, length));
-                rY += length;
-                if (oRY <= -length)
-                    continue;
-                if (oRY >= bounds.height)
-                    continue;
+                elmLength = p.layoutGetHForW(breadth);
+                p.setForcedBounds(this, new Rect(0, rY, breadth, elmLength));
             } else {
                 int breadth = bounds.height - appliedScrollbarSz;
-                int length = p.layoutGetWForH(breadth);
-                p.setForcedBounds(this, new Rect(rY, 0, length, breadth));
-                rY += length;
-                if (oRY <= -length)
-                    continue;
-                if (oRY >= bounds.width)
-                    continue;
+                elmLength = p.layoutGetWForH(breadth);
+                p.setForcedBounds(this, new Rect(rY, 0, elmLength, breadth));
             }
+            rY += elmLength;
+            if (oRY <= -elmLength)
+                continue;
+            if (oRY >= boundsLength)
+                continue;
             layoutSetElementVis(p, true);
         }
     }
@@ -230,6 +227,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
             // System.out.println("A SCROLL LAYOUT DID THE THING, IT HAS " + layoutGetElements().size() + " ELEMS AND A PARENT OF " + getParent());
             layoutRecalculateMetrics();
         } else if (lastScrollPoint != scrollbar.scrollPoint) {
+            // System.out.println("DOING LAYOUT SCROLLBOUNDS DUE TO STUFF AND THINGS");
             layoutScrollbounds();
         }
         super.update(deltaTime, selected, peripherals);
