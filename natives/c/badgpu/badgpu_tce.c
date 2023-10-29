@@ -215,6 +215,47 @@ BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
     }
 }
 
+BADGPU_EXPORT void badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(
+    int16_t width, int16_t height, uint32_t * data) {
+    if (width <= 0 || height <= 0)
+        return;
+    size_t pixels = ((size_t) width) * (size_t) height;
+    while (pixels--) {
+        uint32_t pixel = *data;
+        uint32_t r = (pixel >> 16) & 0xFF;
+        uint32_t g = (pixel >> 8) & 0xFF;
+        uint32_t b = pixel & 0xFF;
+        uint32_t a = (pixel >> 24) & 0xFF;
+        r = (r * a) / 255;
+        g = (g * a) / 255;
+        b = (b * a) / 255;
+        *(data++) = MKARGBI32(r, g, b, a);
+    }
+}
+
+BADGPU_EXPORT void badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(
+    int16_t width, int16_t height, uint32_t * data) {
+    if (width <= 0 || height <= 0)
+        return;
+    size_t pixels = ((size_t) width) * (size_t) height;
+    while (pixels--) {
+        uint32_t pixel = *data;
+        uint32_t r = (pixel >> 16) & 0xFF;
+        uint32_t g = (pixel >> 8) & 0xFF;
+        uint32_t b = pixel & 0xFF;
+        uint32_t a = (pixel >> 24) & 0xFF;
+        if (a != 0) {
+            // Rounding up here keeps roundtrips clean when possible
+            // The conversion to premul rounds down to avoid creating additives.
+            // So conversely the conversion from premul must round up.
+            r = ((r * 255) + (a - 1)) / a;
+            g = ((g * 255) + (a - 1)) / a;
+            b = ((b * 255) + (a - 1)) / a;
+        }
+        *(data++) = MKARGBI32(r, g, b, a);
+    }
+}
+
 BADGPU_EXPORT uint32_t badgpuPixelsSize(BADGPUTextureLoadFormat format,
     int16_t width, int16_t height) {
     if (width <= 0 || height <= 0)

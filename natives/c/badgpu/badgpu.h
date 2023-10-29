@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.0.1`
+ * Version: `1.1.0`
  *
  * ## Formatting Policy
  *
@@ -600,6 +600,34 @@ BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
  */
 BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
     int16_t height, void * data);
+
+/*
+ * ### `badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace`
+ *
+ * A dedicated function to convert `ARGBI32` from straight to pre-multiplied
+ *  alpha.
+ *
+ * `ARGBI32` was chosen because this is the format used in practice.
+ * It also allows for fast machine-independent loads.
+ *
+ * This is a library function and thus does not need an instance.
+ */
+BADGPU_EXPORT void badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(
+    int16_t width, int16_t height, uint32_t * data);
+
+/*
+ * ### `badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace`
+ *
+ * A dedicated function to convert `ARGBI32` from pre-multiplied to straight
+ *  alpha.
+ *
+ * `ARGBI32` was chosen because this is the format used in practice.
+ * It also allows for fast machine-independent loads.
+ *
+ * This is a library function and thus does not need an instance.
+ */
+BADGPU_EXPORT void badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(
+    int16_t width, int16_t height, uint32_t * data);
 
 /*
  * ### `badgpuPixelsSize`

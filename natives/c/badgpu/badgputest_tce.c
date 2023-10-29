@@ -43,6 +43,13 @@ int main() {
     testWithFrom(BADGPUTextureLoadFormat_RGBA8888, 1);
     testWithFrom(BADGPUTextureLoadFormat_RGB888, 0);
     testWithFrom(BADGPUTextureLoadFormat_ARGBI32, 1);
+    // try premul/non-premul conversions
+    // also confirms they (roughly) round-trip properly
+    uint32_t example = 0x80FF4020U;
+    badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(1, 1, &example);
+    assert(example == 0x80802010U);
+    badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(1, 1, &example);
+    assert(example == 0x80FF4020U);
     return 0;
 }
 

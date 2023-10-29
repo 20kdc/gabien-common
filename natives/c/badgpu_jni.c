@@ -77,6 +77,8 @@ void J_BADGPU(pixelsConvertIB)(void * env, void * self, int32_t fF, int32_t tF, 
     JNIBA_R(tD, 0);
 }
 
+// in-place conversions
+
 void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceB)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
     JNIBA_L(data);
     badgpuPixelsConvertRGBA8888ToARGBI32InPlace(w, h, data);
@@ -86,6 +88,30 @@ void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceB)(void * env, void * self, i
 void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceI)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
     JNIIA_L(data);
     badgpuPixelsConvertRGBA8888ToARGBI32InPlace(w, h, data);
+    JNIIA_R(data, 0);
+}
+
+void J_BADGPU(pixelsConvertARGBI32PremultipliedToStraightInPlaceB)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(w, h, (void *) data);
+    JNIBA_R(data, 0);
+}
+
+void J_BADGPU(pixelsConvertARGBI32PremultipliedToStraightInPlaceI)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(w, h, (void *) data);
+    JNIIA_R(data, 0);
+}
+
+void J_BADGPU(pixelsConvertARGBI32StraightToPremultipliedInPlaceB)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(w, h, (void *) data);
+    JNIBA_R(data, 0);
+}
+
+void J_BADGPU(pixelsConvertARGBI32StraightToPremultipliedInPlaceI)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(w, h, (void *) data);
     JNIIA_R(data, 0);
 }
 
