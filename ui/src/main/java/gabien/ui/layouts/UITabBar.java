@@ -157,11 +157,11 @@ public class UITabBar extends UIElement.UIPanel {
         }
     }
 
-    private int calculateTabBarWidth() {
+    private int calculateTabBarWidth(int atHeight) {
         FontManager fm = Theme.FM_GLOBAL.get(this);
         int tl = 0;
         for (UITabBar.Tab tab : tabs)
-            tl += getTabWidth(fm, tab, shortTabs, effectiveHeight);
+            tl += getTabWidth(fm, tab, shortTabs, atHeight);
         int extra = canSelectNone ? wantedHeight : 0;
         return tl + extra;
     }
@@ -204,7 +204,7 @@ public class UITabBar extends UIElement.UIPanel {
             }
 
             shortTabs = -1;
-            int longestWidth = calculateTabBarWidth();
+            int longestWidth = calculateTabBarWidth(effectiveHeight);
             int eScrollAreaX = Math.max(0, longestWidth - bounds.width);
             if (thisPassHasScrollbar) {
                 scrollAreaX = eScrollAreaX;
@@ -225,7 +225,7 @@ public class UITabBar extends UIElement.UIPanel {
                         shortTabs = 0;
                         break;
                     }
-                    lastWidth = calculateTabBarWidth();
+                    lastWidth = calculateTabBarWidth(effectiveHeight);
                 }
             }
 
@@ -247,14 +247,14 @@ public class UITabBar extends UIElement.UIPanel {
     @Override
     public int layoutGetHForW(int width) {
         if (tabScroller != null)
-            if (width < calculateTabBarWidth())
+            if (width < calculateTabBarWidth(wantedHeight))
                 return wantedHeight + tabScroller.getWantedSize().height;
         return wantedHeight;
     }
 
     @Override
     protected @Nullable Size layoutRecalculateMetricsImpl() {
-        return new Size(calculateTabBarWidth(), wantedHeight);
+        return new Size(calculateTabBarWidth(wantedHeight), wantedHeight);
     }
 
     // Used as a base for drawing.

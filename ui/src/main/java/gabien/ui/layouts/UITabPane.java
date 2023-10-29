@@ -128,24 +128,38 @@ public class UITabPane extends UIElement.UIPanel {
         return tabManager.handleIncoming();
     }
 
+    private int getTMLeftMargin() {
+        if (thbrLeft != null)
+            return thbrLeft.getWantedSize().width;
+        return 0;
+    }
+
+    private int getTMRightMargin() {
+        if (thbrRight != null)
+            return thbrRight.getWantedSize().width;
+        return 0;
+    }
+
+    private int getTabOverheadHeightForW(int width) {
+        Size thbrLeftWS = Size.ZERO;
+        Size thbrRightWS = Size.ZERO;
+        if (thbrLeft != null)
+            thbrLeftWS = thbrLeft.getWantedSize();
+        if (thbrRight != null)
+            thbrRightWS = thbrRight.getWantedSize();
+        int toh = tabManager.layoutGetHForW(width - (thbrLeftWS.width + thbrRightWS.width));
+        return Math.max(toh, Math.max(thbrLeftWS.height, thbrRightWS.height));
+    }
+
     @Override
     protected void layoutRunImpl() {
         Size r = getSize();
-        Size w = tabManager.getWantedSize();
-        tabOverheadHeight = w.height;
 
-        int tmLeftMargin = 0;
-        int tmRightMargin = 0;
-        if (thbrLeft != null) {
-            Size sz = thbrLeft.getWantedSize();
-            tmLeftMargin = sz.width;
-            tabOverheadHeight = Math.max(tabOverheadHeight, sz.height);
-        }
-        if (thbrRight != null) {
-            Size sz = thbrRight.getWantedSize();
-            tmRightMargin = sz.width;
-            tabOverheadHeight = Math.max(tabOverheadHeight, sz.height);
-        }
+        int toh = getTabOverheadHeightForW(r.width);
+        int tmLeftMargin = getTMLeftMargin();
+        int tmRightMargin = getTMRightMargin();
+        tabOverheadHeight = toh;
+
         if (thbrLeft != null)
             thbrLeft.setForcedBounds(this, new Rect(0, 0, tmLeftMargin, tabOverheadHeight));
         if (thbrRight != null)
@@ -169,7 +183,17 @@ public class UITabPane extends UIElement.UIPanel {
             UIElement uie = selectedTab.contents;
             uhoh = uie.getWantedSize();
         }
-        return new Size(Math.max(w.width, uhoh.width), w.height + uhoh.height);
+        return new Size(Math.max(w.width + getTMLeftMargin() + getTMRightMargin(), uhoh.width), w.height + uhoh.height);
+    }
+
+    @Override
+    public int layoutGetHForW(int width) {
+        int toh = getTabOverheadHeightForW(width);
+        if (selectedTab != null) {
+            UIElement uie = selectedTab.contents;
+            return toh + uie.layoutGetHForW(width);
+        }
+        return toh;
     }
 
     public void selectTab(UIElement target) {
