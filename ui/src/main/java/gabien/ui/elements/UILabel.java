@@ -24,7 +24,7 @@ import gabien.wsi.IPeripherals;
  * Rewritten on February 16th, 2018 to be a UIBorderedElement and the base of UITextBox.
  */
 public class UILabel extends UIBorderedElement {
-    public String text;
+    private String text;
     protected final Contents contents;
     public int alignX, alignY;
 
@@ -35,10 +35,8 @@ public class UILabel extends UIBorderedElement {
 
     public UILabel(String txt, int h, String spacer) {
         super(Theme.B_LABEL, getRecommendedBorderWidth(h));
-        contents = new Contents(h, spacer);
         text = txt;
-
-        labelDoUpdate();
+        contents = new Contents(h, spacer, txt, getBorderWidth(), getTheme());
         forceToRecommended();
     }
 
@@ -50,41 +48,47 @@ public class UILabel extends UIBorderedElement {
 
     @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
-        // Spamming this is fine because if nothing actually changes it becomes a no-op
-        labelDoUpdate();
     }
 
     @Override
     public void onThemeChanged() {
         super.onThemeChanged();
+        contents.setTheme(getTheme());
         layoutRecalculateMetrics();
     }
 
     @Override
     public int layoutGetHForW(int width) {
-        return contents.getHForW(getTheme(), getBorderWidth(), text, width);
+        return contents.getHForW(width);
     }
 
     @Override
     protected @Nullable Size layoutRecalculateMetricsImpl() {
-        return null;
+        return contents.getWantedSize();
     }
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
+        contents.update(getSize());
         contents.render(textBlack, 0, 0, igd, alignX, alignY);
     }
 
+    /**
+     * Sets the displayed text.
+     */
     public void setText(String didThing) {
+        if (didThing.equals(text))
+            return;
         text = didThing;
-        labelDoUpdate();
+        contents.setText(text);
+        layoutRecalculateMetrics();
     }
 
-    // Allows for overrides and such.
-    public void labelDoUpdate() {
-        Size sz = contents.update(getTheme(), getSize(), getBorderWidth(), text);
-        if (sz != null)
-            setWantedSize(sz);
+    /**
+     * Gets the displayed text.
+     */
+    public String getText() {
+        return text;
     }
 
     /**
@@ -92,11 +96,21 @@ public class UILabel extends UIBorderedElement {
      *  is for common stuff between - midnight - UILabel and UITextButton.
      */
     public static class Contents {
-        private String lastText = "", textFormatted = "";
-        private Size lastSize = new Size(0, 0);
-        private Size lastActSize = new Size(0, 0);
-        private Size lastSpacerSize = null;
-        private FontManager lastFM = null;
+        // has not been propagated to rendering using update() yet
+        // always keeps NSDP up to date
+        private String textAsSet = "";
+        private int borderWidthAsSet;
+        private Theme themeAsSet = Theme.ROOT;
+
+        // non-size-dependent-properties (NSDP)
+        private Size nsdpSpacerSize = Size.ZERO;
+        private Size nsdpWantedSize = Size.ZERO;
+
+        // the rest
+        private boolean nsdpChangedSinceUpdate = true;
+        private String textFormatted = "";
+        private Size lastSize = Size.ZERO;
+        private Size lastActSize = Size.ZERO;
         private int lastBw = 1;
         private TextTools.PlainCached paragraph = new TextTools.PlainCached();
 
@@ -108,39 +122,80 @@ public class UILabel extends UIBorderedElement {
         }
 
         public Contents(int th, String st) {
+            this(th, st, "", 1, Theme.ROOT);
+        }
+
+        public Contents(int th, String st, String text, int bw, Theme theme) {
             textHeight = th;
             spacerText = st;
+            textAsSet = text;
+            borderWidthAsSet = bw;
+            themeAsSet = theme;
+            recalculateNSDP();
         }
 
-        public int getHForW(Theme theme, int bw, String text, int width) {
-            FontManager fm = Theme.FM_GLOBAL.get(theme);
-            String formattedText = fm.formatTextFor(text, textHeight, width - (bw * 2));
-            return getRecommendedTextSize(theme, formattedText, textHeight, bw).height;
+        public void setText(String text) {
+            if (textAsSet.equals(text))
+                return;
+            textAsSet = text;
+            recalculateNSDP();
         }
 
-        public Size update(Theme theme, Size sz, int bw, String text) {
+        public void setBorderWidth(int bw) {
+            if (borderWidthAsSet == bw)
+                return;
+            borderWidthAsSet = bw;
+            recalculateNSDP();
+        }
+
+        public void setTheme(Theme theme) {
+            if (themeAsSet == theme)
+                return;
+            themeAsSet = theme;
+            recalculateNSDP();
+        }
+
+        private void recalculateNSDP() {
             // run formatting...
             Size sz2 = null;
-            FontManager fm = Theme.FM_GLOBAL.get(theme);
-            boolean overrideChanged = lastFM != fm;
-            if ((lastSpacerSize == null) || (!lastText.equals(text)) || (lastBw != bw) || (!lastSize.sizeEquals(sz)) || overrideChanged) {
-                lastText = text;
+            // You may be wondering why this is set up the way it is.
+            // The answer is simply that B's height is what we need to be given the width,
+            //  and A is what we want to be, width and height alike.
+            Size a = getRecommendedTextSize(themeAsSet, textAsSet, textHeight, borderWidthAsSet);
+            nsdpSpacerSize = getRecommendedTextSize(themeAsSet, spacerText, textHeight, borderWidthAsSet);
+            sz2 = a;
+            sz2 = sz2.sizeMax(nsdpSpacerSize);
+            nsdpWantedSize = sz2;
+            nsdpChangedSinceUpdate = true;
+        }
+
+        public int getHForW(int width) {
+            FontManager fm = Theme.FM_GLOBAL.get(themeAsSet);
+            String formattedText = fm.formatTextFor(textAsSet, textHeight, width - (borderWidthAsSet * 2));
+            return getRecommendedTextSize(themeAsSet, formattedText, textHeight, borderWidthAsSet).height;
+        }
+
+        public Size getWantedSize() {
+            return nsdpWantedSize;
+        }
+
+        /**
+         * Updates the label for the given size (re-renders etc.)
+         */
+        public Size update(Size sz) {
+            // run formatting...
+            FontManager fm = Theme.FM_GLOBAL.get(themeAsSet);
+            if (nsdpChangedSinceUpdate || !lastSize.sizeEquals(sz)) {
                 lastSize = sz;
-                lastBw = bw;
-                lastFM = fm;
-                textFormatted = fm.formatTextFor(text, textHeight, sz.width - (bw * 2));
-                // You may be wondering why this is set up the way it is.
-                // The answer is simply that B's height is what we need to be given the width,
-                //  and A is what we want to be, width and height alike.
-                Size a = getRecommendedTextSize(theme, text, textHeight, bw);
-                lastActSize = getRecommendedTextSize(theme, textFormatted, textHeight, bw);
-                lastSpacerSize = getRecommendedTextSize(theme, spacerText, textHeight, bw);
-                sz2 = a;
-                sz2 = sz2.sizeMax(lastSpacerSize);
+                lastBw = borderWidthAsSet;
+                textFormatted = fm.formatTextFor(textAsSet, textHeight, sz.width - (borderWidthAsSet * 2));
+                lastActSize = getRecommendedTextSize(themeAsSet, textFormatted, textHeight, borderWidthAsSet);
                 paragraph.font = fm.getFontForText(textFormatted, textHeight);
                 paragraph.text = textFormatted;
+                nsdpChangedSinceUpdate = false;
+                return nsdpWantedSize;
             }
-            return sz2;
+            return null;
         }
 
         public void render(boolean blackText, int x, int y, IGrDriver igd, boolean centre) {
@@ -177,7 +232,10 @@ public class UILabel extends UIBorderedElement {
             int bw = UIBorderedElement.getRecommendedBorderWidth(textHeight);
             pokeLastSize(w, height);
             Theme theme = themeSource.getTheme();
-            Size sz = statusLine.update(theme, lastSize, bw, text);
+            statusLine.setText(text);
+            statusLine.setBorderWidth(bw);
+            statusLine.setTheme(theme);
+            Size sz = statusLine.update(lastSize);
             if (sz != null) {
                 height = sz.height;
                 pokeLastSize(w, height);

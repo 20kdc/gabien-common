@@ -46,6 +46,7 @@ public class UITextBox extends UILabel {
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         selected &= !tempDisableSelection;
 
+        String text = getText();
         if (!textLastSeen.equals(text)) {
             textCStr = text;
             textLastSeen = text;
@@ -89,6 +90,7 @@ public class UITextBox extends UILabel {
             // restore text from backup
             text = textCStr;
         }
+        setText(text);
         setBorderType(selected ? Theme.B_TEXTBOXF : Theme.B_TEXTBOX);
         super.updateContents(deltaTime, selected, peripherals);
     }

@@ -114,10 +114,11 @@ public class UIRIFFEditor extends UIProxy {
     public Runnable cidEditor(UITextBox tb, Consumer<String> res) {
         return () -> {
             char[] tmp = new char[4];
-            int l = tb.text.length();
+            String tbt = tb.getText();
+            int l = tbt.length();
             if (l > 4)
                 l = 4;
-            tb.text.getChars(0, l, tmp, 0);
+            tbt.getChars(0, l, tmp, 0);
             for (int i = 0; i < tmp.length; i++) {
                 tmp[i] &= 0xFF;
                 // could be bad, but what can you do

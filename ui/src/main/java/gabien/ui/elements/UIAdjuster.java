@@ -25,26 +25,17 @@ public class UIAdjuster extends UIElement.UIPanel implements Consumer<String> {
     public UIAdjuster(int h, long initial, final Function<Long, Long> write) {
         // Not entirely correct, but reduces time wasted on word-wrapping
         super(h * 16, h);
-        incButton = new UITextButton("+", h, new Runnable() {
-            @Override
-            public void run() {
-                numberDisplay.number = write.apply(numberDisplay.number + 1);
-            }
+        numberDisplay = new UINumberBox(initial, h);
+        incButton = new UITextButton("+", h, () -> {
+            numberDisplay.setNumber(write.apply(numberDisplay.getNumber()));
         });
         layoutAddElement(incButton);
-        decButton = new UITextButton("-", h, new Runnable() {
-            @Override
-            public void run() {
-                numberDisplay.number = write.apply(numberDisplay.number - 1);
-            }
+        decButton = new UITextButton("-", h, () -> {
+            numberDisplay.setNumber(write.apply(numberDisplay.getNumber() - 1));
         });
         layoutAddElement(decButton);
-        numberDisplay = new UINumberBox(initial, h);
-        numberDisplay.onEdit = new Runnable() {
-            @Override
-            public void run() {
-                numberDisplay.number = write.apply(numberDisplay.number);
-            }
+        numberDisplay.onEdit = () -> {
+            numberDisplay.setNumber(write.apply(numberDisplay.getNumber()));
         };
         layoutAddElement(numberDisplay);
 
@@ -78,7 +69,7 @@ public class UIAdjuster extends UIElement.UIPanel implements Consumer<String> {
 
     @Override
     public void accept(String a) {
-        numberDisplay.text = a;
+        numberDisplay.setText(a);
     }
 
     @Override

@@ -59,8 +59,8 @@ public class UICredits extends UIProxy {
     }
 
     private void loadLicenseComponent(LicenseComponent lc) {
-        labelHeader.text = lc.name;
-        urlButton.text = lc.url;
+        labelHeader.setText(lc.name);
+        urlButton.setText(lc.url);
         lastURL = lc.url;
         String lf = GaBIEn.getTextResourceAsString(lc.licenseFile);
         String cf = null;
@@ -73,7 +73,7 @@ public class UICredits extends UIProxy {
             lf = "<license file missing>";
         if (cf == null)
             cf = "<credits file missing>";
-        labelLicense.text = lf;
-        labelCredits.text = cf;
+        labelLicense.setText(lf);
+        labelCredits.setText(cf);
     }
 }

@@ -40,6 +40,7 @@ public class UIChatBox extends UILabel {
         selected &= !tempDisableSelection;
 
         if (selected) {
+            String text = getText();
             // ensure we have an editing session
             if (editingSession == null)
                 editingSession = peripherals.openTextEditingSession(text, false, contents.textHeight, null);
@@ -61,6 +62,7 @@ public class UIChatBox extends UILabel {
                 if (GaBIEn.singleWindowApp())
                     tempDisableSelection = true;
             }
+            setText(text);
             if ((editingSession != null) && editingSession.isSessionDead()) {
                 // clean up if the session died
                 tempDisableSelection = true;

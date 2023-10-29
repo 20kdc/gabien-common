@@ -35,7 +35,7 @@ public class UINumberBox extends UILabel {
     private long editingCNumber = 0;
 
     private long editingNLast = 0;
-    public long number = 0;
+    private long number = 0;
 
     public boolean readOnly = false;
     public Runnable onEdit = EmptyLambdas.emptyRunnable;
@@ -44,9 +44,17 @@ public class UINumberBox extends UILabel {
     private ITextEditingSession editingSession;
 
     @Override
-    public void labelDoUpdate() {
-        text = Long.toString(number);
-        super.labelDoUpdate();
+    public void setText(String didThing) {
+        setNumber(Long.parseLong(didThing));
+    }
+
+    public void setNumber(long v) {
+        number = v;
+        super.setText(Long.toString(v));
+    }
+
+    public long getNumber() {
+        return number;
     }
 
     @Override
@@ -55,8 +63,10 @@ public class UINumberBox extends UILabel {
         if (number != editingNLast) {
             editingCNumber = number;
             editingNLast = number;
-        } else if (!selected) {
+            super.setText(Long.toString(number));
+        } else if (number != editingCNumber && !selected) {
             number = editingCNumber;
+            super.setText(Long.toString(number));
         }
         if (selected && (!readOnly)) {
             // ensure we have an editing session
@@ -95,6 +105,7 @@ public class UINumberBox extends UILabel {
             } else if (editingSession.isSessionDead()) {
                 tempDisableSelection = true;
             }
+            super.setText(Long.toString(number));
         } else {
             if (editingSession != null) {
                 editingSession.endSession();

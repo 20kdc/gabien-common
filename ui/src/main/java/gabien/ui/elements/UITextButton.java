@@ -11,58 +11,57 @@ import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.render.IGrDriver;
 import gabien.uslx.append.Size;
-import gabien.wsi.IPeripherals;
 
 /**
  * Changed on 16th February 2018 for the usual fun w/ the redesign.
  */
 public class UITextButton extends UIButton<UITextButton> {
-    public String text;
+    private String text;
     private final UILabel.Contents contents;
     public boolean centred;
     
     public UITextButton(String tex, int h, Runnable click) {
         super(UIBorderedElement.getRecommendedBorderWidth(h));
-        contents = new UILabel.Contents(h);
         text = tex;
         onClick = click;
 
-        labelDoUpdate();
+        contents = new UILabel.Contents(h, "", tex, getBorderWidth(), getTheme());
+
         forceToRecommended();
     }
 
-    @Override
-    public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
-        super.updateContents(deltaTime, selected, peripherals);
-        labelDoUpdate();
+    public void setText(String text) {
+        if (this.text.equals(text))
+            return;
+        this.text = text;
+        contents.setText(text);
+        layoutRecalculateMetrics();
     }
 
-    public void labelDoUpdate() {
-        // See UILabel for the reasoning here.
-        Size sz = contents.update(getTheme(), getSize(), getBorderWidth(), text);
-        if (sz != null)
-            setWantedSize(sz);
+    public String getText() {
+        return text;
     }
 
     @Override
     public void onThemeChanged() {
         super.onThemeChanged();
-        // Same as with updateContents.
+        contents.setTheme(getTheme());
         layoutRecalculateMetrics();
     }
 
     @Override
     public int layoutGetHForW(int width) {
-        return contents.getHForW(getTheme(), getBorderWidth(), text, width);
+        return contents.getHForW(width);
     }
 
     @Override
     protected @Nullable Size layoutRecalculateMetricsImpl() {
-        return null;
+        return contents.getWantedSize();
     }
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
+        contents.update(getSize());
         contents.render(textBlack, 0, 0, igd, centred);
     }
 

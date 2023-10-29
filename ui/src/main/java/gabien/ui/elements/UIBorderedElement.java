@@ -22,7 +22,7 @@ import gabien.wsi.IPeripherals;
  */
 public abstract class UIBorderedElement extends UIElement {
     private Theme.Attr<IBorder> borderType;
-    private int borderWidth;
+    private final int borderWidth;
 
     private Rect contentsRelativeInputBounds;
     private IBorder border;

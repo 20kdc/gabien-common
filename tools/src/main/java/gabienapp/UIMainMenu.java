@@ -107,6 +107,6 @@ public class UIMainMenu extends UIProxy {
     }
     public void copyRIFF(RIFFNode rn) {
         riffClipboard = rn.copy();
-        lbl.text = "RIFF Clipboard: " + rn.chunkId;
+        lbl.setText("RIFF Clipboard: " + rn.chunkId);
     }
 }

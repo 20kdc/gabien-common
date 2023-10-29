@@ -132,7 +132,7 @@ public class UIBytesEditor extends UIProxy {
                     sb.append(".");
                 }
             }
-            body.text = sb.toString();
+            body.setText(sb.toString());
         }
     }
 }

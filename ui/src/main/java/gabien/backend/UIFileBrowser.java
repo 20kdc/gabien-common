@@ -101,7 +101,7 @@ public class UIFileBrowser extends UIElement.UIProxy {
         boolean showManualControl = true;
         final String verb = saving ? GaBIEn.wordSave : GaBIEn.wordLoad;
         final String exact = getPath();
-        upperSection.text = exact;
+        upperSection.setText(exact);
         String[] paths = GaBIEn.listEntries(exact);
         basicLayout.panelsAdd(new UITextButton("<-", fontSize, new Runnable() {
                 @Override
@@ -177,13 +177,13 @@ public class UIFileBrowser extends UIElement.UIProxy {
             UISplitterLayout mainLine = new UISplitterLayout(pathText, new UITextButton(verb, fontSize, new Runnable() {
                 @Override
                 public void run() {
-                    statusLine.text = "";
-                    String txt = pathText.text;
+                    String txt = pathText.getText();
                     // catch anything too obvious for better UX
                     if (txt.equals(".") || txt.equals("..") || txt.contains("/") || txt.contains("\\") || txt.equals("")) {
-                        statusLine.text = GaBIEn.wordInvalidFileName;
+                        statusLine.setText(GaBIEn.wordInvalidFileName);
                         return;
                     }
+                    statusLine.setText("");
                     if (!done) {
                         done = true;
                         run.accept(exact + "/" + txt);
