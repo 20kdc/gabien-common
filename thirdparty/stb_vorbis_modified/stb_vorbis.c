@@ -102,6 +102,11 @@
 //        test files I checked have discard_samples_deferred = 0 so whatever.
 //        it breaks if you seek to 0 anyway (upstream, too!).
 //        finally, it breaks get_packet_sample_count at a conceptual level.
+//     step 11: just some post-understanding cleanup
+//      - so the codec spec anticipates packet truncation by design. what does that mean?
+//        it means measuring frame lengths is useless -- removed function for it.
+//        it's a footgun anyway
+//        yes I am quite aware *I* added this function during earlier steps
 //
 //    1.22    - 2021-07-11 - various small fixes
 //    1.21    - 2021-07-02 - fix bug for files with no comments
@@ -196,9 +201,7 @@ extern int stb_vorbis_g_get_max_frame_size(stb_vorbis_g *f);
 
 // Gets the amount of samples in an audio packet using the setup of a decoder.
 // Importantly:
-// 1. Does not mutate decoder state EXCEPT for:
-//     * last error
-//     * stb_vorbis_g_get_last_frame_read (undefined)
+// 1. Does not mutate decoder state EXCEPT for last error
 // 2. Consider this as having returned 0 for the first audio packet.
 // However if these are understood, this tool can be used to reliably measure
 //  the length of a Vorbis stream without fully decoding it.
@@ -239,13 +242,6 @@ extern int stb_vorbis_g_decode_frame(
 
 // get the last error detected (clears it, too)
 extern int stb_vorbis_g_get_error(stb_vorbis_g *f);
-
-// get the amount of bytes read last frame
-// undefined if:
-//  * no frame has been read
-//  * stb_vorbis_g_get_packet_sample_count was called since the frame was read
-// on error it *MAY* point to a useful location (or not!)
-extern size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f);
 
 // inform stb_vorbis that your next packet will not be contiguous with
 // previous ones (e.g. you've seeked in the data).
@@ -532,7 +528,6 @@ struct stb_vorbis_g
 
   // input config
    const uint8 *stream;
-   const uint8 *stream_start; // for get_last_frame_read
    const uint8 *stream_end;
 
   // run-time results
@@ -959,7 +954,6 @@ static int STBV_CDECL point_compare(const void *p, const void *q)
 static void start_packet(vorb *f, const unsigned char *data, size_t data_len)
 {
    f->stream       = data;
-   f->stream_start = data;
    f->stream_end = data + data_len;
    f->eof = FALSE;
    f->valid_bits = 0;
@@ -3092,11 +3086,6 @@ int stb_vorbis_g_get_error(stb_vorbis_g *f)
    int e = f->error;
    f->error = VORBIS__no_error;
    return e;
-}
-
-size_t stb_vorbis_g_get_last_frame_read(stb_vorbis_g *f)
-{
-   return f->stream - f->stream_start;
 }
 
 void stb_vorbis_g_flush(stb_vorbis_g *f)

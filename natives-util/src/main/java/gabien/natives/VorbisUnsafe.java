@@ -34,7 +34,6 @@ public abstract class VorbisUnsafe extends VorbisEnum {
      */
     public static native int decodeFrame(long instance, byte[] packet, int packetOfs, int packetLen, float[] output, int outputOfs);
     public static native int getError(long instance);
-    public static native long getLastFrameRead(long instance);
     public static native void flush(long instance);
     public static native void close(long instance);
 }

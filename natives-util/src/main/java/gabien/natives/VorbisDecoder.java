@@ -72,15 +72,6 @@ public final class VorbisDecoder implements AutoCloseable {
     }
 
     /**
-     * Returns the amount of bytes read from the last packet.
-     */
-    public final synchronized long getLastFrameRead() {
-        if (!valid.get())
-            throw new InvalidatedPointerException(this);
-        return VorbisUnsafe.getLastFrameRead(instance);
-    }
-
-    /**
      * Resets decoder state; next packet will be ignored (0-samples),
      */
     public final synchronized void flush() {
