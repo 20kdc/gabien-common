@@ -11,6 +11,7 @@ However, their individual licenses will still be respected and reproduced.
 Current list of thirdparty stuff:
 
 * stb\_vorbis ( https://github.com/nothings/stb/ ) - *modified*, at `thirdparty/stb_vorbis_modified`
+* minimp3 ( https://github.com/lieff/minimp3 ) - *not yet, but will later be, modified*, at `thirdparty/minimp3_modified`
 
 ## Build Instructions (Command-Line)
 
