@@ -19,3 +19,5 @@ Things that need doing:
 * Getting it to actually build as part of the gabien-natives build cycle (may require SIMD be removed, or may not)
 * Possibly strip down and abstract API in the hopes of creating an Unlicense libmpg123 shim
 
+As with `stb_vorbis_modified`, `main.c` is a test program which `make-vt` builds.
+
