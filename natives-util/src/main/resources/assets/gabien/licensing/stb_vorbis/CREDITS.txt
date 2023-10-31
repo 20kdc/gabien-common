@@ -1,0 +1,34 @@
+Ogg Vorbis audio decoder - v1.22-G - public domain
+http://nothings.org/stb_vorbis/
+
+This version has been modified for the purposes of gabien-common {
+   Things are different about the version here.
+   In particular this version is intended for in-memory streamed decoding with seeking being an application concern.
+   The original was retrieved from https://raw.githubusercontent.com/nothings/stb/1ee679ca2ef753a528db5ba6801e1067b40481b8/stb_vorbis.c !!!
+}
+
+Original version written by Sean Barrett in 2007.
+
+Originally sponsored by RAD Game Tools. Seeking implementation
+sponsored by Phillip Bennefall, Marc Andersen, Aaron Baker,
+Elias Software, Aras Pranckevicius, and Sean Barrett.
+
+Feature contributors:
+   Dougall Johnson (sample-exact seeking)
+
+Bugfix/warning contributors:
+   Terje Mathisen     Niklas Frykholm     Andy Hill
+   Casey Muratori     John Bolton         Gargaj
+   Laurent Gomila     Marc LeBlanc        Ronny Chevalier
+   Bernhard Wodo      Evan Balster        github:alxprd
+   Tom Beaumont       Ingo Leitgeb        Nicolas Guillemot
+   Phillip Bennefall  Rohit               Thiago Goulart
+   github:manxorist   Saga Musix          github:infatum
+   Timur Gagiev       Maxwell Koo         Peter Waller
+   github:audinowho   Dougall Johnson     David Reid
+   github:Clownacy    Pedro J. Estebanez  Remi Verschelde
+   AnthoFoxo          github:morlat       Gabriel Ravier
+
+gabien-common fork development:
+   github:20kdc
+

@@ -28,7 +28,7 @@ public abstract class Loader {
     private Loader() {
     }
 
-    public static final LicenseComponent LC_STB_VORBIS = new LicenseComponent("stb_vorbis", "https://github.com/nothings/stb/", "gabien/licensing/stb_vorbis/COPYING.txt", null);
+    public static final LicenseComponent LC_STB_VORBIS = new LicenseComponent("stb_vorbis", "https://github.com/nothings/stb/", "gabien/licensing/stb_vorbis/COPYING.txt", "gabien/licensing/stb_vorbis/CREDITS.txt");
 
     static {
         LicenseManager.I.register(LC_STB_VORBIS);

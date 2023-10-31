@@ -119,6 +119,7 @@
 !thirdparty/stb_vorbis_modified
 !thirdparty/stb_vorbis_modified/
 !thirdparty/stb_vorbis_modified/COPYING.txt
+!thirdparty/stb_vorbis_modified/CREDITS.txt
 !thirdparty/stb_vorbis_modified/README.md
 !thirdparty/stb_vorbis_modified/stb_vorbis.c
 !thirdparty/stb_vorbis_modified/main.c

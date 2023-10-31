@@ -1,10 +1,11 @@
 // Ogg Vorbis audio decoder - v1.22-G - public domain
 // http://nothings.org/stb_vorbis/
 //
-// -- This version has been modified for the purposes of gabien-common --
-// Things will be / are different about the version here.
-// In particular this version will be intended for in-memory streamed decoding with seeking being an application concern.
-// The original was retrieved from https://raw.githubusercontent.com/nothings/stb/1ee679ca2ef753a528db5ba6801e1067b40481b8/stb_vorbis.c !!!
+// This version has been modified for the purposes of gabien-common {
+//    Things are different about the version here.
+//    In particular this version is intended for in-memory streamed decoding with seeking being an application concern.
+//    The original was retrieved from https://raw.githubusercontent.com/nothings/stb/1ee679ca2ef753a528db5ba6801e1067b40481b8/stb_vorbis.c !!!
+// }
 //
 // Original version written by Sean Barrett in 2007.
 //
@@ -39,6 +40,9 @@
 //    github:audinowho   Dougall Johnson     David Reid
 //    github:Clownacy    Pedro J. Estebanez  Remi Verschelde
 //    AnthoFoxo          github:morlat       Gabriel Ravier
+//
+// gabien-common fork development:
+//    github:20kdc
 //
 // Partial history:
 //    1.22-G (Begun 18th October, 2023)
