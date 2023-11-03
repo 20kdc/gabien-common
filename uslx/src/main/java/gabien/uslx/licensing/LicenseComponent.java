@@ -8,6 +8,9 @@ package gabien.uslx.licensing;
 
 import java.util.HashSet;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Collates licensing data.
  * Dependencies are dynamic because of things like "natives may or may not be loaded".
@@ -17,10 +20,10 @@ import java.util.HashSet;
  * Created 17th October, 2023.
  */
 public final class LicenseComponent {
-    public final String name;
-    public final String url;
-    public final String licenseFile;
-    public final String creditsFile;
+    public final @NonNull String name;
+    public final @NonNull String url;
+    public final @NonNull String licenseFile;
+    public final @Nullable String creditsFile;
 
     /**
      * Controlled from LicenseManager.
@@ -41,7 +44,7 @@ public final class LicenseComponent {
             "gabien/licensing/common/CREDITS.txt"
     );
 
-    public LicenseComponent(String n, String u, String licenseFile, String creditsFile) {
+    public LicenseComponent(@NonNull String n, @NonNull String u, @NonNull String licenseFile, @Nullable String creditsFile) {
         name = n;
         url = u;
         this.licenseFile = licenseFile;

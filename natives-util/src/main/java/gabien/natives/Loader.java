@@ -29,10 +29,13 @@ public abstract class Loader {
     }
 
     public static final LicenseComponent LC_STB_VORBIS = new LicenseComponent("stb_vorbis", "https://github.com/nothings/stb/", "gabien/licensing/stb_vorbis/COPYING.txt", "gabien/licensing/stb_vorbis/CREDITS.txt");
+    public static final LicenseComponent LC_MINIMP3 = new LicenseComponent("minimp3", "https://github.com/lieff/minimp3", "gabien/licensing/minimp3/LICENSE", null);
 
     static {
         LicenseManager.I.register(LC_STB_VORBIS);
+        LicenseManager.I.register(LC_MINIMP3);
         LicenseManager.I.dependency(LicenseComponent.LC_GABIEN, LC_STB_VORBIS);
+        LicenseManager.I.dependency(LicenseComponent.LC_GABIEN, LC_MINIMP3);
     }
 
     public static InputStream assetLookupJavaSE(String str) {

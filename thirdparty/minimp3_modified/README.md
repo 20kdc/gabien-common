@@ -17,3 +17,7 @@ As with `stb_vorbis_modified`, `main.c` is a test program which `make-vt` builds
 * attached simpler test program
 * remove x86-64 vector support because xmmintrin.h relies on stdlib.h for some reason
 
+## TODOs
+
+* Hardening? (`size_t`)
+

@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Safe wrapper around the Vorbis decoding logic.
  * Created 20th October, 2023.
  */
-public final class VorbisDecoder implements AutoCloseable {
+public final class VorbisDecoder extends VorbisEnum implements AutoCloseable {
     private final long instance;
     public final int channels, sampleRate, maxFrameSize, outputLength;
     private AtomicBoolean valid = new AtomicBoolean(true);
@@ -84,7 +84,7 @@ public final class VorbisDecoder implements AutoCloseable {
      * Frees the Vorbis decoder.
      */
     @Override
-    public void close() {
+    public synchronized void close() {
         if (valid.getAndSet(false))
             VorbisUnsafe.close(instance);
     }

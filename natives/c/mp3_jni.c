@@ -23,6 +23,10 @@ int64_t J_MP3(alloc)(void * env, void * self, void * cls) {
     return 0;
 }
 
+void J_MP3(reset)(void * env, void * self, int64_t instance) {
+    memset(C_PTR(instance), 0, sizeof(mp3dec_t));
+}
+
 int32_t J_MP3(getLastFrameBytes)(void * env, void * self, int64_t instance) {
     return ((mp3dec_t *) C_PTR(instance))->last_frame_info.frame_bytes;
 }
@@ -39,8 +43,8 @@ int32_t J_MP3(decodeFrame)(void * env, void * self, int64_t instance, JNIBA_ARG(
     JNIBA_L(packet);
     JNIFA_L(output);
     int samples = mp3dec_g_decode_frame(C_PTR(instance), (uint8_t *) packet, (size_t) packet_len, (float *) output);
-    JNIBA_R(packet, JNI_ABORT);
     JNIFA_R(output, 0);
+    JNIBA_R(packet, JNI_ABORT);
     return samples;
 }
 

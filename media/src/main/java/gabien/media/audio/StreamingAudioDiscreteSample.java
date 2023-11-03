@@ -55,6 +55,7 @@ public class StreamingAudioDiscreteSample extends DiscreteSample {
             baseSource.nextFramesInFormat(storageFormat, chunkContent, 0, framesInThisChunk);
         } catch (Exception ioe) {
             // well, we tried
+            // ioe.printStackTrace();
         }
         chunks.add(chunkContent);
         remainingFramesToCache -= framesInThisChunk;

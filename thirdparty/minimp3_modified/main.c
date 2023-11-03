@@ -71,7 +71,7 @@ int main(int argc, char ** argv) {
         int fb = dec.last_frame_info.frame_bytes;
         if (samples == 0) {
             // attempt resync... :(
-            fb = 4096;
+            fb = loaded_bytes;
             if (fb > 4096)
                 fb = 4096;
         } else {

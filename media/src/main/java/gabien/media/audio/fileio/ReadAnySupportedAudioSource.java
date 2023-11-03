@@ -33,8 +33,7 @@ public abstract class ReadAnySupportedAudioSource {
         } else if (b == 'M') {
             throw new IOException("MIDI not (yet?) supported");
         } else {
-            // chances are high it's MP3
-            throw new IOException("unknown (MP3?) - not (yet?) supported");
+            return MP3Source.fromInputStream(inp, close);
         }
     }
 }
