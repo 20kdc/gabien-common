@@ -56,8 +56,10 @@ int mp3dec_g_decode_frame(mp3dec_t *dec, const uint8_t *mp3, int mp3_bytes, floa
 #if defined(MINIMP3_IMPLEMENTATION) && !defined(_MINIMP3_IMPLEMENTATION_GUARD)
 #define _MINIMP3_IMPLEMENTATION_GUARD
 
+#ifndef MINIMP3_USER_WILL_DO_INCLUDES_THEMSELVES
 #include <stdlib.h>
 #include <string.h>
+#endif
 
 #define MAX_FREE_FORMAT_FRAME_SIZE  2304    /* more than ISO spec's */
 #ifndef MAX_FRAME_SYNC_MATCHES
@@ -99,82 +101,12 @@ int mp3dec_g_decode_frame(mp3dec_t *dec, const uint8_t *mp3, int mp3_bytes, floa
 
 #if !defined(MINIMP3_NO_SIMD)
 
-#if !defined(MINIMP3_ONLY_SIMD) && (defined(_M_X64) || defined(__x86_64__) || defined(__aarch64__) || defined(_M_ARM64))
-/* x64 always have SSE2, arm64 always have neon, no need for generic code */
+#if !defined(MINIMP3_ONLY_SIMD) && (defined(__aarch64__) || defined(_M_ARM64))
+/* arm64 always have neon, no need for generic code */
 #define MINIMP3_ONLY_SIMD
 #endif /* SIMD checks... */
 
-#if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__))
-#if defined(_MSC_VER)
-#include <intrin.h>
-#endif /* defined(_MSC_VER) */
-#include <immintrin.h>
-#define HAVE_SSE 1
-#define HAVE_SIMD 1
-#define VSTORE _mm_storeu_ps
-#define VLD _mm_loadu_ps
-#define VSET _mm_set1_ps
-#define VADD _mm_add_ps
-#define VSUB _mm_sub_ps
-#define VMUL _mm_mul_ps
-#define VMAC(a, x, y) _mm_add_ps(a, _mm_mul_ps(x, y))
-#define VMSB(a, x, y) _mm_sub_ps(a, _mm_mul_ps(x, y))
-#define VMUL_S(x, s)  _mm_mul_ps(x, _mm_set1_ps(s))
-#define VREV(x) _mm_shuffle_ps(x, x, _MM_SHUFFLE(0, 1, 2, 3))
-typedef __m128 f4;
-#if defined(_MSC_VER) || defined(MINIMP3_ONLY_SIMD)
-#define minimp3_cpuid __cpuid
-#else /* defined(_MSC_VER) || defined(MINIMP3_ONLY_SIMD) */
-static __inline__ __attribute__((always_inline)) void minimp3_cpuid(int CPUInfo[], const int InfoType)
-{
-#if defined(__PIC__)
-    __asm__ __volatile__(
-#if defined(__x86_64__)
-        "push %%rbx\n"
-        "cpuid\n"
-        "xchgl %%ebx, %1\n"
-        "pop  %%rbx\n"
-#else /* defined(__x86_64__) */
-        "xchgl %%ebx, %1\n"
-        "cpuid\n"
-        "xchgl %%ebx, %1\n"
-#endif /* defined(__x86_64__) */
-        : "=a" (CPUInfo[0]), "=r" (CPUInfo[1]), "=c" (CPUInfo[2]), "=d" (CPUInfo[3])
-        : "a" (InfoType));
-#else /* defined(__PIC__) */
-    __asm__ __volatile__(
-        "cpuid"
-        : "=a" (CPUInfo[0]), "=b" (CPUInfo[1]), "=c" (CPUInfo[2]), "=d" (CPUInfo[3])
-        : "a" (InfoType));
-#endif /* defined(__PIC__)*/
-}
-#endif /* defined(_MSC_VER) || defined(MINIMP3_ONLY_SIMD) */
-static int have_simd(void)
-{
-#ifdef MINIMP3_ONLY_SIMD
-    return 1;
-#else /* MINIMP3_ONLY_SIMD */
-    static int g_have_simd;
-    int CPUInfo[4];
-#ifdef MINIMP3_TEST
-    static int g_counter;
-    if (g_counter++ > 100)
-        return 0;
-#endif /* MINIMP3_TEST */
-    if (g_have_simd)
-        goto end;
-    minimp3_cpuid(CPUInfo, 0);
-    g_have_simd = 1;
-    if (CPUInfo[0] > 0)
-    {
-        minimp3_cpuid(CPUInfo, 1);
-        g_have_simd = (CPUInfo[3] & (1 << 26)) + 1; /* SSE2 */
-    }
-end:
-    return g_have_simd - 1;
-#endif /* MINIMP3_ONLY_SIMD */
-}
-#elif defined(__ARM_NEON) || defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__ARM_NEON) || defined(__aarch64__) || defined(_M_ARM64)
 #include <arm_neon.h>
 #define HAVE_SSE 0
 #define HAVE_SIMD 1

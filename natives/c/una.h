@@ -31,6 +31,7 @@ extern double pow(double, double);
 extern double ldexp(double, int);
 extern void qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 extern int memcmp(const void *, const void *, size_t);
+void * memmove(void * dst, const void * src, size_t len);
 
 //
 
