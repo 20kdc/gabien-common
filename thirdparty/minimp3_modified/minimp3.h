@@ -21,7 +21,6 @@ typedef struct
     int frame_bytes;
     int channels;
     int hz;
-    int bitrate_kbps;
 } mp3dec_frame_info_t;
 
 typedef struct
@@ -40,19 +39,14 @@ extern "C" {
  * Decodes a frame in the given byte array, or, if pcm is NULL, measures it.
  * In either case, last_frame_info and sync state is updated.
  * But if and only if decoding, also updates decoder state (i.e. MDCT overlap).
+ * To "fix" a decoder, it should be enough to decode and discard a frame.
  * pcm must be an array of MINIMP3_MAX_SAMPLES_PER_FRAME elements.
  * The array is interleaved samples, details described as per last_frame_info.
  * Returns the total amount of sample-frames that were or would be decoded.
- * A "sample-frames" in this context contains values for one or both channels.
- * So return values are from 0 to 1152, with 1152 being the "max".
+ * A "sample-frame" in this context contains values for one or both channels.
+ * So return values are from 0 to 1152, with 1152 being the highest possible.
  */
 int mp3dec_g_decode_frame(mp3dec_t *dec, const uint8_t *mp3, int mp3_bytes, float *pcm);
-
-/*
- * Resets sync. If sync immediately follows a previous frame, then usually
- * sync is "continued" from that frame without a full frame search.
- */
-void mp3dec_g_reset_sync(mp3dec_t *dec);
 
 #ifdef __cplusplus
 }
@@ -1670,7 +1664,7 @@ static int mp3d_find_frame(const uint8_t *mp3, int mp3_bytes, int *free_format_b
     return mp3_bytes;
 }
 
-void mp3dec_g_reset_sync(mp3dec_t *dec)
+static void mp3dec_g_reset_sync(mp3dec_t *dec)
 {
     dec->header[0] = 0;
 }
@@ -1708,7 +1702,6 @@ int mp3dec_g_decode_frame(mp3dec_t *dec, const uint8_t *mp3, int mp3_bytes, floa
     info->channels = HDR_IS_MONO(hdr) ? 1 : 2;
     info->hz = hdr_sample_rate_hz(hdr);
     int layer = 4 - HDR_GET_LAYER(hdr);
-    info->bitrate_kbps = hdr_bitrate_kbps(hdr);
 
     if (!pcm)
     {
