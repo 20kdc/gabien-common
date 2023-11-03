@@ -1,6 +1,19 @@
 # minimp3 modified
 
-This will at some point contain a modified copy of https://github.com/lieff/minimp3/ !
+This contains a modified copy of https://github.com/lieff/minimp3/ !
+
+## Modifications
+
+* S16 output support removed in favour of just floats
+* `_g` library name suffix to prevent symbol conflicts
+* rename `minimp3_init` to `mp3dec_g_reset_sync` to prevent misnomer
+* remove `layer` and `frame_offset` frameinfo fields
+* integrate frameinfo struct into main decoder struct as `last_frame_info`
+* remove `MINIMP3_NONSTANDARD_BUT_LOGICAL` and `MINIMP3_ONLY_MP3`
+* documentation on the functions
+* attached simpler test program
+
+## TODO
 
 Specific planned modifications are:
 
@@ -10,11 +23,8 @@ Specific planned modifications are:
 
 However, this hasn't been started *yet.* Terrible bout of laziness, I know.
 
-*Current state: minimp3.h has been copied into the repository but has not yet undergone any of these modifications.*
-
 Things that need doing:
 
-* Removal of s16 output support
 * Remove `MINIMP3_ONLY_MP3`
 * Getting it to actually build as part of the gabien-natives build cycle (may require SIMD be removed, or may not)
 * Possibly strip down and abstract API in the hopes of creating an Unlicense libmpg123 shim

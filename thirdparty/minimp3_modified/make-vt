@@ -1,5 +1,5 @@
 #!/bin/sh
-clang -O3 main.c -o vtest -lm
+clang -O3 -g main.c -o vtest -lm
 # just outta curiousity
 clang -O3 -S main.c 2> /dev/null
 
