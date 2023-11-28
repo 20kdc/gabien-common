@@ -64,7 +64,18 @@ public abstract class DatumVisitor {
      * Called to visit a float.
      */
     public final void visitFloat(double value, DatumSrcLoc loc) {
-        visitFloat(value, Double.toString(value), loc);
+        if (!Double.isFinite(value)) {
+            if (Double.isInfinite(value)) {
+                if (value > 0)
+                    visitFloat(value, "#i+inf.0", loc);
+                else
+                    visitFloat(value, "#i-inf.0", loc);
+            } else {
+                visitFloat(value, "#i+nan.0", loc);
+            }
+        } else {
+            visitFloat(value, Double.toString(value), loc);
+        }
     }
 
     // List start/end

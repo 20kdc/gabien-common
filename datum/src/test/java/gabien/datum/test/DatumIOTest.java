@@ -74,15 +74,15 @@ public class DatumIOTest {
         assertEquals("#{}#", DatumWriter.objectToString(sym("")));
         assertEquals("a\\ ", DatumWriter.objectToString(sym("a ")));
         assertEquals("#nil", DatumWriter.objectToString(null));
+        assertEquals("#i+inf.0", DatumWriter.objectToString(Double.POSITIVE_INFINITY));
+        assertEquals("#i-inf.0", DatumWriter.objectToString(Double.NEGATIVE_INFINITY));
+        assertEquals("#i+nan.0", DatumWriter.objectToString(Double.NaN));
         assertEquals("123", DatumWriter.objectToString(123));
         assertEquals("\"\\\"\"", DatumWriter.objectToString("\""));
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
         dw.visitComment("Hello world\nFish are nice");
         assertEquals("; Hello world\n; Fish are nice\n", sw.toString());
-        // errors due to these being, well, weird and bad and no-good
-        // this might have to be removed in future if a representation of these is decided on 
-        assertThrows(RuntimeException.class, () -> DatumWriter.objectToString(Double.POSITIVE_INFINITY));
         // very bad errors
         assertThrows(DatumRuntimeIOException.class, () -> new DatumWriter(new Appendable() {
             @Override

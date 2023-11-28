@@ -186,7 +186,10 @@ public class DatumWriter extends DatumEncodingVisitor {
 
     @Override
     public void visitFloat(double value, String raw, DatumSrcLoc srcLoc) {
-        visitNumericUnknown(raw, srcLoc);
+        if (raw.startsWith("#"))
+            visitSpecialUnknown(raw, srcLoc);
+        else
+            visitNumericUnknown(raw, srcLoc);
     }
 
     /**

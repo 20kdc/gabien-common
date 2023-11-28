@@ -71,6 +71,12 @@ public abstract class DatumTokenSource {
                     visitor.visitId("", srcLoc());
                 } else if (c.equalsIgnoreCase("#nil")) {
                     visitor.visitNull(srcLoc());
+                } else if (c.equalsIgnoreCase("#i+inf.0")) {
+                    visitor.visitFloat(Double.POSITIVE_INFINITY, c, srcLoc());
+                } else if (c.equalsIgnoreCase("#i-inf.0")) {
+                    visitor.visitFloat(Double.NEGATIVE_INFINITY, c, srcLoc());
+                } else if (c.equalsIgnoreCase("#i+nan.0")) {
+                    visitor.visitFloat(Double.NaN, c, srcLoc());
                 } else {
                     visitor.visitSpecialUnknown(c, srcLoc());
                 }

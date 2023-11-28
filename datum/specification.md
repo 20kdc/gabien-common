@@ -116,17 +116,29 @@ Before reading a token, any whitespace is consumed.
 
 ### Token Types
 
-There are three kinds of token at this stage:
+There are a few kinds of token at this stage:
 
-1. *Potential identifiers,* sequences of *potential-identifier-group* characters. *The exact class of the first character is preserved for later differentiation.* Examples: `12.3`, `#t`, `hello`, `symbol->string`, `-8`.
+* *Symbol tokens,* a *content-class* character followed by an arbitrary number of *potential-identifier-class* characters, *or* a token that solely consists of a single 45 `-` character of *numeric-start-class.* Examples: `-`, `hello`, `symbol->string`.
+  
+  * The `-` token is a special case of Numeric token parsing and is theoretically handled after parsing of a Numeric token completes.
 
-2. *Strings,* *string-class*-delimited sequences of completely arbitrary characters. The only restriction is that in order to write characters 34 `"` or 92 `\`, they must be escaped.
+* *Numeric tokens,* a *numeric-start-class* character followed by an arbitrary number of *potential-identifier-class* characters, *unless* the token would solely consist of a single 45 `-` character (see *Symbol tokens*). Examples: `12.3`, `-8`.
 
-3. Characters of the *alone-group* turn into specific token types for each of the group's classes.
+* *Special Identifier tokens,* a *special-identifier-class* character followed by an arbitrary number of *potential-identifier-class* characters. Example: `#t`.
 
-It's worth noting that after this part of tokenization, potential identifiers are the only token to keep any trace of character classes, which are removed in the next stage.
+* *String tokens,* *string-class*-delimited sequences of completely arbitrary characters. The only restriction is that in order to write characters 34 `"` or 92 `\`, they must be escaped.
 
-Token types are used for similar purposes when necessary from this point forward.
+* Characters of the *alone-group* turn into specific token types for each of the group's classes:
+  
+  * *quote-class* characters become *Quote tokens.*
+  
+  * *list-start-class* characters become *List Start tokens.*
+  
+  * *list-end-class* characters become *List End tokens.*
+
+It is worth mentioning the expected parsing strategy here. In essence, *Symbol tokens, Numeric tokens,* and *Special Identifier tokens* are expected to be parsed more or less by the same routine with some flags set.
+
+**After this point, the direct/indirect and character class distinctions cease to exist.**
 
 ### Chart
 
@@ -157,9 +169,24 @@ stateDiagram-v2
     [*] --> whitespace_skipping
     state potential_identifier {
         direction LR
-        [*] --> potential_identifier_group
-        potential_identifier_group --> potential_identifier_group
-        potential_identifier_group --> [*]
+        [*] --> content_class
+        content_class --> [*]
+        [*] --> numeric_start_class_but_not_45
+        numeric_start_class_but_not_45 --> [*]
+        [*] --> numeric_start_class_and_45
+        numeric_start_class_and_45 --> [*]
+        [*] --> special_identifier_class
+        special_identifier_class --> [*]
+        numeric_start_class_but_not_45 --> potential_identifier_group_a
+        numeric_start_class_and_45 --> potential_identifier_group_a
+        potential_identifier_group_a --> [*]
+        special_identifier_class --> potential_identifier_group_b
+        potential_identifier_group_b --> [*]
+        content_class --> potential_identifier_group_c
+        potential_identifier_group_c --> [*]
+        potential_identifier_group_a --> potential_identifier_group_a
+        potential_identifier_group_b --> potential_identifier_group_b
+        potential_identifier_group_c --> potential_identifier_group_c
     }
     whitespace_skipping --> potential_identifier
     potential_identifier --> [*]
@@ -178,77 +205,107 @@ stateDiagram-v2
     }
 ```
 
-## Potential Identifier Differentiation
+## Tokens To Values
 
-### Basics
-
-*Potential identifiers* as described above do not make up the basic primitive types such as booleans, integers, and floats.
+*Symbol tokens, Numeric tokens,* and *Special Identifier tokens* as described above do not make up the basic primitive types such as booleans, integers, and floats.
 
 As such, it falls to this part of the specification to explain how these are divided.
 
-Thus, tokenization is extended to five kinds of token:
-
-1. *Symbols,* such as `open`, `language_tok` -- the default handling of a *potential identifier* (see below).
-
-2. *Numbers,* such as `123` -- a subset of potential identifiers described below.
-
-3. *Special Identifiers,* such as `#t` and `#f` -- a subset of potential identifiers for reserved identifiers to be handled by the receiving parser.
-
-4. The already-defined tokens, *strings* and the *alone-group* tokens.
-
-Something to note is that the implementation of the differentiation is best placed within the tokenizer. These steps are divided here for ease of explanation.
-
-### Differentiation
-
-A *potential identifier's* first character's class (as preserved from earlier) completely defines the kind of potential identifier it is. This step is the last point at which character classes are seen.
-
-Importantly, because it's preserved from earlier, escaping the first character guarantees as usual that the result will be *content-class*.
-
-The classification of potential identifiers into their various subtypes works as follows:
-
-* All potential identifiers that begin with a *numeric-start-class* character are *reserved number identifiers*.
-
-* All potential identifiers that begin with a *special-identifier-class* character are *special identifiers*.
-
-* Potential identifiers that don't fall into the above brackets are *symbols*.
-
-Once this differentiation has been performed, *character classes no longer matter, only token types.*
-
-This is important for various reasons, the most obvious being that `0` through `9` can't be discriminated by the character class system.
-
 ### Symbols
 
-There is nothing particularly special to note about symbols. They can be thought of as essentially strings with a special flag set. However, it *may* be of use to optimize them in some way for fast lookup (perhaps interning them).
+There is nothing particularly special to note about symbols -- they can be thought of as essentially strings with a special flag set.
+
+However, it *may* be of use to optimize them in some way for fast lookup/comparison (perhaps interning them).
 
 ### Special Identifiers
 
-Special identifiers are situational. The receiving parser must define them or forward the task in some way. Above all else, though, their purpose is to represent arbitrary singleton values that can't be arbitrarily defined by the user, so creating a mechanism to do so defeats the point.
+Special identifiers are situational. *Above all else, their purpose is to represent arbitrary singleton values that can't be arbitrarily defined by the user.*
 
-However, the following special identifiers shall be considered *standardized* and should only be used for their intended purposes (though they need not necessarily be implemented):
+The receiving parser must define them, or forward the task onto the calling code in some way. Ideally the calling code should be able to choose either.
+
+They should be used with care; while Datum is intended to be written by humans (not for machine-to-machine transfer), some special identifiers may not be available in all contexts.
+
+As such, if defining a format based on Datum, reliance on these special identifiers may create awkward results.
+
+Usage of special identifiers other than `#f` and `#t` also heavily limits cross-compatibility with Scheme parsers -- `#{}#` is a Guile extension, and neither that or `#nil` are available on Scheme 9 from Empty Space, for instance.
+
+However, the following special identifiers shall be considered *standardized* and should only be used for their intended purposes. *If at all possible, a parser should implement these unless special identifier parsing is overridden. Implementations should default to what contextually makes sense, but must allow overriding the logic if any standard values are aliased in a non-standard way.*
+
+This list also gives examples of how this might map to Scheme 9 From Empty Space, as an example of how interoperability works here.
 
 * `#{}#`: This is actually converted into the empty symbol. This mainly exists to remove some of the error cases from writers.
+  
+  * Scheme interop notes: Won't parse on S9FES. Custom parser could use `(string->symbol "")`.
 
 * `#t` and `#T`: These express the boolean `true` value.
+  
+  * Scheme interop notes: Should parse on all Schemes.
 
 * `#f` and `#F`: These express the boolean `false` value.
+  
+  * Scheme interop notes: Should parse on all Schemes.
 
 * `#nil` or any case variation: This represents `null` or so forth. This may or may not be an alias for `()` depending on context.
+  
+  * Scheme interop notes: Won't parse on S9FES. A custom parser could alias it to `()` or define a unique signal value kind of like how `eof-object?` works.
+
+* `#i+inf.0` or any case variation: Positive infinity.
+  
+  * Scheme interop notes: Won't parse on S9FES.
+
+* `#i-inf.0`or any case variation: Negative infinity.
+  
+  * Scheme interop notes: Won't parse on S9FES.
+
+* `#i+nan.0`or any case variation: Positive NaN.
+  
+  - Scheme interop notes: Won't parse on S9FES.
 
 ### Numbers
 
-The tokenization of Datum does not explicitly define the full set of *reserved number identifiers* that are considered *numbers*. However, some core principles must be followed:
+The tokenization of Datum does not explicitly define the full set of *Numeric tokens* that are considered *numbers*. However, there are two groups of considerations here.
 
-* The reserved number identifier "-" alone is reclassified as a regular symbol.
+Firstly, the standard formats:
 
-* Any reserved number identifier that does not parse as a number must be considered a distinct kind of token, and preserved for potential compatibility workaround code to pick up on. That code may provide an error -- in particular it's not recommended to try and implement these as actual literals in a tree data model unless you really need to load _any_ valid file.
+- The standard integer format, which *must* be supported:
+  
+  - This is any contiguous sequence of the 10 ASCII decimal digits, which may or may not be preceded by 45 `-` or 43 `+` (*this should rarely come up due to how parsing has been defined but is important*).
+    - If the result exceeds the integer limits of the implementation, the results are undefined.
+  - If the source data model makes no distinction whatsoever between floating point and integer values (i.e. it doesn't have integers, period), this format *should* be used whenever it would not lose precision, unless specified otherwise.
 
-* Any reserved number identifier that does parse as a number can be appropriately forwarded as a *numeric token* (realistically, these would be *64-bit integer token* and *64-bit float token*). It is advised to keep the full textual content available, particularly in callback tokenizers where doing so is a zero-cost operation.
+- The standard floating-point format. If floating point values are supported by the implementation, this format *must* be supported:
+  
+  - This is the standard integer format, followed immediately by 46 `.` and then another contiguous sequence of the 10 ASCII decimal digits, such as `0.0` (this does not cover, say, `0.` or `.0`).
 
-* Any contiguous sequence of the 10 ASCII decimal digits, which may or may not be preceded by `-`, that does not exceed the integer limits of the implementation, must be valid.
+- The standard floating-point scientific notation format. This format *should* be supported:
+  
+  - This is the standard integer or floating-point format, followed immediately by 101 `e` or 69 `E`, followed by the standard integer format *again.*
+  - *Unfortunately, most programming language standard libraries will use this format under some set of conditions, and they make it rather difficult to override.*
+    - It is possible to write a string processing function that fixes these, but doing so also goes somewhat against the minimal-implementation ideals of Datum.
+      - In addition, `1e+308` is representable as a 64-bit floating-point number. The implication is that the results may be... amusing.
+  - This format *should never be written by humans.*
 
-* Using `,`  in a "standard" (floating-point or integer) number is not valid. An implementation may choose to attempt to handle this anyway, but probably shouldn't. Using it as part of a non-standard kind of number not *expected* to be generally readable (Numeric vectors, possibly rational numbers but those would do better to use `/`) is theoretically fine, though an implementation should give some idea of the format of what such a number is, and the implementer may still wish to consider using alternative methods of expressing the number.
+These three formats are the mutual ground between most programming language's default integer and floating-point parsing and printing functions.
 
-In addition, it is generally advised (given the repository this is in) that whatever number format is given follows the JSON specification, and can be parsed by Java `Long.parseLong` or `Double.parseDouble`.
+However, do be sure that your language of choice does not print 'abnormal' forms outside of this (this is a particular danger for floating-point values, but can mainly be averted by checking for NaNs and infinities).
+
+Secondly, things to consider:
+
+* It is advised to keep the full textual content available, particularly in callback tokenizers where doing so is a zero-cost operation.
+
+* Any reserved number identifier that does not parse as a number must be considered a distinct kind of value, and should be available via some hook for potential compatibility workaround code to pick up on.
+  
+  * The default handling, or that code, may provide an error -- in particular it's not recommended to try and implement these as actual literals in a tree data model unless you really need to load _any_ valid file. A visitor model might expose the information with a default implementation that throws an error.
+
+* Using 44 `,`  in a real floating-point or real integer number is *never* valid. This is to avoid the "10,000 => 10000 or 10.000" problem between different cultures. Just don't. Do not do it.
+  
+  * Using it as part of a special kind of number not *expected* to be generally readable (Numeric vectors, complex numbers, possibly rational numbers but those would do better to use `/`) is theoretically fine, though an implementation should give some idea of the format of what such a number is, and the implementer may still wish to consider using alternative methods of expressing the number, *as the resulting format will be highly implementation-specific.*
+
+In addition, it is *generally advised* (given the repository this is in) that whatever number format is used for writing follows the JSON specification, and can be parsed by Java `Long.parseLong` or `Double.parseDouble`; further, that the reader can handle the values that come from those functions, such as hexadecimal (`0x100` = `256`) and scientific notation, *but these formats shouldn't be machine-written as an R6RS parser (or Guile, even!) cannot handle it.*
+
+*A particular exception to this arises with infinities and NaNs.* These need to go into special identifier territory, because the Scheme syntax for them is a massive pile of special cases that overextends way too far into symbol territory. Luckily, R6RS introduces syntax for these, and the inexact-prefix version works nicely.
+
+*Also, to be absolutely clear: only the 'standard formats' described above, along with the special identifiers, are safe to use for writing; use of a custom number format makes the file not purely Datum standard, and a compliant parser may not parse the result correctly.*
 
 ## Grammar
 
