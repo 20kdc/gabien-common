@@ -316,7 +316,7 @@ public abstract class UIElement extends LAFChain {
      * Dumps this UI element.
      */
     public void debugDumpUITree(DatumWriter writer) {
-        writer.visitId(getClass().getSimpleName(), DatumSrcLoc.NONE);
+        writer.visitId(getClass().getName(), DatumSrcLoc.NONE);
         writer.visitInt(elementBounds.x, DatumSrcLoc.NONE);
         writer.visitInt(elementBounds.y, DatumSrcLoc.NONE);
         writer.visitInt(elementBounds.width, DatumSrcLoc.NONE);
