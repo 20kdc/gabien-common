@@ -287,7 +287,7 @@ public abstract class UIElement extends LAFChain {
     // Attempts to assign the pointer or returns null otherwise.
     // Null will cause further element checks, so be sure this is what you want.
     public IPointerReceiver handleNewPointer(IPointer state) {
-        return new IPointerReceiver.NopPointerReceiver();
+        return IPointerReceiver.NopPointerReceiver.I;
     }
 
     // Useful for various things. 'y' renamed to 'i' to shut up warnings.
@@ -571,7 +571,7 @@ public abstract class UIElement extends LAFChain {
             }
             if (debugSelection)
                 System.err.println("Deselected by pointer.");
-            // Returns null so that UIGrid & such can use that to mean 'not handled by existing elements'.
+            // Returns null so that UIGrid & such can use that to mean 'not handled by existing elements
             return null;
         }
 

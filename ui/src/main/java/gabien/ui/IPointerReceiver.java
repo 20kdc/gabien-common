@@ -23,7 +23,8 @@ public interface IPointerReceiver {
     void handlePointerUpdate(IPointer state);
     void handlePointerEnd(IPointer state);
 
-    class NopPointerReceiver implements IPointerReceiver {
+    enum NopPointerReceiver implements IPointerReceiver {
+        I;
         @Override
         public void handlePointerBegin(IPointer state) {
         }

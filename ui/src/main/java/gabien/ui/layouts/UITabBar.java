@@ -409,6 +409,9 @@ public class UITabBar extends UIElement.UIPanel {
 
     @Override
     public IPointerReceiver handleNewPointer(IPointer pointer) {
+        IPointerReceiver firstPtr = super.handleNewPointer(pointer);
+        if (firstPtr != null)
+            return firstPtr;
         FontManager fm = Theme.FM_GLOBAL.get(this);
         int x = pointer.getX();
         int y = pointer.getY();
@@ -418,7 +421,7 @@ public class UITabBar extends UIElement.UIPanel {
                 final int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
                 if (x < (pos + tabW)) {
                     if (clickInTab(w, x - pos, y, tabW, effectiveHeight))
-                        return null;
+                        return IPointerReceiver.NopPointerReceiver.I;
                     parentView.selectTab(w.contents);
                     if (canDragTabs) {
                         IPointerReceiver.RelativeResizePointerReceiver rrpr = new IPointerReceiver.RelativeResizePointerReceiver(pos, 0, new Consumer<Size>() {
@@ -444,7 +447,7 @@ public class UITabBar extends UIElement.UIPanel {
                         draggingTabs.put(w, rrpr);
                         return rrpr;
                     } else {
-                        return super.handleNewPointer(pointer);
+                        return IPointerReceiver.NopPointerReceiver.I;
                     }
                 }
                 pos += tabW;
@@ -452,7 +455,7 @@ public class UITabBar extends UIElement.UIPanel {
             if (canSelectNone)
                 parentView.selectTab(null);
         }
-        return super.handleNewPointer(pointer);
+        return IPointerReceiver.NopPointerReceiver.I;
     }
 
     @Override

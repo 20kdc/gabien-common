@@ -258,7 +258,7 @@ public class UIWindowView extends UIElement {
                             windowBoundsCheck();
                         }
                     });
-                return new IPointerReceiver.NopPointerReceiver();
+                return IPointerReceiver.NopPointerReceiver.I;
             } else if (r.contains(x, y)) {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
@@ -267,7 +267,7 @@ public class UIWindowView extends UIElement {
                 i.performOffset(r.x, r.y);
                 if (ipr != null)
                     return new IPointerReceiver.TransformingElementPointerReceiver(contents, ipr);
-                return new IPointerReceiver.NopPointerReceiver();
+                return IPointerReceiver.NopPointerReceiver.I;
             } else if (mainframe.contains(x, y)) {
                 parent.selectedWindow = this;
                 parent.raiseShell(this);
