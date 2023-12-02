@@ -23,8 +23,7 @@ import gabien.wsi.ITextEditingSession;
 // 2. onEdit is called when enter is pressed, and otherwise the text will revert.
 //    (This makes it useful for property-editor interfaces which need that kind of confirmation.)
 public class UITextBox extends UILabel {
-    private String textLastSeen = "";
-    private String textCStr = "";
+    private String textAsSeenByProgram;
     public Runnable onEdit = EmptyLambdas.emptyRunnable;
     public Function<String, String> feedback;
     public boolean multiLine;
@@ -34,6 +33,7 @@ public class UITextBox extends UILabel {
 
     public UITextBox(String text, int h) {
         super(text, h);
+        textAsSeenByProgram = text;
         setBorderType(Theme.B_TEXTBOX);
     }
 
@@ -43,27 +43,33 @@ public class UITextBox extends UILabel {
     }
 
     @Override
+    public void setText(String text) {
+        textAsSeenByProgram = text;
+        super.setText(text);
+    }
+
+    @Override
+    public String getText() {
+        return textAsSeenByProgram;
+    }
+
+    @Override
     public void updateContents(double deltaTime, boolean selected, IPeripherals peripherals) {
         selected &= !tempDisableSelection;
 
-        String text = getText();
-        if (!textLastSeen.equals(text)) {
-            textCStr = text;
-            textLastSeen = text;
-        }
+        String textBeingEdited = super.getText();
         if (selected) {
             // ensure we have an editing session
             if (editingSession == null)
-                editingSession = peripherals.openTextEditingSession(text, multiLine, contents.textHeight, feedback);
+                editingSession = peripherals.openTextEditingSession(textBeingEdited, multiLine, contents.textHeight, feedback);
             Rect crib = getContentsRelativeInputBounds();
-            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text);
-            // Update storage.
-            text = ss;
-            textLastSeen = ss;
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, textBeingEdited);
             if (!multiLine) {
                 // Enter confirmation.
                 if (editingSession.isEnterJustPressed()) {
-                    textCStr = text;
+                    // System.out.println("UITextBox: Enter just pressed, text: " + ss);
+                    // update text *as seen by program*
+                    setText(ss);
                     // warning: can bamboozle and cause editingSession loss!
                     onEdit.run();
                     peripherals.clearKeys();
@@ -73,24 +79,20 @@ public class UITextBox extends UILabel {
             if ((editingSession != null) && editingSession.isSessionDead()) {
                 // clean up if the session died
                 tempDisableSelection = true;
-                editingSession = null;
+                closeOffSession();
             }
         } else {
             // close off any editing session going on
+            // this is the only place where this can happen so this is where the closeoff logic lives
             if (editingSession != null) {
                 if (multiLine) {
-                    textCStr = text;
+                    // update text *as seen by program*
+                    setText(textBeingEdited);
                     onEdit.run();
                 }
-                if (editingSession != null) {
-                    editingSession.endSession();
-                    editingSession = null;
-                }
+                closeOffSession();
             }
-            // restore text from backup
-            text = textCStr;
         }
-        setText(text);
         setBorderType(selected ? Theme.B_TEXTBOXF : Theme.B_TEXTBOX);
         super.updateContents(deltaTime, selected, peripherals);
     }
@@ -98,9 +100,17 @@ public class UITextBox extends UILabel {
     @Override
     public void setAttachedToRoot(boolean attached) {
         super.setAttachedToRoot(attached);
-        if (editingSession != null && !attached) {
+        if (!attached)
+            closeOffSession();
+    }
+
+    private void closeOffSession() {
+        if (editingSession != null) {
             editingSession.endSession();
             editingSession = null;
+            // restore text from backup (only place where a session can be closed off!)
+            // if the session ended well then it will have been confirmed before we hit this
+            super.setText(textAsSeenByProgram);
         }
     }
 
