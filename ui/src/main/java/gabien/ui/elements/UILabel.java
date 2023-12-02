@@ -237,7 +237,7 @@ public class UILabel extends UIBorderedElement {
             statusLine.setTheme(theme);
             Size sz = statusLine.update(lastSize);
             if (sz != null) {
-                height = sz.height;
+                height = statusLine.lastActSize.height;
                 pokeLastSize(w, height);
             }
             UIBorderedElement.drawBorder(theme, igd, Theme.B_LABEL, bw, x, y, w, height);
