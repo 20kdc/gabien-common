@@ -76,26 +76,6 @@ public class UIScrollLayout extends UIElement.UIPanel {
         layoutRecalculateMetrics();
     }
 
-    public void panelsClear() {
-        for (UIElement uie : layoutGetElements())
-            layoutRemoveElement(uie);
-        layoutRecalculateMetrics();
-    }
-
-    /**
-     * Deprecated. Use panelsSet instead.
-     */
-    @Deprecated
-    public void panelsAdd(UIElement uie) {
-        layoutAddElement(uie);
-        layoutSetElementVis(uie, false);
-        earlyForceRunLayout = true;
-    }
-
-    public void panelsFinished() {
-        layoutRecalculateMetrics();
-    }
-
     /**
      * Used in the two layout handlers below. 
      */
