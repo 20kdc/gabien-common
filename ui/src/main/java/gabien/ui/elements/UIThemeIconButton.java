@@ -7,26 +7,24 @@
 
 package gabien.ui.elements;
 
-import java.util.function.Function;
+import org.eclipse.jdt.annotation.NonNull;
 
 import gabien.ui.theming.IIcon;
+import gabien.ui.theming.Theme;
 
 /**
- * A button with an icon on it.
- * Created on January 28th, 2018 as part of an R48 plan to reduce translator work.
- * Later migrated to GaBIEn, 1st December 2023, as part of IIcon stuff.
- * Split between base/subclass 2nd December 2023. 
+ * UIBaseIconButton for theme-based icons.
+ * Created 2nd December 2023. 
  */
-public class UIIconButton extends UIBaseIconButton<UIIconButton> {
-    public Function<Boolean, IIcon> symbol;
-
-    public UIIconButton(Function<Boolean, IIcon> symbol, int fontSize, Runnable runnable) {
+public class UIThemeIconButton extends UIBaseIconButton<UIThemeIconButton> {
+    public @NonNull Theme.Attr<IIcon> iconAttr;
+    public UIThemeIconButton(@NonNull Theme.Attr<IIcon> symbol, int fontSize, Runnable runnable) {
         super(fontSize, runnable);
-        this.symbol = symbol;
+        iconAttr = symbol;
     }
 
     @Override
     protected IIcon getCurrentIcon(boolean textBlack) {
-        return symbol.apply(textBlack);
+        return iconAttr.get(this);
     }
 }
