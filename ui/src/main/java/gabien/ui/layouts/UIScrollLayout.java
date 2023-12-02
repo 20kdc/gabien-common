@@ -31,7 +31,6 @@ public class UIScrollLayout extends UIElement.UIPanel {
     private int scrollLength = 0;
 
     private double lastScrollPoint = -1;
-    private boolean earlyForceRunLayout = false;
 
     public UIScrollLayout(boolean vertical, int sc) {
         scrollbar = new UIScrollbar(vertical, sc);
@@ -123,7 +122,6 @@ public class UIScrollLayout extends UIElement.UIPanel {
 
     @Override
     protected @Nullable Size layoutRecalculateMetricsImpl() {
-        earlyForceRunLayout = false;
         int idealLength = 0;
         int idealBreadth = 0;
 
@@ -242,10 +240,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
 
     @Override
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
-        if (earlyForceRunLayout) {
-            // System.out.println("A SCROLL LAYOUT DID THE THING, IT HAS " + layoutGetElements().size() + " ELEMS AND A PARENT OF " + getParent());
-            layoutRecalculateMetrics();
-        } else if (lastScrollPoint != scrollbar.scrollPoint) {
+        if (lastScrollPoint != scrollbar.scrollPoint) {
             // System.out.println("DOING LAYOUT SCROLLBOUNDS DUE TO STUFF AND THINGS");
             layoutScrollbounds();
         }
