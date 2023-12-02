@@ -18,6 +18,7 @@ import gabien.uslx.append.Rect;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
@@ -33,6 +34,7 @@ import gabien.media.riff.RIFFNode;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
+import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
 
 /**
@@ -47,7 +49,8 @@ public class UIMainMenu extends UIProxy {
     public UIMainMenu(WindowCreatingUIElementConsumer ui) {
         this.ui = ui;
         proxySetElement(vsl, false);
-        vsl.panelsAdd(new UITextButton("Open PVA File...", 16, () -> {
+        LinkedList<UIElement> ve = new LinkedList<>();
+        ve.add(new UITextButton("Open PVA File...", 16, () -> {
             GaBIEn.startFileBrowser("Open PVA File", false, "", (str) -> {
                 if (str != null) {
                     try {
@@ -59,7 +62,7 @@ public class UIMainMenu extends UIProxy {
                 }
             });
         }));
-        vsl.panelsAdd(new UITextButton("Convert To WAV...", 16, () -> {
+        ve.add(new UITextButton("Convert To WAV...", 16, () -> {
             GaBIEn.startFileBrowser("Convert Audio File", false, "", (str) -> {
                 if (str != null) {
                     try {
@@ -73,13 +76,13 @@ public class UIMainMenu extends UIProxy {
                 }
             });
         }));
-        vsl.panelsAdd(new UITextButton("Start RIFF Editor", 16, () -> {
+        ve.add(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));
         }));
-        vsl.panelsAdd(new UITextButton("Start Atlasing Tester (flashing lights ahead)", 16, () -> {
+        ve.add(new UITextButton("Start Atlasing Tester (flashing lights ahead)", 16, () -> {
             ui.accept(new UIAtlasTester());
         }));
-        vsl.panelsAdd(new UITextButton("Compile Sphere Atlases", 16, () -> {
+        ve.add(new UITextButton("Compile Sphere Atlases", 16, () -> {
             SimpleAtlasBuilder sab = new SimpleAtlasBuilder(512, 512, BinaryTreeAtlasStrategy.INSTANCE);
             Consumer<ITexRegion> itr = EmptyLambdas.emptyConsumer();
             sab.add(itr, new ImageAtlasDrawable(GaBIEn.getImage("sphere32.png")));
@@ -97,12 +100,13 @@ public class UIMainMenu extends UIProxy {
                 ui.accept(upp);
             }
         }));
-        vsl.panelsAdd(new UITextButton("GaBIEn Credits", 16, () -> {
+        ve.add(new UITextButton("GaBIEn Credits", 16, () -> {
             UICredits uic = new UICredits(16, 16);
             uic.setLAFParent(GaBIEnUI.sysThemeRoot);
             ui.accept(uic);
         }));
-        vsl.panelsAdd(lbl);
+        ve.add(lbl);
+        vsl.panelsSet(ve);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
     }
     public void copyRIFF(RIFFNode rn) {

@@ -38,16 +38,53 @@ public class UIScrollLayout extends UIElement.UIPanel {
         sbSize = sc;
     }
 
+    public UIScrollLayout(boolean vertical, int sc, UIElement... contents) {
+        this(vertical, sc);
+        panelsSet(contents);
+    }
+
+    public UIScrollLayout(boolean vertical, int sc, Iterable<UIElement> contents) {
+        this(vertical, sc);
+        panelsSet(contents);
+    }
+
+    public void panelsSet() {
+        for (UIElement uie : layoutGetElements())
+            layoutRemoveElement(uie);
+        layoutRecalculateMetrics();
+    }
+
+    public void panelsSet(UIElement... contents) {
+        for (UIElement uie : layoutGetElements())
+            layoutRemoveElement(uie);
+        for (UIElement uie : contents) {
+            layoutAddElement(uie);
+            layoutSetElementVis(uie, false);
+        }
+        layoutRecalculateMetrics();
+    }
+
+    public void panelsSet(Iterable<UIElement> contents) {
+        for (UIElement uie : layoutGetElements())
+            layoutRemoveElement(uie);
+        for (UIElement uie : contents) {
+            layoutAddElement(uie);
+            layoutSetElementVis(uie, false);
+        }
+        layoutRecalculateMetrics();
+    }
+
     public void panelsClear() {
         for (UIElement uie : layoutGetElements())
             layoutRemoveElement(uie);
         layoutRecalculateMetrics();
     }
 
+    /**
+     * Deprecated. Use panelsSet instead.
+     */
+    @Deprecated
     public void panelsAdd(UIElement uie) {
-        // Store these offscreen to prevent accidental clicking.
-        Size s = uie.getSize();
-        uie.setForcedBounds(null, new Rect(-s.width, -s.height, s.width, s.height));
         layoutAddElement(uie);
         layoutSetElementVis(uie, false);
         earlyForceRunLayout = true;

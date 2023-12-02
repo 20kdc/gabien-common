@@ -50,11 +50,9 @@ public class UIBytesEditor extends UIProxy {
             if (rows.length == rc)
                 return;
         rows = new Row[rc];
-        usl.panelsClear();
-        for (int i = 0; i < rows.length; i++) {
+        for (int i = 0; i < rows.length; i++)
             rows[i] = new Row(i);
-            usl.panelsAdd(rows[i]);
-        }
+        usl.panelsSet(rows);
         refresh();
     }
 

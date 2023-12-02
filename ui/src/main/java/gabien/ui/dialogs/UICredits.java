@@ -15,6 +15,7 @@ import java.util.LinkedList;
 
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.elements.UILabel;
 import gabien.ui.elements.UITextButton;
@@ -40,18 +41,16 @@ public class UICredits extends UIProxy {
         });
         UIScrollLayout buttons = new UIScrollLayout(true, sc);
         LinkedList<LicenseComponent> lcl = LicenseManager.I.getSortedLicenseComponents();
+        LinkedList<UIElement> elms = new LinkedList<>();
         for (final LicenseComponent lc : lcl) {
-            buttons.panelsAdd(new UITextButton(lc.name, textHeight, () -> {
+            elms.add(new UITextButton(lc.name, textHeight, () -> {
                 loadLicenseComponent(lc);
             }));
         }
+        buttons.panelsSet(elms);
         labelLicense = new UILabel("", textHeight);
         labelCredits = new UILabel("", textHeight);
-        UIScrollLayout mainUSL = new UIScrollLayout(true, sc);
-        mainUSL.panelsAdd(labelHeader);
-        mainUSL.panelsAdd(urlButton);
-        mainUSL.panelsAdd(labelLicense);
-        mainUSL.panelsAdd(labelCredits);
+        UIScrollLayout mainUSL = new UIScrollLayout(true, sc, labelHeader, urlButton, labelLicense, labelCredits);
         proxySetElement(new UISplitterLayout(new UILabel("Presence in this list does not imply endorsement by the involved parties.", textHeight), new UISplitterLayout(buttons, mainUSL, false, 0), true, 0), true);
         setForcedBounds(null, new Rect(0, 0, textHeight * 32, textHeight * 16));
         if (lcl.size() > 0)

@@ -8,6 +8,7 @@ package gabienapp;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
@@ -30,8 +31,7 @@ public class UIRIFFEditor extends UIProxy {
     RIFFNode node = new RIFFNode.CList("RIFF", "TEST");
     public UIRIFFEditor(UIMainMenu p) {
         menu = p;
-        UIScrollLayout menuBar = new UIScrollLayout(false, 8);
-        menuBar.panelsAdd(new UITextButton("Open RIFF", 16, () -> {
+        UIScrollLayout menuBar = new UIScrollLayout(false, 8, new UITextButton("Open RIFF", 16, () -> {
             GaBIEn.startFileBrowser("Open RIFF", false, "", (res) -> {
                 if (res != null) {
                     try (InputStream inp = GaBIEn.getInFile(res)) {
@@ -42,9 +42,7 @@ public class UIRIFFEditor extends UIProxy {
                     }
                 }
             });
-        }));
-        menuBar.panelsAdd(new UILabel(" ", 16));
-        menuBar.panelsAdd(new UITextButton("Save", 16, () -> {
+        }), new UILabel(" ", 16), new UITextButton("Save", 16, () -> {
             GaBIEn.startFileBrowser("Save RIFF", true, "", (res) -> {
                 if (res != null) {
                     try (OutputStream oup = GaBIEn.getOutFile(res)) {
@@ -61,10 +59,11 @@ public class UIRIFFEditor extends UIProxy {
         proxySetElement(menuBarAndMainPanel, false);
     }
     public void regenerateContents() {
-        mainPanel.panelsClear();
-        addNode("", null, node);
+        LinkedList<UIElement> uie = new LinkedList<>();
+        addNode(uie, "", null, node);
+        mainPanel.panelsSet(uie);
     }
-    public void addNode(String indent, RIFFNode.CList parent, RIFFNode node) {
+    public void addNode(LinkedList<UIElement> uie, String indent, RIFFNode.CList parent, RIFFNode node) {
         UIElement indentC = new UILabel(indent, 16);
         UIElement controls = new UITextButton("Copy", 16, () -> {
             menu.copyRIFF(node);
@@ -100,15 +99,15 @@ public class UIRIFFEditor extends UIProxy {
                 regenerateContents();
             }), false, 1);
         }
-        mainPanel.panelsAdd(new UISplitterLayout(chunkDetail, controls, false, 1));
+        uie.add(new UISplitterLayout(chunkDetail, controls, false, 1));
         if (node instanceof RIFFNode.CList) {
             final RIFFNode.CList cd = (RIFFNode.CList) node;
             int idx = 0;
             for (RIFFNode ch : cd.contents) {
-                addPasteButton(" " + indent, cd, idx++);
-                addNode(" " + indent, cd, ch);
+                addPasteButton(uie, " " + indent, cd, idx++);
+                addNode(uie, " " + indent, cd, ch);
             }
-            addPasteButton(" " + indent, cd, idx);
+            addPasteButton(uie, " " + indent, cd, idx);
         }
     }
     public Runnable cidEditor(UITextBox tb, Consumer<String> res) {
@@ -129,7 +128,7 @@ public class UIRIFFEditor extends UIProxy {
             regenerateContents();
         };
     }
-    public void addPasteButton(String indent, RIFFNode.CList parent, int index) {
+    public void addPasteButton(LinkedList<UIElement> uie, String indent, RIFFNode.CList parent, int index) {
         UIElement indent2 = new UILabel(indent, 16);
         UIElement pastePtr = new UITextButton("Paste", 16, () -> {
             if (menu.riffClipboard != null) {
@@ -148,6 +147,6 @@ public class UIRIFFEditor extends UIProxy {
             regenerateContents();
         }), false, 0);
         pastePtr = new UISplitterLayout(pastePtr, new UILabel(" ", 16), false, 0);
-        mainPanel.panelsAdd(new UISplitterLayout(indent2, pastePtr, false, 0));
+        uie.add(new UISplitterLayout(indent2, pastePtr, false, 0));
     }
 }

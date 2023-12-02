@@ -7,6 +7,8 @@
 
 package gabien.ui.dialogs;
 
+import java.util.LinkedList;
+
 import gabien.ui.UIElement;
 import gabien.ui.elements.UITextButton;
 import gabien.ui.layouts.UIScrollLayout;
@@ -34,15 +36,16 @@ public class UIPopupMenu extends UIElement.UIProxy {
     public UIPopupMenu(Iterable<Entry> entries, int h, int sh, boolean rsz) {
         UIScrollLayout usl = new UIScrollLayout(true, sh);
         int i = 0;
+        LinkedList<UIElement> elms = new LinkedList<>();
         for (final Entry ent : entries) {
             final int fi = i++;
             UITextButton utb = new UITextButton(ent.text, h, () -> {
                 optionExecute(fi);
                 ent.action.run();
             });
-            usl.panelsAdd(utb);
+            elms.add(utb);
         }
-        usl.panelsFinished();
+        usl.panelsSet(elms);
         proxySetElement(usl, true);
         requestResize = rsz;
     }
@@ -52,15 +55,16 @@ public class UIPopupMenu extends UIElement.UIProxy {
      */
     public UIPopupMenu(String[] strings, final Runnable[] tilesets, int h, int sh, boolean rsz) {
         UIScrollLayout usl = new UIScrollLayout(true, sh);
+        LinkedList<UIElement> elms = new LinkedList<>();
         for (int i = 0; i < strings.length; i++) {
             final int fi = i;
             UITextButton utb = new UITextButton(strings[i], h, () -> {
                 optionExecute(fi);
                 tilesets[fi].run();
             });
-            usl.panelsAdd(utb);
+            elms.add(utb);
         }
-        usl.panelsFinished();
+        usl.panelsSet(elms);
         proxySetElement(usl, true);
         requestResize = rsz;
     }
