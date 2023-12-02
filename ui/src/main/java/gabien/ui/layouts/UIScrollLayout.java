@@ -41,11 +41,13 @@ public class UIScrollLayout extends UIElement.UIPanel {
     public UIScrollLayout(boolean vertical, int sc, UIElement... contents) {
         this(vertical, sc);
         panelsSet(contents);
+        forceToRecommended();
     }
 
     public UIScrollLayout(boolean vertical, int sc, Iterable<UIElement> contents) {
         this(vertical, sc);
         panelsSet(contents);
+        forceToRecommended();
     }
 
     public void panelsSet() {
@@ -64,7 +66,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
         layoutRecalculateMetrics();
     }
 
-    public void panelsSet(Iterable<UIElement> contents) {
+    public <T extends UIElement> void panelsSet(Iterable<T> contents) {
         for (UIElement uie : layoutGetElements())
             layoutRemoveElement(uie);
         for (UIElement uie : contents) {
