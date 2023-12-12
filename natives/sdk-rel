@@ -25,6 +25,8 @@ cp ../COPYING.txt ../natives-sdk/gabien-COPYING.txt || exit
 cp ../CREDITS.txt ../natives-sdk/gabien-CREDITS.txt || exit
 cp ../thirdparty/stb_vorbis_modified/COPYING.txt ../natives-sdk/stb_vorbis_modified-COPYING.txt || exit
 cp ../thirdparty/stb_vorbis_modified/README.md ../natives-sdk/stb_vorbis_modified-README.md || exit
+cp ../thirdparty/minimp3_modified/LICENSE ../natives-sdk/minimp3_modified-LICENSE || exit
+cp ../thirdparty/minimp3_modified/README.md ../natives-sdk/minimp3_modified-README.md || exit
 cp README.md ../natives-sdk/ || exit
 cd ../natives-sdk || exit
 ../natives/ktsz * > ../natives-sdk.zip || exit
