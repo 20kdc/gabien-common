@@ -17,7 +17,7 @@
 
 	<modules>
 		<module>uslx</module>
-		<module>datum</module>
+		<module>datum/java</module>
 		<module>media</module>
 		<module>common</module>
 		<module>ui</module>

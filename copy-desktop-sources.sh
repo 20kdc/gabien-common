@@ -13,12 +13,12 @@ if [ "$#" -ne 1 ]; then
 fi
 
 cp -r uslx/src/main/* $1 &&
-cp -r datum/src/main/* $1 &&
+cp -r datum/java/src/main/* $1 &&
 cp -r media/src/main/* $1 &&
 cp -r common/src/main/* $1 &&
 cp -r ui/src/main/* $1 &&
 cp -r natives-util/src/main/* $1 &&
 mkdir -p $1/c &&
-cp natives/c/*.c natives/c/*.h natives/c/badgpu/*.c natives/c/badgpu/*.h $1/c &&
+cp natives/c/*.c natives/c/*.h natives/c/badgpu/*.c natives/c/badgpu/*.h thirdparty/minimp3_modified/minimp3.h thirdparty/stb_vorbis_modified/stb_vorbis.c $1/c &&
 cp -r javase/src/main/* $1
 

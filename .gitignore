@@ -44,9 +44,11 @@
 !datum
 !datum/
 !datum/specification.md
-!datum/src
-!datum/src/
-!datum/src/**
+!datum/java
+!datum/java/
+!datum/java/src
+!datum/java/src/
+!datum/java/src/**
 
 !javase
 !javase/
