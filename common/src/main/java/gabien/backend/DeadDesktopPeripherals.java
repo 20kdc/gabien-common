@@ -42,7 +42,7 @@ public final class DeadDesktopPeripherals implements IDesktopPeripherals {
 
     @Override
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback) {
-        return new DeadTextEditingSession();
+        return new DeadTextEditingSession(text);
     }
 
     @Override

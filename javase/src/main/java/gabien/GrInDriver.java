@@ -383,10 +383,10 @@ class GrInDriver implements IGrInDriver {
 		return uiGuessScaleTenths;
 	}
 
-    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, boolean multiLine, int textHeight, Function<String, String> fun) {
+    public ITextEditingSession openEditingSession(IGJSEPeripheralsInternal peripheralsInternal, String text, boolean multiLine, int textHeight, Function<String, String> fun) {
         if (currentEditingSession != null)
             currentEditingSession.endSession();
-        return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, multiLine, textHeight, fun);
+        return currentEditingSession = new TextboxMaintainer(peripheralsInternal, panel, commonKeyListener, multiLine, textHeight, fun, text);
     }
 
     private class DLIAPair extends WSIDownloadPair<int[]> {

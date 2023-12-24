@@ -14,9 +14,20 @@ import gabien.wsi.ITextEditingSession;
  * Created 28th July 2022
  */
 public final class DeadTextEditingSession implements ITextEditingSession {
+    public String text;
+
+    public DeadTextEditingSession(String text) {
+        this.text = text;
+    }
+
     @Override
-    public String maintain(int x, int y, int w, int h, String text) {
+    public String maintain(int x, int y, int w, int h) {
         return text;
+    }
+
+    @Override
+    public void setText(String text) {
+        this.text = text;
     }
 
     @Override

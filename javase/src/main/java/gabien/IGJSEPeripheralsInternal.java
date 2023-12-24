@@ -14,7 +14,7 @@ import gabien.wsi.IPeripherals;
  * Created on July 28th, 2022.
  */
 public interface IGJSEPeripheralsInternal extends IPeripherals {
-    String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h, String text);
+    String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h);
 
     void finishRemovingEditingSession();
 }

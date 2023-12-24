@@ -132,12 +132,12 @@ public class MobilePeripherals implements IPeripherals, IGJSEPeripheralsInternal
 
     @Override
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> fun) {
-        return parent.openEditingSession(this, multiLine, textHeight, fun);
+        return parent.openEditingSession(this, text, multiLine, textHeight, fun);
     }
 
     @Override
-    public String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h, String text) {
-        return tm.maintainActual((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, w, h, text);
+    public String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h) {
+        return tm.maintainActual((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, w, h);
     }
 
     @Override

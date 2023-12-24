@@ -22,10 +22,10 @@ import org.eclipse.jdt.annotation.Nullable;
  * Implements the IDesktopPeripherals interface for an IGrInDriver to use.
  * Created on February 17th, 2018.
  */
-public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripheralsInternal {
-    private GrInDriver parent;
+class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripheralsInternal {
+    private final GrInDriver parent;
 
-    private int shadowScissorX, shadowScissorY;
+    private int offsetX, offsetY;
     private HashMap<Integer, MousePointer> activePointers = new HashMap<Integer, MousePointer>();
 
     public DesktopPeripherals(GrInDriver par) {
@@ -34,12 +34,12 @@ public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripherals
 
     @Override
     public int getMouseX() {
-        return parent.mouseX + shadowScissorX;
+        return parent.mouseX + offsetX;
     }
 
     @Override
     public int getMouseY() {
-        return parent.mouseY + shadowScissorY;
+        return parent.mouseY + offsetY;
     }
 
     @Override
@@ -94,12 +94,12 @@ public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripherals
 
     @Override
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> fun) {
-        return parent.openEditingSession(this, multiLine, textHeight, fun);
+        return parent.openEditingSession(this, text, multiLine, textHeight, fun);
     }
 
     @Override
-    public String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h, String text) {
-        return tm.maintainActual((x - shadowScissorX) * parent.sc, (y - shadowScissorY) * parent.sc, w * parent.sc, h * parent.sc, text);
+    public String aroundTheBorderworldMaintain(TextboxMaintainer tm, int x, int y, int w, int h) {
+        return tm.maintainActual((x - offsetX) * parent.sc, (y - offsetY) * parent.sc, w * parent.sc, h * parent.sc);
     }
 
     @Override
@@ -109,14 +109,14 @@ public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripherals
 
     @Override
     public void performOffset(int x, int y) {
-        shadowScissorX += x;
-        shadowScissorY += y;
+        offsetX += x;
+        offsetY += y;
     }
 
     @Override
     public void clearOffset() {
-        shadowScissorX = 0;
-        shadowScissorY = 0;
+        offsetX = 0;
+        offsetY = 0;
         for (MousePointer mp : activePointers.values())
             mp.flushOffset();
     }
@@ -135,7 +135,7 @@ public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripherals
         for (Integer i : effectiveDown) {
             MousePointer mp = activePointers.get(i);
             if (mp == null) {
-                mp = new MousePointer();
+                mp = new MousePointer(parent);
                 mp.button = i;
                 activePointers.put(i, mp);
             }
@@ -143,44 +143,5 @@ public class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripherals
         }
         parent.mouseLock.unlock();
         return f;
-    }
-
-    private class MousePointer implements IPointer {
-        public int button, offsetX, offsetY;
-        @Override
-        public int getX() {
-            return parent.mouseX + offsetX;
-        }
-
-        @Override
-        public int getY() {
-            return parent.mouseY + offsetY;
-        }
-
-        @Override
-        public PointerType getType() {
-            if (button == 1)
-                return PointerType.Generic;
-            if (button == 2)
-                return PointerType.Middle;
-            if (button == 3)
-                return PointerType.Right;
-            if (button == 4)
-                return PointerType.X1;
-            if (button == 5)
-                return PointerType.X2;
-            return PointerType.Mouse;
-        }
-
-        @Override
-        public void performOffset(int x, int y) {
-            offsetX += x;
-            offsetY += y;
-        }
-
-        private void flushOffset() {
-            offsetX = 0;
-            offsetY = 0;
-        }
     }
 }

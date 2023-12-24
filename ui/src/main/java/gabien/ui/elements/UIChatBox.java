@@ -47,8 +47,8 @@ public class UIChatBox extends UILabel {
             Rect crib = getContentsRelativeInputBounds();
             if (peripherals instanceof IDesktopPeripherals)
                 if (((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_UP))
-                    text = history;
-            text = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, text);
+                    editingSession.setText(history);
+            text = editingSession.maintain(crib.x, crib.y, crib.width, crib.height);
             // Enter confirmation.
             if (editingSession.isEnterJustPressed()) {
                 history = text;

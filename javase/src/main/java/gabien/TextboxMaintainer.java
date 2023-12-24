@@ -12,7 +12,7 @@ import gabien.wsi.ITextEditingSession;
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
 
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jdt.annotation.NonNull;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -33,19 +33,21 @@ public class TextboxMaintainer implements ITextEditingSession {
     public JTextComponent textComponent;
     public JComponent placeComponent;
     private KeyListener kl;
-    // null means unmaintained!
-    public @Nullable String maintainedString;
+    public @NonNull String maintainedString;
+    private boolean isFirstMaintain = true;
     public boolean sessionIsDead = false;
     public boolean enterFlag = false;
 
-    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, boolean ml, int textHeight, final Function<String, String> feedback) {
+    public TextboxMaintainer(IGJSEPeripheralsInternal pi, Panel panel, KeyListener k, boolean ml, int textHeight, final Function<String, String> feedback, String initText) {
         peripheralsInternal = pi;
         if (textHeight < 16)
             textHeight = 16;
         parent = panel;
         kl = k;
         multiLine = ml;
+        maintainedString = initText;
         textComponent = ml ? new JTextArea() : new JTextField();
+        textComponent.setText(maintainedString);
         placeComponent = ml ? new JScrollPane(textComponent) : textComponent;
         parent.add(placeComponent);
         // apparently it's not capable of setting sensible defaults
@@ -73,13 +75,13 @@ public class TextboxMaintainer implements ITextEditingSession {
     }
 
     @Override
-    public String maintain(int x, int y, int width, int height, String text) {
-        return peripheralsInternal.aroundTheBorderworldMaintain(this, x, y, width, height, text);
+    public String maintain(int x, int y, int width, int height) {
+        return peripheralsInternal.aroundTheBorderworldMaintain(this, x, y, width, height);
     }
 
-    public String maintainActual(int x, int y, int width, int height, String text) {
+    public String maintainActual(int x, int y, int width, int height) {
         if (sessionIsDead)
-            return text;
+            return maintainedString;
         if (!multiLine) {
             // Adjust stuff
             y = y + (height / 2);
@@ -99,17 +101,24 @@ public class TextboxMaintainer implements ITextEditingSession {
         if (needToMove)
             placeComponent.setBounds(x, y, width, height);
 
-        if (maintainedString != null) {
-            if (!maintainedString.equals(text))
-                textComponent.setText(text);
-        } else {
-            textComponent.setText(text);
+        if (isFirstMaintain) {
             textComponent.setVisible(true);
             textComponent.grabFocus();
+            isFirstMaintain = false;
         }
 
         maintainedString = textComponent.getText();
         return maintainedString;
+    }
+
+    @Override
+    public void setText(String text) {
+        textComponent.setText(text);
+        if (maintainedString == null) {
+            textComponent.setVisible(true);
+            textComponent.grabFocus();
+        }
+        maintainedString = text;
     }
 
     @Override

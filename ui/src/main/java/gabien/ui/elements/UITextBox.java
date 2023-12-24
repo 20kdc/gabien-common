@@ -45,6 +45,8 @@ public class UITextBox extends UILabel {
     @Override
     public void setText(String text) {
         textAsSeenByProgram = text;
+        if (editingSession != null)
+            editingSession.setText(text);
         super.setText(text);
     }
 
@@ -63,10 +65,12 @@ public class UITextBox extends UILabel {
             if (editingSession == null)
                 editingSession = peripherals.openTextEditingSession(textBeingEdited, multiLine, contents.textHeight, feedback);
             Rect crib = getContentsRelativeInputBounds();
-            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, textBeingEdited);
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height);
             if (!multiLine) {
                 // Enter confirmation.
                 if (editingSession.isEnterJustPressed()) {
+                    // do this early since we're about to setText
+                    editingSession.endSession();
                     // System.out.println("UITextBox: Enter just pressed, text: " + ss);
                     // update text *as seen by program*
                     setText(ss);
@@ -86,6 +90,8 @@ public class UITextBox extends UILabel {
             // this is the only place where this can happen so this is where the closeoff logic lives
             if (editingSession != null) {
                 if (multiLine) {
+                    // do this early since we're about to setText
+                    editingSession.endSession();
                     // update text *as seen by program*
                     setText(textBeingEdited);
                     onEdit.run();

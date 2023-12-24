@@ -74,7 +74,7 @@ public class UINumberBox extends UILabel {
                 editingSession = peripherals.openTextEditingSession(String.valueOf(number), false, contents.textHeight, null);
             }
             Rect crib = getContentsRelativeInputBounds();
-            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height, String.valueOf(number));
+            String ss = editingSession.maintain(crib.x, crib.y, crib.width, crib.height);
             // Update storage.
             int lastMinusIdx = ss.lastIndexOf("-");
             boolean doInvertLater = false;
@@ -93,6 +93,10 @@ public class UINumberBox extends UILabel {
             }
             number = newNum;
             editingNLast = number;
+            // Now that the number has been parsed, "correct" the editing session if need be.
+            String ourIdeal = String.valueOf(number);
+            if (!ourIdeal.equals(ss))
+                editingSession.setText(ourIdeal);
             // Enter confirmation.
             // NOTE: This has to be after the update to the local number.
             // Not doing this lead to an interesting bug where number boxes

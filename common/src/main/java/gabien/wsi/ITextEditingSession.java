@@ -13,10 +13,17 @@ package gabien.wsi;
  * Created 28th July, 2022.
  */
 public interface ITextEditingSession {
-    // Called to update a textbox.
-    // The Y centre is the *centre* - the textbox will be as tall as it wants to be.
-    // Note that the textbox is still hooked into key events, so make sure not to respond to anything that could ever be used in normal typing.
-    String maintain(int x, int y, int w, int h, String text);
+    /**
+     * Called to update the textbox.
+     * The Y centre is the *centre* - the textbox will be as tall as it wants to be.
+     * Note that the textbox is still hooked into key events, so make sure not to respond to anything that could ever be used in normal typing.
+     */
+    String maintain(int x, int y, int w, int h);
+
+    /**
+     * Updates the text in the textbox.
+     */
+    void setText(String text);
 
     /**
      * If true, "Enter has been pressed" (the user wants to leave the session and accept the changes).
