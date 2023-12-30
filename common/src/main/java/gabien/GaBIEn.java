@@ -354,6 +354,32 @@ public final class GaBIEn {
     }
 
     /**
+     * Gets an image as a WSIImage.
+     * You can specify if the image can be gotten from the filesystem directly or the resources.
+     * Doesn't do the error return thing.
+     */
+    public static @Nullable WSIImage getWSIImage(@NonNull String a, boolean fs, boolean res) {
+        if (fs) {
+            WSIImage r = imageCache.getWSIImage(a, false);
+            if (r != null)
+                return r;
+        }
+        if (res) {
+            for (String s : appPrefixes) {
+                WSIImage r = imageCache.getWSIImage(s + a, false);
+                if (r != null)
+                    return r;
+            }
+            WSIImage r = imageCache.getWSIImage(a, true);
+            if (r == null)
+                System.err.println("GaBIEn: Couldn't get: " + a + " (" + fs + ", " + res + ")");
+            return r;
+        }
+        System.err.println("GaBIEn: Couldn't get: " + a + " (" + fs + ", " + res + ")");
+        return null;
+    }
+
+    /**
      * getImageEx with colour-key processing.
      */
     public static @NonNull IImage getImageCKEx(@NonNull String a, boolean fs, boolean res, int r, int g, int b) {

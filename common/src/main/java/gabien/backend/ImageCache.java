@@ -9,6 +9,8 @@ package gabien.backend;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.GaBIEn;
 import gabien.natives.BadGPU;
 import gabien.render.IImage;
@@ -20,6 +22,7 @@ import gabien.vopeks.VopeksImage;
  * Created 16th February 2023.
  */
 public final class ImageCache {
+    private HashMap<String, WSIImage> loadedWSIImages = new HashMap<String, WSIImage>();
     private HashMap<String, IImage> loadedImages = new HashMap<String, IImage>();
     private final IGaBIEn backend; 
 
@@ -28,12 +31,21 @@ public final class ImageCache {
         GaBIEn.verify(backend);
     }
 
+    public @Nullable WSIImage getWSIImage(String a, boolean res) {
+        String ki = a + (res ? 'R' : 'F');
+        if (loadedWSIImages.containsKey(ki))
+            return loadedWSIImages.get(ki);
+        InputStream ip = res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a);
+        WSIImage img = ip != null ? backend.decodeWSIImage(ip) : null;
+        loadedWSIImages.put(ki, img);
+        return img;
+    }
+
     public IImage getImage(String a, boolean res) {
         String ki = a + "_N_N_N" + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        InputStream ip = res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a);
-        WSIImage img = ip != null ? backend.decodeWSIImage(ip) : null;
+        WSIImage img = getWSIImage(a, res);
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
@@ -48,8 +60,7 @@ public final class ImageCache {
         String ki = a + "_" + tr + "_" + tg + "_" + tb + (res ? 'R' : 'F');
         if (loadedImages.containsKey(ki))
             return loadedImages.get(ki);
-        InputStream ip = res ? GaBIEn.getResource(a) : GaBIEn.getInFile(a);
-        WSIImage img = ip != null ? backend.decodeWSIImage(ip) : null;
+        WSIImage img = getWSIImage(a, res);
         IImage resImg;
         if (img == null) {
             resImg = GaBIEn.getErrorImage();
@@ -77,6 +88,7 @@ public final class ImageCache {
 
     public void hintFlushAllTheCaches() {
         loadedImages.clear();
+        loadedWSIImages.clear();
     }
 
 }
