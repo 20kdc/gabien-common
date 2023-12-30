@@ -22,8 +22,11 @@ public final class RefSyncSet<T> implements Iterable<T> {
     private final HashSet<Reference<Holder>> held = new HashSet<Reference<Holder>>();
 
     private synchronized void fill(Collection<T> c) {
-        for (Reference<Holder> rh : held)
-            c.add(rh.get().value);
+        for (Reference<Holder> rh : held) {
+            Holder h = rh.get();
+            if (h != null)
+                c.add(h.value);
+        }
     }
 
     /**
