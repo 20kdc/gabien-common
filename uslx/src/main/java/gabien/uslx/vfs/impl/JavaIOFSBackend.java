@@ -15,34 +15,110 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.vfs.*;
 
 /**
- * IO backend based on java.io.File
+ * IO backend based on java.io.File.
  */
-public class JavaIOFSBackend extends FSBackend {
-    public JavaIOFSBackend() {
+public final class JavaIOFSBackend extends FSBackend {
+    public static final FSBackend ROOT;
+    static {
+        if (!System.getProperty("os.name").toLowerCase().contains("windows")) {
+            ROOT = new JavaIOFSBackend(UnixPathModel.INSTANCE, null, new File("/"));
+        } else {
+            ROOT = WindowsRootJavaIOFSBackend.INSTANCE;
+        }
+    }
+
+    public final @NonNull File file;
+
+    private static File attemptCanonicalize(File f) {
+        try {
+            return f.getCanonicalFile();
+        } catch (Exception ex) {
+            return f;
+        }
+    }
+
+    /**
+     * Figure out a sensible FSBackend chain from a java.io.File.
+     */
+    public static FSBackend from(File f) {
+        return from(f, null, null);
+    }
+
+    /**
+     * Figure out a sensible FSBackend chain from a java.io.File.
+     */
+    public static FSBackend from(File f, @Nullable JavaIOFSBackend reuseHint1, @Nullable JavaIOFSBackend reuseHint2) {
+        f = attemptCanonicalize(f);
+        // do we already have this?
+        if (reuseHint1 != null)
+            if (f.equals(reuseHint1.file))
+                return reuseHint1;
+        if (reuseHint2 != null)
+            if (f.equals(reuseHint2.file))
+                return reuseHint2;
+        // no we don't
+        File fParentFile = f.getParentFile();
+        if (fParentFile == null) {
+            // this is a root
+            // what this means depends on our platform
+            if (ROOT instanceof WindowsRootJavaIOFSBackend) {
+                return new JavaIOFSBackend(WindowsPathModel.INSTANCE, ROOT, f);
+            } else {
+                return ROOT;
+            }
+        } else {
+            FSBackend parent = from(fParentFile, reuseHint1, reuseHint2);
+            return new JavaIOFSBackend(parent.pathModel, parent, f);
+        }
+    }
+
+    /**
+     * Only use if you know what you're doing.
+     */
+    private JavaIOFSBackend(@NonNull PathModel pm, @Nullable FSBackend parent, @NonNull File f) {
+        super(parent, pm);
+        file = f;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof JavaIOFSBackend)
+            return ((JavaIOFSBackend) obj).file.equals(file);
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return file.hashCode();
+    }
+
+    @Override
+    public FSBackend intoInner(String dirName) {
+        // reuse what we can if possible
+        JavaIOFSBackend potentialReuseHint = null;
+        if (parent instanceof JavaIOFSBackend)
+            potentialReuseHint = (JavaIOFSBackend) parent;
+        return JavaIOFSBackend.from(new File(file, dirName), this, potentialReuseHint);
     }
 
     @Override
     public String toString() {
-        return "real";
-    }
-
-    public File asFile(String fileName) {
-        return new File(fileName);
+        return "real:" + file;
     }
 
     @Override
-    public XState getState(String fileName) {
-        File f = asFile(fileName);
-        if (!f.exists())
+    public XState getState() {
+        if (!file.exists())
             return null;
-        if (f.isDirectory()) {
-            File[] list = f.listFiles();
+        if (file.isDirectory()) {
+            File[] list = file.listFiles();
             if (list == null) {
-                System.err.println("File that is a directory but isn't listable: " + fileName + " (probably an access error)");
+                System.err.println("File that is a directory but isn't listable: " + file + " (probably an access error)");
                 return new DirectoryState(new String[0]);
             }
             String[] ents = new String[list.length];
@@ -50,56 +126,36 @@ public class JavaIOFSBackend extends FSBackend {
                 ents[i] = list[i].getName();
             return new DirectoryState(ents);
         }
-        return new FileTimeState(f.length(), f.lastModified());
+        return new FileTimeState(file.length(), file.lastModified());
     }
 
     @Override
-    public @NonNull InputStream openRead(String fileName) throws IOException {
-        return new FileInputStream(asFile(fileName));
+    public @NonNull InputStream openRead() throws IOException {
+        return new FileInputStream(file);
     }
 
     @Override
-    public @NonNull OutputStream openWrite(String fileName) throws IOException {
-        return new FileOutputStream(asFile(fileName));
+    public @NonNull OutputStream openWrite() throws IOException {
+        return new FileOutputStream(file);
     }
 
     @Override
-    public String parentOf(String fileName) {
-        File fn = asFile(fileName);
-        String parent = fn.getParent();
-        if (parent == null)
-            parent = asFile(absolutePathOf(fileName)).getParent();
-        return parent;
+    public boolean delete() {
+        return file.delete();
     }
 
     @Override
-    public String nameOf(String fileName) {
-        return asFile(fileName).getName();
+    public boolean mkdir() {
+        return file.mkdir() || file.isDirectory();
     }
 
     @Override
-    public String absolutePathOf(String fileName) {
-        return asFile(fileName).getAbsolutePath();
+    public void changeTime(long time) {
+        file.setLastModified(time);
     }
 
     @Override
-    public void delete(String fileName) {
-        File fn = asFile(fileName);
-        fn.delete();
-        if (fn.exists())
-            throw new RuntimeException("Failed to delete file.");
-    }
-
-    @Override
-    public void mkdir(String fileName) {
-        File fn = asFile(fileName);
-        fn.mkdir();
-        if (!fn.isDirectory())
-            throw new RuntimeException("Failed to create directory.");
-    }
-
-    @Override
-    public void changeTime(String fileName, long time) {
-        asFile(fileName).setLastModified(time);
+    public String getAbsolutePath() {
+        return file.getAbsolutePath();
     }
 }

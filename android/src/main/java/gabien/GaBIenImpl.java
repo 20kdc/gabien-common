@@ -38,12 +38,7 @@ public final class GaBIenImpl implements IGaBIEn {
         final GaBIenImpl impl = new GaBIenImpl();
     	GaBIEn.internal = impl;
     	GaBIEn.clipboard = new ClipboardImpl();
-    	GaBIEn.mutableDataFS = new JavaIOFSBackend() {
-    	    @Override
-    	    public File asFile(String fileName) {
-    	        return mutablePathToFile(fileName);
-    	    }
-    	};
+    	GaBIEn.mutableDataFS = JavaIOFSBackend.from(new File("/sdcard"));
     	// Use these "key files" to control startup. Only their existence matters, contents don't.
         GaBIEn.setupNativesAndAssets(AndroidPortGlobals.debugFlag, new File("/sdcard/gabien_android_enable_timelogger").exists());
         GaBIEnUI.setupAssets();

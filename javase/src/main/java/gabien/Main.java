@@ -9,6 +9,7 @@ package gabien;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 
 import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.WindowMux;
@@ -105,7 +106,7 @@ abstract class Main {
         GaBIEnImpl impl = new GaBIEnImpl();
         GaBIEn.internal = impl;
         GaBIEn.clipboard = new ClipboardImpl();
-        GaBIEn.mutableDataFS = new JavaIOFSBackend();
+        GaBIEn.mutableDataFS = JavaIOFSBackend.from(new File("."));
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
         // pretty much all the startup time goes here

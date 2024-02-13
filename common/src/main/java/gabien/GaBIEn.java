@@ -198,7 +198,7 @@ public final class GaBIEn {
      */
     public static @Nullable InputStream getInFile(@NonNull String name) {
         try {
-            return mutableDataFS.openRead(name);
+            return mutableDataFS.intoPath(name).openRead();
         } catch (Exception ioe) {
             return null;
         }
@@ -210,7 +210,7 @@ public final class GaBIEn {
      */
     public static @Nullable OutputStream getOutFile(@NonNull String name) {
         try {
-            return mutableDataFS.openWrite(name);
+            return mutableDataFS.intoPath(name).openWrite();
         } catch (Exception ioe) {
             return null;
         }
@@ -499,14 +499,14 @@ public final class GaBIEn {
      * File or directory exists.
      */
     public static boolean fileOrDirExists(@NonNull String s) {
-        return mutableDataFS.getState(s) != null;
+        return mutableDataFS.intoPath(s).getState() != null;
     }
 
     /**
      * Directory exists.
      */
     public static boolean dirExists(@NonNull String s) {
-        return mutableDataFS.getState(s) instanceof DirectoryState;
+        return mutableDataFS.intoPath(s).getState() instanceof DirectoryState;
     }
 
     /**
@@ -515,7 +515,7 @@ public final class GaBIEn {
      * @return List of filenames, or null on error.
      */
     public static @Nullable String[] listEntries(@NonNull String s) {
-        XState xs = mutableDataFS.getState(s);
+        XState xs = mutableDataFS.intoPath(s).getState();
         if (xs instanceof DirectoryState)
             return ((DirectoryState) xs).entries;
         return null;
@@ -525,29 +525,32 @@ public final class GaBIEn {
      * Converts a path to an absolute path.
      */
     public static @NonNull String absolutePathOf(@NonNull String s) {
-        return mutableDataFS.absolutePathOf(s);
+        return mutableDataFS.intoPath(s).getAbsolutePath();
     }
 
     /**
      * Returns the name of a file.
      */
     public static @NonNull String nameOf(@NonNull String s) {
-        return mutableDataFS.nameOf(s);
+        return mutableDataFS.pathModel.nameOf(s);
     }
 
     /**
-     * See FSBackend.parentOf
+     * See FSBackend.parent
      * TLDR: Returns null if no parent exists, is supposed to switch to absolute paths when necessary.
      */
     public static @Nullable String parentOf(@NonNull String s) {
-        return mutableDataFS.parentOf(s);
+        FSBackend fsb = mutableDataFS.intoPath(s).parent;
+        if (fsb == null)
+            return null;
+        return fsb.getAbsolutePath();
     }
 
     /**
      * Makes directories up to the given path.
      */
     public static void makeDirectories(@NonNull String s) {
-        mutableDataFS.mkdirs(s);
+        mutableDataFS.intoPath(s).mkdirs();
     }
 
     /**
@@ -569,7 +572,7 @@ public final class GaBIEn {
      */
     public static void rmFile(@NonNull String s) {
         try {
-            mutableDataFS.delete(s);
+            mutableDataFS.intoPath(s).delete();
         } catch (Exception e) {
             // errors are silenced
         }
