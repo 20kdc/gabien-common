@@ -32,7 +32,7 @@ public final class UnionFSBackend extends FSBackend {
     }
 
     private UnionFSBackend(FSBackend parent, FSBackend mutable, FSBackend... parents) {
-        super(parent, mutable.pathModel);
+        super(parent, mutable.pathModel, mutable.usesRootPathLogic);
         this.mutable = mutable;
         this.parents = parents;
     }

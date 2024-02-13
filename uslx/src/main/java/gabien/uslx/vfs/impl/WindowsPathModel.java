@@ -56,13 +56,11 @@ public class WindowsPathModel extends PathModel {
     @Override
     public String[] absPathToComponents(String absolutePath) throws IOException {
         absolutePath = absolutePath.replace('\\', '/');
-        if (absolutePath.startsWith("/"))
-            throw new IOException("Empty component at start not allowed in WindowsPathModel");
         String[] components = absolutePath.split("/");
         LinkedList<String> finale = new LinkedList<>();
         boolean first = true;
         for (String component : components) {
-            if (component.equals(""))
+            if (component.equals("") && !first)
                 continue;
             if (!verifyPathComponent(first, component))
                 throw new IOException("Invalid path component in " + absolutePath);

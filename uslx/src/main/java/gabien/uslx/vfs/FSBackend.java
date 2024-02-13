@@ -42,10 +42,13 @@ public abstract class FSBackend {
      */
     public final @NonNull PathModel pathModel;
 
-    public FSBackend(@Nullable FSBackend parent, @NonNull PathModel pathModel) {
+    public final boolean usesRootPathLogic;
+
+    public FSBackend(@Nullable FSBackend parent, @NonNull PathModel pathModel, boolean rpl) {
         this.root = parent != null ? parent.root : this;
         this.parent = parent;
         this.pathModel = pathModel;
+        this.usesRootPathLogic = rpl;
     }
 
     @Override
@@ -62,7 +65,7 @@ public abstract class FSBackend {
     public final @NonNull FSBackend into(String dirName) {
         if (dirName.equals("."))
             return this;
-        if (!pathModel.verifyPathComponent(parent == null, dirName))
+        if (!pathModel.verifyPathComponent(usesRootPathLogic, dirName))
             return new InvalidPath(pathModel, this, dirName);
         return intoInner(dirName);
     }
@@ -237,13 +240,13 @@ public abstract class FSBackend {
     public static class Null extends FSBackend {
         public final String myName;
 
-        public Null(PathModel pathModel, FSBackend parent, String myName) {
-            super(parent, pathModel);
+        public Null(PathModel pathModel, FSBackend parent, String myName, boolean rpl) {
+            super(parent, pathModel, rpl);
             this.myName = myName;
         }
 
         public Null makeDownLevel(String name) {
-            return new Null(pathModel, this, name);
+            return new Null(pathModel, this, name, false);
         }
 
         @Override
@@ -308,7 +311,7 @@ public abstract class FSBackend {
      */
     public static class InvalidPath extends Null {
         public InvalidPath(PathModel pathModel, FSBackend parent, String path) {
-            super(pathModel, parent, path);
+            super(pathModel, parent, path, false);
         }
         @Override
         public Null makeDownLevel(String name) {

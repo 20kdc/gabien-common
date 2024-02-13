@@ -24,7 +24,7 @@ public class WindowsRootJavaIOFSBackend extends FSBackend {
     static final WindowsRootJavaIOFSBackend INSTANCE = new WindowsRootJavaIOFSBackend();
 
     private WindowsRootJavaIOFSBackend() {
-        super(null, WindowsPathModel.INSTANCE);
+        super(null, WindowsPathModel.INSTANCE, true);
     }
 
     @Override

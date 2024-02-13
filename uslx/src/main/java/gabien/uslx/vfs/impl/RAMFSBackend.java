@@ -29,13 +29,13 @@ public final class RAMFSBackend extends FSBackend {
     public final String myName;
 
     public RAMFSBackend() {
-        super(null, UnixPathModel.INSTANCE);
+        super(null, UnixPathModel.INSTANCE, true);
         vfsRoot = new VFSDir();
         myName = "";
     }
 
     private RAMFSBackend(@NonNull RAMFSBackend parent, String myName) {
-        super(parent, UnixPathModel.INSTANCE);
+        super(parent, UnixPathModel.INSTANCE, true);
         vfsRoot = parent.vfsRoot;
         this.myName = myName;
     }

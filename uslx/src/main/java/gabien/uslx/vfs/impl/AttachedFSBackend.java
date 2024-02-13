@@ -26,12 +26,12 @@ public class AttachedFSBackend extends FSBackend {
     public final String attachmentName;
     public final FSBackend attachment;
 
-    public AttachedFSBackend(FSBackend target, String name) {
-        this(target.pathModel, target, name);
+    public AttachedFSBackend(FSBackend target, String name, boolean usesRootPathLogic) {
+        this(target.pathModel, target, name, usesRootPathLogic);
     }
 
-    public AttachedFSBackend(PathModel pm, FSBackend target, String name) {
-        super(null, pm);
+    public AttachedFSBackend(PathModel pm, FSBackend target, String name, boolean usesRootPathLogic) {
+        super(null, pm, usesRootPathLogic);
         attachment = target;
         attachmentName = name;
     }
@@ -51,7 +51,7 @@ public class AttachedFSBackend extends FSBackend {
         if (pathModel.estimatePathComponentEquality(dirName, attachmentName)) {
             return attachment;
         } else {
-            return new FSBackend.Null(pathModel, parent, dirName);
+            return new FSBackend.Null(pathModel, parent, dirName, false);
         }
     }
 

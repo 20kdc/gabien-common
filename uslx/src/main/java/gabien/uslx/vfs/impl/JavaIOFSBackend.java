@@ -81,7 +81,7 @@ public final class JavaIOFSBackend extends FSBackend {
      * Only use if you know what you're doing.
      */
     private JavaIOFSBackend(@NonNull PathModel pm, @Nullable FSBackend parent, @NonNull File f) {
-        super(parent, pm);
+        super(parent, pm, false);
         file = f;
     }
 
