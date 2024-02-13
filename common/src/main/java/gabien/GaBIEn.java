@@ -197,8 +197,14 @@ public final class GaBIEn {
      * @return The InputStream, or null on error.
      */
     public static @Nullable InputStream getInFile(@NonNull String name) {
+        return getInFile(mutableDataFS.intoPath(name));
+    }
+    /**
+     * Code porting helper
+     */
+    public static @Nullable InputStream getInFile(@NonNull FSBackend name) {
         try {
-            return mutableDataFS.intoPath(name).openRead();
+            return name.openRead();
         } catch (Exception ioe) {
             return null;
         }
@@ -209,8 +215,15 @@ public final class GaBIEn {
      * @return The InputStream, or null on error.
      */
     public static @Nullable OutputStream getOutFile(@NonNull String name) {
+        return getOutFile(mutableDataFS.intoPath(name));
+    }
+
+    /**
+     * Ok, I'll be honest, this is a code porting helper
+     */
+    public static @Nullable OutputStream getOutFile(@NonNull FSBackend node) {
         try {
-            return mutableDataFS.intoPath(name).openWrite();
+            return node.openWrite();
         } catch (Exception ioe) {
             return null;
         }
@@ -506,7 +519,7 @@ public final class GaBIEn {
      * Directory exists.
      */
     public static boolean dirExists(@NonNull String s) {
-        return mutableDataFS.intoPath(s).getState() instanceof DirectoryState;
+        return mutableDataFS.intoPath(s).isDirectory();
     }
 
     /**
@@ -515,7 +528,16 @@ public final class GaBIEn {
      * @return List of filenames, or null on error.
      */
     public static @Nullable String[] listEntries(@NonNull String s) {
-        XState xs = mutableDataFS.intoPath(s).getState();
+        return listEntries(mutableDataFS.intoPath(s));
+    }
+
+    /**
+     * Wrapper around mutableDataFS.
+     * Lists entries in a directory.
+     * @return List of filenames, or null on error.
+     */
+    public static @Nullable String[] listEntries(@NonNull FSBackend s) {
+        XState xs = s.getState();
         if (xs instanceof DirectoryState)
             return ((DirectoryState) xs).entries;
         return null;

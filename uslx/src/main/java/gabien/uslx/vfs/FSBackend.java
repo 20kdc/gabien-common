@@ -69,6 +69,15 @@ public abstract class FSBackend {
             return new InvalidPath(pathModel, this, dirName);
         return intoInner(dirName);
     }
+    /**
+     * into but chained.
+     */
+    public final @NonNull FSBackend into(String... dirNames) {
+        FSBackend res = this;
+        for (String s : dirNames)
+            res = res.into(s);
+        return res;
+    }
 
     /**
      * Descends an element.
@@ -117,6 +126,7 @@ public abstract class FSBackend {
 
     /**
      * Returns an absolute path.
+     * Notably, if one is known, this is specifically defined to return the absolute path of the Java File object despite any wrapping.
      */
     public abstract String getAbsolutePath();
 
@@ -127,10 +137,22 @@ public abstract class FSBackend {
      */
     public abstract boolean mkdir();
 
+    /**
+     * Make this directory and parents.
+     */
     public final void mkdirs() {
         if (parent != null)
             parent.mkdirs();
         mkdir();
+    }
+
+    /**
+     * Make parent directories.
+     */
+    public final FSBackend parentMkdirs() {
+        if (parent != null)
+            parent.mkdirs();
+        return this;
     }
 
     /**
@@ -141,6 +163,20 @@ public abstract class FSBackend {
      * @throws IOException
      */
     public abstract @Nullable XState getState();
+
+    /**
+     * If this is an existing directory.
+     */
+    public final boolean isDirectory() {
+        return getState() instanceof DirectoryState; 
+    }
+
+    /**
+     * If this exists in any fashion.
+     */
+    public final boolean exists() {
+        return getState() != null;
+    }
 
     /**
      * Opens a stream to read the file.
