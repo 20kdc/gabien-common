@@ -14,11 +14,14 @@ import gabien.ui.elements.UITextButton;
 import gabien.ui.layouts.UIScrollLayout;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
+import gabien.uslx.io.HexByteEncoding;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
@@ -30,6 +33,8 @@ import gabien.atlas.SimpleAtlasBuilder;
 import gabien.media.audio.AudioIOFormat;
 import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
 import gabien.media.audio.fileio.WavIO;
+import gabien.media.midi.MIDISequence;
+import gabien.media.midi.MIDITracker;
 import gabien.media.riff.RIFFNode;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
@@ -69,6 +74,39 @@ public class UIMainMenu extends UIProxy {
                         InputStream inp = GaBIEn.getInFile(str);
                         OutputStream os = GaBIEn.getOutFile("tmp.wav");
                         WavIO.writeWAV(os, ReadAnySupportedAudioSource.open(inp, true), AudioIOFormat.F_F32);
+                        os.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }));
+        ve.add(new UITextButton("MIDI to TXT", 16, () -> {
+            GaBIEn.startFileBrowser("Convert from MIDI", false, "", (str) -> {
+                if (str != null) {
+                    try {
+                        InputStream inp = GaBIEn.getInFile(str);
+                        MIDISequence mf = MIDISequence.from(inp)[0];
+                        OutputStream os = GaBIEn.getOutFile("tmp.txt");
+                        AtomicReference<Double> time = new AtomicReference<>(0d);
+                        MIDITracker mt = new MIDITracker(mf, (status, data, offset, length) -> {
+                            String res = time.get() + ": " + HexByteEncoding.toHexString(status) + ":" + HexByteEncoding.toHexString(data, offset, length) + ": ";
+                            try {
+                                os.write(res.getBytes(StandardCharsets.UTF_8));
+                                os.write(data, offset, length);
+                                os.write(10);
+                            } catch (IOException ioe) {
+                                // :(
+                                ioe.printStackTrace();
+                            }
+                        });
+                        while (true) {
+                            int ticks = mt.getTicksToNextEvent();
+                            if (ticks == -1)
+                                break;
+                            time.set(time.get() + (mt.getTicksToSeconds() * ticks));
+                            mt.runNextEvent();
+                        }
                         os.close();
                     } catch (IOException e) {
                         e.printStackTrace();

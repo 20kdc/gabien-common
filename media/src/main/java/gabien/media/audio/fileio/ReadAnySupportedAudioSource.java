@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.PushbackInputStream;
 
 import gabien.media.audio.AudioIOSource;
+import gabien.media.midi.MIDISequence;
 
 /**
  * Created 20th October, 2023.
@@ -31,7 +32,16 @@ public abstract class ReadAnySupportedAudioSource {
         } else if (b == 'R') {
             return WavIO.readWAV(pb, close);
         } else if (b == 'M') {
-            throw new IOException("MIDI not (yet?) supported");
+            MIDISequence[] ms;
+            try {
+                ms = MIDISequence.from(pb);
+            } finally {
+                if (close)
+                    pb.close();
+            }
+            if (ms.length == 0)
+                throw new IOException("MIDI without tracks!");
+            throw new IOException("Still can't synthesize MIDI");
         } else {
             return MP3Source.fromInputStream(inp, close);
         }

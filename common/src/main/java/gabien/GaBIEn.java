@@ -418,6 +418,28 @@ public final class GaBIEn {
     }
 
     /**
+     * Colour-keys a WSIImage and puts onto the GPU.
+     */
+    public static IImage wsiToCK(@Nullable String name, @NonNull WSIImage img, int tr, int tg, int tb) {
+        // do the conversion on the VOPEKS thread
+        int colourKey = tb | (tg << 8) | (tr << 16);
+        return new VopeksImage(GaBIEn.vopeks, name, img.width, img.height, (consumer) -> {
+            GaBIEn.vopeks.putTask((instance) -> {
+                int[] data = img.getPixels();
+                for (int i = 0; i < data.length; i++) {
+                    int c = data[i];
+                    if ((c & 0xFFFFFF) != colourKey) {
+                        data[i] = c | 0xFF000000;
+                    } else {
+                        data[i] = 0;
+                    }
+                }
+                consumer.accept(instance.newTexture(img.width, img.height, BadGPU.TextureLoadFormat.ARGBI32, data, 0));
+            });
+        });
+    }
+
+    /**
      * Returns the one true static error image.
      * This can be compared to image get results.
      */

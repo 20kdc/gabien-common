@@ -41,10 +41,10 @@ public class HexByteEncoding {
     /**
      * Converts the given list of bytes to a hexadecimal string.
      */
-    public static String toHexString(byte... vals) {
+    public static String toHexString(byte[] vals, int offset, int length) {
         StringBuilder sb = new StringBuilder();
-        for (byte v : vals)
-            sb.append(toHexString(v));
+        for (; length > 0; length--)
+            sb.append(toHexString(vals[offset++]));
         return sb.toString();
     }
 
