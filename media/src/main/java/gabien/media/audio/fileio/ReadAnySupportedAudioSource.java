@@ -20,6 +20,8 @@ import gabien.media.midi.DefaultMIDIPalette;
  * Created 20th October, 2023.
  */
 public abstract class ReadAnySupportedAudioSource {
+    public static int MIDI_POLYPHONY = 32;
+
     private ReadAnySupportedAudioSource() {
     }
 
@@ -43,7 +45,7 @@ public abstract class ReadAnySupportedAudioSource {
             }
             if (ms.length == 0)
                 throw new IOException("MIDI without tracks!");
-            MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, 8);
+            MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, MIDI_POLYPHONY);
             return new MIDISynthesizerSource(ms[0], synth, 2);
         } else {
             return MP3Source.fromInputStream(inp, close);

@@ -16,6 +16,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import gabien.GaBIEn;
 import gabien.audio.IRawAudioDriver.IRawAudioSource;
 import gabien.media.audio.AudioIOFormat;
+import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
 import gabien.media.midi.DefaultMIDIPalette;
 import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDISynthesizer;
@@ -75,7 +76,7 @@ public class UIMIDIPlayer extends UIProxy {
     private class TheThingThatDoesTheStuff implements IRawAudioSource {
         final MIDISequence sequence;
         final MIDISequence.TimingInformation seqTiming;
-        MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, 8);
+        MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, ReadAnySupportedAudioSource.MIDI_POLYPHONY);
         MIDITracker tracker;
         MIDITimer timer;
         float[] data = new float[256];

@@ -138,6 +138,10 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
          * Saved pitch bend in notes.
          */
         private double savedPitchBend;
+        /**
+         * Used to assign channels "age" numbers to know what to remove
+         */
+        private int channelAgeCounter;
 
         private MIDIChannel(int capacity) {
             synthChannels = new Channel[capacity];
@@ -156,6 +160,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
             Channel target = pal.create(MIDISynthesizer.this, bank, program, note, velocity);
             if (target == null)
                 return;
+            target.age = channelAgeCounter++;
             target.velocityVol = velocity / 127f;
             target.savedNote = note;
             target.sampleRate = sampleRate;
@@ -169,15 +174,16 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
                     return;
                 }
             }
-            // attach to any note-off channel
+            // attach to the oldest channel
+            int age = Integer.MAX_VALUE;
+            int ageIndex = 0;
             for (int i = 0; i < synthChannels.length; i++) {
-                if (!synthChannels[i].noteOn) {
-                    synthChannels[i] = target;
-                    return;
+                if (synthChannels[i].age <= age) {
+                    age = synthChannels[i].age;
+                    ageIndex = i;
                 }
             }
-            // attach to SOMETHING
-            synthChannels[0] = target;
+            synthChannels[ageIndex] = target;
         }
 
         public void noteOff(int note, int velocity) {
@@ -237,6 +243,8 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         private int savedNote, sampleRate;
         private double frequency, cycleSeconds, halfCycleSeconds, sampleSeconds;
         private float velocityVol;
+        // Used to determine which channel to delete if we exceed polyphony.
+        private int age;
 
         public Channel() {
         }

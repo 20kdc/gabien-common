@@ -19,7 +19,7 @@ public enum DefaultMIDIPalette implements MIDISynthesizer.Palette {
 
     @Override
     public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
-        // if (program < 0x30 || program > 0x50 || bank != 0) return null;
+        // if (program < 0x00 || program > 0x30 || bank != 0) return null;
         // System.out.println(bank + ":" + Integer.toHexString(program) + ":" + note);
         if (bank >= 128) {
             // stick
