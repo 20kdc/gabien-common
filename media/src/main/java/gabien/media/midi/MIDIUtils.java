@@ -75,4 +75,8 @@ public class MIDIUtils {
         }
         return 0;
     }
+
+    public static double getNoteHz(double note) {
+        return 55.0d * Math.pow(2, (note - 33d) / 12.0d);
+    }
 }

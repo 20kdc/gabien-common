@@ -6,6 +6,8 @@
  */
 package gabien.media.midi;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * Responsible for driving a MIDITracker in the land of seconds.
  * Created February 14th, 2024.
@@ -33,7 +35,7 @@ public class MIDITimer {
      */
     private int ticksSinceLastBase;
 
-    public MIDITimer(MIDITimableThing target) {
+    public MIDITimer(@NonNull MIDITimableThing target) {
         this.target = target;
         lastBaseTTS = target.getTicksToSeconds();
     }
@@ -66,13 +68,14 @@ public class MIDITimer {
             // phase 3: can we advance?
             int nextTimeTicks = ticksSinceLastBase + ticks;
             double nextTime = lastBase + (nextTimeTicks * lastBaseTTS);
-            if (currentTime >= nextTime) {
-                // alright, we can advance
-                ticksSinceLastBase += ticks;
-                eventCount++;
-                target.runNextEvent();
-                ticks = target.getTicksToNextEvent();
-            }
+            // if we can't, we're done for now
+            if (currentTime < nextTime)
+                break;
+            // alright, we can advance
+            ticksSinceLastBase += ticks;
+            eventCount++;
+            target.runNextEvent();
+            ticks = target.getTicksToNextEvent();
         }
         return eventCount;
     }

@@ -6,6 +6,9 @@
  */
 package gabien.media.midi;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Created February 14th, 2024
  */
@@ -20,9 +23,9 @@ public final class MIDITracker implements MIDITimableThing {
     private final byte[] runningStatus;
     // unit per one "delta-time"
     private double deltaTimeToSeconds;
-    public final MIDIEventReceiver receiver;
+    public @Nullable MIDIEventReceiver receiver;
 
-    public MIDITracker(MIDISequence s, MIDIEventReceiver receiver) {
+    public MIDITracker(@NonNull MIDISequence s, @Nullable MIDIEventReceiver receiver) {
         this.receiver = receiver;
         sequence = s;
         pointers = new int[s.tracks.length];
@@ -134,7 +137,8 @@ public final class MIDITracker implements MIDITimableThing {
                     dataLen = remaining;
                 }
                 doInternalReceiveEvent(status, sequence.tracks[i], pointers[i], dataLen);
-                receiver.receiveEvent(status, sequence.tracks[i], pointers[i], dataLen);
+                if (receiver != null)
+                    receiver.receiveEvent(status, sequence.tracks[i], pointers[i], dataLen);
                 pointers[i] += dataLen;
                 // and read next event DT (or cancel track if none remaining!)
                 readDeltaTime(i);

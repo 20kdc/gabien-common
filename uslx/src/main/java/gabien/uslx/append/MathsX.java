@@ -12,6 +12,11 @@ package gabien.uslx.append;
  */
 public final class MathsX {
     /**
+     * PI2 is useful for conversions that treat 0-1 as a cycle.
+     */
+    public static final double PI2 = Math.PI * 2;
+
+    /**
      * Extracts the fractional part of the given value.
      */
     public static float fract(float val) {

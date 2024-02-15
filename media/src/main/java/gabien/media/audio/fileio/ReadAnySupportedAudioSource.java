@@ -13,6 +13,8 @@ import java.io.PushbackInputStream;
 
 import gabien.media.audio.AudioIOSource;
 import gabien.media.midi.MIDISequence;
+import gabien.media.midi.MIDISynthesizer;
+import gabien.media.midi.DefaultMIDIPalette;
 
 /**
  * Created 20th October, 2023.
@@ -41,7 +43,8 @@ public abstract class ReadAnySupportedAudioSource {
             }
             if (ms.length == 0)
                 throw new IOException("MIDI without tracks!");
-            throw new IOException("Still can't synthesize MIDI");
+            MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, 8);
+            return new MIDISynthesizerSource(ms[0], synth, 2);
         } else {
             return MP3Source.fromInputStream(inp, close);
         }

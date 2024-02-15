@@ -12,10 +12,8 @@ import java.util.HashMap;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
-import gabien.natives.BadGPU;
 import gabien.render.IImage;
 import gabien.render.WSIImage;
-import gabien.vopeks.VopeksImage;
 
 /**
  * Getting this code put here.
