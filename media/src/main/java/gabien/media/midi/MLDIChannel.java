@@ -121,6 +121,11 @@ public class MLDIChannel extends MIDISynthesizer.Channel {
 
     @Override
     public void noteOffInner(int velocity) {
+        if (maxSustainTime != Float.MAX_VALUE)
+            return;
+        // if a note is turned off during attack, don't cut it
+        if (stage == 0)
+            volume = sustain;
         stage = 3;
         volumeAtLastStage = volume;
         volumeAtNextStage = 0;
