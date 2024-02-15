@@ -31,15 +31,7 @@ public class MIDISynthesizerSource extends AudioIOSource.SourceF32 {
 
     public MIDISynthesizerSource(@NonNull MIDISequence sequence, @NonNull MIDISynthesizer synth, double cooloff) {
         super(new AudioIOCRSet(2, synth.sampleRate));
-        MIDITracker mt = new MIDITracker(sequence, null);
         double totalTime = sequence.calcTimingInformation().lengthSeconds + cooloff;
-        while (true) {
-            int ticks = mt.getTickOfNextEvent();
-            if (ticks == -1)
-                break;
-            totalTime += mt.getTicksToSeconds() * ticks;
-            mt.runNextEvent();
-        }
         synthesizer = synth;
         tracker = new MIDITracker(sequence, synthesizer);
         timer = new MIDITimer(tracker);
