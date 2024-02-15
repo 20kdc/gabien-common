@@ -145,9 +145,9 @@ public class MLDIChannel extends MIDISynthesizer.Channel {
             internalCounter = (internalCounter + sampleAdv) % 1;
             float waveform;
             if (internalCounter > 0.5f) {
-                waveform = mixSquare;
-            } else {
                 waveform = -mixSquare;
+            } else {
+                waveform = mixSquare;
             }
             waveform += Math.sin(internalCounter * MathsX.PI2) * mixSine;
             buffer[offset++] += waveform * leftVol;
