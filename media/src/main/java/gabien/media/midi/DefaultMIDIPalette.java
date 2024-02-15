@@ -19,7 +19,7 @@ public enum DefaultMIDIPalette implements MIDISynthesizer.Palette {
 
     @Override
     public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
-        // if (program < 0x58 || program > 0x60 || bank != 0) return null;
+        // if (program < 0x30 || program > 0x50 || bank != 0) return null;
         // System.out.println(bank + ":" + Integer.toHexString(program) + ":" + note);
         if (bank >= 128) {
             // stick
@@ -136,23 +136,23 @@ public enum DefaultMIDIPalette implements MIDISynthesizer.Palette {
         case 0x4E: sCFG = 0xC1002FC2; break; // wind!
         case 0x4F: sCFG = 0xC1002FC2; break; // wind!
         //                  vwPlADSR
-        case 0x50: sCFG = 0x43100842; break; // synth
-        case 0x51: sCFG = 0x43100842; break; // synth
-        case 0x52: sCFG = 0x43100842; break; // synth
-        case 0x53: sCFG = 0x43100842; break; // synth
-        case 0x54: sCFG = 0x43100842; break; // synth
-        case 0x55: sCFG = 0x43100842; break; // synth
-        case 0x56: sCFG = 0x43100842; break; // synth
-        case 0x57: sCFG = 0x43100842; break; // synth
+        case 0x50: sCFG = 0x53100842; break; // synth
+        case 0x51: sCFG = 0x53100842; break; // synth
+        case 0x52: sCFG = 0x53100842; break; // synth
+        case 0x53: sCFG = 0x53100842; break; // synth
+        case 0x54: sCFG = 0x53100842; break; // synth
+        case 0x55: sCFG = 0x53100842; break; // synth
+        case 0x56: sCFG = 0x53100842; break; // synth
+        case 0x57: sCFG = 0x53100842; break; // synth
         //                  vwPlADSR
-        case 0x58: sCFG = 0x42100F82; break; // sypad
-        case 0x59: sCFG = 0x42100F82; break; // sypad
-        case 0x5A: sCFG = 0x42100F82; break; // sypad
-        case 0x5B: sCFG = 0x42100F82; break; // sypad
-        case 0x5C: sCFG = 0x42100F82; break; // sypad
-        case 0x5D: sCFG = 0x42100F82; break; // sypad
-        case 0x5E: sCFG = 0x42100F82; break; // sypad
-        case 0x5F: sCFG = 0x42100F82; break; // sypad
+        case 0x58: sCFG = 0x22100F82; break; // sypad
+        case 0x59: sCFG = 0x22100F82; break; // sypad
+        case 0x5A: sCFG = 0x22100F82; break; // sypad
+        case 0x5B: sCFG = 0x22100F82; break; // sypad
+        case 0x5C: sCFG = 0x22100F82; break; // sypad
+        case 0x5D: sCFG = 0x22100F82; break; // sypad
+        case 0x5E: sCFG = 0x22100F82; break; // sypad
+        case 0x5F: sCFG = 0x22100F82; break; // sypad
         //                  vwPlADSR
         case 0x60: sCFG = 0x81100841; break; // sysfx
         case 0x61: sCFG = 0x81100841; break; // sysfx
