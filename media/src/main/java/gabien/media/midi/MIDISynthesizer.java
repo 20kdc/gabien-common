@@ -33,7 +33,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
             midiChannels[i].bank = 0;
             midiChannels[i].program = 0;
             midiChannels[i].volume = 1.0f;
-            midiChannels[i].pan = 1.0f;
+            midiChannels[i].pan = 0.5f;
         }
         midiChannels[9].bank = 128;
     }
@@ -58,11 +58,15 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
                 midiChannels[mch].volume = cv / 127.0f;
             } else if (cc == 8 || cc == 10) {
                 // Pan/Balance (assume the file only uses one)
-                if (cv > 64) {
-                    midiChannels[mch].pan = 1.0f + ((cv - 64) / 63.0f);
+                float pan;
+                if (cv == 64) {
+                    pan = 0.5f;
                 } else {
-                    midiChannels[mch].pan = cv / 64.0f;
+                    pan = cv / 127.0f;
                 }
+                // reduce the level of pan to be a bit less extreme
+                // this prevents "pan deafening"
+                midiChannels[mch].pan = ((pan * 2) + 0.5f) / 3;
             } else if (cc == 123) {
                 // shut everything off
                 midiChannels[mch].noteOffAll();
@@ -122,7 +126,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
          */
         public float volume;
         /**
-         * Pan as 0.0 (L) to 2.0 (R)
+         * Pan as 0.0 (L) to 1.0 (R)
          */
         public float pan;
 
@@ -196,10 +200,12 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
 
         public void render(float[] buffer, int offset, int frames) {
             float adjVolume = globalVolume * volume;
-            float cPanL = pan < 1.0f ? 1.0f : (2.0f - pan);
-            float cPanR = pan > 1.0f ? 1.0f : pan;
-            cPanL *= adjVolume;
-            cPanR *= adjVolume;
+            // boost energy for heavy pans
+            float cPanL = 1.0f - pan;
+            float cPanR = pan;
+            float panCMul = (float) (1.0f / Math.sqrt((cPanL * cPanL) + (cPanR * cPanR)));
+            cPanL *= adjVolume * panCMul;
+            cPanR *= adjVolume * panCMul;
             for (Channel c : synthChannels)
                 if (c != null)
                     c.render(buffer, offset, frames, cPanL, cPanR);
