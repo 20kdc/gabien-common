@@ -13,17 +13,24 @@ package gabien.media.midi;
 public interface MIDITimableThing {
     /**
      * The current definition of the time unit.
+     * The caller is expected to 
      */
     public double getTicksToSeconds();
 
     /**
-     * The amount of Arbitrary Time Units to the next event.
-     * Returns -1 to mean no event exists.
+     * The current tick.
      */
-    public int getTicksToNextEvent();
+    public int getCurrentTick();
 
     /**
-     * Runs the next event, implicitly advancing by getTicksToNextEvent.
+     * The tick of the next event.
+     * Returns -1 to mean no event exists.
+     */
+    public int getTickOfNextEvent();
+
+    /**
+     * Runs the next event, implicitly advancing to getTickOfNextEvent.
+     * This is the only function that can change getTicksToSeconds.
      * Returns false if no events remain.
      */
     public boolean runNextEvent();

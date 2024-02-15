@@ -31,9 +31,9 @@ public enum DefaultMIDIPalette implements MIDISynthesizer.Palette {
             if (note == 49 || note == 55 || note == 57)
                 return new CrashChannel(new Random(bank + program + note + velocity), 1.0d, 0.2d, false);
             //                     A      D      S      R      M      V      PMF               PMT   PMD    PL    MST
-            return new MLDIChannel(0.02f, 0,     1,     0.10f, 1.00f, 0.20f, 50 + (note * 2),  25,   1,     true, 0);
+            return new MLDIChannel(0.01f, 0,     1,     0.10f, 1.00f, 0.20f, 50 + (note * 2),  25,   1,     true, 0);
         }
         //                     A      D      S      R      M      V      PMF    PMT    PMD
-        return new MLDIChannel(0.02f, 0.25f, 0.50f, 0.10f, 0.50f, 0.50f, 1.01f, 0.99f, 0.10f);
+        return new MLDIChannel(0.01f, 0.25f, 0.50f, 0.10f, 0.50f, 0.50f, 1.01f, 0.99f, 0.10f);
     }
 }

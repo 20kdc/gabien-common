@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import gabien.GaBIEn;
@@ -88,7 +88,7 @@ public class UIMainMenu extends UIProxy {
                         InputStream inp = GaBIEn.getInFile(str);
                         MIDISequence mf = MIDISequence.from(inp)[0];
                         OutputStream os = GaBIEn.getOutFile("tmp.txt");
-                        AtomicReference<Double> time = new AtomicReference<>(0d);
+                        AtomicInteger time = new AtomicInteger(0);
                         MIDITracker mt = new MIDITracker(mf, (status, data, offset, length) -> {
                             String res = time.get() + ": " + HexByteEncoding.toHexString(status) + ":" + HexByteEncoding.toHexString(data, offset, length) + ": ";
                             try {
@@ -101,10 +101,10 @@ public class UIMainMenu extends UIProxy {
                             }
                         });
                         while (true) {
-                            int ticks = mt.getTicksToNextEvent();
+                            int ticks = mt.getTickOfNextEvent();
                             if (ticks == -1)
                                 break;
-                            time.set(time.get() + (mt.getTicksToSeconds() * ticks));
+                            time.set(ticks);
                             mt.runNextEvent();
                         }
                         os.close();
@@ -113,6 +113,10 @@ public class UIMainMenu extends UIProxy {
                     }
                 }
             });
+        }));
+        ve.add(new UITextButton("MIDI Testing Range", 16, () -> {
+            UIMIDIPlayer player = new UIMIDIPlayer();
+            ui.accept(player);
         }));
         ve.add(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));

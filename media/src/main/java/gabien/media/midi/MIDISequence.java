@@ -9,6 +9,7 @@ package gabien.media.midi;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedList;
 
 /**
  * Created February 14th, 2024.
@@ -49,6 +50,88 @@ public final class MIDISequence {
         } else {
             // "single sequence" form
             return new MIDISequence[] {new MIDISequence(div, trks)};
+        }
+    }
+
+    /**
+     * Calculate timing information.
+     */
+    public TimingInformation calcTimingInformation() {
+        MIDITracker mt = new MIDITracker(this, null);
+        // "warm up" to ensure we have a correct initial getTicksToSeconds value
+        while (mt.getTickOfNextEvent() == 0)
+            mt.runNextEvent();
+        // create initial segment & list
+        LinkedList<TimingSegment> ll = new LinkedList<>();
+        TimingSegment lastBase = new TimingSegment(0, 0, mt.getTicksToSeconds());
+        ll.add(lastBase);
+        // move forward, finding last tick & collating segments
+        // hypothetically, things like loop points could be found here also
+        int lastTick = 0;
+        while (true) {
+            int tick = mt.getTickOfNextEvent();
+            if (tick == -1)
+                break;
+            lastTick = tick;
+            mt.runNextEvent();
+            double newTTS = mt.getTicksToSeconds();
+            if (newTTS != lastBase.ticksToSeconds) {
+                // Change of base
+                lastBase = new TimingSegment(tick, (tick - lastBase.startTick) * lastBase.ticksToSeconds, newTTS);
+                ll.add(lastBase);
+            }
+        }
+        return new TimingInformation(ll.toArray(new TimingSegment[0]), lastTick);
+    }
+
+    /**
+     * Contains a tempo map, among other things.
+     */
+    public static class TimingInformation {
+        // segmentStartTicks[0] is always 0.
+        public final TimingSegment[] segments;
+        public final int lastTick;
+        public final double lengthSeconds;
+        public TimingInformation(TimingSegment[] segments, int lastTick) {
+            if (segments[0] == null || segments[0].startTick != 0 || segments[0].startTime != 0)
+                throw new RuntimeException("Missing or invalid TimingInformation opening segment");
+            this.segments = segments;
+            this.lastTick = lastTick;
+            double totalLength = 0.0d;
+            int at = 0;
+            double currentTTS = 1.0d;
+            for (TimingSegment ts : segments) {
+                if (ts.startTick > lastTick) {
+                    totalLength += currentTTS * (lastTick - at);
+                    break;
+                }
+                totalLength += currentTTS * (ts.startTick - at);
+                at = ts.startTick;
+                currentTTS = ts.ticksToSeconds;
+            }
+            totalLength += currentTTS * (lastTick - at);
+            lengthSeconds = totalLength;
+        }
+
+        /**
+         * Convert seconds to ticks.
+         */
+        public int secondsToTick(double d) {
+            int candidate = 0;
+            for (TimingSegment s : segments)
+                if (d >= s.startTime)
+                    candidate = s.startTick + (int) Math.floor((d - s.startTime) / s.ticksToSeconds);
+            return candidate;
+        }
+    }
+    public static class TimingSegment {
+        public final int startTick;
+        public final double startTime;
+        public final double ticksToSeconds;
+        public TimingSegment(int startTick, double startTime, double ticksToSeconds) {
+            this.startTick = startTick;
+            this.startTime = startTime;
+            this.ticksToSeconds = ticksToSeconds;
         }
     }
 }

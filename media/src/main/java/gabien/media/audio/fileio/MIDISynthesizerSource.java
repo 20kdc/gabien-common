@@ -8,6 +8,7 @@
 package gabien.media.audio.fileio;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.eclipse.jdt.annotation.NonNull;
 
@@ -31,9 +32,9 @@ public class MIDISynthesizerSource extends AudioIOSource.SourceF32 {
     public MIDISynthesizerSource(@NonNull MIDISequence sequence, @NonNull MIDISynthesizer synth, double cooloff) {
         super(new AudioIOCRSet(2, synth.sampleRate));
         MIDITracker mt = new MIDITracker(sequence, null);
-        double totalTime = cooloff;
+        double totalTime = sequence.calcTimingInformation().lengthSeconds + cooloff;
         while (true) {
-            int ticks = mt.getTicksToNextEvent();
+            int ticks = mt.getTickOfNextEvent();
             if (ticks == -1)
                 break;
             totalTime += mt.getTicksToSeconds() * ticks;
@@ -68,9 +69,7 @@ public class MIDISynthesizerSource extends AudioIOSource.SourceF32 {
     }
 
     private void nextFramesChunk(float[] frame, int at, int frames) throws IOException {
-        int samples = frames * 2;
-        for (int i = 0; i < samples; i++)
-            frame[at + i] = 0;
+        Arrays.fill(frame, at, at + (frames * 2), 0);
         synthesizer.render(frame, at, frames);
         // now update
         synthesizer.update(frames / (double) synthesizer.sampleRate);

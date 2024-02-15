@@ -31,9 +31,9 @@ public class MIDITimer {
     private double lastBaseTTS;
 
     /**
-     * Consumed ticks since last base change.
+     * Base changed at this tick.
      */
-    private int ticksSinceLastBase;
+    private int lastBaseTick;
 
     public MIDITimer(@NonNull MIDITimableThing target) {
         this.target = target;
@@ -41,42 +41,74 @@ public class MIDITimer {
     }
 
     /**
+     * Ensures all events have been executed up to the given tick.
+     * Also updates currentTime accordingly.
+     * Notably, some usecases may require this is used in a "pair".
+     * Also notably, the actual tick seeked to may be less if no events happened.
+     */
+    public void resolveTick(int targetTick) {
+        int currentTick = target.getCurrentTick();
+        while (currentTick < targetTick) {
+            runAllEventsSlatedForNow();
+            int nextEventAt = target.getCurrentTick();
+            if (nextEventAt == -1) {
+                // past end, so it's fine
+                break;
+            } else if (nextEventAt > targetTick) {
+                // more than acceptable, stop
+                break;
+            } else {
+                // acceptable
+                currentTick = nextEventAt;
+                target.runNextEvent();
+                updateBaseIfNecessary();
+            }
+        }
+        // No matter what happens, this calculation should always be right
+        currentTime = lastBase + ((currentTick - lastBaseTick) * lastBaseTTS);
+    }
+
+    /**
+     * Runs all events that need to happen immediately.
+     * Also is sure to update timebase.
+     */
+    private void runAllEventsSlatedForNow() {
+        int currentTick = target.getCurrentTick();
+        while (currentTick == target.getTickOfNextEvent())
+            target.runNextEvent();
+        updateBaseIfNecessary();
+    }
+
+    private void updateBaseIfNecessary() {
+        double currentTicksToSeconds = target.getTicksToSeconds();
+        if (currentTicksToSeconds != lastBaseTTS) {
+            // change base
+            int currentTick = target.getCurrentTick();
+            lastBase += lastBaseTTS * (currentTick - lastBaseTick);
+            lastBaseTTS = currentTicksToSeconds;
+            lastBaseTick = currentTick;
+        }
+    }
+
+    /**
      * Resolves to the current value of absoluteTime.
      * Call once with zero time to run initial events.
-     * Returns the amount of events that ran.
      */
-    public int resolve() {
-        int eventCount = 0;
-        int ticks = target.getTicksToNextEvent();
-        while (ticks != -1) {
-            // phase 1: run all events slated for NOW
-            while (ticks == 0) {
-                eventCount++;
-                target.runNextEvent();
-                ticks = target.getTicksToNextEvent();
-            }
-            if (ticks == -1)
-                break;
-            // phase 2: do timebase change?
-            double currentTicksToSeconds = target.getTicksToSeconds();
-            if (currentTicksToSeconds != lastBaseTTS) {
-                // change base
-                lastBase += lastBaseTTS * ticksSinceLastBase;
-                lastBaseTTS = currentTicksToSeconds;
-                ticksSinceLastBase = 0;
-            }
-            // phase 3: can we advance?
-            int nextTimeTicks = ticksSinceLastBase + ticks;
-            double nextTime = lastBase + (nextTimeTicks * lastBaseTTS);
+    public void resolve() {
+        runAllEventsSlatedForNow();
+        int targetTick = target.getTickOfNextEvent();
+        while (targetTick != -1) {
+            // phase 1: can we advance?
+            double nextTime = lastBase + ((targetTick - lastBaseTick) * lastBaseTTS);
             // if we can't, we're done for now
             if (currentTime < nextTime)
                 break;
             // alright, we can advance
-            ticksSinceLastBase += ticks;
-            eventCount++;
             target.runNextEvent();
-            ticks = target.getTicksToNextEvent();
+            updateBaseIfNecessary();
+            // phase 2: clean up
+            runAllEventsSlatedForNow();
+            targetTick = target.getTickOfNextEvent();
         }
-        return eventCount;
     }
 }

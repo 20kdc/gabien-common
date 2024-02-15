@@ -17,8 +17,9 @@ public final class MIDITracker implements MIDITimableThing {
     private final int[] pointers;
 
     // in both the array and the minimum, -1 = no events available
-    private final int[] remainingTicks;
-    private int ticksToNextEvent = -1;
+    private final int[] eventTicks;
+    private int tickOfNextEvent = -1;
+    private int currentTick = 0;
 
     private final byte[] runningStatus;
     // unit per one "delta-time"
@@ -29,12 +30,12 @@ public final class MIDITracker implements MIDITimableThing {
         this.receiver = receiver;
         sequence = s;
         pointers = new int[s.tracks.length];
-        remainingTicks = new int[s.tracks.length];
+        eventTicks = new int[s.tracks.length];
         runningStatus = new byte[s.tracks.length];
         dtuByTempo(500000);
         for (int i = 0; i < pointers.length; i++)
             readDeltaTime(i);
-        recalculateTicksToNextEvent();
+        recalculateTickOfNextEvent();
     }
 
     private void dtuByTempo(int tempo) {
@@ -57,21 +58,21 @@ public final class MIDITracker implements MIDITimableThing {
      */
     private void readDeltaTime(int track) {
         if (pointers[track] >= sequence.tracks[track].length) {
-            remainingTicks[track] = -1;
+            eventTicks[track] = -1;
             return;
         }
-        remainingTicks[track] = MIDIUtils.getVLI(sequence.tracks[track], pointers[track]);
+        eventTicks[track] = currentTick + MIDIUtils.getVLI(sequence.tracks[track], pointers[track]);
         pointers[track] += MIDIUtils.getVLILength(sequence.tracks[track], pointers[track]);
     }
 
-    private void recalculateTicksToNextEvent() {
-        ticksToNextEvent = -1;
+    private void recalculateTickOfNextEvent() {
+        tickOfNextEvent = -1;
         for (int i = 0; i < pointers.length; i++) {
-            int rt = remainingTicks[i];
+            int rt = eventTicks[i];
             if (rt == -1)
                 continue;
-            if (ticksToNextEvent == -1 || ticksToNextEvent > rt)
-                ticksToNextEvent = rt;
+            if (tickOfNextEvent == -1 || tickOfNextEvent > rt)
+                tickOfNextEvent = rt;
         }
     }
 
@@ -81,8 +82,13 @@ public final class MIDITracker implements MIDITimableThing {
     }
 
     @Override
-    public int getTicksToNextEvent() {
-        return ticksToNextEvent;
+    public int getCurrentTick() {
+        return currentTick;
+    }
+
+    @Override
+    public int getTickOfNextEvent() {
+        return tickOfNextEvent;
     }
 
     /**
@@ -106,17 +112,14 @@ public final class MIDITracker implements MIDITimableThing {
     @Override
     public boolean runNextEvent() {
         // need to run clock forward first
-        if (ticksToNextEvent != 0) {
+        if (currentTick != tickOfNextEvent) {
             // this also accounts for "no more events"
-            if (ticksToNextEvent == -1)
+            if (tickOfNextEvent == -1)
                 return false;
-            for (int i = 0; i < pointers.length; i++)
-                if (remainingTicks[i] != -1)
-                    remainingTicks[i] -= ticksToNextEvent;
-            ticksToNextEvent = 0;
+            currentTick = tickOfNextEvent;
         }
         for (int i = 0; i < pointers.length; i++) {
-            if (remainingTicks[i] == 0) {
+            if (currentTick == eventTicks[i]) {
                 // read event 1st byte
                 byte status = sequence.tracks[i][pointers[i]];
                 if (status < 0) {
@@ -144,7 +147,7 @@ public final class MIDITracker implements MIDITimableThing {
                 readDeltaTime(i);
             }
         }
-        recalculateTicksToNextEvent();
+        recalculateTickOfNextEvent();
         return true;
     }
 }
