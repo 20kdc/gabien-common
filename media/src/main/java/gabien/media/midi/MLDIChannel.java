@@ -131,7 +131,11 @@ public class MLDIChannel extends MIDISynthesizer.Channel {
     @Override
     public void render(float[] buffer, int offset, int frames, float leftVol, float rightVol) {
         float gVol = volume * getVelocityVol();
-        double sampleAdv = (pitchLock ? getSampleSeconds() : getSampleAdv()) * pitchMulState;
+        double sampleSeconds = getSampleSeconds();
+        double effectiveCycleSeconds = (pitchLock ? 1.0d : getCycleSeconds()) / pitchMulState;
+        double penalized = ((0.0025d / effectiveCycleSeconds) * 0.6d) + 0.4d;
+        double sampleAdv = sampleSeconds / effectiveCycleSeconds;
+        gVol *= penalized;
         leftVol *= gVol;
         rightVol *= gVol;
         while (frames > 0) {

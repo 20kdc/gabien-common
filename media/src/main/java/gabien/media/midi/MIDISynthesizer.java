@@ -229,7 +229,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
     public abstract static class Channel {
         private boolean noteOn = true;
         private int savedNote, sampleRate;
-        private double frequency, cycleSeconds, halfCycleSeconds, sampleSeconds, sampleAdv;
+        private double frequency, cycleSeconds, halfCycleSeconds, sampleSeconds;
         private float velocityVol;
 
         public Channel() {
@@ -277,18 +277,11 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
             return sampleSeconds;
         }
 
-        /**
-         * Get how long a sample lasts in cycle space.
-         */
-        public final double getSampleAdv() {
-            return sampleAdv;
-        }
-
         public final void setPitchBend(double pitchBend) {
             frequency = MIDIUtils.getNoteHz(savedNote + pitchBend);
             cycleSeconds = 1.0d / frequency;
             halfCycleSeconds = 0.5d / frequency;
-            sampleAdv = sampleSeconds / cycleSeconds;
+            // sampleAdv = sampleSeconds / cycleSeconds;
         }
 
         public final boolean isNoteOn() {
