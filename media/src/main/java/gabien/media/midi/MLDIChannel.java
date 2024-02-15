@@ -133,9 +133,7 @@ public class MLDIChannel extends MIDISynthesizer.Channel {
         float gVol = volume * getVelocityVol();
         double sampleSeconds = getSampleSeconds();
         double effectiveCycleSeconds = (pitchLock ? 1.0d : getCycleSeconds()) / pitchMulState;
-        double penalized = ((0.0025d / effectiveCycleSeconds) * 0.6d) + 0.4d;
         double sampleAdv = sampleSeconds / effectiveCycleSeconds;
-        gVol *= penalized;
         leftVol *= gVol;
         rightVol *= gVol;
         while (frames > 0) {
