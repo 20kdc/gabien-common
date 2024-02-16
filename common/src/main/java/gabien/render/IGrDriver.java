@@ -55,12 +55,13 @@ public abstract class IGrDriver extends RenderTarget {
         BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add,
         BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add
     );
+    // Test Add w/ R48 RXP anims and adjust Sub accordingly
     public static final int BLEND_ADD = BadGPU.blendProgram(
-        BlendWeight.One, BlendWeight.One, BlendOp.Add,
+        BlendWeight.SrcA, BlendWeight.One, BlendOp.Add,
         BlendWeight.Zero, BlendWeight.One, BlendOp.Add
     );
     public static final int BLEND_SUB = BadGPU.blendProgram(
-        BlendWeight.One, BlendWeight.One, BlendOp.ReverseSub,
+        BlendWeight.SrcA, BlendWeight.One, BlendOp.ReverseSub,
         BlendWeight.Zero, BlendWeight.One, BlendOp.Add
     );
     /*
