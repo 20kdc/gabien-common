@@ -118,6 +118,12 @@ public class UIMainMenu extends UIProxy {
             UIMIDIPlayer player = new UIMIDIPlayer();
             ui.accept(player);
         }));
+        ve.add(new UITextButton("MIDI Instrument Checker", 16, () -> {
+            UIElement[] check = new UIElement[128];
+            for (int i = 0; i < 128; i++)
+                check[i] = new UIMIDIInstrumentChecker(i);
+            ui.accept(new UIScrollLayout(true, 16, check));
+        }));
         ve.add(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));
         }));

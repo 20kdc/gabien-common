@@ -124,6 +124,6 @@ natives/c/version.c
 
 !tools
 !tools/
+!tools/gen-sf-comparison.lua
 !tools/src
 !tools/src/**
-
