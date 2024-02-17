@@ -18,8 +18,8 @@ import gabien.text.ITypeface;
 public class TypefaceKinda implements ITypeface {
     // typefaces in the supported styles
     public final Typeface typeface;
-    public TypefaceKinda() {
-        typeface = Typeface.DEFAULT;
+    public TypefaceKinda(Typeface base) {
+        typeface = base;
     }
 
     @Override

@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.net.Uri;
 import gabien.audio.IRawAudioDriver;
 import gabien.backend.EmulatedFileBrowser;
@@ -32,6 +33,18 @@ import org.eclipse.jdt.annotation.Nullable;
 public final class GaBIenImpl implements IGaBIEn {
     //In case you get confused.
     private RawAudioDriver rad;
+
+    public static final String FONTNAME_ANDROID_DEFAULT = "Android Default";
+    public static final String FONTNAME_ANDROID_BOLD = "Android Bold";
+    public static final String FONTNAME_ANDROID_MONO = "Android Mono";
+    public static final String FONTNAME_ANDROID_SANS = "Android Sans";
+    public static final String FONTNAME_ANDROID_SERIF = "Android Serif";
+
+    public static final ITypeface tfkDefault = new TypefaceKinda(Typeface.DEFAULT);
+    public static final ITypeface tfkBold = new TypefaceKinda(Typeface.DEFAULT_BOLD);
+    public static final ITypeface tfkMono = new TypefaceKinda(Typeface.MONOSPACE);
+    public static final ITypeface tfkSans = new TypefaceKinda(Typeface.SANS_SERIF);
+    public static final ITypeface tfkSerif = new TypefaceKinda(Typeface.SERIF);
 
     public static void main() throws Exception {
         GaBIEn.fontsReady = true;
@@ -66,25 +79,39 @@ public final class GaBIenImpl implements IGaBIEn {
     @Override
     @NonNull
     public String getDefaultNativeFontName() {
-        return "Nautilus";
+        return FONTNAME_ANDROID_DEFAULT;
     }
 
     @Override
     @NonNull
     public ITypeface getDefaultTypeface() {
-        return new TypefaceKinda();
+        return tfkDefault;
     }
 
     @Override
     @Nullable
     public ITypeface getNativeTypeface(@NonNull String name) {
+        if (name.equals(FONTNAME_ANDROID_DEFAULT))
+            return tfkDefault;
+        if (name.equals(FONTNAME_ANDROID_BOLD))
+            return tfkBold;
+        if (name.equals(FONTNAME_ANDROID_MONO))
+            return tfkMono;
+        if (name.equals(FONTNAME_ANDROID_SANS))
+            return tfkSans;
+        if (name.equals(FONTNAME_ANDROID_SERIF))
+            return tfkSerif;
         return null;
     }
 
     @Override
     public String[] getFontOverrides() {
         return new String[] {
-            getDefaultNativeFontName()
+            FONTNAME_ANDROID_DEFAULT,
+            FONTNAME_ANDROID_BOLD,
+            FONTNAME_ANDROID_MONO,
+            FONTNAME_ANDROID_SANS,
+            FONTNAME_ANDROID_SERIF,
         };
     }
 
