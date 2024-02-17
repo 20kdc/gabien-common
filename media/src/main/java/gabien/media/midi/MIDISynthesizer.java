@@ -12,9 +12,10 @@ import org.eclipse.jdt.annotation.NonNull;
  * Created 14th February, 2024.
  */
 public final class MIDISynthesizer implements MIDIEventReceiver {
+    public static final float DEFAULT_GLOBAL_VOLUME = 1.0f;
     public final int sampleRate;
     public final double sampleTime;
-    public float globalVolume = 1.0f;
+    public float globalVolume = DEFAULT_GLOBAL_VOLUME;
 
     private final Palette pal;
     private final MIDIChannel[] midiChannels = new MIDIChannel[16];

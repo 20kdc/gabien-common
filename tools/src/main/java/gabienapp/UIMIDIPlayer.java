@@ -64,7 +64,7 @@ public class UIMIDIPlayer extends UIProxy {
             }
         };
         volume = new UIScrollbar(false, 16);
-        volume.scrollPoint = 1.0d;
+        volume.scrollPoint = MIDISynthesizer.DEFAULT_GLOBAL_VOLUME;
         proxySetElement(new UISplitterLayout(new UISplitterLayout(open, play, false, 0), new UISplitterLayout(scrollbar, volume, true, 0.5d), false, 0), true);
     }
 
@@ -109,7 +109,7 @@ public class UIMIDIPlayer extends UIProxy {
                 Arrays.fill(interleaved, ofs, ofs + (frames * 2), (short) 0);
                 return;
             }
-            float vol = (float) volume.scrollPoint;
+            synth.globalVolume = (float) volume.scrollPoint * 2;
             while (frames > 0) {
                 if (dataPtr == data.length) {
                     Arrays.fill(data, 0);
@@ -125,8 +125,8 @@ public class UIMIDIPlayer extends UIProxy {
                         timer.resolveTick(0);
                     }
                 }
-                interleaved[ofs++] = (short) (AudioIOFormat.cF64toS32(data[dataPtr++] * vol) >> 16);
-                interleaved[ofs++] = (short) (AudioIOFormat.cF64toS32(data[dataPtr++] * vol) >> 16);
+                interleaved[ofs++] = (short) (AudioIOFormat.cF64toS32(data[dataPtr++]) >> 16);
+                interleaved[ofs++] = (short) (AudioIOFormat.cF64toS32(data[dataPtr++]) >> 16);
                 frames--;
             }
             synthViewOfSeekPoint = timer.currentTime / seqTiming.lengthSeconds;

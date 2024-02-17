@@ -36,6 +36,7 @@ public class MIDIInstrumentCheckerProcessor {
             throw new RuntimeException(e);
         }
         MIDISynthesizer ms = new MIDISynthesizer(SAMPLE_RATE, DefaultMIDIPalette.INSTANCE, 1);
+        ms.globalVolume = 1.0f;
         ms.receiveEvent((byte) 0xC0, new byte[] {(byte) program}, 0, 1);
         ms.receiveEvent((byte) 0x90, new byte[] {(byte) 64, (byte) 127}, 0, 2);
         sampleResult = new float[SAMPLE_COUNT * 2];
