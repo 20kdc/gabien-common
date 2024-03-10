@@ -37,10 +37,16 @@ void * memmove(void * dst, const void * src, size_t len);
 
 extern const char una_version[];
 
-#define J_BADGPU(x) Java_gabien_natives_BadGPUUnsafe_ ## x
-#define J_VORBIS(x) Java_gabien_natives_VorbisUnsafe_ ## x
-#define J_MP3(x) Java_gabien_natives_MP3Unsafe_ ## x
-#define J_LOADER(x) Java_gabien_natives_Loader_ ## x
+#ifdef WIN32
+#define JNICALL __stdcall
+#else
+#define JNICALL
+#endif
+
+#define J_BADGPU(x) JNICALL Java_gabien_natives_BadGPUUnsafe_ ## x
+#define J_VORBIS(x) JNICALL Java_gabien_natives_VorbisUnsafe_ ## x
+#define J_MP3(x) JNICALL Java_gabien_natives_MP3Unsafe_ ## x
+#define J_LOADER(x) JNICALL Java_gabien_natives_Loader_ ## x
 
 #define C_PTR(l) ((void *) (intptr_t) (l))
 #define J_PTR(l) ((int64_t) (intptr_t) (l))
@@ -53,15 +59,15 @@ extern const char una_version[];
 #define JNIFN(idx) ((*((void***) env))[idx])
 
 // JNI functions get listed here.
-#define JNI_ThrowNew ((int32_t (*)(void *, void *, const char *)) JNIFN(14))
-#define JNI_NewStringUTF ((void * (*)(void *, const char *)) JNIFN(167))
-#define JNI_NewDirectBuffer ((void * (*)(void *, void *, int64_t)) JNIFN(229))
-#define JNI_GetDirectBufferAddress ((void * (*)(void *, void *)) JNIFN(230))
+#define JNI_ThrowNew ((int32_t (JNICALL *)(void *, void *, const char *)) JNIFN(14))
+#define JNI_NewStringUTF ((void * (JNICALL *)(void *, const char *)) JNIFN(167))
+#define JNI_NewDirectBuffer ((void * (JNICALL *)(void *, void *, int64_t)) JNIFN(229))
+#define JNI_GetDirectBufferAddress ((void * (JNICALL *)(void *, void *)) JNIFN(230))
 
 #define JNI_ABORT 2
 
-#define JNI_GetPrimitiveArrayCritical ((void * (*)(void *, void *, unsigned char *)) JNIFN(222))
-#define JNI_ReleasePrimitiveArrayCritical ((void * (*)(void *, void *, void *, int32_t)) JNIFN(223))
+#define JNI_GetPrimitiveArrayCritical ((void * (JNICALL *)(void *, void *, unsigned char *)) JNIFN(222))
+#define JNI_ReleasePrimitiveArrayCritical ((void * (JNICALL *)(void *, void *, void *, int32_t)) JNIFN(223))
 
 #define JNIBA_ARG(name) void * name ## _buf, int32_t name ## _ofs
 
