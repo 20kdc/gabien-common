@@ -36,7 +36,7 @@ public class ReleaseNativesAreInstalledAndReproducibleTest {
         load();
         String ver = Loader.getNativesVersion();
         // This line is changed after each release.
-        String vrl = "sleeping-pegasus";
+        String vrl = "pontificating-raven";
         // THIS IS THE ONLY PLACE WHERE THIS ENVIRONMENT VARIABLE MAY BE USED.
         // It acts as a - disablable - safety guard with no other side effects.
         @Nullable String dev = System.getenv("GABIEN_NATIVES_DEV");
