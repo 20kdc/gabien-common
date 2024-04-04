@@ -5,7 +5,10 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
+#include "badgpu.h"
 #include "badgpu_internal.h"
+
+#define REMINDER_PINCH "\nWhile you should report this, it is worth noting that on desktop platforms, you may set the environment variable BADGPU_EGL_LIBRARY to the location of a 'libGLESv2.so' library (from any Chromium-based application). This may provide working service."
 
 // WSICTX
 typedef struct BADGPUWSICtx {
@@ -16,6 +19,8 @@ typedef struct BADGPUWSICtx {
     void * ctx;
     void * srf;
     void * cfg;
+    BADGPUContextType glContextType;
+    unsigned int (KHRABI *eglGetError)();
     void * (KHRABI *eglGetDisplay)(void *);
     unsigned int (KHRABI *eglInitialize)(void *, int32_t *, int32_t *);
     unsigned int (KHRABI *eglChooseConfig)(void *, int32_t *, void *, int32_t, int32_t *);
@@ -62,12 +67,21 @@ static const char * locationsGLES1[] = {
     NULL
 };
 
+// the entire use of GL here is another shot in the dark
+static const char * locationsGL[] = {
+    "libGL.so.1",
+    "libGL.so",
+    "libGL",
+    NULL
+};
+
 // Yes, it's backwards.
 #define EGL_HEIGHT 0x3056
 #define EGL_WIDTH 0x3057
 
 #define EGL_RENDERABLE_TYPE 0x3040
 #define EGL_OPENGL_ES_BIT 0x0001
+#define EGL_OPENGL_BIT 0x0008
 #define EGL_NONE 0x3038
 
 static BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx);
@@ -76,52 +90,21 @@ static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
 static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
 static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
 
-BADGPUWSIContext badgpu_newWsiCtx(const char ** error) {
-    BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
-    if (!ctx)
-        return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
-    memset(ctx, 0, sizeof(struct BADGPUWSICtx));
-
-    ctx->wsi.makeCurrent = (void *) badgpu_wsiCtxMakeCurrent;
-    ctx->wsi.stopCurrent = (void *) badgpu_wsiCtxStopCurrent;
-    ctx->wsi.getProcAddress = (void *) badgpu_wsiCtxGetProcAddress;
-    ctx->wsi.getValue = (void *) badgpu_wsiCtxGetValue;
-    ctx->wsi.close = (void *) badgpu_destroyWsiCtx;
-
-    // Can't guarantee a link to EGL, so we have to do it the *hard* way
-    ctx->eglLibrary = badgpu_dlOpen(locationsEGL, "BADGPU_EGL_LIBRARY");
-    if (!ctx->eglLibrary)
-        return badgpu_newWsiCtxError(error, "Could not open EGL");
-    // Try this. If it fails it fails; don't worry about it too much.
-    // Older Android versions require you do this to get core symbols.
-    ctx->glLibrary = badgpu_dlOpen(locationsGLES1, "BADGPU_GLES1_LIBRARY");
-    // Under extreme circumstances, we need to be able to link to the ANGLE libGLES2 binary directly.
-    // The symbol names are different but the ABI is completely identical.
-    ctx->eglGetDisplay = badgpu_dlSym2(ctx->eglLibrary, "eglGetDisplay", "EGL_GetDisplay");
-    ctx->eglInitialize = badgpu_dlSym2(ctx->eglLibrary, "eglInitialize", "EGL_Initialize");
-    ctx->eglChooseConfig = badgpu_dlSym2(ctx->eglLibrary, "eglChooseConfig", "EGL_ChooseConfig");
-    ctx->eglCreateContext = badgpu_dlSym2(ctx->eglLibrary, "eglCreateContext", "EGL_CreateContext");
-    ctx->eglGetProcAddress = badgpu_dlSym2(ctx->eglLibrary, "eglGetProcAddress", "EGL_GetProcAddress");
-    ctx->eglMakeCurrent = badgpu_dlSym2(ctx->eglLibrary, "eglMakeCurrent", "EGL_MakeCurrent");
-    ctx->eglDestroyContext = badgpu_dlSym2(ctx->eglLibrary, "eglDestroyContext", "EGL_DestroyContext");
-    ctx->eglTerminate = badgpu_dlSym2(ctx->eglLibrary, "eglTerminate", "EGL_Terminate");
-    ctx->eglCreatePbufferSurface = badgpu_dlSym2(ctx->eglLibrary, "eglCreatePbufferSurface", "EGL_CreatePbufferSurface");
-    ctx->eglDestroySurface = badgpu_dlSym2(ctx->eglLibrary, "eglDestroySurface", "EGL_DestroySurface");
-    ctx->dsp = ctx->eglGetDisplay(NULL);
-    if (!ctx->dsp)
-        return badgpu_newWsiCtxError(error, "Could not create EGLDisplay");
-    if (!ctx->eglInitialize(ctx->dsp, NULL, NULL))
-        return badgpu_newWsiCtxError(error, "Could not initialize EGL");
+static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUBool logDetailed) {
     void * config;
     int32_t attribs[] = {
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES_BIT,
+        EGL_RENDERABLE_TYPE, ctxTypeAttrib,
         EGL_NONE
     };
     int32_t configCount;
-    if (!ctx->eglChooseConfig(ctx->dsp, attribs, &config, 1, &configCount))
-        return badgpu_newWsiCtxError(error, "Failed to choose EGL config");
-    if (!configCount)
-        return badgpu_newWsiCtxError(error, "No EGL configs");
+    if (!ctx->eglChooseConfig(ctx->dsp, attribs, &config, 1, &configCount)) {
+        printf("BADGPU: eglChooseConfig error: %i\n", ctx->eglGetError());
+        return 0;
+    }
+    if (!configCount) {
+        printf("BADGPU: eglChooseConfig returned no configs!\n");
+        return 0;
+    }
     // Android 10 doesn't support surfaceless GLESv1 contexts.
     // This codepath is optional, as it's a compatibility workaround anyway.
     // We don't actually use this surface for anything except to keep Android happy.
@@ -140,10 +123,71 @@ BADGPUWSIContext badgpu_newWsiCtx(const char ** error) {
         EGL_NONE
     };
     ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribsCtx);
-    if (!ctx->ctx)
-        return badgpu_newWsiCtxError(error, "Failed to create EGL context");
+    if (!ctx->ctx) {
+        printf("BADGPU: eglCreateContext error: %i\n", ctx->eglGetError());
+        if (ctx->srf) {
+            ctx->eglDestroySurface(ctx->dsp, ctx->srf);
+            ctx->srf = NULL;
+        }
+        return 0;
+    }
     ctx->cfg = config;
-    return (BADGPUWSIContext) ctx;
+    return 1;
+}
+
+BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
+    BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
+    if (!ctx)
+        return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
+    memset(ctx, 0, sizeof(struct BADGPUWSICtx));
+
+    ctx->wsi.makeCurrent = (void *) badgpu_wsiCtxMakeCurrent;
+    ctx->wsi.stopCurrent = (void *) badgpu_wsiCtxStopCurrent;
+    ctx->wsi.getProcAddress = (void *) badgpu_wsiCtxGetProcAddress;
+    ctx->wsi.getValue = (void *) badgpu_wsiCtxGetValue;
+    ctx->wsi.close = (void *) badgpu_destroyWsiCtx;
+
+    // Can't guarantee a link to EGL, so we have to do it the *hard* way
+    ctx->eglLibrary = badgpu_dlOpen(locationsEGL, "BADGPU_EGL_LIBRARY");
+    if (!ctx->eglLibrary)
+        return badgpu_newWsiCtxError(error, "Could not open EGL!" REMINDER_PINCH);
+    // Under extreme circumstances, we need to be able to link to the ANGLE libGLES2 binary directly.
+    // The symbol names are different but the ABI is completely identical.
+    ctx->eglGetError = badgpu_dlSym2(ctx->eglLibrary, "eglGetError", "EGL_GetError");
+    ctx->eglGetDisplay = badgpu_dlSym2(ctx->eglLibrary, "eglGetDisplay", "EGL_GetDisplay");
+    ctx->eglInitialize = badgpu_dlSym2(ctx->eglLibrary, "eglInitialize", "EGL_Initialize");
+    ctx->eglChooseConfig = badgpu_dlSym2(ctx->eglLibrary, "eglChooseConfig", "EGL_ChooseConfig");
+    ctx->eglCreateContext = badgpu_dlSym2(ctx->eglLibrary, "eglCreateContext", "EGL_CreateContext");
+    ctx->eglGetProcAddress = badgpu_dlSym2(ctx->eglLibrary, "eglGetProcAddress", "EGL_GetProcAddress");
+    ctx->eglMakeCurrent = badgpu_dlSym2(ctx->eglLibrary, "eglMakeCurrent", "EGL_MakeCurrent");
+    ctx->eglDestroyContext = badgpu_dlSym2(ctx->eglLibrary, "eglDestroyContext", "EGL_DestroyContext");
+    ctx->eglTerminate = badgpu_dlSym2(ctx->eglLibrary, "eglTerminate", "EGL_Terminate");
+    ctx->eglCreatePbufferSurface = badgpu_dlSym2(ctx->eglLibrary, "eglCreatePbufferSurface", "EGL_CreatePbufferSurface");
+    ctx->eglDestroySurface = badgpu_dlSym2(ctx->eglLibrary, "eglDestroySurface", "EGL_DestroySurface");
+    ctx->dsp = ctx->eglGetDisplay(NULL);
+    if (!ctx->dsp) {
+        if (logDetailed)
+            printf("BADGPU: eglGetDisplay error: %i\n", ctx->eglGetError());
+        return badgpu_newWsiCtxError(error, "Could not create EGLDisplay" REMINDER_PINCH);
+    }
+    if (!ctx->eglInitialize(ctx->dsp, NULL, NULL)) {
+        if (logDetailed)
+            printf("BADGPU: eglInitialize error: %i\n", ctx->eglGetError());
+        return badgpu_newWsiCtxError(error, "Could not initialize EGL" REMINDER_PINCH);
+    }
+    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, logDetailed)) {
+        // Try this. If it fails it fails; don't worry about it too much.
+        // Older Android versions require you do this to get core symbols.
+        ctx->glContextType = BADGPUContextType_GLESv1;
+        ctx->glLibrary = badgpu_dlOpen(locationsGLES1, "BADGPU_GLES1_LIBRARY");
+        return (BADGPUWSIContext) ctx;
+    }
+    if (attemptEGL(ctx, EGL_OPENGL_BIT, logDetailed)) {
+        ctx->glContextType = BADGPUContextType_GL;
+        ctx->glLibrary = badgpu_dlOpen(locationsGL, "BADGPU_GL_LIBRARY");
+        return (BADGPUWSIContext) ctx;
+    }
+    return badgpu_newWsiCtxError(error, "Failed to setup either a GLESv1 config or a desktop GL config." REMINDER_PINCH);
 }
 
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {
@@ -167,7 +211,7 @@ void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query) {
     if (query == BADGPUWSIQuery_LibGL)
         return ctx->glLibrary;
     if (query == BADGPUWSIQuery_ContextType)
-        return (void *) BADGPUContextType_GLESv1;
+        return (void *) ctx->glContextType;
     if (query == BADGPUWSIQuery_ContextWrapper)
         return (void *) ctx;
 

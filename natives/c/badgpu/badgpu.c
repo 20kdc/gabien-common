@@ -9,6 +9,7 @@
  * BadGPU Reference Implementation
  */
 
+#include "badgpu.h"
 #include "badgpu_internal.h"
 #include "badgpu_glbind.h"
 
@@ -129,7 +130,7 @@ static KHRABI void badgpuDebugCB(int32_t a, int32_t b, int32_t c, int32_t d, int
 }
 
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
-    BADGPUWSIContext wsi = badgpu_newWsiCtx(error);
+    BADGPUWSIContext wsi = badgpu_newWsiCtx(error, (flags & BADGPUNewInstanceFlags_CanPrintf) ? 1 : 0);
     if (!wsi) {
         // error provided by badgpu_newWsiCtx
         return NULL;

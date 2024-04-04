@@ -17,7 +17,11 @@ if (!(into->fn)) \
 #define BINDGLFN(fn) into->fn = ctx->getProcAddress(ctx, "gl" #fn); \
 CHKGLFN(fn)
 
+// WORKAROUND:
+// Rigging ANGLE drivers for BadGPU requires shaving off the OES suffix from extensions.
+// We should still prefer the suffixes to avoid confusion with GLES2/GLES3.
 #define BINDGLFN2(fn, ext) into->fn = ctx->getProcAddress(ctx, "gl" #fn #ext); \
+if (!into->fn) into->fn = ctx->getProcAddress(ctx, "gl" #fn); \
 CHKGLFN(fn)
 
     BINDGLFN(GetError);

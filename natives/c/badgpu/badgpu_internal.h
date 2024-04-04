@@ -77,7 +77,7 @@ void badgpu_dlClose(BADGPUDynLib lib);
 // WSI
 
 // Creates a new WSICtx.
-BADGPUWSIContext badgpu_newWsiCtx(const char ** error);
+BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed);
 
 #endif
 
