@@ -20,7 +20,7 @@ typedef struct BADGPUWSICtx {
     void * srf;
     void * cfg;
     BADGPUContextType glContextType;
-    unsigned int (KHRABI *eglGetError)();
+    int32_t (KHRABI *eglGetError)();
     void * (KHRABI *eglGetDisplay)(void *);
     unsigned int (KHRABI *eglInitialize)(void *, int32_t *, int32_t *);
     unsigned int (KHRABI *eglChooseConfig)(void *, int32_t *, void *, int32_t, int32_t *);
