@@ -165,8 +165,16 @@ public interface IGrInDriver {
      * Otherwise, shuts down the passed-in backbuffer and returns a new one.
      */
     default @NonNull IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer) {
-        int w = getWidth();
-        int h = getHeight();
+        return ensureBackBuffer(backBuffer, 1);
+    }
+
+    /**
+     * Helper to maintain backbuffer width/height.
+     * Otherwise, shuts down the passed-in backbuffer and returns a new one.
+     */
+    default @NonNull IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer, int supersampling) {
+        int w = getWidth() * supersampling;
+        int h = getHeight() * supersampling;
         if (backBuffer != null) {
             if (backBuffer.getWidth() == w && backBuffer.getHeight() == h)
                 return backBuffer;

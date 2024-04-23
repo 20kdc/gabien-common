@@ -37,6 +37,8 @@ abstract class Main {
                     isTimeLogging = true;
                 if (s.equalsIgnoreCase("iAmARobot"))
                     GaBIEnImpl.mobileEmulation = true;
+                if (s.equalsIgnoreCase("simAndroid23Init"))
+                    GaBIEnImpl.storagePermissionFlag = false;
                 if (s.equalsIgnoreCase("forceIgnoreDPI"))
                     ignoreDPI = true;
                 if (s.equalsIgnoreCase("blindingSun"))

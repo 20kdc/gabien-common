@@ -22,6 +22,10 @@ public class NullGrDriver extends IGrDriver {
     }
 
     @Override
+    public void generateMipmap() {
+    }
+
+    @Override
     public void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] buffer, int bufferOfs, @NonNull Runnable onDone) {
         onDone.run();
     }

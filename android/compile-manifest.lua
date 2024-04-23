@@ -7,7 +7,7 @@ print("<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" pa
 print(" android:installLocation=\"auto\"")
 print(" android:versionCode=\"" .. versionCode .. "\"")
 print(" android:versionName=\"" .. versionName .. "\">")
-print(" <uses-sdk android:minSdkVersion=\"7\" android:targetSdkVersion=\"10\" />")
+print(" <uses-sdk android:minSdkVersion=\"7\" android:targetSdkVersion=\"23\" />")
 for p in permissions:gmatch("[^,]+") do
  print(" <uses-permission android:name=\"" .. p .. "\"/>")
 end

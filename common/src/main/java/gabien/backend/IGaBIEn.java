@@ -102,4 +102,9 @@ public interface IGaBIEn {
     default File nativeDestinationSetup(String name) {
         return gabien.natives.Loader.destinationSetupJavaSE(name);
     }
+
+    /**
+     * Android-specific, return true otherwise
+     */
+    boolean hasStoragePermission();
 }

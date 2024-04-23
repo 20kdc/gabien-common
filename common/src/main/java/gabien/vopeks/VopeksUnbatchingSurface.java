@@ -77,6 +77,15 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
     }
 
     @Override
+    public synchronized void generateMipmap() {
+        batchFlush();
+        batchReferenceBarrier();
+        vopeks.putTask((instance) -> {
+            BadGPUUnsafe.generateMipmap(texture.pointer);
+        });
+    }
+
+    @Override
     public synchronized void shutdown() {
         if (!wasDisposed) {
             wasDisposed = true;
@@ -85,8 +94,10 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
             // This is important! Otherwise, we leak batch resources.
             batchFlush();
             vopeks.putTask((instance) -> {
-                if (texture != null)
+                if (texture != null) {
                     texture.dispose();
+                    texture = null;
+                }
             });
         }
     }

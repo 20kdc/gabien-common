@@ -38,6 +38,7 @@ import java.util.logging.Logger;
  */
 public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrowser {
     public static boolean mobileEmulation;
+    public static boolean storagePermissionFlag = true;
 
     // Can be read by an application to get the global UI scale.
     // On mobile devices, this should be done based on the pixel resolution, NOT DPI.
@@ -257,5 +258,10 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
                 });
             }
         });
+    }
+
+    @Override
+    public boolean hasStoragePermission() {
+        return storagePermissionFlag;
     }
 }

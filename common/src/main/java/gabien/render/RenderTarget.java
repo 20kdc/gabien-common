@@ -31,6 +31,11 @@ public abstract class RenderTarget extends IImage {
     }
 
     /**
+     * Generates mipmaps.
+     */
+    public abstract void generateMipmap();
+
+    /**
      * Flushes batches of things that have batches attached to this surface.
      * Call immediately before any call to putTask that writes to this surface.
      * Will be internally called before batchStartGroup.

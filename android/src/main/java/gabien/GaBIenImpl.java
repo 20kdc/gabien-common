@@ -7,8 +7,10 @@
 
 package gabien;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -207,5 +209,15 @@ public final class GaBIenImpl implements IGaBIEn {
         // don't delete on exit; tablets might not like writing over this data
         // gabien.natives.Loader should be kind about this
         return new File(dataDir, "nativeDestinationSetup." + name);
+    }
+
+    @Override
+    public boolean hasStoragePermission() {
+        try {
+            return AndroidPortGlobals.applicationContext.checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, android.os.Process.myPid(), android.os.Process.myUid()) != PackageManager.PERMISSION_DENIED;
+        } catch (Exception ex) {
+            // this shouldn't be necessary but let's make *SURE* we don't break anything 
+            return true;
+        }
     }
 }

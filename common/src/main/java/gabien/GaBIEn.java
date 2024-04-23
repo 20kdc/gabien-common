@@ -648,6 +648,15 @@ public final class GaBIEn {
     }
 
     /**
+     * Detects if the application has storage permission on Android.
+     * Actually trying to use Storage Access Framework on Android would destroy R48 UX.
+     * At this point I'm just buying time before Google do something that utterly destroys R48 on Android.
+     */
+    public static boolean hasStoragePermission() {
+        return internal.hasStoragePermission();
+    }
+
+    /**
      * invokeLater-alike for the gabien main thread.
      * This can be used by the application,
      *  but mostly exists as a way to get application callbacks called on the thread they are expected to be called on.
