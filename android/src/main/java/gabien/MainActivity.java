@@ -16,6 +16,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
+import gabien.wsi.IPointer;
 
 public class MainActivity extends Activity {
 	public TextboxImplObject myTIO;
@@ -82,7 +83,21 @@ public class MainActivity extends Activity {
                 y /= owner.displayArea.height();
                 x *= owner.wantedBackBufferW;
                 y *= owner.wantedBackBufferH;
-                owner.peripherals.gdPushEvent(mode, arg1.getPointerId(ptrI), (int) x, (int) y);
+                if (mode) {
+                    IPointer.PointerType typeGuess = IPointer.PointerType.Generic;
+                    try {
+                        int res = (int) arg1.getClass().getMethod("getButtonState").invoke(arg1);
+                        if (res == 2)
+                            typeGuess = IPointer.PointerType.Right;
+                        if (res == 4)
+                            typeGuess = IPointer.PointerType.Middle;
+                    } catch (Exception ex) {
+                        // do nothing! it may just not be supported on this OS version, that's that
+                    }
+                    owner.peripherals.gdPushPointerDownOrMove(arg1.getPointerId(ptrI), (int) x, (int) y, typeGuess);
+                } else {
+                    owner.peripherals.gdPushPointerUp(arg1.getPointerId(ptrI), (int) x, (int) y);
+                }
             }
         });
         SurfaceHolder sh = surfaceview.getHolder();

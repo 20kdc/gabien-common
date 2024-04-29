@@ -96,27 +96,36 @@ public class Peripherals implements IPeripherals {
         pointersLock.unlock();
     }
 
-    public void gdPushEvent(boolean mode, int pointerId, int x, int y) {
+    public void gdPushPointerDownOrMove(int pointerId, int x, int y, @Nullable IPointer.PointerType down) {
         pointersLock.lock();
-        if (!mode) {
-            UPointer ptr = pointersMap.remove(pointerId);
-            if (ptr != null)
-                pointersThatWePretendDoNotExist.remove(ptr);
-        } else {
-            UPointer up = pointersMap.get(pointerId);
-            if (up == null) {
-                up = new UPointer();
-                pointersMap.put(pointerId, up);
-                pointersJustDown.add(up);
-            }
+        UPointer up = pointersMap.get(pointerId);
+        if (up == null && down != null) {
+            up = new UPointer();
+            up.type = down;
+            pointersMap.put(pointerId, up);
+            pointersJustDown.add(up);
+        }
+        if (up != null) {
             up.actualX = x;
             up.actualY = y;
         }
         pointersLock.unlock();
     }
 
+    public void gdPushPointerUp(int pointerId, int x, int y) {
+        pointersLock.lock();
+        UPointer ptr = pointersMap.remove(pointerId);
+        if (ptr != null) {
+            pointersThatWePretendDoNotExist.remove(ptr);
+            ptr.actualX = x;
+            ptr.actualY = y;
+        }
+        pointersLock.unlock();
+    }
+
     private static class UPointer implements IPointer {
         public int offsetX, offsetY, actualX, actualY;
+        public PointerType type = PointerType.Generic;
         @Override
         public int getX() {
             return offsetX + actualX;
@@ -129,7 +138,7 @@ public class Peripherals implements IPeripherals {
 
         @Override
         public PointerType getType() {
-            return PointerType.Generic;
+            return type;
         }
 
         @Override
