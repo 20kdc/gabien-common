@@ -8,6 +8,8 @@
 
 . ./sdk-clean
 
+set -e
+
 mkdir -p $LIBUNA
 
 if [ "$UNA_BUILD_ID" = "" ]; then
