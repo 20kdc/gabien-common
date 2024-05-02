@@ -1,0 +1,9 @@
+.classpath
+.project
+.settings
+AndroidManifest.xml
+res/drawable/icon.png
+res/values/strings.xml
+staging
+staging2
+target
