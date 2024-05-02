@@ -27,6 +27,7 @@ typedef struct BADGPUInstancePriv {
     int backendCheck;
     int backendCheckAggressive;
     int canPrintf;
+    int disabledTextureMatrices;
     uint32_t fbo;
     uint32_t fboBoundTex, fboBoundDS;
     // wsi stuff
@@ -642,8 +643,14 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     if (texture) {
         bi->gl.Enable(GL_TEXTURE_2D);
         bi->gl.BindTexture(GL_TEXTURE_2D, BG_TEXTURE(texture)->tex);
-        bi->gl.MatrixMode(GL_TEXTURE);
-        if (!matrixT) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixT);
+        if (!bi->disabledTextureMatrices) {
+            bi->gl.MatrixMode(GL_TEXTURE);
+            if (!badgpuChkInnards(bi, "badgpuDrawGeom: glMatrixMode(GL_TEXTURE) [disabling support for texture matrices and continuing]")) {
+                bi->disabledTextureMatrices = 1;
+            } else {
+                if (!matrixT) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) matrixT);
+            }
+        }
 
         bi->gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (flags & BADGPUDrawFlags_WrapS) ? GL_REPEAT : GL_CLAMP_TO_EDGE);
         bi->gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (flags & BADGPUDrawFlags_WrapT) ? GL_REPEAT : GL_CLAMP_TO_EDGE);

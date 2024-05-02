@@ -32,6 +32,7 @@ public abstract class RenderTarget extends IImage {
 
     /**
      * Generates mipmaps.
+     * Notably, this can fail.
      */
     public abstract void generateMipmap();
 

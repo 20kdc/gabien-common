@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.1.0`
+ * Version: `1.1.1`
  *
  * ## Formatting Policy
  *
@@ -779,6 +779,8 @@ BADGPU_EXPORT BADGPUDSBuffer badgpuNewDSBuffer(BADGPUInstance instance,
  *
  * The ability to specify mipmaps manually was not included, as it
  *  disincentivizes use of formats that are properly compressed.
+ *
+ * Beware: This can and will fail on mobile (say, Android 14 Emulator) for NPOT textures!
  */
 BADGPU_EXPORT BADGPUBool badgpuGenerateMipmap(BADGPUTexture texture);
 
@@ -1127,7 +1129,9 @@ typedef enum BADGPUBlendWeight {
  *   This is controlled by `vPosD`.
  * + `vCol` is 4-dimensional (R, G, B, A).
  * + `vTC` is 2 to 4-dimensional (same as vPos). \
- *   This is controlled by `vTCD`.
+ *   This is controlled by `vTCD`. \
+ *   It is transformed by `matrixT` if supported. \
+ *   (It appears at least Android 14's emulator does not support it.)
  *
  * For `vCol` and `vTC`, there are also "freeze flags". \
  * If used in conjunction with the arrays, only the first element of those
