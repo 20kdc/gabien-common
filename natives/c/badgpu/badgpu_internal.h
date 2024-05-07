@@ -72,6 +72,7 @@ typedef struct BADGPUDynLib * BADGPUDynLib;
 BADGPUDynLib badgpu_dlOpen(const char ** locations, const char * env);
 void * badgpu_dlSym(BADGPUDynLib lib, const char * sym);
 void * badgpu_dlSym2(BADGPUDynLib lib, const char * sym1, const char * sym2);
+void * badgpu_dlSym4(BADGPUDynLib lib, const char * sym1, const char * sym2, const char * sym3, const char * sym4);
 void badgpu_dlClose(BADGPUDynLib lib);
 
 // WSI

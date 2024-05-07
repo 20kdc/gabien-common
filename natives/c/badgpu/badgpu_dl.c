@@ -48,6 +48,13 @@ void * badgpu_dlSym2(BADGPUDynLib lib, const char * sym1, const char * sym2) {
     return v;
 }
 
+void * badgpu_dlSym4(BADGPUDynLib lib, const char * sym1, const char * sym2, const char * sym3, const char * sym4) {
+    void * v = badgpu_dlSym2(lib, sym1, sym2);
+    if (!v)
+        v = badgpu_dlSym2(lib, sym3, sym4);
+    return v;
+}
+
 void badgpu_dlClose(BADGPUDynLib lib) {
 #ifdef WIN32
     FreeLibrary((void *) lib);

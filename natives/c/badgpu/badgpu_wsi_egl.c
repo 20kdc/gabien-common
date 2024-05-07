@@ -22,14 +22,15 @@ typedef struct BADGPUWSICtx {
     BADGPUContextType glContextType;
     int32_t (KHRABI *eglGetError)();
     void * (KHRABI *eglGetDisplay)(void *);
+    void * (KHRABI *eglGetPlatformDisplay)(int32_t, void *, const intptr_t *);
     unsigned int (KHRABI *eglInitialize)(void *, int32_t *, int32_t *);
-    unsigned int (KHRABI *eglChooseConfig)(void *, int32_t *, void *, int32_t, int32_t *);
-    void * (KHRABI *eglCreateContext)(void *, void *, void *, int32_t *);
+    unsigned int (KHRABI *eglChooseConfig)(void *, const int32_t *, void *, int32_t, int32_t *);
+    void * (KHRABI *eglCreateContext)(void *, void *, void *, const int32_t *);
     void * (KHRABI *eglGetProcAddress)(const char *);
     unsigned int (KHRABI *eglMakeCurrent)(void *, void *, void *, void *);
     unsigned int (KHRABI *eglDestroyContext)(void *, void *);
     unsigned int (KHRABI *eglTerminate)(void *);
-    void * (KHRABI *eglCreatePbufferSurface)(void *, void *, int32_t *);
+    void * (KHRABI *eglCreatePbufferSurface)(void *, void *, const int32_t *);
     unsigned int (KHRABI *eglDestroySurface)(void *, void *);
 } * BADGPUWSICtx;
 
@@ -75,10 +76,13 @@ static const char * locationsGL[] = {
     NULL
 };
 
+#define EGL_PLATFORM_SURFACELESS_MESA 0x31DD
+
 // Yes, it's backwards.
 #define EGL_HEIGHT 0x3056
 #define EGL_WIDTH 0x3057
 
+#define EGL_SURFACE_TYPE 0x3033
 #define EGL_RENDERABLE_TYPE 0x3040
 #define EGL_OPENGL_ES_BIT 0x0001
 #define EGL_OPENGL_BIT 0x0008
@@ -94,15 +98,26 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUBool
     void * config;
     int32_t attribs[] = {
         EGL_RENDERABLE_TYPE, ctxTypeAttrib,
+#ifndef ANDROID
+        // this would *ideally* be a runtime flag
+        // the main thing is that having this flag breaks Surfaceless compat.
+        // but we *can't* use that on Android anyway
+        // but on desktop, well:
+        // go on, remove this line, see what happens in an Alpine Linux container >:3
+        EGL_SURFACE_TYPE, 0,
+#endif
         EGL_NONE
     };
     int32_t configCount;
+    const char * modeName = ctxTypeAttrib == EGL_OPENGL_ES_BIT ? "(for OpenGL ES)" : "(for desktop OpenGL)";
     if (!ctx->eglChooseConfig(ctx->dsp, attribs, &config, 1, &configCount)) {
-        printf("BADGPU: eglChooseConfig error: %i\n", ctx->eglGetError());
+        if (logDetailed)
+            printf("BADGPU: eglChooseConfig %s error: %i\n", modeName, ctx->eglGetError());
         return 0;
     }
     if (!configCount) {
-        printf("BADGPU: eglChooseConfig returned no configs!\n");
+        if (logDetailed)
+            printf("BADGPU: eglChooseConfig %s returned no configs!\n", modeName);
         return 0;
     }
     // Android 10 doesn't support surfaceless GLESv1 contexts.
@@ -115,6 +130,11 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUBool
             EGL_NONE
         };
         ctx->srf = ctx->eglCreatePbufferSurface(ctx->dsp, config, attribsS);
+        if (logDetailed)
+            printf("BADGPU: eglCreatePbufferSurface exists; creating surface for Android 10 workaround\n");
+    } else {
+        if (logDetailed)
+            printf("BADGPU: eglCreatePbufferSurface does not exist\n");
     }
     // If we don't manage to create the PBuffer, then march on regardless.
     // The system may still support surfaceless contexts.
@@ -124,7 +144,8 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUBool
     };
     ctx->ctx = ctx->eglCreateContext(ctx->dsp, config, NULL, attribsCtx);
     if (!ctx->ctx) {
-        printf("BADGPU: eglCreateContext error: %i\n", ctx->eglGetError());
+        if (logDetailed)
+            printf("BADGPU: eglCreateContext %s error: %i\n", modeName, ctx->eglGetError());
         if (ctx->srf) {
             ctx->eglDestroySurface(ctx->dsp, ctx->srf);
             ctx->srf = NULL;
@@ -132,6 +153,51 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUBool
         return 0;
     }
     ctx->cfg = config;
+    return 1;
+}
+
+static BADGPUBool attemptInitPrimaryDisplay(BADGPUWSICtx ctx, BADGPUBool logDetailed) {
+    ctx->dsp = ctx->eglGetDisplay(NULL);
+    if (!ctx->dsp) {
+        if (logDetailed)
+            printf("BADGPU: Default EGLDisplay: eglGetDisplay error: %i\n", ctx->eglGetError());
+        return 0;
+    }
+    if (!ctx->eglInitialize(ctx->dsp, NULL, NULL)) {
+        if (logDetailed)
+            printf("BADGPU: Default EGLDisplay: eglInitialize error: %i\n", ctx->eglGetError());
+        return 0;
+    }
+    printf("BADGPU: Default EGLDisplay: OK\n");
+    return 1;
+}
+
+static BADGPUBool attemptInitSurfacelessDisplay(BADGPUWSICtx ctx, BADGPUBool logDetailed) {
+    if (!ctx->eglGetPlatformDisplay) {
+        if (logDetailed)
+            printf("BADGPU: Surfaceless EGLDisplay: Don't have eglGetPlatformDisplay, can't attempt!\n");
+        return 0;
+    }
+    // So Mesa can give you a Display that you can't actually initialize.
+    // I've found you can get slightly further through init with surfaceless.
+    // Can't hurt to try if we get here.
+    // Test system is an Alpine Linux container; maybe should turn this into a reproducible thing?
+    // See https://registry.khronos.org/EGL/extensions/MESA/EGL_MESA_platform_surfaceless.txt
+    intptr_t attribsPlatformDisplay[] = {
+        EGL_NONE
+    };
+    ctx->dsp = ctx->eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA, NULL, attribsPlatformDisplay);
+    if (!ctx->dsp) {
+        if (logDetailed)
+            printf("BADGPU: Surfaceless EGLDisplay: eglGetPlatformDisplay error: %i\n", ctx->eglGetError());
+        return 0;
+    }
+    if (!ctx->eglInitialize(ctx->dsp, NULL, NULL)) {
+        if (logDetailed)
+            printf("BADGPU: Surfaceless EGLDisplay: eglInitialize error: %i\n", ctx->eglGetError());
+        return 0;
+    }
+    printf("BADGPU: Surfaceless EGLDisplay: OK\n");
     return 1;
 }
 
@@ -155,6 +221,7 @@ BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
     // The symbol names are different but the ABI is completely identical.
     ctx->eglGetError = badgpu_dlSym2(ctx->eglLibrary, "eglGetError", "EGL_GetError");
     ctx->eglGetDisplay = badgpu_dlSym2(ctx->eglLibrary, "eglGetDisplay", "EGL_GetDisplay");
+    ctx->eglGetPlatformDisplay = badgpu_dlSym4(ctx->eglLibrary, "eglGetPlatformDisplay", "EGL_GetPlatformDisplay", "eglGetPlatformDisplayEXT", "EGL_GetPlatformDisplayEXT");
     ctx->eglInitialize = badgpu_dlSym2(ctx->eglLibrary, "eglInitialize", "EGL_Initialize");
     ctx->eglChooseConfig = badgpu_dlSym2(ctx->eglLibrary, "eglChooseConfig", "EGL_ChooseConfig");
     ctx->eglCreateContext = badgpu_dlSym2(ctx->eglLibrary, "eglCreateContext", "EGL_CreateContext");
@@ -164,17 +231,11 @@ BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
     ctx->eglTerminate = badgpu_dlSym2(ctx->eglLibrary, "eglTerminate", "EGL_Terminate");
     ctx->eglCreatePbufferSurface = badgpu_dlSym2(ctx->eglLibrary, "eglCreatePbufferSurface", "EGL_CreatePbufferSurface");
     ctx->eglDestroySurface = badgpu_dlSym2(ctx->eglLibrary, "eglDestroySurface", "EGL_DestroySurface");
-    ctx->dsp = ctx->eglGetDisplay(NULL);
-    if (!ctx->dsp) {
-        if (logDetailed)
-            printf("BADGPU: eglGetDisplay error: %i\n", ctx->eglGetError());
-        return badgpu_newWsiCtxError(error, "Could not create EGLDisplay" REMINDER_PINCH);
-    }
-    if (!ctx->eglInitialize(ctx->dsp, NULL, NULL)) {
-        if (logDetailed)
-            printf("BADGPU: eglInitialize error: %i\n", ctx->eglGetError());
-        return badgpu_newWsiCtxError(error, "Could not initialize EGL" REMINDER_PINCH);
-    }
+    // try initializing
+    if (!attemptInitPrimaryDisplay(ctx, logDetailed))
+        if (!attemptInitSurfacelessDisplay(ctx, logDetailed))
+            return badgpu_newWsiCtxError(error, "Could not create / initialize EGLDisplay" REMINDER_PINCH);
+    // alright, EGL initialized... can we use it?
     if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, logDetailed)) {
         // Try this. If it fails it fails; don't worry about it too much.
         // Older Android versions require you do this to get core symbols.
