@@ -94,30 +94,28 @@ static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
 static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
 static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
 
-static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUBool logDetailed) {
+static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, BADGPUContextType ctxTypeBG, const char * glLibraryName, BADGPUBool logDetailed, BADGPUBool tryNoWSI) {
     void * config;
     int32_t attribs[] = {
         EGL_RENDERABLE_TYPE, ctxTypeAttrib,
-#ifndef ANDROID
-        // this would *ideally* be a runtime flag
-        // the main thing is that having this flag breaks Surfaceless compat.
-        // but we *can't* use that on Android anyway
-        // but on desktop, well:
-        // go on, remove this line, see what happens in an Alpine Linux container >:3
+        EGL_NONE
+    };
+    int32_t attribsNoWSI[] = {
+        EGL_RENDERABLE_TYPE, ctxTypeAttrib,
         EGL_SURFACE_TYPE, 0,
-#endif
         EGL_NONE
     };
     int32_t configCount;
     const char * modeName = ctxTypeAttrib == EGL_OPENGL_ES_BIT ? "(for OpenGL ES)" : "(for desktop OpenGL)";
-    if (!ctx->eglChooseConfig(ctx->dsp, attribs, &config, 1, &configCount)) {
+    const char * wsiClarifier = tryNoWSI ? " (even without allowing WSI)" : "";
+    if (!ctx->eglChooseConfig(ctx->dsp, tryNoWSI ? attribsNoWSI : attribs, &config, 1, &configCount)) {
         if (logDetailed)
-            printf("BADGPU: eglChooseConfig %s error: %i\n", modeName, ctx->eglGetError());
+            printf("BADGPU: eglChooseConfig %s%s error: %i\n", modeName, wsiClarifier, ctx->eglGetError());
         return 0;
     }
     if (!configCount) {
         if (logDetailed)
-            printf("BADGPU: eglChooseConfig %s returned no configs!\n", modeName);
+            printf("BADGPU: eglChooseConfig %s%s returned no configs!\n", modeName, wsiClarifier);
         return 0;
     }
     // Android 10 doesn't support surfaceless GLESv1 contexts.
@@ -236,18 +234,15 @@ BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
         if (!attemptInitSurfacelessDisplay(ctx, logDetailed))
             return badgpu_newWsiCtxError(error, "Could not create / initialize EGLDisplay" REMINDER_PINCH);
     // alright, EGL initialized... can we use it?
-    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, logDetailed)) {
-        // Try this. If it fails it fails; don't worry about it too much.
-        // Older Android versions require you do this to get core symbols.
-        ctx->glContextType = BADGPUContextType_GLESv1;
-        ctx->glLibrary = badgpu_dlOpen(locationsGLES1, "BADGPU_GLES1_LIBRARY");
+    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, BADGPUContextType_GLESv1, "BADGPU_GLES1_LIBRARY", logDetailed, 0))
         return (BADGPUWSIContext) ctx;
-    }
-    if (attemptEGL(ctx, EGL_OPENGL_BIT, logDetailed)) {
-        ctx->glContextType = BADGPUContextType_GL;
-        ctx->glLibrary = badgpu_dlOpen(locationsGL, "BADGPU_GL_LIBRARY");
+    if (attemptEGL(ctx, EGL_OPENGL_BIT, BADGPUContextType_GL, "BADGPU_GL_LIBRARY", logDetailed, 0))
         return (BADGPUWSIContext) ctx;
-    }
+    // we're getting a little desperate, disable WSI features
+    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, BADGPUContextType_GLESv1, "BADGPU_GLES1_LIBRARY", logDetailed, 1))
+        return (BADGPUWSIContext) ctx;
+    if (attemptEGL(ctx, EGL_OPENGL_BIT, BADGPUContextType_GL, "BADGPU_GL_LIBRARY", logDetailed, 1))
+        return (BADGPUWSIContext) ctx;
     return badgpu_newWsiCtxError(error, "Failed to setup either a GLESv1 config or a desktop GL config." REMINDER_PINCH);
 }
 
