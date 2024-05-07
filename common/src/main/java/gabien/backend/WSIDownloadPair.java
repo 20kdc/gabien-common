@@ -40,8 +40,9 @@ public abstract class WSIDownloadPair<T> {
             } else {
                 timeLoggerHeld = null;
                 canon = null;
+                // the queue must be filled with something and it can't be null
                 for (int i = 0; i < capacity; i++)
-                    queue.put(genBuffer(0, 0));
+                    queue.put(genBuffer(1, 1));
             }
         } catch (InterruptedException ie) {
             throw new RuntimeException(ie);

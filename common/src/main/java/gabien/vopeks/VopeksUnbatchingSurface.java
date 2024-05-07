@@ -46,7 +46,7 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
         super(id, w, h);
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
-            texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32, init, 0);
+            texture = instance.newTexture(w, h, BadGPU.TextureLoadFormat.ARGBI32_SA, init, 0);
         });
         halfWF = w / 2.0f;
         halfHF = h / 2.0f;

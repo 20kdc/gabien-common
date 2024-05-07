@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.1.1`
+ * Version: `1.2.0`
  *
  * ## Formatting Policy
  *
@@ -554,12 +554,22 @@ BADGPU_EXPORT void badgpuFinishInstance(BADGPUInstance instance);
  *  depending on circumstance.
  */
 typedef enum BADGPUTextureLoadFormat {
-    // RGBA as individual bytes. No conversion for textures with alpha.
+    // RGBA as individual bytes.
+    // This is the most efficient format, as it can always be passed to the GL driver.
     BADGPUTextureLoadFormat_RGBA8888 = 0,
-    // RGB as individual bytes. No conversion for textures without alpha.
+    // RGB as individual bytes.
     BADGPUTextureLoadFormat_RGB888 = 1,
     // ARGB as a 32-bit integer.
     BADGPUTextureLoadFormat_ARGBI32 = 2,
+    // RGBA8888 with straight alpha.
+    // This works by the same logic as OpenGL's 'sRGB' formats do.
+    // By using this format for upload, what you're really asking for is "please convert this to premultiplied alpha".
+    // By using this format for download, what you're really asking for is "please convert this to straight alpha".
+    // Notably, converting from SA to a premultiplied format without alpha still changes the colours (as if rendered on a black background).
+    // If at all possible, please try to avoid using this format for framebuffer download.
+    BADGPUTextureLoadFormat_RGBA8888_SA = 3,
+    // ARGBI32 with straight alpha. Same idea as RGBA8888_SA.
+    BADGPUTextureLoadFormat_ARGBI32_SA = 4,
     BADGPUTextureLoadFormat_Force32 = 0x7FFFFFFF
 } BADGPUTextureLoadFormat;
 

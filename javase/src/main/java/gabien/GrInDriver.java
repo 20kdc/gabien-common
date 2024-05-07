@@ -8,8 +8,9 @@
 package gabien;
 
 import gabien.backend.WSIDownloadPair;
+import gabien.natives.BadGPUEnum;
+import gabien.natives.BadGPUUnsafe;
 import gabien.render.IImage;
-import gabien.render.WSIImage;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.ITextEditingSession;
@@ -284,24 +285,32 @@ class GrInDriver implements IGrInDriver {
         GaBIEn.vopeks.putBatchStatisticsTask();
 
         // To avoid deadlock, we don't want to be locked while doing waitingFrames
-        final int[] ia = dlIA.acquire(backBuffer.getWidth(), backBuffer.getHeight());
+        final int[] ia = dlIA.acquire(backBuffer.width, backBuffer.height);
 
         // Transfer.
-        backBuffer.getPixelsAsync(ia, () -> {
-            final AWTWSIImage bi = dlBI.acquire(backBuffer.getWidth(), backBuffer.getHeight());
-            bi.setPixels(ia);
+        backBuffer.getPixelsAsync(0, 0, backBuffer.width, backBuffer.height, BadGPUEnum.TextureLoadFormat.RGBA8888, ia, 0, () -> {
+            if (backBuffer.width <= 0 || backBuffer.height <= 0) {
+                // nothing to draw!
+                dlIA.release(ia);
+                return;
+            }
+            // Note conversion happens on the callback thread.
+            BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(backBuffer.width, backBuffer.height, ia, 0);
+            // So WSIImage is never premultiplied to keep the API looking sensible.
+            // But TYPE_INT_ARGB_PRE exists and it counts as 'doing the right thing'.
+            final BufferedImage bi = dlBI.acquire(backBuffer.width, backBuffer.height);
+            bi.getRaster().setDataElements(0, 0, backBuffer.width, backBuffer.height, ia);
             dlIA.release(ia);
             drawBackBufferToFrontBuffer(bi);
             dlBI.release(bi);
         });    
     }
 
-    private void drawBackBufferToFrontBuffer(WSIImage wsi) {
+    private void drawBackBufferToFrontBuffer(BufferedImage backBufferBI) {
         synchronized (this) {
             final int panelW = panel.getWidth();
             final int panelH = panel.getHeight();
             // Update frontBuffer for slowpaint, then perform fastpaint
-            BufferedImage backBufferBI = ((AWTWSIImage) wsi).buf;
             // Resize maybe needed?
             if ((frontBuffer.getWidth() != panelW) || (frontBuffer.getHeight() != panelH))
                 if ((panelW != 0) && (panelH != 0))
@@ -406,18 +415,18 @@ class GrInDriver implements IGrInDriver {
         }
     }
 
-    private class DLBIPair extends WSIDownloadPair<AWTWSIImage> {
+    private class DLBIPair extends WSIDownloadPair<BufferedImage> {
         public DLBIPair(String n) {
             super(n, 1);
         }
 
         @Override
-        public boolean bufferMatchesSize(AWTWSIImage buffer, int width, int height) {
-            return buffer.width == width && buffer.height == height;
+        public boolean bufferMatchesSize(BufferedImage buffer, int width, int height) {
+            return buffer.getWidth() == width && buffer.getHeight() == height;
         }
         @Override
-        public AWTWSIImage genBuffer(int width, int height) {
-            return new AWTWSIImage(null, width, height);
+        public BufferedImage genBuffer(int width, int height) {
+            return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB_PRE);
         }
     }
 }

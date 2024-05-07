@@ -38,38 +38,21 @@ public abstract class IGrDriver extends RenderTarget {
         BlendWeight.One, BlendWeight.Zero, BlendOp.Add
     );
     /**
-     * Beware! This equation doesn't work properly for a transparent target buffer.
-     * This is a known thing that can't be fixed.
-     * In theory you would use PMA instead, and then composite that onto an opaque final framebuffer.
+     * Pre-multiplied alpha over operation.
+     * (All GPU-side images setup by GaBIEn are now PMA to fix bugs. If you want non-PMA you have to poke BadGPU & VOPEKS.)
      */
     public static final int BLEND_NORMAL = BadGPU.blendProgram(
-            BlendWeight.SrcA, BlendWeight.InvertSrcA, BlendOp.Add,
-            BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add
-        );
-    /*
-     * Pre-multiplied alpha over operation.
-     * This also works for compositing a PMA buffer onto any opaque buffer.
-     * (Since compositing *onto* a straight alpha buffer is a bad idea, this is a good thing)
-     */
-    public static final int BLEND_NORMAL_PMA = BadGPU.blendProgram(
         BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add,
         BlendWeight.One, BlendWeight.InvertSrcA, BlendOp.Add
     );
     // Test Add w/ R48 RXP anims and adjust Sub accordingly
     public static final int BLEND_ADD = BadGPU.blendProgram(
-        BlendWeight.SrcA, BlendWeight.One, BlendOp.Add,
+        BlendWeight.One, BlendWeight.One, BlendOp.Add,
         BlendWeight.Zero, BlendWeight.One, BlendOp.Add
     );
     public static final int BLEND_SUB = BadGPU.blendProgram(
-        BlendWeight.SrcA, BlendWeight.One, BlendOp.ReverseSub,
+        BlendWeight.One, BlendWeight.One, BlendOp.ReverseSub,
         BlendWeight.Zero, BlendWeight.One, BlendOp.Add
-    );
-    /*
-     * Overwriting operation converting from straight alpha source to PMA destination.
-     */
-    public static final int BLEND_STRAIGHT2PMA = BadGPU.blendProgram(
-        BlendWeight.SrcA, BlendWeight.Zero, BlendOp.Add,
-        BlendWeight.One, BlendWeight.Zero, BlendOp.Add
     );
 
     // -- Image stuff --
@@ -107,7 +90,8 @@ public abstract class IGrDriver extends RenderTarget {
      * Coordinates do not have scissor or TRS applied, but are setup to fit the screen.
      * STs are transformed because they are dependent on IReplicatedTexRegion decisions.
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
-     * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
+     * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface.
+     * Colour factors are expected to be pre-multiplied by the caller.
      */
     public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2);
 
@@ -116,7 +100,8 @@ public abstract class IGrDriver extends RenderTarget {
      * Coordinates do not have scissor or TRS applied, but are setup to fit the screen.
      * STs are transformed because they are dependent on IReplicatedTexRegion decisions.
      * cropEssential being false implies that the scissor bounds can't be more cropped than what is given, but can be less cropped.
-     * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface. 
+     * Note that the tiling mode won't work if the STs are out of range and the region doesn't cover the whole surface.
+     * Colour factors are expected to be pre-multiplied by the caller.
      */
     public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
 
@@ -158,6 +143,8 @@ public abstract class IGrDriver extends RenderTarget {
         x0 = trsX(x0); y0 = trsY(y0);
         x1 = trsX(x1); y1 = trsY(y1);
         x2 = trsX(x2); y2 = trsY(y2);
+        r0 *= a0; g0 *= a0; b0 *= a0; r1 *= a1; g1 *= a1; b1 *= a1;
+        r2 *= a2; g2 *= a2; b2 *= a2;
         rawBatchXYSTRGBA(true, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, drawFlagsEx, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2);
     }
 
@@ -169,6 +156,8 @@ public abstract class IGrDriver extends RenderTarget {
         x1 = trsX(x1); y1 = trsY(y1);
         x2 = trsX(x2); y2 = trsY(y2);
         x3 = trsX(x3); y3 = trsY(y3);
+        r0 *= a0; g0 *= a0; b0 *= a0; r1 *= a1; g1 *= a1; b1 *= a1;
+        r2 *= a2; g2 *= a2; b2 *= a2; r3 *= a3; g3 *= a3; b3 *= a3;
         rawBatchXYSTRGBA(true, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, drawFlagsEx, tex, x0, y0, s0, t0, r0, g0, b0, a0, x1, y1, s1, t1, r1, g1, b1, a1, x2, y2, s2, t2, r2, g2, b2, a2, x3, y3, s3, t3, r3, g3, b3, a3);
     }
 
@@ -246,6 +235,9 @@ public abstract class IGrDriver extends RenderTarget {
         }
         if ((cR <= x) || (cD <= y))
             return;
+        // Pre-multiply alpha
+        // It's done here rather than in rawBatchXYSTRGBA to save a lot of duplicate float ops
+        r *= a; g *= a; b *= a;
         // End
         rawBatchXYSTRGBA(false, scL, scU, scR, scD, blendMode, drawFlagsEx, iU,
             x , y , srcx, srcy, r, g, b, a,
@@ -342,6 +334,9 @@ public abstract class IGrDriver extends RenderTarget {
         float p01X = (centreX + yBasisX) - xBasisX;
         float p01Y = (centreY + yBasisY) - xBasisY;
         // Y basis is X basis rotated 90 degrees and reduced.
+        // PMA
+        r *= a; g *= a; b *= a;
+        // Draw
         rawBatchXYSTRGBA(true, scissor[0], scissor[1], scissor[2], scissor[3], blendMode, 0, iU,
             p00X, p00Y, srcx, srcy, r, g, b, a,
             p10X, p10Y, srcR, srcy, r, g, b, a,

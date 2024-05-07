@@ -434,7 +434,7 @@ public final class GaBIEn {
                         data[i] = 0;
                     }
                 }
-                consumer.accept(instance.newTexture(img.width, img.height, BadGPU.TextureLoadFormat.ARGBI32, data, 0));
+                consumer.accept(instance.newTexture(img.width, img.height, BadGPU.TextureLoadFormat.ARGBI32_SA, data, 0));
             });
         });
     }
@@ -463,7 +463,7 @@ public final class GaBIEn {
             return new NullGrDriver();
         if (height <= 0)
             return new NullGrDriver();
-        return new VopeksImage(GaBIEn.vopeks, debugId, width, height, BadGPU.TextureLoadFormat.ARGBI32, colours);
+        return new VopeksImage(GaBIEn.vopeks, debugId, width, height, BadGPU.TextureLoadFormat.ARGBI32_SA, colours);
     }
 
     /**

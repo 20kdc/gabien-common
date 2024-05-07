@@ -112,6 +112,7 @@ public abstract class IImage implements IImgRegion {
         getPixelsAsync(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0, () -> {
             // If it gets here, it's in-bounds.
             BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
+            BadGPUUnsafe.pixelsConvertARGBI32PremultipliedToStraightInPlaceI(width, height, buffer, 0);
             onDone.run();
         });
     }

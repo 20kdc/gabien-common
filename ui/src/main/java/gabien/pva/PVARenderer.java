@@ -32,7 +32,7 @@ public class PVARenderer {
         pvaFile = pva;
         images = new VopeksImage[pva.imageHeaders.length];
         for (int i = 0; i < images.length; i++) {
-            images[i] = new VopeksImage(GaBIEn.vopeks, "PVAImage" + i, pva.imageHeaders[i].w, pva.imageHeaders[i].h, BadGPU.TextureLoadFormat.RGBA8888, pva.imageDatas[i]);
+            images[i] = new VopeksImage(GaBIEn.vopeks, "PVAImage" + i, pva.imageHeaders[i].w, pva.imageHeaders[i].h, BadGPU.TextureLoadFormat.RGBA8888_SA, pva.imageDatas[i]);
         }
     }
 

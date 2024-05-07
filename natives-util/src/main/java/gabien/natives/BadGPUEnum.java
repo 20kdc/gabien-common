@@ -34,7 +34,10 @@ public class BadGPUEnum {
     public enum TextureLoadFormat {
         RGBA8888(0),
         RGB888(1),
-        ARGBI32(2);
+        ARGBI32(2),
+        RGBA8888_SA(3),
+        ARGBI32_SA(4);
+        // ALSO CHECK BadGPUUnsafe.pixelsSize
         public final int value;
         private TextureLoadFormat(int ev) {
             value = ev;

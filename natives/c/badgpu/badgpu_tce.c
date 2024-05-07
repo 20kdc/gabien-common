@@ -10,101 +10,102 @@
  * Texture Conversion Engine
  */
 
+#include "badgpu.h"
 #include "badgpu_internal.h"
+
+// -- endianness --
 
 // This is intended to be optimized out
 static const uint32_t ENDIAN_DETECTOR = 1;
 
-static void cRGBA8888_RGB888(const uint8_t * fD, uint8_t * tD, size_t pixels) {
+#define BADGPU_LITTLE_ENDIAN() (((uint8_t *) &(ENDIAN_DETECTOR))[0] == 1)
+
+// -- converter core --
+
+#define BADGPU_TCE_HEAD(fType, tType) \
+static inline void c ## fType ## _ ## tType (const BADGPU_TCE_pixel_ ## fType * __restrict__ fD, BADGPU_TCE_pixel_ ## tType * __restrict__ tD, size_t pixels) { \
     while (pixels--) {
-        tD[0] = fD[0];
-        tD[1] = fD[1];
-        tD[2] = fD[2];
-        tD += 3;
-        fD += 4;
-    }
-}
-static void cRGB888_RGBA8888(const uint8_t * fD, uint8_t * tD, size_t pixels) {
-    while (pixels--) {
-        tD[0] = fD[0];
-        tD[1] = fD[1];
-        tD[2] = fD[2];
-        tD[3] = 0xFF;
-        tD += 4;
-        fD += 3;
-    }
+#define BADGPU_TCE_TAIL \
+    } \
 }
 
-#define MKARGBI32(r, g, b, a) ((((uint32_t) r) << 16) | (((uint32_t) g) << 8) | ((uint32_t) b) | (((uint32_t) a) << 24))
-static void cRGBA8888_ARGBI32(const uint8_t * fD, uint32_t * tD, size_t pixels) {
-    while (pixels--) {
-        uint8_t r = fD[0];
-        uint8_t g = fD[1];
-        uint8_t b = fD[2];
-        uint8_t a = fD[3];
-        *(tD++) = MKARGBI32(r, g, b, a);
-        fD += 4;
-    }
+#define BADGPU_TCE_MEMC(fType, size) \
+static inline void c ## fType ## _ ## fType(const void * fD, void * tD, size_t pixels) { \
+    memcpy(tD, fD, pixels * size); \
 }
-static void cRGB888_ARGBI32(const uint8_t * fD, uint32_t * tD, size_t pixels) {
-    while (pixels--) {
-        uint8_t r = fD[0];
-        uint8_t g = fD[1];
-        uint8_t b = fD[2];
-        *(tD++) = MKARGBI32(r, g, b, 0xFF);
-        fD += 3;
-    }
-}
-static void cARGBI32_RGBA8888(const uint32_t * fD, uint8_t * tD, size_t pixels) {
-    if (sizeof(void *) != 4) {
-        // 64-bit "fast-path"
-        // interestingly clang is perfectly willing to vectorize this
-        uint64_t * fD64 = (void *) fD;
-        uint64_t * tD64 = (void *) tD;
-        while (pixels >= 2) {
-            pixels -= 2;
-            if (((uint8_t *) &(ENDIAN_DETECTOR))[0] == 1) {
-                // LE
-                //             IN 0xAARRGGBBAARRGGBB
-                //            OUT 0xAABBGGRRAABBGGRR
-                uint64_t ag = *fD64;
-                uint64_t b = ag & 0x00FF000000FF0000UL;
-                uint64_t r = ag & 0x000000FF000000FFUL;
-                ag &=             0xFF00FF00FF00FF00UL;
-                *tD64 = ag | (b >> 16) | (r << 16);
-            } else {
-                // BE
-                //              IN 0xAARRGGBBAARRGGBB
-                //             OUT 0xRRGGBBAARRGGBBAA
-                uint64_t rgb = *fD64;
-                uint64_t a = rgb & 0xFF000000FF000000UL;
-                rgb &=             0x00FFFFFF00FFFFFFUL;
-                *tD64 = (rgb << 8) | (a >> 24);
-            }
-            fD64++;
-            tD64++;
+
+// -- PMA --
+
+#define BADGPU_TCE_ALPHA_S2P \
+        r = (r * (uint32_t) a) / 255; \
+        g = (g * (uint32_t) a) / 255; \
+        b = (b * (uint32_t) a) / 255;
+
+// Rounding up here keeps roundtrips clean when possible
+// The conversion to premul rounds down to avoid creating additives.
+// So conversely the conversion from premul must round up.
+#define BADGPU_TCE_ALPHA_P2S \
+        if (a != 0) { \
+            r = ((r * (uint32_t) 255) + (a - (uint32_t) 1)) / a; \
+            g = ((g * (uint32_t) 255) + (a - (uint32_t) 1)) / a; \
+            b = ((b * (uint32_t) 255) + (a - (uint32_t) 1)) / a; \
         }
-        fD = (void *) fD64;
-        tD = (void *) tD64;
-    }
-    while (pixels--) {
-        uint32_t argb = *(fD++);
-        tD[0] = argb >> 16;
-        tD[1] = argb >> 8;
-        tD[2] = argb;
-        tD[3] = argb >> 24;
-        tD += 4;
-    }
-}
-static void cARGBI32_RGB888(const uint32_t * fD, uint8_t * tD, size_t pixels) {
-    while (pixels--) {
-        uint32_t argb = *(fD++);
-        tD[0] = argb >> 16;
-        tD[1] = argb >> 8;
-        tD[2] = argb;
-        tD += 3;
-    }
-}
+
+// -- format load and save --
+
+// units used in load/save routines
+typedef uint8_t  BADGPU_TCE_pixel_RGBA8888;
+typedef uint8_t  BADGPU_TCE_pixel_RGB888;
+typedef uint32_t BADGPU_TCE_pixel_ARGBI32;
+typedef uint8_t  BADGPU_TCE_pixel_RGBA8888_SA;
+typedef uint32_t BADGPU_TCE_pixel_ARGBI32_SA;
+
+#define MKARGBI32(r, g, b, a) ((((uint32_t) r) << 16) | (((uint32_t) g) << 8) | ((uint32_t) b) | (((uint32_t) a) << 24))
+
+#define BADGPU_TCE_LOAD_RGB888 uint8_t r = fD[0], g = fD[1], b = fD[2], a = 255; fD += 3;
+#define BADGPU_TCE_LOAD_RGBA8888 uint8_t r = fD[0], g = fD[1], b = fD[2], a = fD[3]; fD += 4;
+#define BADGPU_TCE_LOAD_ARGBI32 \
+    uint32_t fV = *(fD++); \
+    uint8_t r = fV >> 16, g = fV >> 8, b = fV, a = fV >> 24;
+
+#define BADGPU_TCE_SAVE_RGB888 tD[0] = r; tD[1] = g; tD[2] = b; tD += 3;
+#define BADGPU_TCE_SAVE_RGBA8888 tD[0] = r; tD[1] = g; tD[2] = b; tD[3] = a; tD += 4;
+#define BADGPU_TCE_SAVE_ARGBI32 *(tD++) = MKARGBI32(r, g, b, a);
+
+// -- converters --
+
+BADGPU_TCE_HEAD(RGBA8888, RGB888       ) BADGPU_TCE_LOAD_RGBA8888                      BADGPU_TCE_SAVE_RGB888   BADGPU_TCE_TAIL
+BADGPU_TCE_MEMC(RGBA8888, 4)
+BADGPU_TCE_HEAD(RGBA8888, ARGBI32      ) BADGPU_TCE_LOAD_RGBA8888                      BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(RGBA8888, RGBA8888_SA  ) BADGPU_TCE_LOAD_RGBA8888 BADGPU_TCE_ALPHA_P2S BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(RGBA8888, ARGBI32_SA   ) BADGPU_TCE_LOAD_RGBA8888 BADGPU_TCE_ALPHA_P2S BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+
+// this is special : no alpha so the SA format means nothing as a source
+BADGPU_TCE_HEAD(RGB888, RGBA8888       ) BADGPU_TCE_LOAD_RGB888                        BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_MEMC(RGB888, 3)
+BADGPU_TCE_HEAD(RGB888, ARGBI32        ) BADGPU_TCE_LOAD_RGB888                        BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(RGB888, RGBA8888_SA    ) BADGPU_TCE_LOAD_RGB888                        BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(RGB888, ARGBI32_SA     ) BADGPU_TCE_LOAD_RGB888                        BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+
+BADGPU_TCE_HEAD(ARGBI32, RGBA8888      ) BADGPU_TCE_LOAD_ARGBI32                       BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(ARGBI32, RGB888        ) BADGPU_TCE_LOAD_ARGBI32                       BADGPU_TCE_SAVE_RGB888   BADGPU_TCE_TAIL
+BADGPU_TCE_MEMC(ARGBI32, 4)
+BADGPU_TCE_HEAD(ARGBI32, RGBA8888_SA   ) BADGPU_TCE_LOAD_ARGBI32  BADGPU_TCE_ALPHA_P2S BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(ARGBI32, ARGBI32_SA    ) BADGPU_TCE_LOAD_ARGBI32  BADGPU_TCE_ALPHA_P2S BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+
+BADGPU_TCE_HEAD(RGBA8888_SA, RGB888    ) BADGPU_TCE_LOAD_RGBA8888 BADGPU_TCE_ALPHA_S2P BADGPU_TCE_SAVE_RGB888   BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(RGBA8888_SA, ARGBI32   ) BADGPU_TCE_LOAD_RGBA8888 BADGPU_TCE_ALPHA_S2P BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(RGBA8888_SA, RGBA8888  ) BADGPU_TCE_LOAD_RGBA8888 BADGPU_TCE_ALPHA_S2P BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_MEMC(RGBA8888_SA, 4)
+BADGPU_TCE_HEAD(RGBA8888_SA, ARGBI32_SA) BADGPU_TCE_LOAD_RGBA8888                      BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+
+BADGPU_TCE_HEAD(ARGBI32_SA, RGB888     ) BADGPU_TCE_LOAD_ARGBI32  BADGPU_TCE_ALPHA_S2P BADGPU_TCE_SAVE_RGB888   BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(ARGBI32_SA, ARGBI32    ) BADGPU_TCE_LOAD_ARGBI32  BADGPU_TCE_ALPHA_S2P BADGPU_TCE_SAVE_ARGBI32  BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(ARGBI32_SA, RGBA8888   ) BADGPU_TCE_LOAD_ARGBI32  BADGPU_TCE_ALPHA_S2P BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_HEAD(ARGBI32_SA, RGBA8888_SA) BADGPU_TCE_LOAD_ARGBI32                       BADGPU_TCE_SAVE_RGBA8888 BADGPU_TCE_TAIL
+BADGPU_TCE_MEMC(ARGBI32_SA, 4)
+
+// -- converter dispatch --
 
 BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
     BADGPUTextureLoadFormat tF, int16_t width, int16_t height, const void * fD,
@@ -116,40 +117,21 @@ BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
         return;
     }
     size_t pixels = ((size_t) width) * (size_t) height;
+#define BADGPU_TCE_TOFORMATSUBBLOCK(fromFormat) \
+        switch (tF) { \
+        case BADGPUTextureLoadFormat_RGBA8888: c ## fromFormat ## _RGBA8888(fD, tD, pixels); return; \
+        case BADGPUTextureLoadFormat_RGB888: c ## fromFormat ## _RGB888(fD, tD, pixels); return; \
+        case BADGPUTextureLoadFormat_ARGBI32: c ## fromFormat ## _ARGBI32(fD, tD, pixels); return; \
+        case BADGPUTextureLoadFormat_RGBA8888_SA: c ## fromFormat ## _RGBA8888_SA(fD, tD, pixels); return; \
+        case BADGPUTextureLoadFormat_ARGBI32_SA: c ## fromFormat ## _ARGBI32_SA(fD, tD, pixels); return; \
+        default: return; \
+        }
     switch (fF) {
-    case BADGPUTextureLoadFormat_RGBA8888:
-        switch (tF) {
-        case BADGPUTextureLoadFormat_RGB888:
-            cRGBA8888_RGB888(fD, tD, pixels);
-            return;
-        case BADGPUTextureLoadFormat_ARGBI32:
-            cRGBA8888_ARGBI32(fD, tD, pixels);
-            return;
-        default: return;
-        }
-        break;
-    case BADGPUTextureLoadFormat_RGB888:
-        switch (tF) {
-        case BADGPUTextureLoadFormat_RGBA8888:
-            cRGB888_RGBA8888(fD, tD, pixels);
-            return;
-        case BADGPUTextureLoadFormat_ARGBI32:
-            cRGB888_ARGBI32(fD, tD, pixels);
-            return;
-        default: return;
-        }
-        break;
-    case BADGPUTextureLoadFormat_ARGBI32:
-        switch (tF) {
-        case BADGPUTextureLoadFormat_RGBA8888:
-            cARGBI32_RGBA8888(fD, tD, pixels);
-            return;
-        case BADGPUTextureLoadFormat_RGB888:
-            cARGBI32_RGB888(fD, tD, pixels);
-            return;
-        default: return;
-        }
-        break;
+    case BADGPUTextureLoadFormat_RGBA8888: BADGPU_TCE_TOFORMATSUBBLOCK(RGBA8888); break;
+    case BADGPUTextureLoadFormat_RGB888: BADGPU_TCE_TOFORMATSUBBLOCK(RGB888); break;
+    case BADGPUTextureLoadFormat_ARGBI32: BADGPU_TCE_TOFORMATSUBBLOCK(ARGBI32); break;
+    case BADGPUTextureLoadFormat_RGBA8888_SA: BADGPU_TCE_TOFORMATSUBBLOCK(RGBA8888_SA); break;
+    case BADGPUTextureLoadFormat_ARGBI32_SA: BADGPU_TCE_TOFORMATSUBBLOCK(ARGBI32_SA); break;
     default: return;
     }
 }
@@ -169,7 +151,7 @@ BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
         uint64_t * data64 = data;
         while (pixels >= 2) {
             pixels -= 2;
-            if (((uint8_t *) &(ENDIAN_DETECTOR))[0] == 1) {
+            if (BADGPU_LITTLE_ENDIAN()) {
                 // LE
                 //             IN 0xAABBGGRRAABBGGRR
                 //            OUT 0xAARRGGBBAARRGGBB
@@ -198,7 +180,7 @@ BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
         uint8_t tmpG = data8[1];
         uint8_t tmpB = data8[2];
         uint8_t tmpA = data8[3];
-        if (((uint8_t *) &(ENDIAN_DETECTOR))[0] == 1) {
+        if (BADGPU_LITTLE_ENDIAN()) {
             // LE
             data8[0] = tmpB;
             data8[1] = tmpG;
@@ -226,9 +208,7 @@ BADGPU_EXPORT void badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(
         uint32_t g = (pixel >> 8) & 0xFF;
         uint32_t b = pixel & 0xFF;
         uint32_t a = (pixel >> 24) & 0xFF;
-        r = (r * a) / 255;
-        g = (g * a) / 255;
-        b = (b * a) / 255;
+        BADGPU_TCE_ALPHA_S2P
         *(data++) = MKARGBI32(r, g, b, a);
     }
 }
@@ -244,14 +224,7 @@ BADGPU_EXPORT void badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(
         uint32_t g = (pixel >> 8) & 0xFF;
         uint32_t b = pixel & 0xFF;
         uint32_t a = (pixel >> 24) & 0xFF;
-        if (a != 0) {
-            // Rounding up here keeps roundtrips clean when possible
-            // The conversion to premul rounds down to avoid creating additives.
-            // So conversely the conversion from premul must round up.
-            r = ((r * 255) + (a - 1)) / a;
-            g = ((g * 255) + (a - 1)) / a;
-            b = ((b * 255) + (a - 1)) / a;
-        }
+        BADGPU_TCE_ALPHA_P2S
         *(data++) = MKARGBI32(r, g, b, a);
     }
 }
@@ -267,6 +240,10 @@ BADGPU_EXPORT uint32_t badgpuPixelsSize(BADGPUTextureLoadFormat format,
     case BADGPUTextureLoadFormat_RGB888:
         return pixels * 3;
     case BADGPUTextureLoadFormat_ARGBI32:
+        return pixels * 4;
+    case BADGPUTextureLoadFormat_RGBA8888_SA:
+        return pixels * 4;
+    case BADGPUTextureLoadFormat_ARGBI32_SA:
         return pixels * 4;
     default: return 0;
     }

@@ -42,6 +42,10 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
             return width * height * 3L;
         if (fmt == 2) // argbi32
             return width * height * 4L;
+        if (fmt == 3) // rgba8888_sr
+            return width * height * 4L;
+        if (fmt == 4) // argbi32_sr
+            return width * height * 4L;
         return 0;
     }
     public static native void pixelsConvertBB(int fF, int tF, int width, int height, byte[] fD, int fDOfs, byte[] tD, int tDOfs);
