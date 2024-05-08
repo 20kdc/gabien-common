@@ -38,6 +38,11 @@ public abstract class FSBackend {
     public final @Nullable FSBackend parent;
 
     /**
+     * Parent FSBackend, or if none exists, the root FSBackend.
+     */
+    public final @NonNull FSBackend parentOrRoot;
+
+    /**
      * How paths work on this system.
      */
     public final @NonNull PathModel pathModel;
@@ -47,6 +52,7 @@ public abstract class FSBackend {
     public FSBackend(@Nullable FSBackend parent, @NonNull PathModel pathModel, boolean rpl) {
         this.root = parent != null ? parent.root : this;
         this.parent = parent;
+        parentOrRoot = parent == null ? root : parent;
         this.pathModel = pathModel;
         this.usesRootPathLogic = rpl;
     }
@@ -308,7 +314,7 @@ public abstract class FSBackend {
         @Override
         public @NonNull FSBackend intoInner(String dirName) {
             if (dirName.equals(".."))
-                return parent;
+                return parentOrRoot;
             return makeDownLevel(dirName);
         }
 

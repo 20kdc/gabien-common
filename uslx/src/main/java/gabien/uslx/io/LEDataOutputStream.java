@@ -6,7 +6,6 @@
  */
 package gabien.uslx.io;
 
-import java.io.DataOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,7 +16,6 @@ import org.eclipse.jdt.annotation.NonNull;
  * Created on 6th June 2022 as part of project VE2Bun
  */
 public class LEDataOutputStream extends FilterOutputStream implements LEDataOutput {
-    private @NonNull final DataOutputStream baseDataOutput;
     /**
      * Maintains a tally of written bytes.
      */
@@ -25,7 +23,6 @@ public class LEDataOutputStream extends FilterOutputStream implements LEDataOutp
 
     public LEDataOutputStream(@NonNull OutputStream base) {
         super(base);
-        baseDataOutput = new DataOutputStream(this);
     }
 
     @Override

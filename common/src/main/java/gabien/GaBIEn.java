@@ -32,6 +32,7 @@ import gabien.wsi.IGaBIEnClipboard;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.WindowSpecs;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -199,6 +200,15 @@ public final class GaBIEn {
     public static @Nullable InputStream getInFile(@NonNull String name) {
         return getInFile(mutableDataFS.intoPath(name));
     }
+
+    /**
+     * Wraps mutableDataFS. Opens a file for input. If an error occurs, throws it.
+     * @return The InputStream.
+     */
+    public static @NonNull InputStream getInFileOrThrow(@NonNull String name) throws IOException {
+        return mutableDataFS.intoPath(name).openRead();
+    }
+
     /**
      * Code porting helper
      */
@@ -216,6 +226,14 @@ public final class GaBIEn {
      */
     public static @Nullable OutputStream getOutFile(@NonNull String name) {
         return getOutFile(mutableDataFS.intoPath(name));
+    }
+
+    /**
+     * Wraps mutableDataFS. Opens a file for output. Throws errors.
+     * @return The InputStream.
+     */
+    public static @NonNull OutputStream getOutFileOrThrow(@NonNull String name) throws IOException {
+        return mutableDataFS.intoPath(name).openWrite();
     }
 
     /**

@@ -118,7 +118,7 @@ public final class RAMFSBackend extends FSBackend {
     @Override
     public @NonNull FSBackend intoInner(String dirName) {
         if (dirName.equals(".."))
-            return parent;
+            return parentOrRoot;
         return new RAMFSBackend(this, dirName);
     }
 

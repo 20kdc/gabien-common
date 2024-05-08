@@ -36,8 +36,9 @@ public class UICredits extends UIProxy {
     public UICredits(int sc, int textHeight) {
         labelHeader = new UILabel("", textHeight);
         urlButton = new UITextButton("", textHeight, () -> {
-            if (lastURL != null)
-                GaBIEn.tryStartBrowser(lastURL);
+            String url = lastURL;
+            if (url != null)
+                GaBIEn.tryStartBrowser(url);
         });
         UIScrollLayout buttons = new UIScrollLayout(true, sc);
         LinkedList<LicenseComponent> lcl = LicenseManager.I.getSortedLicenseComponents();
@@ -62,12 +63,8 @@ public class UICredits extends UIProxy {
         urlButton.setText(lc.url);
         lastURL = lc.url;
         String lf = GaBIEn.getTextResourceAsString(lc.licenseFile);
-        String cf = null;
-        if (lc.creditsFile == null) {
-            cf = "";
-        } else {
-            cf = GaBIEn.getTextResourceAsString(lc.creditsFile);
-        }
+        String creditsFn = lc.creditsFile;
+        String cf = creditsFn != null ? GaBIEn.getTextResourceAsString(creditsFn) : "";
         if (lf == null)
             lf = "<license file missing>";
         if (cf == null)

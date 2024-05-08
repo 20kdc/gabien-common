@@ -72,12 +72,12 @@ public class AttachedFSBackend extends FSBackend {
 
     @Override
     public @NonNull InputStream openRead() throws IOException {
-        return null;
+        throw new IOException("You cannot read this");
     }
 
     @Override
     public @NonNull OutputStream openWrite() throws IOException {
-        return null;
+        throw new IOException("You cannot write this");
     }
 
     @Override

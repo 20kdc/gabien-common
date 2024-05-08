@@ -67,7 +67,7 @@ public final class UnionFSBackend extends FSBackend {
     @Override
     protected @NonNull FSBackend intoInner(String dirName) {
         if (dirName.equals(".."))
-            return parent;
+            return parentOrRoot;
         FSBackend[] newParents = new FSBackend[parents.length];
         for (int i = 0; i < newParents.length; i++)
             newParents[i] = parents[i].into(dirName);

@@ -114,10 +114,6 @@ public class TextboxMaintainer implements ITextEditingSession {
     @Override
     public void setText(String text) {
         textComponent.setText(text);
-        if (maintainedString == null) {
-            textComponent.setVisible(true);
-            textComponent.grabFocus();
-        }
         maintainedString = text;
     }
 

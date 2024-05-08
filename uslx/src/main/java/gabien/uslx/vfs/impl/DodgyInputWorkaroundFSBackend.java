@@ -52,7 +52,7 @@ public class DodgyInputWorkaroundFSBackend extends FSBackend {
     @Override
     protected @NonNull FSBackend intoInner(String dirName) {
         if (dirName.equals(".."))
-            return parent;
+            return parentOrRoot;
         // Fast-path if the entry already exists.
         FSBackend tmp = target.into(dirName);
         if (tmp.getState() != null)

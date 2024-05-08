@@ -71,8 +71,8 @@ public class UIMainMenu extends UIProxy {
             GaBIEn.startFileBrowser("Convert Audio File", false, "", (str) -> {
                 if (str != null) {
                     try {
-                        InputStream inp = GaBIEn.getInFile(str);
-                        OutputStream os = GaBIEn.getOutFile("tmp.wav");
+                        InputStream inp = GaBIEn.getInFileOrThrow(str);
+                        OutputStream os = GaBIEn.getOutFileOrThrow("tmp.wav");
                         WavIO.writeWAV(os, ReadAnySupportedAudioSource.open(inp, true), AudioIOFormat.F_F32);
                         os.close();
                     } catch (IOException e) {
