@@ -10,7 +10,7 @@ import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
-import gabien.uslx.append.EntityType;
+import gabien.uslx.append.Entity;
 
 /**
  * Created 8th May, 2024.
@@ -18,18 +18,26 @@ import gabien.uslx.append.EntityType;
 public class EntityTypeTest {
     @Test
     public void testTest() {
-        ExampleET.V data = ExampleET.I.entity();
+        ExampleET data = new ExampleET();
         assertNull(data.get(ExampleET.EXAMPLE_ONE));
         data.set(ExampleET.EXAMPLE_TWO, (Integer) 25);
         // tests expansion
         data.set(ExampleET.EXAMPLE_THREE, (Integer) 26);
+        data.exampleIntrinsicField = 123;
         assertEquals(data.get(ExampleET.EXAMPLE_TWO), (Integer) 25);
     }
 
-    final static class ExampleET extends EntityType<ExampleET> {
-        public static final ExampleET I = new ExampleET();
-        public static final Key<Integer> EXAMPLE_ONE = I.key();
-        public static final Key<Integer> EXAMPLE_TWO = I.key();
-        public static final Key<Integer> EXAMPLE_THREE = I.key();
+    final static class ExampleET extends Entity<ExampleET> {
+        public static final Entity.Registrar<ExampleET> I = newRegistrar();
+        public static final Key<Integer> EXAMPLE_ONE = new Key<>();
+        public static final Key<Integer> EXAMPLE_TWO = new Key<>();
+        public static final Key<Integer> EXAMPLE_THREE = new Key<>();
+        // adding intrinsic fields
+        int exampleIntrinsicField;
+        static final class Key<T> extends Entity.Key<ExampleET, T> {
+            public Key() {
+                super(I);
+            }
+        }
     }
 }
