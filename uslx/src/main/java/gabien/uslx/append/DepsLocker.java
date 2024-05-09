@@ -13,8 +13,15 @@ import java.util.Arrays;
  * Created 21st July, 2023.
  */
 public final class DepsLocker {
+    /**
+     * Dependencies from last run.
+     */
     private Object[] cachedDeps;
 
+    /**
+     * Update? (given these dependency values)
+     * Dependencies must be immutable and .equals must work.
+     */
     public boolean shouldUpdate(Object... deps) {
         if (cachedDeps == null) {
             cachedDeps = deps;
@@ -25,5 +32,12 @@ public final class DepsLocker {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Forces a re-update.
+     */
+    public void forceNextUpdate() {
+        cachedDeps = null;
     }
 }

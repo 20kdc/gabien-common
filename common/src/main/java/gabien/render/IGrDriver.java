@@ -107,10 +107,16 @@ public abstract class IGrDriver extends RenderTarget {
 
     // -- Universal interface, accounting for transforms and such --
 
+    /**
+     * Transforms the X coordinate by the transform registers.
+     */
     protected final float trsX(float x) {
         return trs[0] + (x * trs[2]);
     }
 
+    /**
+     * Transforms the Y coordinate by the transform registers.
+     */
     protected final float trsY(float y) {
         return trs[1] + (y * trs[3]);
     }
@@ -173,11 +179,12 @@ public abstract class IGrDriver extends RenderTarget {
     // -- Basic blit operations --
 
     public final synchronized void blitScaledImage(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable ITexRegion iU, int blendMode, int drawFlagsEx) {
-        // Translate coordinates
-        x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
+        // Translate coordinates - numerically stable form
+        // Do NOT optimize X+W & Y+H, it causes T-junction issues
+        float cR = trsX(x + w);
+        float cD = trsY(y + h);
+        x = trsX(x); y = trsY(y); w = cR - x; h = cD - y;
         // Do the CPU scissor dance.
-        float cR = x + w;
-        float cD = y + h;
         float srcR = srcx + srcw;
         float srcD = srcy + srch;
         int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
@@ -209,11 +216,12 @@ public abstract class IGrDriver extends RenderTarget {
     }
 
     public final synchronized void drawScaledColoured(float srcx, float srcy, float srcw, float srch, float x, float y, float w, float h, @Nullable ITexRegion iU, int blendMode, int drawFlagsEx, float r, float g, float b, float a) {
-        // Translate coordinates
-        x = trsX(x); w *= trs[2]; y = trsY(y); h *= trs[3];
+        // Translate coordinates - numerically stable form
+        // Do NOT optimize X+W & Y+H, it causes T-junction issues
+        float cR = trsX(x + w);
+        float cD = trsY(y + h);
+        x = trsX(x); y = trsY(y); w = cR - x; h = cD - y;
         // Do the CPU scissor dance.
-        float cR = x + w;
-        float cD = y + h;
         float srcR = srcx + srcw;
         float srcD = srcy + srch;
         int scL = scissor[0], scU = scissor[1], scR = scissor[2], scD = scissor[3];
