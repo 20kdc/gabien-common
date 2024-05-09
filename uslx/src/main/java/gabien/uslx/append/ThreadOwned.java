@@ -93,7 +93,7 @@ public class ThreadOwned {
      * This is a wrapper, so that it can be applied to any ThreadOwned.
      * The idea is that you bind/unbind via this.
      */
-    public static final class Locked implements AutoCloseable {
+    public static final class Locked implements Block {
         public final @NonNull ThreadOwned underlying;
         private final @NonNull ReentrantLock lock = new ReentrantLock(true);
 
