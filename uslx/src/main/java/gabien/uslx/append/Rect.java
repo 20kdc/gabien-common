@@ -7,6 +7,9 @@
 
 package gabien.uslx.append;
 
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * A basic rectangle class to make life easier.
  * Creation date unknown.
@@ -22,7 +25,7 @@ public final class Rect extends Size {
         y = i0;
     }
 
-    public Rect(Size size) {
+    public Rect(@NonNull Size size) {
         this(0, 0, size.width, size.height);
     }
 
@@ -31,7 +34,7 @@ public final class Rect extends Size {
         return x + "," + y + "," + super.toString();
     }
 
-    public boolean rectEquals(Rect o) {
+    public boolean rectEquals(@NonNull Rect o) {
         return sizeEquals(o) && (o.x == x) && (o.y == y);
     }
 
@@ -44,14 +47,14 @@ public final class Rect extends Size {
         return false;
     }
 
-    public boolean intersects(Rect rect) {
+    public boolean intersects(@NonNull Rect rect) {
         if (RectIntersector.intersects1i(rect.x, rect.width, x, width))
             if (RectIntersector.intersects1i(rect.y, rect.height, y, height))
                 return true;
         return false;
     }
 
-    public Rect getIntersection(Rect rect) {
+    public @Nullable Rect getIntersection(@NonNull Rect rect) {
         if (RectIntersector.intersects1i(rect.x, rect.width, x, width)) {
             int xStart = Math.max(rect.x, x);
             int xW = RectIntersector.intersect1iWidth(rect.x, rect.width, x, width, xStart);
@@ -67,7 +70,7 @@ public final class Rect extends Size {
     /**
      * Shrinks the rectangle by the given margin.
      */
-    public Rect margin(int l, int u, int r, int d) {
+    public @NonNull Rect margin(int l, int u, int r, int d) {
         return new Rect(x + l, y + u, width - (l + r), height - (u + d));
     }
 
@@ -77,7 +80,7 @@ public final class Rect extends Size {
      * from's size is compared to this rectangle's size, and the width/height changes are scaled accordingly.
      * Useful for cropping, as you can crop in screen-space then apply the transform in sprite-space.
      */
-    public Rect transformed(Rect from, Rect to) {
+    public @NonNull Rect transformed(Rect from, Rect to) {
         // If width or height is zero, then it would divide by zero - and if that didn't lead to an exception (IIRC?)
         //  one or both of the parameters would be 0 (0 * infinity == 0),
         //  so just skip that and do this:

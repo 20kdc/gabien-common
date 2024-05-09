@@ -7,6 +7,8 @@
 
 package gabien.uslx.append;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * TimeLogger is too much effort for profiling that doesn't need to be deep.
  * Created 20th October, 2023.
@@ -15,7 +17,7 @@ public final class QADStopwatch implements AutoCloseable {
     public final long startTimeMillis;
     public final String name;
 
-    public QADStopwatch(String name) {
+    public QADStopwatch(@NonNull String name) {
         this.name = name;
         startTimeMillis = System.currentTimeMillis();
     }

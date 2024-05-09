@@ -7,6 +7,8 @@
 
 package gabien.uslx.append;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * Created on February 16th 2018 to be a superclass to Rect, to avoid breaking relativity.
  */
@@ -28,11 +30,11 @@ public class Size {
         return width + "," + height;
     }
 
-    public boolean sizeEquals(Size s) {
+    public boolean sizeEquals(@NonNull Size s) {
         return (s.width == width) && (s.height == height);
     }
 
-    public Size sizeMax(Size b) {
+    public @NonNull Size sizeMax(Size b) {
         int w = b.width;
         if (width > b.width)
             w = width;

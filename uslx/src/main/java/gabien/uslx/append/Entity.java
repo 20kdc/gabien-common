@@ -8,6 +8,8 @@ package gabien.uslx.append;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 /**
  * Efficient componentized data.
  * This speeds up reads over a HashMap-based approach while keeping the code extensible.
@@ -26,13 +28,13 @@ public class Entity<TypeMarker extends Entity<?>> {
      * Gets data of the given type, if present.
      */
     @SuppressWarnings("unchecked")
-    public <T> T get(Key<TypeMarker, T> key) {
+    public <T> T get(@NonNull Key<TypeMarker, T> key) {
         if (data.length > key.index)
             return (T) data[key.index];
         return null;
     }
 
-    public <T> void set(Key<TypeMarker, T> key, T value) {
+    public <T> void set(@NonNull Key<TypeMarker, T> key, T value) {
         if (data.length <= key.index) {
             Object[] n = new Object[key.index + 1];
             System.arraycopy(data, 0, n, 0, data.length);
@@ -57,7 +59,7 @@ public class Entity<TypeMarker extends Entity<?>> {
         /**
          * You're expected to override this to point at the relevant singleton.
          */
-        public Key(Registrar<TypeMarker> t) {
+        public Key(@NonNull Registrar<TypeMarker> t) {
             index = t.nextAllocatedIndex.getAndIncrement();
         }
     }
