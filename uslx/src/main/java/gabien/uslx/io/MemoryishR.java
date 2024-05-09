@@ -6,6 +6,9 @@
  */
 package gabien.uslx.io;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 /**
  * Readable memory-like device with strong guarantees to proxies.
  * Created 9th May 2024 because yet again Java 8 has something missing I need to implement to make R48 work
@@ -24,16 +27,23 @@ public abstract class MemoryishR {
     // -- 8 --
 
     /**
-     * Reads either go through this or copyAsByteArray.
+     * Reads either go through getS8 or getBulk.
      * @throws IndexOutOfBoundsException if the index is out of bounds
      */
     public abstract byte getS8(long at);
 
     /**
-     * Reads either go through this or getS8.
+     * Reads either go through getS8 or getBulk.
      * @throws IndexOutOfBoundsException if the index is out of bounds
      */
     public abstract void getBulk(long at, byte[] data, int offset, int length);
+
+    /**
+     * Reads either go through getS8 or getBulk.
+     * @throws IndexOutOfBoundsException if the index is out of bounds
+     * @throws IOException as thrown by output stream
+     */
+    public abstract void getBulk(long at, OutputStream os, int length) throws IOException;
 
     /**
      * Copies out some data to a separate byte array.
@@ -43,6 +53,14 @@ public abstract class MemoryishR {
         byte[] data = new byte[length];
         getBulk(at, data, 0, length);
         return data;
+    }
+
+    /**
+     * Reads either go through getS8 or getBulk.
+     * @throws IOException as thrown by output stream
+     */
+    public final void getBulk(OutputStream os) throws IOException {
+        getBulk(0, os, (int) length);
     }
 
     /**

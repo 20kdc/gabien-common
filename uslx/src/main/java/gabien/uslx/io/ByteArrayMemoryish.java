@@ -6,6 +6,9 @@
  */
 package gabien.uslx.io;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 /**
  * Created 9th May 2024
  */
@@ -18,7 +21,7 @@ public class ByteArrayMemoryish extends MemoryishRW {
     }
 
     @Override
-    public final void set8(long at, int v) {
+    public void set8(long at, int v) {
         data[(int) at] = (byte) v;
     }
 
@@ -35,5 +38,10 @@ public class ByteArrayMemoryish extends MemoryishRW {
     @Override
     public void getBulk(long at, byte[] data, int offset, int length) {
         System.arraycopy(this.data, (int) at, data, offset, length);
+    }
+
+    @Override
+    public void getBulk(long at, OutputStream os, int length) throws IOException {
+        os.write(data, (int) at, length);
     }
 }
