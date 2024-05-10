@@ -172,20 +172,17 @@ public class UIFileBrowser extends UIElement.UIProxy {
         if (showManualControl) {
             final UITextBox pathText = new UITextBox(defaultFileName, fontSize);
             final UILabel statusLine = new UILabel("", fontSize);
-            UISplitterLayout mainLine = new UISplitterLayout(pathText, new UITextButton(verb, fontSize, new Runnable() {
-                @Override
-                public void run() {
-                    String txt = pathText.getText();
-                    // catch anything too obvious for better UX
-                    if (txt.equals(".") || txt.equals("..") || txt.contains("/") || txt.contains("\\") || txt.equals("")) {
-                        statusLine.setText(GaBIEn.wordInvalidFileName);
-                        return;
-                    }
-                    statusLine.setText("");
-                    if (!done) {
-                        done = true;
-                        run.accept(exact + "/" + txt);
-                    }
+            UISplitterLayout mainLine = new UISplitterLayout(pathText, new UITextButton(verb, fontSize, () -> {
+                String txt = pathText.getText();
+                // catch anything too obvious for better UX
+                if (txt.equals(".") || txt.equals("..") || txt.contains("/") || txt.contains("\\") || txt.equals("")) {
+                    statusLine.setText(GaBIEn.wordInvalidFileName);
+                    return;
+                }
+                statusLine.setText("");
+                if (!done) {
+                    done = true;
+                    run.accept(exact + "/" + txt);
                 }
             }), false, 1.0d);
             lowerSection.dynProxySet(new UISplitterLayout(mainLine, statusLine, true, 0.5d));
