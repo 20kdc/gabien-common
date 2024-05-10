@@ -27,7 +27,7 @@ public class UIAdjuster extends UIElement.UIPanel implements Consumer<String> {
         super(h * 16, h);
         numberDisplay = new UINumberBox(initial, h);
         incButton = new UITextButton("+", h, () -> {
-            numberDisplay.setNumber(write.apply(numberDisplay.getNumber()));
+            numberDisplay.setNumber(write.apply(numberDisplay.getNumber() + 1));
         });
         layoutAddElement(incButton);
         decButton = new UITextButton("-", h, () -> {
