@@ -11,6 +11,7 @@ import gabien.ui.dialogs.UICredits;
 import gabien.ui.elements.UILabel;
 import gabien.ui.elements.UIPublicPanel;
 import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UIFlowLayout;
 import gabien.ui.layouts.UIScrollLayout;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
@@ -152,6 +153,10 @@ public class UIMainMenu extends UIProxy {
             UICredits uic = new UICredits(16, 16);
             uic.setLAFParent(GaBIEnUI.sysThemeRoot);
             ui.accept(uic);
+        }));
+        ve.add(new UITextButton("UIFlowLayout please", 16, () -> {
+            UIFlowLayout ufl = new UIFlowLayout(new UILabel("OUA", 48), new UILabel("Central", 32), new UILabel("Office", 16));
+            ui.accept(ufl);
         }));
         ve.add(lbl);
         vsl.panelsSet(ve);

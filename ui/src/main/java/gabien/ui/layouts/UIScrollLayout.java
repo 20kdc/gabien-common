@@ -21,7 +21,7 @@ import gabien.wsi.IPeripherals;
  * Created on 12/29/16.
  * Updated for Accelerator 27th October 2023.
  */
-public class UIScrollLayout extends UIElement.UIPanel {
+public class UIScrollLayout extends UIBaseListOfStuffLayout {
     public final UIScrollbar scrollbar;
     // This is set to the scrollbar size, in full.
     private int sbSize;
@@ -33,6 +33,7 @@ public class UIScrollLayout extends UIElement.UIPanel {
     private double lastScrollPoint = -1;
 
     public UIScrollLayout(boolean vertical, int sc) {
+        super(false);
         scrollbar = new UIScrollbar(vertical, sc);
         sbSize = sc;
     }
@@ -47,32 +48,6 @@ public class UIScrollLayout extends UIElement.UIPanel {
         this(vertical, sc);
         panelsSet(contents);
         forceToRecommended();
-    }
-
-    public void panelsSet() {
-        for (UIElement uie : layoutGetElements())
-            layoutRemoveElement(uie);
-        layoutRecalculateMetrics();
-    }
-
-    public void panelsSet(UIElement... contents) {
-        for (UIElement uie : layoutGetElements())
-            layoutRemoveElement(uie);
-        for (UIElement uie : contents) {
-            layoutAddElement(uie);
-            layoutSetElementVis(uie, false);
-        }
-        layoutRecalculateMetrics();
-    }
-
-    public <T extends UIElement> void panelsSet(Iterable<T> contents) {
-        for (UIElement uie : layoutGetElements())
-            layoutRemoveElement(uie);
-        for (UIElement uie : contents) {
-            layoutAddElement(uie);
-            layoutSetElementVis(uie, false);
-        }
-        layoutRecalculateMetrics();
     }
 
     /**

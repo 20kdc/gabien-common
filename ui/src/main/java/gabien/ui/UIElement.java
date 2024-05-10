@@ -443,6 +443,13 @@ public abstract class UIElement extends LAFChain {
             return allElements;
         }
 
+        /**
+         * Gets the size of the elements list.
+         */
+        protected final int layoutGetElementsCount() {
+            return allElements.size();
+        }
+
         @Override
         public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
             if (released)
