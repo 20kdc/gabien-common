@@ -7,6 +7,7 @@
 
 package gabien.ui.layouts;
 
+import gabien.GaBIEnUI;
 import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumWriter;
 import gabien.render.IGrDriver;
@@ -208,6 +209,9 @@ public class UIWindowView extends UIElement {
         Manual
     }
 
+    /**
+     * Shell for a floating tab.
+     */
     public static class TabShell extends UITabBar.Tab implements IShell {
         public final UIWindowView parent;
         public boolean removed = false;
@@ -417,6 +421,9 @@ public class UIWindowView extends UIElement {
         }
     }
 
+    /**
+     * Shell for an individual element.
+     */
     public static class ElementShell implements IShell {
         public final UIWindowView parent;
         public final UIElement uie;
@@ -489,6 +496,9 @@ public class UIWindowView extends UIElement {
         }
     }
 
+    /**
+     * Shell for a full-screen, uh, everything.
+     */
     public static class ScreenShell extends ElementShell {
         public ScreenShell(UIWindowView parent, UIElement element) {
             super(parent, element);
@@ -511,6 +521,47 @@ public class UIWindowView extends UIElement {
         public void update(double deltaTime, boolean parentSelected, IPeripherals peripherals) {
             updateSize();
             super.update(deltaTime, parentSelected, peripherals);
+        }
+    }
+
+    /**
+     * Shell for a pop-up menu.
+     */
+    public static final class MenuShell extends UIWindowView.ElementShell {
+        private final UIElement baseElem;
+        private final Rect base;
+
+        public MenuShell(UIWindowView parent, UIElement menu, UIElement baseElem, Rect base) {
+            super(parent, menu);
+            this.baseElem = baseElem;
+            this.base = base;
+        }
+
+        @Override
+        public IPointerReceiver provideReceiver(IPointer i) {
+            IPointerReceiver ipr = super.provideReceiver(i);
+            if (ipr == null) {
+                parent.removeShell(this);
+                uie.onWindowClose();
+                return IPointerReceiver.NopPointerReceiver.I;
+            }
+            return ipr;
+        }
+
+        @Override
+        public void render(IGrDriver igd) {
+            Size sz = parent.getSize();
+            igd.fillRect(0, 0, 0, 128, 0, 0, sz.width, sz.height);
+            int bw = 4;
+            Rect r = uie.getParentRelativeBounds();
+            Theme theme = GaBIEnUI.sysThemeRoot.getTheme();
+            // The border is shown 'behind' the menu base, but the menu is shown over it
+            UIBorderedElement.drawBorder(theme, igd, Theme.B_MENUBORDER, bw, r.x - bw, r.y - bw, r.width + (bw * 2), r.height + (bw * 2));
+            float otx = igd.trsTXS(base.x);
+            float oty = igd.trsTYS(base.y);
+            baseElem.renderAllLayers(igd);
+            igd.trsTXYE(otx, oty);
+            super.render(igd);
         }
     }
 }

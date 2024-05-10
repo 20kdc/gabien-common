@@ -46,7 +46,7 @@ public final class Theme {
     public static final Attr<IBorder> B_TITLE = new BAttr("title", 11);
     // 12
     public static final Attr<IBorder> B_TITLESEL = new BAttr("titleSel", 12);
-    public static final Attr<IBorder> B_R48OVERLAY = new BAttr("r48Overlay", 13);
+    public static final Attr<IBorder> B_MENUBORDER = new BAttr("menuBorder", 13);
     // 14 - note the unfortunate stashing of an ultimate fallback FontManager here.
     // this may end up unexpectedly caching things past engine resets, but luckily those only happen in tests...
     public static final Attr<FontManager> FM_GLOBAL = new BuiltinAttr<>("fontManager", 14, FontManager.class, new FontManager(null, false));
@@ -55,11 +55,12 @@ public final class Theme {
     public static final Attr<IIcon> IC_ARROW_RIGHT = new IAttr("arrowRight", 16, DefaultArrowIcon.DARK_R);
     public static final Attr<IIcon> IC_ARROW_DOWN = new IAttr("arrowDown", 17, DefaultArrowIcon.DARK_D);
     public static final Attr<IIcon> IC_ARROW_LEFT = new IAttr("arrowLeft", 18, DefaultArrowIcon.DARK_L);
+    public static final Attr<IBorder> B_NOTABPANEL = new BAttr("noTabPanel", 19);
 
     private final static Attr<?>[] allBI = {
             B_BTN, B_BTNP, B_LABEL, B_TEXTBOX, B_TEXTBOXF, B_WINDOW, B_SBTRAY, B_SBNUB,
-            B_TABA, B_TABB, B_TABSEL, B_TITLE, B_TITLESEL, B_R48OVERLAY, FM_GLOBAL, IC_ARROW_UP,
-            IC_ARROW_RIGHT, IC_ARROW_DOWN, IC_ARROW_LEFT
+            B_TABA, B_TABB, B_TABSEL, B_TITLE, B_TITLESEL, B_MENUBORDER, FM_GLOBAL, IC_ARROW_UP,
+            IC_ARROW_RIGHT, IC_ARROW_DOWN, IC_ARROW_LEFT, B_NOTABPANEL
     };
 
     // Actual guts

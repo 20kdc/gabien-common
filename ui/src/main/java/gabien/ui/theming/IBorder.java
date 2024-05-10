@@ -19,7 +19,7 @@ public interface IBorder {
     void draw(IGrDriver igd, int borderWidth, int x, int y, int w, int h);
 
     /**
-     * Border flags
+     * Border flags. See ThemingCentral.
      */
     boolean getFlag(int flag);
 }

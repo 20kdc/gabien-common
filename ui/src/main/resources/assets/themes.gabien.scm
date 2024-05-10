@@ -36,6 +36,7 @@ rB10? (rect 120 0 12 18)
 rB11? (rect 132 0 12 18)
 rB12? (rect 144 0 12 18)
 rB13? (rect 156 0 12 18)
+rB14? (rect 168 0 12 18)
 
 ; Common light-mode definitions
 tLightModeCommon (theme
@@ -90,8 +91,12 @@ t0? (theme
 	titleSel (border
 		(reg iT0 rB12)
 	)
-	r48Overlay (border
+	menuBorder (border
 		(reg iT0 rB13)
+	)
+	noTabPanel (border
+		(reg iT0 rB14)
+		tiled
 	)
 )
 
@@ -148,8 +153,12 @@ t1? (theme
 		(reg iT1 rB12)
 		tiled
 	)
-	r48Overlay (border
+	menuBorder (border
 		(reg iT1 rB13)
+	)
+	noTabPanel (border
+		(reg iT1 rB14)
+		tiled
 	)
 )
 
@@ -207,8 +216,12 @@ t2? (theme
 		(reg iT2 rB12)
 		tiled lightBkg
 	)
-	r48Overlay (border
+	menuBorder (border
 		(reg iT2 rB13)
+	)
+	noTabPanel (border
+		(reg iT2 rB14)
+		tiled lightBkg
 	)
 )
 
@@ -255,7 +268,11 @@ t3? (theme
 	titleSel (border
 		(reg iT3 rB12)
 	)
-	r48Overlay (border
+	menuBorder (border
 		(reg iT3 rB13)
+	)
+	noTabPanel (border
+		(reg iT3 rB14)
+		tiled
 	)
 )

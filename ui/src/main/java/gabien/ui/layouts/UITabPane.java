@@ -10,12 +10,12 @@ package gabien.ui.layouts;
 import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
 import gabien.ui.UILayer;
+import gabien.ui.theming.Theme;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
 
 import java.util.LinkedList;
-import java.util.Random;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -34,14 +34,6 @@ public class UITabPane extends UIElement.UIPanel {
     private int tabOverheadHeight;
 
     protected UITabBar.Tab selectedTab;
-
-    // for if no tab is selected
-    private double[] currentNTState = new double[8 * 8];
-    private double[] currentVOState = new double[8 * 8];
-    private double[] incomingNTState = new double[8 * 8];
-    private double[] incomingVOState = new double[8 * 8];
-    private Random ntRandom = new Random();
-    public double visualizationOrange = 0.0d;
 
     public UITabPane(int h, boolean csn, boolean cdt) {
         this(h, csn, cdt, 0);
@@ -65,52 +57,16 @@ public class UITabPane extends UIElement.UIPanel {
     @Override
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
         super.update(deltaTime, selected, peripherals);
-        if (selectedTab == null) {
-            for (int i = 0; i < currentNTState.length; i++) {
-                double delta = deltaTime / 4.0d;
-                if (currentVOState[i] < incomingVOState[i]) {
-                    currentVOState[i] = Math.min(currentVOState[i] + delta, incomingVOState[i]);
-                } else {
-                    currentVOState[i] = Math.max(currentVOState[i] - delta, incomingVOState[i]);
-                }
-                if (currentNTState[i] < incomingNTState[i]) {
-                    currentNTState[i] = Math.min(currentNTState[i] + delta, incomingNTState[i]);
-                } else {
-                    currentNTState[i] = Math.max(currentNTState[i] - delta, incomingNTState[i]);
-                }
-                if (Math.abs(currentNTState[i] - incomingNTState[i]) < 0.05d)
-                    incomingNTState[i] = (ntRandom.nextDouble() / 2.0d) + 0.5d;
-                if (Math.abs(currentVOState[i] - incomingVOState[i]) < 0.05d) {
-                    double d = (i + 1) - ((1 - visualizationOrange) * currentNTState.length);
-                    incomingVOState[i] = Math.max(0, Math.min(1, d));
-                }
-            }
-        }
     }
 
     @Override
     public void renderLayer(IGrDriver igd, UILayer layer) {
         super.renderLayer(igd, layer);
-        if (layer != UILayer.Content)
+        if (layer != UILayer.Base)
             return;
         if (selectedTab == null) {
             Size bounds = getSize();
-            int w = bounds.width / 8;
-            int h = (bounds.height - tabOverheadHeight) / 8;
-            int lw = bounds.width - (w * 7);
-            int lh = (bounds.height - tabOverheadHeight) - (h * 7);
-            for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 8; j++) {
-                    double nt = currentNTState[i + (j * 8)];
-                    double vo = currentVOState[i + (j * 8)];
-                    double vDO = nt * vo;
-                    double vDB = nt * (1 - vo);
-                    int vR = (int) (vDO * 255);
-                    int vG = (int) (nt * 128);
-                    int vB = (int) (vDB * 255);
-                    igd.clearRect(vR, vG, vB, i * w, (j * h) + tabOverheadHeight, i == 7 ? lw : w, j == 7 ? lh : h);
-                }
-            }
+            Theme.B_NOTABPANEL.get(this).draw(igd, tabOverheadHeight / 2, 0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
         }
     }
 
