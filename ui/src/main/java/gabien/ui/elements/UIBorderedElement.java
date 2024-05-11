@@ -68,8 +68,10 @@ public abstract class UIBorderedElement extends UIElement {
     }
 
     public void setBorderType(Theme.Attr<IBorder> bt) {
-        borderType = bt;
-        updateBorder();
+        if (bt != borderType) {
+            borderType = bt;
+            updateBorder();
+        }
     }
 
     @Override

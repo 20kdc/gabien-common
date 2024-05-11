@@ -50,7 +50,7 @@ public class UITabBar extends UIElement.UIPanel {
     public final boolean canSelectNone;
     public final boolean canDragTabs;
 
-    // -1 means not shortened, otherwise it's max length.
+    // -1 means not shortened, otherwise it's max width.
     protected int shortTabs = -1;
 
     private final int wantedHeight;
@@ -117,7 +117,7 @@ public class UITabBar extends UIElement.UIPanel {
         for (Tab w : tabs) {
             // This is used for all rendering.
             int theDisplayOX = pos;
-            int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
+            int tabW = getTabWidth(theme, fm, w, shortTabs, effectiveHeight);
             Theme.Attr<IBorder> base = toggle ? Theme.B_TABB : Theme.B_TABA;
             if (parentView.selectedTab == w)
                 base = Theme.B_TABSEL;
@@ -147,11 +147,11 @@ public class UITabBar extends UIElement.UIPanel {
                 float oldTY = igd.trsTYS(effectiveHeight / 8);
                 int oldCD = scissor[3];
                 scissor[3] = (int) Math.min(scissor[3], oldTY + (effectiveHeight * trs[3]));
-                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
+                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, w.contents.toString(), w, enBack, enFore);
                 igd.trsTYE(oldTY);
                 scissor[3] = oldCD;
             } else {
-                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, getVisibleTabName(w, shortTabs), w, enBack, enFore);
+                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, w.contents.toString(), w, enBack, enFore);
             }
 
             pos += tabW;
@@ -161,17 +161,11 @@ public class UITabBar extends UIElement.UIPanel {
     private int calculateTabBarWidth(int atHeight) {
         FontManager fm = Theme.FM_GLOBAL.get(this);
         int tl = 0;
+        Theme th = getTheme();
         for (UITabBar.Tab tab : tabs)
-            tl += getTabWidth(fm, tab, shortTabs, atHeight);
+            tl += getTabWidth(th, fm, tab, shortTabs, atHeight);
         int extra = canSelectNone ? wantedHeight : 0;
         return tl + extra;
-    }
-
-    private int calculateLongestTabName() {
-        int longestTabName = 0;
-        for (UITabBar.Tab tab : tabs)
-            longestTabName = Math.max(tab.contents.toString().length(), longestTabName);
-        return longestTabName;
     }
 
     @Override
@@ -214,18 +208,9 @@ public class UITabBar extends UIElement.UIPanel {
             }
             if (tabScroller == null) {
                 int lastWidth = longestWidth;
-                int longestTabName = calculateLongestTabName();
-                while (lastWidth > bounds.width) {
-                    // advance
-                    if (shortTabs == -1) {
-                        shortTabs = longestTabName - 1;
-                    } else {
-                        shortTabs--;
-                    }
-                    if (shortTabs <= 0) {
-                        shortTabs = 0;
-                        break;
-                    }
+                if (lastWidth > bounds.width) {
+                    if (tabs.size() > 0)
+                        shortTabs = bounds.width / tabs.size();
                     lastWidth = calculateTabBarWidth(effectiveHeight);
                 }
             }
@@ -297,6 +282,7 @@ public class UITabBar extends UIElement.UIPanel {
     private void tabReorderer(int x, Tab target) {
         FontManager fm = Theme.FM_GLOBAL.get(this);
         int oldIndex = tabs.indexOf(target);
+        Theme th = getTheme();
         // Oscillates if a tab that's being nudged left to make way moves out of range.
         // Since these are always two-frame oscillations, just deal with it the simple way...
         for (int pass = 0; pass < 2; pass++) {
@@ -306,7 +292,7 @@ public class UITabBar extends UIElement.UIPanel {
             int pos = getScrollOffsetX();
             int i = 0;
             for (Tab w : tabs) {
-                int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
+                int tabW = getTabWidth(th, fm, w, shortTabs, effectiveHeight);
                 pos += tabW;
                 if (x < pos)
                     if (expectedIndex == -1)
@@ -333,20 +319,17 @@ public class UITabBar extends UIElement.UIPanel {
         tabReorderDidSomething = false;
     }
 
-    public static int getTabWidth(FontManager fm, Tab window, int shortTab, int h) {
+    public static int getTabWidth(Theme theme, FontManager fm, Tab window, int shortTab, int h) {
         int margin = h / 8;
         int tabExMargin = margin + (margin / 2);
         int textHeight = h - (margin * 2);
         if (shortTab == 0)
             tabExMargin = 0;
-        return fm.getLineLength(getVisibleTabName(window, shortTab), textHeight) + (tabExMargin * 2) + (h * window.icons.length);
-    }
-
-    public static String getVisibleTabName(Tab w, int shortTab) {
-        String name = w.contents.toString();
-        if (shortTab != -1)
-            return name.substring(0, Math.min(name.length(), shortTab));
-        return name;
+        window.updateTitleTextCache(theme, textHeight);
+        int theWidth = window.titleTextCacheB.getChunk().cursorX(0) + (tabExMargin * 2) + (h * window.icons.length);
+        if (shortTab != -1 && (theWidth > shortTab))
+            return shortTab;
+        return theWidth;
     }
 
     /*
@@ -372,11 +355,20 @@ public class UITabBar extends UIElement.UIPanel {
             UIBorderedElement.drawBorder(theme, igd, border, margin, x, y, w, h);
 
         if (enFore) {
-            tab.titleTextCache.text = text;
-            tab.titleTextCache.blackText = UIBorderedElement.getBlackTextFlag(theme, border);
-            tab.titleTextCache.font = Theme.FM_GLOBAL.get(theme).getFontForText(text, textHeight);
-            tab.titleTextCache.update();
-            tab.titleTextCache.getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
+            tab.updateTitleTextCache(theme, textHeight);
+            boolean blackText = UIBorderedElement.getBlackTextFlag(theme, border);
+
+            // scissoring
+            int osLeft = igd.scissor[0];
+            int osTop = igd.scissor[1];
+            int osRight = igd.scissor[2];
+            int osBottom = igd.scissor[3];
+            igd.applyScissor(x, y, w, h);
+            (blackText ? tab.titleTextCacheB : tab.titleTextCacheW).getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
+            igd.scissor[0] = osLeft;
+            igd.scissor[1] = osTop;
+            igd.scissor[2] = osRight;
+            igd.scissor[3] = osBottom;
     
             int icoBack = h;
             for (TabIcon i : tab.icons) {
@@ -412,13 +404,14 @@ public class UITabBar extends UIElement.UIPanel {
         IPointerReceiver firstPtr = super.handleNewPointer(pointer);
         if (firstPtr != null)
             return firstPtr;
+        Theme th = getTheme();
         FontManager fm = Theme.FM_GLOBAL.get(this);
         int x = pointer.getX();
         int y = pointer.getY();
         if (y < effectiveHeight) {
             int pos = getScrollOffsetX();
             for (final Tab w : tabs) {
-                final int tabW = getTabWidth(fm, w, shortTabs, effectiveHeight);
+                final int tabW = getTabWidth(th, fm, w, shortTabs, effectiveHeight);
                 if (x < (pos + tabW)) {
                     if (clickInTab(w, x - pos, y, tabW, effectiveHeight))
                         return IPointerReceiver.NopPointerReceiver.I;
@@ -480,11 +473,21 @@ public class UITabBar extends UIElement.UIPanel {
         // The bounds position is controlled by the tab host (such as a UIWindowView.TabShell).
         public final UIElement contents;
         public final TabIcon[] icons;
-        public final TextTools.PlainCached titleTextCache = new TextTools.PlainCached();
+        public final TextTools.PlainCached titleTextCacheW = new TextTools.PlainCached();
+        public final TextTools.PlainCached titleTextCacheB = new TextTools.PlainCached();
 
         public Tab(UIElement con, TabIcon[] ico) {
             contents = con;
             icons = ico;
+        }
+
+        public void updateTitleTextCache(Theme theme, int textHeight) {
+            titleTextCacheW.text = titleTextCacheB.text = contents.toString();
+            titleTextCacheW.blackText = false;
+            titleTextCacheB.blackText = true;
+            titleTextCacheW.font = titleTextCacheB.font = Theme.FM_GLOBAL.get(theme).getFontForText(titleTextCacheW.text, textHeight);
+            titleTextCacheW.update();
+            titleTextCacheB.update();
         }
     }
 }
