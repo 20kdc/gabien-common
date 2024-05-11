@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -672,6 +673,21 @@ public final class GaBIEn {
      */
     public static boolean hasStoragePermission() {
         return internal.hasStoragePermission();
+    }
+
+    /**
+     * Attempts to get the loaded class count.
+     * Returns -1 on error.
+     */
+    public static int getLoadedClassCount() {
+        try {
+            Method m = Class.forName("java.lang.management.ManagementFactory").getMethod("getClassLoadingMXBean");
+            Object classLoadingMXBean = m.invoke(null);
+            return (Integer) (Class.forName("java.lang.management.ClassLoadingMXBean").getMethod("getLoadedClassCount").invoke(classLoadingMXBean));
+        } catch (Exception ex) {
+            // nope
+            return -1;
+        }
     }
 
     /**
