@@ -763,7 +763,7 @@ public final class GaBIEn {
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      * All callers of this must call GaBIEnUI.setupAssets if that still exists.
      */
-    static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger) {
+    static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger, boolean isCrashingVopeks) {
         try {
             String[] str = (String[]) Class.forName("gabienapp.Application").getField("appPrefixes").get(null);
             appPrefixes = str;
@@ -791,7 +791,13 @@ public final class GaBIEn {
             int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf;
             if (debug)
                 newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
-            vopeks = new Vopeks(newInstanceFlags, timeLogger);
+            vopeks = new Vopeks(newInstanceFlags, timeLogger, isCrashingVopeks);
+            // spin until Vopeks has initialized as it is VERY IMPORTANT
+            while (!vopeks.initComplete.get());
+            Throwable t = vopeks.initFailure.get();
+            if (t != null)
+                throw new RuntimeException("Error during VOPEKS init; check console for BadGPU error messages", t);
+            // continue
             errorImage = createImage("getErrorImage", new int[] {
                     0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
                     0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,

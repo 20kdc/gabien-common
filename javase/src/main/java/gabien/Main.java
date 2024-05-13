@@ -8,31 +8,101 @@
 package gabien;
 
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.WindowMux;
+import gabien.natives.BadGPU;
+import gabien.natives.BadGPUEnum.MetaInfoType;
 import gabien.uslx.vfs.impl.JavaIOFSBackend;
 import gabien.wsi.WindowSpecs;
 
 abstract class Main {
     private static boolean ignoreBlindingSun = false;
+
+    public static void main(String[] args) {
+        try {
+            mainInner(args);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            StringWriter sw = new StringWriter();
+            sw.append("The program was unable to start, or crashed while running.\nJVM: ");
+            sw.append(System.getProperty("java.vendor"));
+            sw.append(" ");
+            sw.append(System.getProperty("java.vm.name"));
+            sw.append(" ");
+            sw.append(System.getProperty("java.vm.version"));
+            sw.append(" ");
+            sw.append(System.getProperty("os.arch"));
+            sw.append(" ");
+            sw.append(System.getProperty("os.name"));
+            sw.append(" ");
+            sw.append(System.getProperty("os.version"));
+            sw.append("\nGaBIEn Natives version: ");
+            try {
+                sw.append(gabien.natives.Loader.getNativesVersion());
+            } catch (Throwable failed) {
+                sw.append("[NOT INITIALIZED] ");
+                try {
+                    sw.append(gabien.natives.Loader.defaultLoaderJavaSE() ? "[OK] " : "[FAIL] ");
+                    sw.append(gabien.natives.Loader.getNativesVersion());
+                } catch (Throwable ex2) {
+                    sw.append("[CATASTROPHIC FAILURE]");
+                }
+            }
+            sw.append("\nBadGPU says renderer is: ");
+            try {
+                BadGPU.Instance bi = BadGPU.newInstance(0);
+                String what = bi.getMetaInfo(MetaInfoType.Renderer);
+                bi.dispose();
+                sw.append(what);
+                sw.append(" [OK]\n");
+            } catch (Throwable ex2) {
+                sw.append("[FAIL]\n");
+            }
+            sw.append("\n");
+            t.printStackTrace(new PrintWriter(sw));
+            // something has gone horribly wrong
+            Frame f = new Frame("Graphics And Basic Input Engine");
+            f.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    GaBIEn.ensureQuit();
+                }
+            });
+            TextArea ta = new TextArea();
+            ta.setText(sw.toString());
+            f.add(ta);
+            f.setSize(800, 600);
+            f.setVisible(true);
+        }
+    }
+
     /**
      * Use reflection to find and run the application.
      */
-    public static void main(String[] args) {
+    private static void mainInner(String[] args) throws Exception{
         boolean tryForceOpenGL = false;
         boolean ignoreDPI = false;
         boolean useInternalBrowser = false;
         boolean isDebug = false;
         boolean isTimeLogging = false;
+        boolean isCrashingVopeks = false;
         if (args.length > 0) {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
                     tryForceOpenGL = true;
                 if (s.equalsIgnoreCase("debug"))
                     isDebug = true;
+                if (s.equalsIgnoreCase("stopImmediately"))
+                    throw new RuntimeException("stopImmediately passed on command line");
+                if (s.equalsIgnoreCase("crashVopeks"))
+                    isCrashingVopeks = true;
                 if (s.equalsIgnoreCase("timeLogger"))
                     isTimeLogging = true;
                 if (s.equalsIgnoreCase("iAmARobot"))
@@ -61,7 +131,7 @@ abstract class Main {
         		e.printStackTrace();
         	}
         }
-        initializeEmbedded(isDebug, isTimeLogging);
+        initializeEmbedded(isDebug, isTimeLogging, isCrashingVopeks);
         // System.err.println("GJSEStartProfile after initializeEmbedded: " + GaBIEn.getTime());
         if (GaBIEnImpl.mobileEmulation) {
         	WindowSpecs ws = new WindowSpecs(GaBIEn.internal);
@@ -71,18 +141,17 @@ abstract class Main {
         }
         if (useInternalBrowser)
             GaBIEn.internalFileBrowser = new EmulatedFileBrowser(GaBIEn.internal);
-        try {
-            Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            GaBIEn.ensureQuit();
-        }
+        Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
     }
 
     /**
      * See GaBIEn.initializeEmbedded.
      */
-    public static void initializeEmbedded(boolean isDebug, boolean isTimeLogging) {
+    public static void initializeEmbedded() {
+        initializeEmbedded(false, false, false);
+    }
+
+    private static void initializeEmbedded(boolean isDebug, boolean isTimeLogging, boolean isCrashingVopeks) {
         if (!ignoreBlindingSun) {
             // Seriously, Sun, were you trying to cause epilepsy episodes?!?!
             System.setProperty("sun.awt.noerasebackground", "true");
@@ -112,7 +181,7 @@ abstract class Main {
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
         // pretty much all the startup time goes here
-        GaBIEn.setupNativesAndAssets(isDebug, isTimeLogging);
+        GaBIEn.setupNativesAndAssets(isDebug, isTimeLogging, isCrashingVopeks);
         GaBIEnUI.setupAssets();
     }
 }

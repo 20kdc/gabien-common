@@ -65,9 +65,26 @@ public class UITabPane extends UIElement.UIPanel {
         if (layer != UILayer.Base)
             return;
         if (selectedTab == null) {
+            // uuuhhh let's just scissor this just to be sure
+            int s0 = igd.scissor[0];
+            int s1 = igd.scissor[1];
+            int s2 = igd.scissor[2];
+            int s3 = igd.scissor[3];
             Size bounds = getSize();
-            Theme.B_NOTABPANEL.get(this).draw(igd, tabOverheadHeight / 2, 0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
+            igd.applyScissor(0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
+            renderNoTabPanel(igd, 0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
+            igd.scissor[0] = s0;
+            igd.scissor[1] = s1;
+            igd.scissor[2] = s2;
+            igd.scissor[3] = s3;
         }
+    }
+
+    /**
+     * Here to be overridden.
+     */
+    public void renderNoTabPanel(IGrDriver igd, int x, int y, int w, int h) {
+        Theme.B_NOTABPANEL.get(this).draw(igd, tabOverheadHeight / 2, x, y, w, h);
     }
 
     public void handleClosedUserTab(UITabBar.Tab wvWindow, boolean selfDestruct) {

@@ -7,6 +7,8 @@
 package gabien.vopeks;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -35,8 +37,10 @@ public final class Vopeks {
     private final ArrayBlockingQueue<Runnable> cbQueue = new ArrayBlockingQueue<>(TASK_QUEUE_SIZE);
     public final VopeksFloatPool floatPool = new VopeksFloatPool();
     private volatile boolean shutdownPrimary;
+    public final AtomicReference<Throwable> initFailure = new AtomicReference<Throwable>();
+    public final AtomicBoolean initComplete = new AtomicBoolean();
 
-    public Vopeks(final int newInstanceFlags, @Nullable TimeLogger timeLogger) {
+    public Vopeks(final int newInstanceFlags, @Nullable TimeLogger timeLogger, boolean isCrashingVopeks) {
         this.timeLogger = timeLogger;
         timeLoggerReadPixelsTask = TimeLogger.optSource(timeLogger, "readPixelsTask");
         timeLoggerFlushTask = TimeLogger.optSource(timeLogger, "flushTask");
@@ -44,7 +48,17 @@ public final class Vopeks {
         vopeksThread = new Thread("VOPEKS Thread") {
             @Override
             public void run() {
-                BadGPU.Instance instance = BadGPU.newInstance(newInstanceFlags);
+                BadGPU.Instance instance;
+                try {
+                    instance = BadGPU.newInstance(newInstanceFlags);
+                    if (isCrashingVopeks)
+                        throw new RuntimeException("Told to crash VOPEKS");
+                } catch (Throwable t) {
+                    initFailure.set(t);
+                    throw t;
+                } finally {
+                    initComplete.set(true);
+                }
                 if (timeLogger != null) {
                     TimeLogger.Source vs = timeLogger.newSource("vopeks_main");
                     while (!shutdownPrimary) {

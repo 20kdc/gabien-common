@@ -7,6 +7,7 @@
 package gabien.backend;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -62,12 +63,22 @@ public abstract class WSIDownloadPair<T> {
         return foundIndex;
     }
 
+    private T takeWithCrashRecovery() throws InterruptedException {
+        while (true) {
+            T res = queue.poll(5, TimeUnit.SECONDS);
+            if (res != null)
+                return res;
+            if (!GaBIEn.vopeks.vopeksThread.isAlive())
+                throw new RuntimeException("VOPEKS thread is dead. CHECK CONSOLE OUTPUT!");
+        }
+    }
+
     public final T acquire(int width, int height) {
         try {
             T res;
             if (timeLoggerAcquire != null) {
                 try (TimeLogger.Source src = TimeLogger.open(timeLoggerAcquire)) {
-                    res = queue.take();
+                    res = takeWithCrashRecovery();
                 }
                 int foundIndex = indexOf(res);
                 TimeLogger.open(timeLoggerHeld[foundIndex]);
@@ -77,7 +88,7 @@ public abstract class WSIDownloadPair<T> {
                     canon[foundIndex] = res;
                 }
             } else {
-                res = queue.take();
+                res = takeWithCrashRecovery();
                 // Replace the buffer if it doesn't match the width/height.
                 if (!bufferMatchesSize(res, width, height))
                     res = genBuffer(width, height);
