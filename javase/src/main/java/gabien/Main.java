@@ -55,7 +55,7 @@ abstract class Main {
                     sw.append("[CATASTROPHIC FAILURE]");
                 }
             }
-            sw.append("\nBadGPU says renderer is: ");
+            sw.append("\nRenderer: ");
             try {
                 BadGPU.Instance bi = BadGPU.newInstance(0);
                 String what = bi.getMetaInfo(MetaInfoType.Renderer);
