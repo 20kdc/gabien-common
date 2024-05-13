@@ -25,7 +25,8 @@ public class TextTools {
         while (true) {
             if (textPtr == textArray.length || textArray[textPtr] == '\n') {
                 // draw segment (or final segment)
-                chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, textBlack));
+                int r = textBlack ? 0 : 255;
+                chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, r, r, r, 255));
                 if (textPtr == textArray.length)
                     break;
                 chunks.add(RenderedTextChunk.CRLF.INSTANCE);

@@ -61,20 +61,19 @@ public class AWTNativeFont implements IFixedSizeFont {
     }
 
     @Override
-    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-        return renderLine(new String(text, index, length), textBlack);
+    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a) {
+        return renderLine(new String(text, index, length), r, g, b, a);
     }
 
     @Override
-    public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
+    public ImageRenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a) {
         try {
             int mt = measureLine(text, false);
             int margin = 16;
             BufferedImage bi = new BufferedImage(margin + mt + margin, margin + size + margin, BufferedImage.TYPE_INT_ARGB);
             Graphics2D bufGraphics = bi.createGraphics();
             bufGraphics.setFont(font);
-            int cV = textBlack ? 0 : 255;
-            bufGraphics.setColor(new Color(cV, cV, cV));
+            bufGraphics.setColor(new Color(r, g, b, a));
             bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
             bufGraphics.drawString(text, margin, margin + (size - (size / 4)));

@@ -49,33 +49,35 @@ public final class EngineFonts implements ITypeface {
         }
         if (exactMatch != null) {
             if (noBackground) {
-                exactMatch.drawLine(igd, x, y, text, textBlack);
+                int c = textBlack ? 0 : 255;
+                exactMatch.drawLine(igd, x, y, text, c, c, c, 255);
             } else {
                 exactMatch.drawLAB(igd, x, y, text, textBlack);
             }
             return;
         }
         // alright, we have to scale. work out base metrics...
+        SimpleImageGridFont font = f16;
         int scale = (wantedTextSize / 16);
-        int charWidth = 7 * scale;
-        int charHeight = 14 * scale;
+        int charWidth = font.charWidth * scale;
+        int charHeight = font.charHeight * scale;
         // calculate...
         int len = text.length();
-        int advance = 8 * scale;
+        int advance = font.advance * scale;
         if (!noBackground) {
             int textTotalW = SimpleImageGridFont.measureLineCommon(advance, charWidth, len, false);
             int cc = textBlack ? 255 : 0;
             ImageRenderedTextChunk.background(igd, x, y, textTotalW, charHeight, 1, cc, cc, cc, 255);
         }
         // well, this is going to be really awkward...
-        final IImage font = textBlack ? f16.fontBlack : f16.fontWhite;
+        float c = textBlack ? 0 : 1;
         for (int i = 0; i < len; i++) {
             int chr = text.charAt(i);
             if (chr >= 256)
                 chr = 0;
-            int srcx = 0;
-            int srcy = 0;
-            igd.blitScaledImage(srcx, srcy, 7, 14, x, y, charWidth, charHeight, font);
+            int srcx = font.charWidth * (chr % font.charsPerRow);
+            int srcy = font.charHeight * (chr / font.charsPerRow);
+            igd.drawScaledColoured(srcx, srcy, 7, 14, x, y, charWidth, charHeight, font.fontWhite, c, c, c, 1);
             x += advance;
         }
     }

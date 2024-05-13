@@ -8,7 +8,6 @@ package gabien.text;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gabien.GaBIEn;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 
@@ -18,15 +17,11 @@ import gabien.render.IImage;
  * Created 16th February 2023.
  */
 public class SimpleImageGridFont implements IImmFixedSizeFont {
-    public final IImage fontWhite, fontBlack;
+    public final IImage fontWhite;
     public final int charWidth, charHeight, charsPerRow, advance, size;
 
     public SimpleImageGridFont(IImage base, int charWidth, int charHeight, int charsPerRow, int advance, int size) {
         fontWhite = base;
-        // ideally the re-coloured image wouldn't be a thing - but at least this saves a roundtrip!
-        IGrDriver igd = GaBIEn.makeOffscreenBuffer(base.width, base.height);
-        igd.drawScaledColoured(0, 0, base.width, base.height, 0, 0, base.width, base.height, base, 0, 0, 0, 1);
-        fontBlack = igd.convertToImmutable("fontBlack");
         this.charWidth = charWidth;
         this.charHeight = charHeight;
         this.charsPerRow = charsPerRow;
@@ -63,30 +58,30 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
     }
 
     @Override
-    public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
-        final IImage font = textBlack ? fontBlack : fontWhite;
+    public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, int r, int g, int b, int a) {
+        float rf = r / 255f, gf = g / 255f, bf = b / 255f, af = a / 255f;
         int lim = index + length;
         for (int p = index; p < lim; p++) {
             int cc = text[p];
             if (cc < 256) {
-                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+                igd.drawScaledColoured((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, charWidth, charHeight, fontWhite, rf, gf, bf, af);
             } else {
-                igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+                igd.drawScaledColoured(0, 0, charWidth, charHeight, x, y, charWidth, charHeight, fontWhite, rf, gf, bf, af);
             }
             x += advance;
         }
     }
 
     @Override
-    public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull String text, boolean textBlack) {
-        final IImage font = textBlack ? fontBlack : fontWhite;
+    public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull String text, int r, int g, int b, int a) {
+        float rf = r / 255f, gf = g / 255f, bf = b / 255f, af = a / 255f;
         int length = text.length();
         for (int p = 0; p < length; p++) {
             int cc = text.charAt(p);
             if (cc < 256) {
-                igd.blitImage((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, font);
+                igd.drawScaledColoured((cc % charsPerRow) * charWidth, (cc / charsPerRow) * charHeight, charWidth, charHeight, x, y, charWidth, charHeight, fontWhite, rf, gf, bf, af);
             } else {
-                igd.blitImage(0, 0, charWidth, charHeight, x, y, font);
+                igd.drawScaledColoured(0, 0, charWidth, charHeight, x, y, charWidth, charHeight, fontWhite, rf, gf, bf, af);
             }
             x += advance;
         }

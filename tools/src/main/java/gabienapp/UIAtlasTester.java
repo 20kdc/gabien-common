@@ -101,7 +101,7 @@ public class UIAtlasTester extends UIElement {
         for (Rect r : atlas)
             if (r != null)
                 igd.fillRect(0, 0, 0, 128, r.x + 1, r.y + 1, r.width - 2, r.height - 2);
-        GaBIEn.engineFonts.f16.drawLine(igd, 0, 512, "fulfillment: " + amount + "/" + atlas.length, false);
+        GaBIEn.engineFonts.f16.drawLine(igd, 0, 512, "fulfillment: " + amount + "/" + atlas.length, 255, 255, 255, 255);
         ap.blitImage(0, 0, 512, 512, 0, 0, igd, IGrDriver.BLEND_NONE, 0);
         ap.blitImage(0, 512, 128, 16, 16, 16, igd, IGrDriver.BLEND_NONE, 0);
         igd.blitImage(0, 512 + 16, ap);

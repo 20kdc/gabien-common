@@ -40,10 +40,10 @@ public interface IFixedSizeFont {
     /**
      * The fancy new way to render text that's more GPU-aware.
      */
-    RenderedTextChunk renderLine(@NonNull String text, boolean textBlack);
+    RenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a);
 
     /**
      * The fancy new way to render text that's more GPU-aware.
      */
-    RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack);
+    RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a);
 }

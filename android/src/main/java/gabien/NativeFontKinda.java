@@ -54,15 +54,14 @@ public class NativeFontKinda implements IFixedSizeFont {
     }
 
     @Override
-    public ImageRenderedTextChunk renderLine(@NonNull String text, boolean textBlack) {
-        int r = textBlack ? 0 : 255;
+    public ImageRenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a) {
         int mt = measureLine(text, false);
         int margin = 16;
         WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + size + margin);
         if (wsi.bitmap != null) {
             Canvas cv = new Canvas(wsi.bitmap);
             synchronized (this) {
-                paint.setARGB(255, r, r, r);
+                paint.setARGB(a, r, g, b);
                 cv.drawText(text, margin, margin + ((size * 3) / 4), paint);
             }
         }
@@ -70,15 +69,14 @@ public class NativeFontKinda implements IFixedSizeFont {
     }
 
     @Override
-    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, boolean textBlack) {
-        int r = textBlack ? 0 : 255;
+    public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a) {
         int mt = measureLine(text, index, length, false);
         int margin = 16;
         WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + size + margin);
         if (wsi.bitmap != null) {
             Canvas cv = new Canvas(wsi.bitmap);
             synchronized (this) {
-                paint.setARGB(255, r, r, r);
+                paint.setARGB(a, r, g, b);
                 cv.drawText(text, index, length, margin, margin + ((size * 3) / 4), paint);
             }
         }
