@@ -355,7 +355,7 @@ public class UITabBar extends UIElement.UIPanel {
 
             // scissoring
             try (Block b = igd.openScissor(x, y, w, h)) {
-                (blackText ? tab.titleTextCacheB : tab.titleTextCacheW).getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
+                (blackText ? tab.titleTextCacheB : tab.titleTextCacheW).getChunk().renderRootAutoOffset(igd, x + tabExMargin, y + tabExMargin);
             }
     
             int icoBack = h;

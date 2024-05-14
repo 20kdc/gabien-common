@@ -14,6 +14,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -60,27 +61,49 @@ public class AWTNativeFont implements IFixedSizeFont {
         return r.width;
     }
 
+    private Graphics2D createGraphics(BufferedImage bi, int r, int g, int b, int a) {
+        Graphics2D bufGraphics = bi.createGraphics();
+        bufGraphics.setFont(font);
+        bufGraphics.setColor(new Color(r, g, b, a));
+        bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        return bufGraphics;
+    }
+
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a) {
-        return renderLine(new String(text, index, length), r, g, b, a);
+        try {
+            Rectangle2D measure = font.getStringBounds(text, index, index + length, frc);
+            int ascent = -(int) Math.floor(measure.getMinY());
+            int descent = (int) Math.ceil(measure.getMaxY());
+            int margin = 16;
+            int mt = (int) Math.ceil(measure.getWidth());
+            int offsetX = margin, offsetY = margin + ascent;
+            BufferedImage bi = new BufferedImage(margin + mt + margin, margin + ascent + descent + margin, BufferedImage.TYPE_INT_ARGB);
+            // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
+            createGraphics(bi, r, g, b, a).drawChars(text, index, length, offsetX, offsetY);
+            return new ImageRenderedTextChunk.WSI(-offsetX, -offsetY, mt, size, ascent, descent, new AWTWSIImage(bi));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return new ImageRenderedTextChunk.GPU(0, 0, 0, size, 0, 0, GaBIEn.getErrorImage());
     }
 
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a) {
         try {
-            int mt = measureLine(text, false);
+            Rectangle2D measure = font.getStringBounds(text, frc);
+            int ascent = -(int) Math.floor(measure.getMinY());
+            int descent = (int) Math.ceil(measure.getMaxY());
             int margin = 16;
-            BufferedImage bi = new BufferedImage(margin + mt + margin, margin + size + margin, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D bufGraphics = bi.createGraphics();
-            bufGraphics.setFont(font);
-            bufGraphics.setColor(new Color(r, g, b, a));
-            bufGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            int mt = (int) Math.ceil(measure.getWidth());
+            int offsetX = margin, offsetY = margin + ascent;
+            BufferedImage bi = new BufferedImage(margin + mt + margin, margin + ascent + descent + margin, BufferedImage.TYPE_INT_ARGB);
             // --- NOTE before changing this. Offset of +1 causes underscore to be hidden on some fonts.
-            bufGraphics.drawString(text, margin, margin + (size - (size / 4)));
-            return new ImageRenderedTextChunk.WSI(-margin, -margin, mt, size, new AWTWSIImage(bi));
+            createGraphics(bi, r, g, b, a).drawString(text, offsetX, offsetY);
+            return new ImageRenderedTextChunk.WSI(-offsetX, -offsetY, mt, size, ascent, descent, new AWTWSIImage(bi));
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return new ImageRenderedTextChunk.GPU(0, 0, 0, size, GaBIEn.getErrorImage());
+        return new ImageRenderedTextChunk.GPU(0, 0, 0, size, 0, 0, GaBIEn.getErrorImage());
     }
 }

@@ -24,9 +24,22 @@ public abstract class RenderedTextChunk {
      * Pass it on.
      */
     public final int highestLineHeight;
+    /**
+     * The largest values for pixels up/down from baseline.
+     */
+    public final int highestAscent, highestDescent;
+    /**
+     * Calculated automatic offset.
+     * The idea here is that a line is of "lineHeight" pixels, and the autoOffset places the baseline.
+     * So you use this offset to turn the text into the top-left-based coordinate system used by UI code.
+     */
+    public final int autoOffset;
 
-    public RenderedTextChunk(int hlh) {
+    public RenderedTextChunk(int hlh, int asc, int dsc) {
         highestLineHeight = hlh;
+        highestAscent = asc;
+        highestDescent = dsc;
+        autoOffset = asc + ((hlh - (asc + dsc + 2)) / 2);
     }
 
     /**
@@ -50,10 +63,43 @@ public abstract class RenderedTextChunk {
     public abstract void backgroundTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a);
 
     /**
+     * Draws debug information under text.
+     */
+    public void debugTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
+        int w = cursorX(cursorXIn) - cursorXIn;
+        igd.fillRect(255, 0, 0, 128, x + cursorXIn, y + cursorYIn - highestAscent, w, highestAscent);
+        igd.fillRect(0, 255, 0, 128, x + cursorXIn, y + cursorYIn, w, highestDescent);
+        igd.fillRect(0, 0, 0, 128, x + cursorXIn, y + cursorYIn - highestAscent, 1, highestAscent + highestDescent);
+        igd.fillRect(0, 0, 0, 128, x + cursorXIn + w - 1, y + cursorYIn - highestAscent, 1, highestAscent + highestDescent);
+    }
+
+    /**
+     * renderTo, but with args set to reasonable values given this is the root chunk.
+     * Auto-offset for ease of use.
+     */
+    public final void renderRootAutoOffset(IGrDriver igd, int x, int y) {
+        renderRoot(igd, x, y + autoOffset);
+    }
+
+    /**
      * renderTo, but with args set to reasonable values given this is the root chunk.
      */
     public final void renderRoot(IGrDriver igd, int x, int y) {
         renderTo(igd, x, y, 0, 0, highestLineHeight);
+    }
+
+    /**
+     * debugTo, but with args set to reasonable values given this is the root chunk.
+     */
+    public final void debugRoot(IGrDriver igd, int x, int y) {
+        debugTo(igd, x, y, 0, 0, highestLineHeight);
+    }
+
+    /**
+     * Draws a background under text. This version is like renderRoot.
+     */
+    public void backgroundRootAutoOffset(IGrDriver igd, int x, int y, int r, int g, int b, int a) {
+        backgroundRoot(igd, x, y + autoOffset, r, g, b, a);
     }
 
     /**
@@ -70,7 +116,7 @@ public abstract class RenderedTextChunk {
         public static final CRLF INSTANCE = new CRLF();
 
         private CRLF() {
-            super(0);
+            super(0, 0, 0);
         }
 
         @Override
@@ -108,8 +154,28 @@ public abstract class RenderedTextChunk {
             return hlh;
         }
 
+        private static int maxASC(RenderedTextChunk[] c) {
+            int hlh = 0;
+            for (RenderedTextChunk rtc : c) {
+                if (rtc.highestAscent > hlh)
+                    hlh = rtc.highestAscent;
+                return hlh;
+            }
+            return hlh;
+        }
+
+        private static int maxDSC(RenderedTextChunk[] c) {
+            int hlh = 0;
+            for (RenderedTextChunk rtc : c) {
+                if (rtc.highestDescent > hlh)
+                    hlh = rtc.highestDescent;
+                return hlh;
+            }
+            return hlh;
+        }
+
         public Compound(RenderedTextChunk... chunks) {
-            super(maxHLH(chunks));
+            super(maxHLH(chunks), maxASC(chunks), maxDSC(chunks));
             components = chunks;
         }
 
@@ -140,6 +206,15 @@ public abstract class RenderedTextChunk {
         public void backgroundTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
             for (RenderedTextChunk rtc : components) {
                 rtc.backgroundTo(igd, x, y, cursorXIn, cursorYIn, highestLineHeightIn, r, g, b, a);
+                cursorXIn = rtc.cursorX(cursorXIn);
+                cursorYIn = rtc.cursorY(cursorYIn, highestLineHeightIn);
+            }
+        }
+
+        @Override
+        public void debugTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
+            for (RenderedTextChunk rtc : components) {
+                rtc.debugTo(igd, x, y, cursorXIn, cursorYIn, highestLineHeightIn);
                 cursorXIn = rtc.cursorX(cursorXIn);
                 cursorYIn = rtc.cursorY(cursorYIn, highestLineHeightIn);
             }

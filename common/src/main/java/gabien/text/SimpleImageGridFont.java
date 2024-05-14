@@ -59,6 +59,7 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
 
     @Override
     public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, int r, int g, int b, int a) {
+        y -= charHeight;
         float rf = r / 255f, gf = g / 255f, bf = b / 255f, af = a / 255f;
         int lim = index + length;
         for (int p = index; p < lim; p++) {
@@ -74,6 +75,7 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
 
     @Override
     public void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull String text, int r, int g, int b, int a) {
+        y -= charHeight;
         float rf = r / 255f, gf = g / 255f, bf = b / 255f, af = a / 255f;
         int length = text.length();
         for (int p = 0; p < length; p++) {
@@ -98,6 +100,7 @@ public class SimpleImageGridFont implements IImmFixedSizeFont {
     }
 
     private void drawBackgroundCommon(IGrDriver igd, int x, int y, int length, int r, int g, int b, int a) {
+        y -= charHeight;
         ImageRenderedTextChunk.background(igd, x, y, measureLineCommon(advance, charWidth, length, false), charHeight, 1, r, g, b, a);
     }
 }

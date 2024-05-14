@@ -70,7 +70,7 @@ public final class NativeFontCache {
                 defaultTypeface = backend.getDefaultTypeface();
             gdt = defaultTypeface;
         }
-        IFixedSizeFont res = gdt.derive(size, 0);
+        IFixedSizeFont res = gdt.derive(size, style);
         synchronized (this) {
             lastDefaultFontSize = size;
             lastDefaultFontStyle = style;

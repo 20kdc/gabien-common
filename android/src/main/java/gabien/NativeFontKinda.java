@@ -65,31 +65,37 @@ public class NativeFontKinda implements IFixedSizeFont {
 
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a) {
-        int mt = measureLine(text, false);
+        int ascent = ((size * 3) / 4);
+        int descent = size - ascent;
         int margin = 16;
-        WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + size + margin);
+        int mt = measureLine(text, false);
+        int offsetX = margin, offsetY = margin + ascent;
+        WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + ascent + descent + margin);
         if (wsi.bitmap != null) {
             Canvas cv = new Canvas(wsi.bitmap);
             synchronized (this) {
                 paint.setARGB(a, r, g, b);
-                cv.drawText(text, margin, margin + ((size * 3) / 4), paint);
+                cv.drawText(text, offsetX, offsetY, paint);
             }
         }
-        return new ImageRenderedTextChunk.WSI(-margin, -margin, mt, size, wsi);
+        return new ImageRenderedTextChunk.WSI(-offsetX, -offsetY, mt, size, ascent, descent, wsi);
     }
 
     @Override
     public ImageRenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a) {
-        int mt = measureLine(text, index, length, false);
+        int ascent = ((size * 3) / 4);
+        int descent = size - ascent;
         int margin = 16;
-        WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + size + margin);
+        int mt = measureLine(text, index, length, false);
+        int offsetX = margin, offsetY = margin + ascent;
+        WSIImageDriver wsi = new WSIImageDriver(null, margin + mt + margin, margin + ascent + descent + margin);
         if (wsi.bitmap != null) {
             Canvas cv = new Canvas(wsi.bitmap);
             synchronized (this) {
                 paint.setARGB(a, r, g, b);
-                cv.drawText(text, index, length, margin, margin + ((size * 3) / 4), paint);
+                cv.drawText(text, index, length, offsetX, offsetY, paint);
             }
         }
-        return new ImageRenderedTextChunk.WSI(-margin, -margin, mt, size, wsi);
+        return new ImageRenderedTextChunk.WSI(-offsetX, -offsetY, mt, size, ascent, descent, wsi);
     }
 }

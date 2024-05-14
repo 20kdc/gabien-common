@@ -21,10 +21,13 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
      * These are the offset to apply to the image, not specifying the rectangle within the image.
      */
     public final int offsetX, offsetY;
+    /**
+     * Rightward advance.
+     */
     public final int measureX;
 
-    public ImageRenderedTextChunk(int offsetX, int offsetY, int measureX, int lineHeight) {
-        super(lineHeight);
+    public ImageRenderedTextChunk(int offsetX, int offsetY, int measureX, int lineHeight, int ascent, int descent) {
+        super(lineHeight, ascent, descent);
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.measureX = measureX;
@@ -63,8 +66,8 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         public final WSIImage render;
         private IImage renderUpload;
 
-        public WSI(int offsetX, int offsetY, int measureX, int lineHeight, WSIImage r) {
-            super(offsetX, offsetY, measureX, lineHeight);
+        public WSI(int offsetX, int offsetY, int measureX, int lineHeight, int ascent, int descent, WSIImage r) {
+            super(offsetX, offsetY, measureX, lineHeight, ascent, descent);
             render = r;
         }
 
@@ -87,8 +90,8 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         public final IImage render;
         private WSIImage renderDownload;
 
-        public GPU(int offsetX, int offsetY, int measureX, int lineHeight, IImage r) {
-            super(offsetX, offsetY, measureX, lineHeight);
+        public GPU(int offsetX, int offsetY, int measureX, int lineHeight, int ascent, int descent, IImage r) {
+            super(offsetX, offsetY, measureX, lineHeight, ascent, descent);
             render = r;
         }
 

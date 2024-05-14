@@ -61,7 +61,7 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
     @Override
     default RenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a) {
         final int wla = measureLine(text, true);
-        return new RenderedTextChunk(getLineHeight()) {
+        return new RenderedTextChunk(getLineHeight(), getContentHeight(), 0) {
 
             @Override
             public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
@@ -90,7 +90,7 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
      */
     default RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a) {
         final int wla = measureLine(text, index, length, true);
-        return new RenderedTextChunk(getLineHeight()) {
+        return new RenderedTextChunk(getLineHeight(), getContentHeight(), 0) {
 
             @Override
             public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {

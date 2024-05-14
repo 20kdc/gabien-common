@@ -15,6 +15,7 @@ import gabien.ui.layouts.UIScrollLayout;
 import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
 import gabien.uslx.io.HexByteEncoding;
+import gabien.wsi.IPeripherals;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +40,11 @@ import gabien.media.riff.RIFFNode;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
+import gabien.text.FontStyle;
+import gabien.text.IFixedSizeFont;
+import gabien.text.RenderedTextChunk;
 import gabien.ui.UIElement;
+import gabien.ui.UILayer;
 import gabien.ui.UIElement.UIProxy;
 
 /**
@@ -152,6 +157,29 @@ public class UIMainMenu extends UIProxy {
             UICredits uic = new UICredits(16, 16);
             uic.setLAFParent(GaBIEnUI.sysThemeRoot);
             ui.accept(uic);
+        }));
+        ve.add(new UITextButton("Render Text", 16, () -> {
+            IFixedSizeFont ifsf1 = GaBIEn.getNativeFont(64, 0, null, false);
+            IFixedSizeFont ifsf2 = GaBIEn.getNativeFont(32, FontStyle.ITALIC, null, false);
+            IFixedSizeFont ifsf3 = GaBIEn.getNativeFont(32, FontStyle.ITALIC | FontStyle.BOLD, null, false);
+            RenderedTextChunk chk1 = ifsf1.renderLine("Test text", 255, 255, 255, 255);
+            RenderedTextChunk chk2 = ifsf2.renderLine(" comes in", 255, 255, 255, 255);
+            RenderedTextChunk chk3 = ifsf3.renderLine(" many ", 255, 255, 255, 255);
+            RenderedTextChunk chk4 = ifsf1.renderLine("forms.", 255, 255, 255, 255);
+            RenderedTextChunk chk5 = ifsf2.renderLine(" ~ 20kdc", 255, 255, 255, 255);
+            RenderedTextChunk chkX = new RenderedTextChunk.Compound(chk1, chk2, chk3, chk4, RenderedTextChunk.CRLF.INSTANCE, chk5);
+            ui.accept(new UIElement(768, 512) {
+                @Override
+                public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+                }
+                @Override
+                public void renderLayer(IGrDriver igd, UILayer layer) {
+                    if (layer != UILayer.Clear)
+                        return;
+                    chkX.debugRoot(igd, 64, 64);
+                    chkX.renderRoot(igd, 64, 64);
+                }
+            });
         }));
         ve.add(lbl);
         vsl.panelsSet(ve);

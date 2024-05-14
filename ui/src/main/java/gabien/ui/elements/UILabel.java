@@ -209,7 +209,7 @@ public class UILabel extends UIBorderedElement {
             y += lastBw;
             paragraph.blackText = blackText;
             paragraph.update();
-            paragraph.getChunk().renderRoot(igd, x, y);
+            paragraph.getChunk().renderRootAutoOffset(igd, x, y);
         }
     }
 
@@ -269,7 +269,7 @@ public class UILabel extends UIBorderedElement {
             cache.blackText = UIBorderedElement.getBlackTextFlag(theme, mode);
             cache.text = string;
             cache.update();
-            cache.getChunk().renderRoot(igd, ox + h, oy + h);
+            cache.getChunk().renderRootAutoOffset(igd, ox + h, oy + h);
         }
         return wid;
     }
