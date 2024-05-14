@@ -89,7 +89,7 @@ public final class EngineFonts implements ITypeface {
      * @return An internal font with a 128-character image covering ASCII (with some codepage 437)
      */
     @Override
-    public @NonNull IFixedSizeFont derive(int lineHeight) {
+    public @NonNull IFixedSizeFont derive(int lineHeight, int style) {
         if (lineHeight >= 16) {
             return f16;
         } else if (lineHeight >= 8) {

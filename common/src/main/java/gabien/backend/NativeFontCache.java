@@ -24,9 +24,11 @@ public final class NativeFontCache {
 
     private String lastFontName = null;
     private int lastFontSize = -1;
+    private int lastFontStyle = -1;
     private IFixedSizeFont lastFont = null;
 
     private int lastDefaultFontSize = -1;
+    private int lastDefaultFontStyle = -1;
     private IFixedSizeFont lastDefaultFont = null;
 
     private final IGaBIEn backend;
@@ -55,11 +57,12 @@ public final class NativeFontCache {
     /**
      * Proxy to IGaBIEn.getDefaultNativeFont
      */
-    public IFixedSizeFont getDefaultNativeFont(int size) {
+    public IFixedSizeFont getDefaultNativeFont(int size, int style) {
         synchronized (this) {
             if (lastDefaultFont != null)
                 if (lastDefaultFontSize == size)
-                    return lastDefaultFont;
+                    if (lastDefaultFontStyle == style)
+                        return lastDefaultFont;
         }
         ITypeface gdt;
         synchronized (this) {
@@ -67,9 +70,10 @@ public final class NativeFontCache {
                 defaultTypeface = backend.getDefaultTypeface();
             gdt = defaultTypeface;
         }
-        IFixedSizeFont res = gdt.derive(size);
+        IFixedSizeFont res = gdt.derive(size, 0);
         synchronized (this) {
             lastDefaultFontSize = size;
+            lastDefaultFontStyle = style;
             lastDefaultFont = res;
         }
         return res;
@@ -78,20 +82,22 @@ public final class NativeFontCache {
     /**
      * Proxy to IGaBIEn.getNativeFont
      */
-    public IFixedSizeFont getNativeFont(int size, String name) {
+    public IFixedSizeFont getNativeFont(int size, int style, String name) {
         synchronized (this) {
             if (lastFont != null)
                 if (lastFontSize == size)
-                    if (lastFontName.equals(name))
-                        return lastFont;
+                    if (lastFontStyle == style)
+                        if (lastFontName.equals(name))
+                            return lastFont;
         }
         ITypeface tf = getTypeface(name);
         if (tf == null)
             return null;
-        IFixedSizeFont res = tf.derive(size);
+        IFixedSizeFont res = tf.derive(size, style);
         synchronized (this) {
             lastFontName = name;
             lastFontSize = size;
+            lastFontStyle = style;
             lastFont = res;
         }
         return res;

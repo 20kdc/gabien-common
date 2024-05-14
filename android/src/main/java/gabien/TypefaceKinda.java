@@ -24,7 +24,7 @@ public class TypefaceKinda implements ITypeface {
 
     @Override
     @NonNull
-    public IFixedSizeFont derive(int size) {
-        return new NativeFontKinda(typeface, size);
+    public IFixedSizeFont derive(int size, int style) {
+        return new NativeFontKinda(typeface, size, style);
     }
 }

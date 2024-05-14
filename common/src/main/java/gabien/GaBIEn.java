@@ -528,11 +528,19 @@ public final class GaBIEn {
      * If not available, returns null, unless fallback is set.
      */
     public static @Nullable IFixedSizeFont getNativeFont(int size, @Nullable String name, boolean fallback) {
+        return getNativeFont(size, 0, name, fallback);
+    }
+
+    /**
+     * Gets a native font by name. If the name is null, returns the default font.
+     * If not available, returns null, unless fallback is set.
+     */
+    public static @Nullable IFixedSizeFont getNativeFont(int size, int style, @Nullable String name, boolean fallback) {
         if (name == null)
-            return nativeFontCache.getDefaultNativeFont(size);
-        IFixedSizeFont tmp = nativeFontCache.getNativeFont(size, name);
+            return nativeFontCache.getDefaultNativeFont(size, style);
+        IFixedSizeFont tmp = nativeFontCache.getNativeFont(size, style, name);
         if (tmp == null && fallback)
-            return nativeFontCache.getDefaultNativeFont(size);
+            return nativeFontCache.getDefaultNativeFont(size, style);
         return tmp;
     }
 
@@ -541,11 +549,19 @@ public final class GaBIEn {
      * If not available, returns the default font.
      */
     public static @NonNull IFixedSizeFont getNativeFontFallback(int size, @Nullable String name) {
+        return getNativeFontFallback(size, 0, name);
+    }
+
+    /**
+     * Gets a native font by name. If the name is null, returns the default font.
+     * If not available, returns the default font.
+     */
+    public static @NonNull IFixedSizeFont getNativeFontFallback(int size, int style, @Nullable String name) {
         if (name == null)
-            return nativeFontCache.getDefaultNativeFont(size);
-        IFixedSizeFont nf = nativeFontCache.getNativeFont(size, name);
+            return nativeFontCache.getDefaultNativeFont(size, style);
+        IFixedSizeFont nf = nativeFontCache.getNativeFont(size, style, name);
         if (nf == null)
-            return nativeFontCache.getDefaultNativeFont(size);
+            return nativeFontCache.getDefaultNativeFont(size, style);
         return nf;
     }
 

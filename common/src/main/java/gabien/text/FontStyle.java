@@ -6,17 +6,12 @@
  */
 package gabien.text;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 /**
- * Typeface derivable into fixed size fonts.
- * Created 24th June, 2023.
+ * Created 14th May, 2024.
  */
-public interface ITypeface {
-    /**
-     * Derives a fixed size font given a font size.
-     * This may provide a smaller/larger font than you asked for, but only in unusual situations (i.e. bitmap fonts).
-     * A smaller font will be preferred to a larger one.
-     */
-    @NonNull IFixedSizeFont derive(int size, int style);
+public class FontStyle {
+    public static final int BOLD = 1;
+    public static final int ITALIC = 2;
+    private FontStyle() {
+    }
 }

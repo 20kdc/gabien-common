@@ -58,9 +58,16 @@ public final class FontManager {
      * FontManager's font lookup function, finally accessible (mainly as a way to otherwise get rid of FontManager).
      */
     public IFixedSizeFont getFontForText(String text, int height) {
+        return getFontForText(text, height, 0);
+    }
+
+    /**
+     * FontManager's font lookup function, finally accessible (mainly as a way to otherwise get rid of FontManager).
+     */
+    public IFixedSizeFont getFontForText(String text, int height, int style) {
         if (useSystemFont(text, height))
             return GaBIEn.getNativeFont(height, fontOverride, true);
-        return GaBIEn.engineFonts.derive(height);
+        return GaBIEn.engineFonts.derive(height, style);
     }
 
     // NOTE: This assumes the results are for the final content block.

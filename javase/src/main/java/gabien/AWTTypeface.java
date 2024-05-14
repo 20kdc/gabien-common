@@ -11,6 +11,7 @@ import java.awt.Font;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.text.FontStyle;
 import gabien.text.IFixedSizeFont;
 import gabien.text.ITypeface;
 
@@ -44,9 +45,18 @@ public final class AWTTypeface implements ITypeface {
 
     @Override
     @NonNull
-    public IFixedSizeFont derive(int size) {
+    public IFixedSizeFont derive(int size, int style) {
         // This MUST be float because deriveFont is weird.
         float szf = size - (size / 8);
-        return new AWTNativeFont(fontPlain.deriveFont(szf), size);
+        return new AWTNativeFont(fontPlain.deriveFont(translateStyle(style), szf), size);
+    }
+
+    private static int translateStyle(int style) {
+        int out = 0;
+        if ((style & FontStyle.BOLD) != 0)
+            out |= Font.BOLD;
+        if ((style & FontStyle.ITALIC) != 0)
+            out |= Font.ITALIC;
+        return out;
     }
 }
