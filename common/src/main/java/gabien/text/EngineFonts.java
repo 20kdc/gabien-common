@@ -50,9 +50,9 @@ public final class EngineFonts implements ITypeface {
         if (exactMatch != null) {
             if (noBackground) {
                 int c = textBlack ? 0 : 255;
-                exactMatch.drawLine(igd, x, y, text, c, c, c, 255);
+                exactMatch.drawLine(igd, x, y + exactMatch.getContentHeight(), text, c, c, c, 255);
             } else {
-                exactMatch.drawLAB(igd, x, y, text, textBlack);
+                exactMatch.drawLAB(igd, x, y + exactMatch.getContentHeight(), text, textBlack);
             }
             return;
         }
