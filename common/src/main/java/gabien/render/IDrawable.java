@@ -9,6 +9,8 @@ package gabien.render;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gabien.uslx.append.Block;
+
 /**
  * Something that can be drawn to the screen in a "standard" mode.
  * Note that this is not very customizable - it's intended for flexibility of implementation.
@@ -57,17 +59,8 @@ public interface IDrawable {
      * This ensures that the bounds you specify are applied (they aren't transformed for subregions).
      */
     default void drawScissoredTo(float xf, float yf, float wf, float hf, IGrDriver igd) {
-        int osLeft = igd.scissor[0];
-        int osTop = igd.scissor[1];
-        int osRight = igd.scissor[2];
-        int osBottom = igd.scissor[3];
-
-        igd.applyScissor(xf, yf, wf, hf);
-        drawTo(xf, yf, wf, hf, igd);
-
-        igd.scissor[0] = osLeft;
-        igd.scissor[1] = osTop;
-        igd.scissor[2] = osRight;
-        igd.scissor[3] = osBottom;
+        try (Block sc = igd.openScissor(xf, yf, wf, hf)) {
+            drawTo(xf, yf, wf, hf, igd);
+        }
     }
 }

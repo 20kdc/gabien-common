@@ -13,6 +13,7 @@ import gabien.GaBIEn;
 import gabien.natives.BadGPU;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
+import gabien.uslx.append.Block;
 import gabien.vopeks.VopeksImage;
 
 /**
@@ -44,11 +45,7 @@ public class PVARenderer {
     public void renderInline(PVAFile.FrameElm[] frame, IGrDriver driver, float x, float y, float width, float height) {
         float wd2 = width / 2;
         float hd2 = height / 2;
-        float txs = driver.trsTXS(x + wd2);
-        float tys = driver.trsTYS(y + hd2);
-        float sxs = driver.trsSXS(wd2);
-        float sys = driver.trsSYS(hd2);
-        {
+        try (Block b = driver.openTRS(x + wd2, y + hd2, wd2, hd2)) {
             // Within this block, drawing uses the -1 to 1 coordinate system.
             for (PVAFile.FrameElm fe : frame) {
                 PVAFile.Matrix mtx = pvaFile.matrices[fe.mtxIndex];
@@ -112,7 +109,5 @@ public class PVARenderer {
                         x2, -y2, loopC.u * sM, loopC.v * tM, pC.r, pC.g, pC.b, pC.a);
             }
         }
-        driver.trsSXYE(sxs, sys);
-        driver.trsTXYE(txs, tys);
     }
 }

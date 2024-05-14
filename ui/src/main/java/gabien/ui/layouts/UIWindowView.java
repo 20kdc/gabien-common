@@ -558,10 +558,9 @@ public class UIWindowView extends UIElement {
             Theme theme = GaBIEnUI.sysThemeRoot.getTheme();
             // The border is shown 'behind' the menu base, but the menu is shown over it
             UIBorderedElement.drawBorder(theme, igd, Theme.B_MENUBORDER, bw, r.x - bw, r.y - bw, r.width + (bw * 2), r.height + (bw * 2));
-            float otx = igd.trsTXS(base.x);
-            float oty = igd.trsTYS(base.y);
-            baseElem.renderAllLayers(igd);
-            igd.trsTXYE(otx, oty);
+            try (Block b = igd.openTranslate(base.x, base.y)) {
+                baseElem.renderAllLayers(igd);
+            }
             super.render(igd);
         }
     }

@@ -106,12 +106,13 @@ public class WindowCreatingUIElementConsumer implements Consumer<UIElement> {
             if (needResize)
                 aw.ue.setForcedBounds(null, new Rect(0, 0, cw, ch));
             // Init ST & draw
-            float[] trs = backbuffer.getTRS();
+            backbuffer.clearAndCycleTransformAndScissorStacks();
+            float[] trs = backbuffer.trs;
             trs[0] = 0;
             trs[1] = 0;
             trs[2] = 1;
             trs[3] = 1;
-            int[] sti = backbuffer.getScissor();
+            int[] sti = backbuffer.scissor;
             sti[0] = 0;
             sti[1] = 0;
             sti[2] = cw;

@@ -11,6 +11,7 @@ import gabien.GaBIEnUI;
 import gabien.datum.DatumSrcLoc;
 import gabien.datum.DatumWriter;
 import gabien.render.IGrDriver;
+import gabien.uslx.append.Block;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
@@ -496,7 +497,7 @@ public abstract class UIElement extends LAFChain {
             int x = uie.elementBounds.x;
             int y = uie.elementBounds.y;
 
-            float[] trs = igd.getTRS();
+            float[] trs = igd.trs;
             float osTX = trs[0];
             float osTY = trs[1];
 
@@ -513,30 +514,21 @@ public abstract class UIElement extends LAFChain {
             int y = uie.elementBounds.y;
 
             float[] trs = igd.trs;
-            int[] scissor = igd.scissor;
             float osTX = trs[0];
             float osTY = trs[1];
             float osSX = trs[2];
             float osSY = trs[3];
-            int osLeft = scissor[0];
-            int osTop = scissor[1];
-            int osRight = scissor[2];
-            int osBottom = scissor[3];
 
-            igd.applyScissor(x, y, uie.elementBounds.width, uie.elementBounds.height);
+            try (Block b = igd.openScissor(x, y, uie.elementBounds.width, uie.elementBounds.height)) {
+                float scaledX = x * osSX;
+                float scaledY = y * osSY;
+                trs[0] += scaledX;
+                trs[1] += scaledY;
+                uie.renderLayer(igd, layer);
 
-            float scaledX = x * osSX;
-            float scaledY = y * osSY;
-            trs[0] += scaledX;
-            trs[1] += scaledY;
-            uie.renderLayer(igd, layer);
-
-            trs[0] = osTX;
-            trs[1] = osTY;
-            scissor[0] = osLeft;
-            scissor[1] = osTop;
-            scissor[2] = osRight;
-            scissor[3] = osBottom;
+                trs[0] = osTX;
+                trs[1] = osTY;
+            }
         }
 
         // This is quite an interesting one, because I've made it abstract here but not abstract in the parent.

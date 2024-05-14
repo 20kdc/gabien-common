@@ -12,6 +12,7 @@ import gabien.ui.FontManager;
 import gabien.ui.UIElement;
 import gabien.ui.UILayer;
 import gabien.ui.theming.*;
+import gabien.uslx.append.Block;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
@@ -109,12 +110,12 @@ public abstract class UIBorderedElement extends UIElement {
         Size s = getSize();
         boolean black = border.getFlag(ThemingCentral.BF_LIGHTBKG);
         if (border.getFlag(ThemingCentral.BF_MOVEDOWN)) {
-            float oty = igd.trsTYS(getBorderWidth());
-            if (layer == UILayer.Base)
-                border.draw(igd, borderWidth, 0, 0, s.width, s.height);
-            else if (layer == UILayer.Content)
-                renderContents(black, igd);
-            igd.trsTYE(oty);
+            try (Block b = igd.openTranslate(0, getBorderWidth())) {
+                if (layer == UILayer.Base)
+                    border.draw(igd, borderWidth, 0, 0, s.width, s.height);
+                else if (layer == UILayer.Content)
+                    renderContents(black, igd);
+            }
         } else {
             if (layer == UILayer.Base)
                 border.draw(igd, borderWidth, 0, 0, s.width, s.height);

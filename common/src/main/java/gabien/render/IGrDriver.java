@@ -13,6 +13,8 @@ import org.eclipse.jdt.annotation.Nullable;
 import gabien.natives.BadGPU;
 import gabien.natives.BadGPUEnum.BlendOp;
 import gabien.natives.BadGPUEnum.BlendWeight;
+import gabien.uslx.append.Block;
+import gabien.uslx.append.PrimStack;
 
 /**
  * Represents a buffer that can be drawn to.
@@ -32,6 +34,21 @@ public abstract class IGrDriver extends RenderTarget {
      * TX/TY are absolute.
      */
     public final float[] trs = new float[4];
+
+    /**
+     * Scissor stack.
+     */
+    private final PrimStack.I32 scissorStack = new PrimStack.I32();
+
+    private final Block scissorStackPopper = () -> scissorStack.pop(scissor, 0, 4);
+
+    /**
+     * TRS stack.
+     */
+    private final PrimStack.F32 trsStack = new PrimStack.F32();
+
+    private final Block trsStackPopper = () -> trsStack.pop(trs, 0, 4);
+    private final Block translateStackPopper = () -> trsStack.pop(trs, 0, 2);
 
     public static final int BLEND_NONE = BadGPU.blendProgram(
         BlendWeight.One, BlendWeight.Zero, BlendOp.Add,
@@ -106,6 +123,13 @@ public abstract class IGrDriver extends RenderTarget {
     public abstract void rawBatchXYSTRGBA(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float x0, float y0, float s0, float t0, float r0, float g0, float b0, float a0, float x1, float y1, float s1, float t1, float r1, float g1, float b1, float a1, float x2, float y2, float s2, float t2, float r2, float g2, float b2, float a2, float x3, float y3, float s3, float t3, float r3, float g3, float b3, float a3);
 
     // -- Universal interface, accounting for transforms and such --
+
+    public final void clearAndCycleTransformAndScissorStacks() {
+        scissorStack.cycle();
+        scissorStack.clear();
+        trsStack.cycle();
+        trsStack.clear();
+    }
 
     /**
      * Transforms the X coordinate by the transform registers.
@@ -418,18 +442,32 @@ public abstract class IGrDriver extends RenderTarget {
     // -- TRS/scissor handling --
 
     /**
-     * Gets the local scissor buffer, in the order: cropL, cropU, cropR, cropD
-     * The crop coordinates are independent of the translation coordinates.
+     * Opens a transform/scale context.
      */
-    public final @NonNull int[] getScissor() {
-        return scissor;
+    public final Block openTRS(float tx, float ty, float sx, float sy) {
+        trsStack.push(trs, 0, 4);
+        trs[0] += tx * trs[2];
+        trs[1] += ty * trs[3];
+        trs[2] *= sx;
+        trs[3] *= sy;
+        return trsStackPopper;
+    }
+
+    /**
+     * Opens a translation.
+     */
+    public final Block openTranslate(float tx, float ty) {
+        trsStack.push(trs, 0, 2);
+        trs[0] += tx * trs[2];
+        trs[1] += ty * trs[3];
+        return translateStackPopper;
     }
 
     /**
      * Alters the scissor rectangle to crop it further.
      * Values are transformed based on the TRS buffer.
      */
-    public final void applyScissor(float x, float y, float w, float h) {
+    public final Block openScissor(float x, float y, float w, float h) {
         // Scissoring. The maths here is painful, and breaking it leads to funky visbugs.
         // YOU HAVE BEEN WARNED.
         float left = x;
@@ -454,101 +492,13 @@ public abstract class IGrDriver extends RenderTarget {
         int rightI = (int) Math.min((int) (osTX + (right * osSX)), osRight);
         int bottomI = (int) Math.min((int) (osTY + (bottom * osSY)), osBottom);
 
+        scissorStack.push(scissor, 0, 4);
+
         scissor[0] = leftI;
         scissor[1] = topI;
         scissor[2] = Math.max(leftI, rightI);
         scissor[3] = Math.max(topI, bottomI);
-    }
 
-    /**
-     * Gets the local translate/scale buffer, in the order: tX, tY, sX, sY
-     * The translation is independent of the scale.
-     */
-    public final @NonNull float[] getTRS() {
-        return trs;
-    }
-
-    /**
-     * Translates TRS X, dependent on scale.
-     * Returns old value.
-     */
-    public final float trsTXS(float x) {
-        float old = trs[0];
-        trs[0] += x * trs[2];
-        return old;
-    }
-
-    /**
-     * Translates TRS Y, dependent on scale.
-     * Returns old value.
-     */
-    public final float trsTYS(float y) {
-        float old = trs[1];
-        trs[1] += y * trs[3];
-        return old;
-    }
-
-    /**
-     * Restores TRS X.
-     */
-    public final void trsTXE(float x) {
-        trs[0] = x;
-    }
-
-    /**
-     * Restores TRS Y.
-     */
-    public final void trsTYE(float y) {
-        trs[1] = y;
-    }
-
-    /**
-     * Restores TRS X and Y.
-     */
-    public final void trsTXYE(float x, float y) {
-        trs[0] = x;
-        trs[1] = y;
-    }
-
-    /**
-     * Scales TRS X.
-     * Returns old value.
-     */
-    public final float trsSXS(float x) {
-        float old = trs[2];
-        trs[2] *= x;
-        return old;
-    }
-
-    /**
-     * Scales TRS Y.
-     * Returns old value.
-     */
-    public final float trsSYS(float y) {
-        float old = trs[3];
-        trs[3] *= y;
-        return old;
-    }
-
-    /**
-     * Restores TRS SX.
-     */
-    public final void trsSXE(float x) {
-        trs[2] = x;
-    }
-
-    /**
-     * Restores TRS SY.
-     */
-    public final void trsSYE(float y) {
-        trs[3] = y;
-    }
-
-    /**
-     * Restores TRS SX and SY.
-     */
-    public final void trsSXYE(float x, float y) {
-        trs[2] = x;
-        trs[3] = y;
+        return scissorStackPopper;
     }
 }

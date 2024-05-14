@@ -142,14 +142,9 @@ public class UITabBar extends UIElement.UIPanel {
             }
 
             if (UIBorderedElement.getMoveDownFlag(theme, base)) {
-                float[] trs = igd.getTRS();
-                int[] scissor = igd.getScissor();
-                float oldTY = igd.trsTYS(effectiveHeight / 8);
-                int oldCD = scissor[3];
-                scissor[3] = (int) Math.min(scissor[3], oldTY + (effectiveHeight * trs[3]));
-                drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, w.contents.toString(), w, enBack, enFore);
-                igd.trsTYE(oldTY);
-                scissor[3] = oldCD;
+                try (Block bc = igd.openTranslate(0, effectiveHeight / 8)) {
+                    drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, w.contents.toString(), w, enBack, enFore);
+                }
             } else {
                 drawTab(theme, base, theDisplayOX, 0, tabW, effectiveHeight, igd, w.contents.toString(), w, enBack, enFore);
             }
@@ -359,16 +354,9 @@ public class UITabBar extends UIElement.UIPanel {
             boolean blackText = UIBorderedElement.getBlackTextFlag(theme, border);
 
             // scissoring
-            int osLeft = igd.scissor[0];
-            int osTop = igd.scissor[1];
-            int osRight = igd.scissor[2];
-            int osBottom = igd.scissor[3];
-            igd.applyScissor(x, y, w, h);
-            (blackText ? tab.titleTextCacheB : tab.titleTextCacheW).getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
-            igd.scissor[0] = osLeft;
-            igd.scissor[1] = osTop;
-            igd.scissor[2] = osRight;
-            igd.scissor[3] = osBottom;
+            try (Block b = igd.openScissor(x, y, w, h)) {
+                (blackText ? tab.titleTextCacheB : tab.titleTextCacheW).getChunk().renderRoot(igd, x + tabExMargin, y + tabExMargin);
+            }
     
             int icoBack = h;
             for (TabIcon i : tab.icons) {

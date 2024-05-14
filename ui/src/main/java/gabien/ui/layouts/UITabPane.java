@@ -11,6 +11,7 @@ import gabien.render.IGrDriver;
 import gabien.ui.UIElement;
 import gabien.ui.UILayer;
 import gabien.ui.theming.Theme;
+import gabien.uslx.append.Block;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
 import gabien.wsi.IPeripherals;
@@ -66,17 +67,10 @@ public class UITabPane extends UIElement.UIPanel {
             return;
         if (selectedTab == null) {
             // uuuhhh let's just scissor this just to be sure
-            int s0 = igd.scissor[0];
-            int s1 = igd.scissor[1];
-            int s2 = igd.scissor[2];
-            int s3 = igd.scissor[3];
             Size bounds = getSize();
-            igd.applyScissor(0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
-            renderNoTabPanel(igd, 0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
-            igd.scissor[0] = s0;
-            igd.scissor[1] = s1;
-            igd.scissor[2] = s2;
-            igd.scissor[3] = s3;
+            try (Block b = igd.openScissor(0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight)) {
+                renderNoTabPanel(igd, 0, tabOverheadHeight, bounds.width, bounds.height - tabOverheadHeight);
+            }
         }
     }
 
