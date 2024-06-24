@@ -17,12 +17,14 @@ import org.eclipse.jdt.annotation.Nullable;
 public final class Rect extends Size {
     public static final Rect ZERO = new Rect(0, 0, 0, 0);
 
-    public final int x, y;
+    public final int x, y, right, bottom;
 
-    public Rect(int i, int i0, int i1, int i2) {
-        super(i1, i2);
-        x = i;
-        y = i0;
+    public Rect(int x, int y, int w, int h) {
+        super(w, h);
+        this.x = x;
+        this.y = y;
+        this.right = x + w;
+        this.bottom = y + h;
     }
 
     public Rect(@NonNull Size size) {
@@ -39,19 +41,11 @@ public final class Rect extends Size {
     }
 
     public boolean contains(int x, int y) {
-        if (x >= this.x)
-            if (y >= this.y)
-                if (x < this.x + width)
-                    if (y < this.y + height)
-                        return true;
-        return false;
+        return (x >= this.x) && (y >= this.y) && (x < this.right) && (y < this.bottom);
     }
 
     public boolean intersects(@NonNull Rect rect) {
-        if (RectIntersector.intersects1i(rect.x, rect.width, x, width))
-            if (RectIntersector.intersects1i(rect.y, rect.height, y, height))
-                return true;
-        return false;
+        return (rect.x < right) && (rect.right > x) && (rect.y < bottom) && (rect.bottom > y);
     }
 
     public @Nullable Rect getIntersection(@NonNull Rect rect) {
@@ -99,5 +93,12 @@ public final class Rect extends Size {
         double selfFromRatioW = width / (double) from.width;
         double selfFromRatioH = height / (double) from.height;
         return new Rect(x + ((int) ((to.x - from.x) * selfFromRatioW)), y + ((int) ((to.y - from.y) * selfFromRatioH)), (int) (to.width * selfFromRatioW), (int) (to.height * selfFromRatioH));
+    }
+
+    /**
+     * Multiplies this rect, as if applied to an image undergoing nearest-neighbour magnification.
+     */
+    public Rect multiplied(int tileSize) {
+        return new Rect(x * tileSize, y * tileSize, width * tileSize, height * tileSize);
     }
 }
