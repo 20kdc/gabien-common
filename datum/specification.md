@@ -10,7 +10,9 @@ Therefore, "characters" may here refer to *bytes*, *Unicode codepoints*, or *UTF
 
 All references to numeric character values in this specification are unsigned. All references to specific characters are either as per ASCII or UTF-8.
 
-The specification will never require UTF-8 to be decoded, but UTF-8 may need to be encoded, and if the result of the parsing process is not valid UTF-8, the input is formally considered invalid (but may be accepted regardless).
+The specification will never require UTF-8 to be decoded, but UTF-8 may need to be encoded, and if the input or result of the parsing process is not valid UTF-8, the input is formally considered invalid (but may be accepted regardless).
+
+For similar reasons, if null bytes are encountered, they may be parsed incorrectly or fail, though it _must not_ fail in a way that is more severe than any other parsing error.
 
 ## Why not an R6RS subset?
 
@@ -20,7 +22,7 @@ The specification will never require UTF-8 to be decoded, but UTF-8 may need to 
 
 - The behaviour of `gcc (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0` appears to indicate GCC Unicode identifier compatibility operates by exclusion, i.e. `U+3FF80` is a valid identifier character. Java and Python, meanwhile, consider `U+3FF80` (Unassigned as of Unicode 15.0) invalid, but `U+10400` (Deseret: 𐐀) valid. A hypothetical future Unicode version could therefore enable valid Java and Python identifier characters that past versions refuse to accept for reasons that are, frankly, completely arbitrary. GCC's behaviour, on the other hand, could lead to code becoming invalid on a similar basis. This would be arguably worse if not for that people do not just arbitrarily use unassigned codepoints.
 
-- GCC, Python and Java do consider the *private use areas* as invalid, for some unknown reason. (This rather defeats the purpose of the private use area.)
+- GCC, Python and Java do consider the *private use areas* as invalid, for some unknown reason. (This rather defeats the purpose of the private use area as it is presently used.)
 
 - ICU soversioning is a complete disaster.
 
