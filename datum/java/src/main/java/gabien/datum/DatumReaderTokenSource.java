@@ -160,8 +160,10 @@ public class DatumReaderTokenSource extends DatumTokenSource {
             tokenType = DatumTokenType.ID;
             if (numeric && !tokenContents.equals("-"))
                 tokenType = DatumTokenType.Numeric;
-            if (specialID)
+            if (specialID) {
                 tokenType = DatumTokenType.SpecialID;
+                tokenContents = tokenContents.substring(1);
+            }
             return true;
         }
     }

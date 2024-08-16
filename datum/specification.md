@@ -90,13 +90,17 @@ All characters within a class act behaviourally identical to each other as far a
 
 - 41 `#` is *special-identifier-class*.
 
-- 48 `0` through 57 `9` inclusive, or 45 `-`, are *numeric-start-class*.
+- 45 `-` is *sign-class*.
+
+- 48 `0` through 57 `9` inclusive is *digit-class*.
 
 - All other characters, *including all characters (UTF-8, UTF-16, Unicode, or otherwise) above 127,* are *content-class*.
 
 There are also the following groups of classes, the contents of which may be differentiated by their actual class later:
 
-- The union of *content-class*, *numeric-start-class*, and *special-identifier-class* make up the *potential-identifier-group*.
+- The union of *content-class*, *sign-class*, *digit-class*, and *special-identifier-class* make up the *potential-identifier-group*.
+
+- The union of *sign-class* and *digit-class* make up the *numeric-start-group*.
 
 - The union of *whitespace-class* and *newline-class* make up the *non-printing-group*.
 
@@ -120,23 +124,19 @@ Before reading a token, any whitespace is consumed.
 
 There are a few kinds of token at this stage:
 
-* *Symbol tokens,* a *content-class* character followed by an arbitrary number of *potential-identifier-class* characters, *or* a token that solely consists of a single 45 `-` character of *numeric-start-class.* Examples: `-`, `hello`, `symbol->string`.
-  
-  * The `-` token is a special case of Numeric token parsing and is theoretically handled after parsing of a Numeric token completes.
+* *Symbol tokens,* a *content-class* character followed by an arbitrary number of *potential-identifier-group* characters, *or* a token that solely consists of a single character of *numeric-sign-class*. Examples: `-`, `hello`, `symbol->string`.
+	* The `-` token is a special case of Numeric token parsing and is theoretically handled after parsing of a Numeric token completes.
 
-* *Numeric tokens,* a *numeric-start-class* character followed by an arbitrary number of *potential-identifier-class* characters, *unless* the token would solely consist of a single 45 `-` character (see *Symbol tokens*). Examples: `12.3`, `-8`.
+* *Numeric tokens,* a *numeric-start-group* character followed by an arbitrary number of *potential-identifier-group* characters, *unless* the token would solely consist of a single *sign-class* character (see *Symbol tokens*). Examples: `12.3`, `-8`.
 
-* *Special Identifier tokens,* a *special-identifier-class* character followed by an arbitrary number of *potential-identifier-class* characters. Example: `#t`.
+* *Special Identifier tokens,* a *special-identifier-class* character followed by an arbitrary number of *potential-identifier-group* characters. Example: `#t`.
 
 * *String tokens,* *string-class*-delimited sequences of completely arbitrary characters. The only restriction is that in order to write characters 34 `"` or 92 `\`, they must be escaped.
 
 * Characters of the *alone-group* turn into specific token types for each of the group's classes:
-  
-  * *quote-class* characters become *Quote tokens.*
-  
-  * *list-start-class* characters become *List Start tokens.*
-  
-  * *list-end-class* characters become *List End tokens.*
+	* *quote-class* characters become *Quote tokens.*
+	* *list-start-class* characters become *List Start tokens.*
+	* *list-end-class* characters become *List End tokens.*
 
 It is worth mentioning the expected parsing strategy here. In essence, *Symbol tokens, Numeric tokens,* and *Special Identifier tokens* are expected to be parsed more or less by the same routine with some flags set.
 
@@ -173,22 +173,22 @@ stateDiagram-v2
         direction LR
         [*] --> content_class
         content_class --> [*]
-        [*] --> numeric_start_class_but_not_45
-        numeric_start_class_but_not_45 --> [*]
-        [*] --> numeric_start_class_and_45
-        numeric_start_class_and_45 --> [*]
+        [*] --> digit_class
+        digit_class --> [*]
+        [*] --> sign_class
+        sign_class --> [*]
         [*] --> special_identifier_class
         special_identifier_class --> [*]
-        numeric_start_class_but_not_45 --> potential_identifier_group_a
-        numeric_start_class_and_45 --> potential_identifier_group_a
-        potential_identifier_group_a --> [*]
-        special_identifier_class --> potential_identifier_group_b
-        potential_identifier_group_b --> [*]
-        content_class --> potential_identifier_group_c
-        potential_identifier_group_c --> [*]
-        potential_identifier_group_a --> potential_identifier_group_a
-        potential_identifier_group_b --> potential_identifier_group_b
-        potential_identifier_group_c --> potential_identifier_group_c
+        digit_class --> potential_identifier_group_numeric
+        sign_class --> potential_identifier_group_numeric
+        potential_identifier_group_numeric --> [*]
+        special_identifier_class --> potential_identifier_group_special
+        potential_identifier_group_special --> [*]
+        content_class --> potential_identifier_group_id
+        potential_identifier_group_id --> [*]
+        potential_identifier_group_numeric --> potential_identifier_group_numeric
+        potential_identifier_group_special --> potential_identifier_group_special
+        potential_identifier_group_id --> potential_identifier_group_id
     }
     whitespace_skipping --> potential_identifier
     potential_identifier --> [*]
@@ -206,6 +206,8 @@ stateDiagram-v2
         "_close --> [*]
     }
 ```
+
+A more precise description of the state machine, including EOF handling, is available at: [./rust/src/token_core.rs](./rust/src/token_core.rs)
 
 ## Tokens To Values
 
@@ -236,32 +238,21 @@ However, the following special identifiers shall be considered *standardized* an
 This list also gives examples of how this might map to Scheme 9 From Empty Space, as an example of how interoperability works here.
 
 * `#{}#`: This is actually converted into the empty symbol. This mainly exists to remove some of the error cases from writers.
-  
-  * Scheme interop notes: Won't parse on S9FES. Custom parser could use `(string->symbol "")`.
+	* Scheme interop notes: Won't parse on S9FES. Custom parser could use `(string->symbol "")`.
 
 * `#t` and `#T`: These express the boolean `true` value.
-  
-  * Scheme interop notes: Should parse on all Schemes.
+	* Scheme interop notes: Should parse on all Schemes.
 
 * `#f` and `#F`: These express the boolean `false` value.
-  
-  * Scheme interop notes: Should parse on all Schemes.
+	* Scheme interop notes: Should parse on all Schemes.
 
 * `#nil` or any case variation: This represents `null` or so forth. This may or may not be an alias for `()` depending on context.
-  
-  * Scheme interop notes: Won't parse on S9FES. A custom parser could alias it to `()` or define a unique signal value kind of like how `eof-object?` works.
+	* Scheme interop notes: Won't parse on S9FES. A custom parser could alias it to `()` or define a unique signal value kind of like how `eof-object?` works.
 
-* `#i+inf.0` or any case variation: Positive infinity.
-  
-  * Scheme interop notes: Won't parse on S9FES.
-
-* `#i-inf.0`or any case variation: Negative infinity.
-  
-  * Scheme interop notes: Won't parse on S9FES.
-
-* `#i+nan.0`or any case variation: Positive NaN.
-  
-  - Scheme interop notes: Won't parse on S9FES.
+* `#i` or `#I` followed by anything (or nothing): Arbitrary Numeric token.
+	* Scheme interop notes: This is kind of an abuse of the inexactness prefix to make inf/nan work. It's done this way to remove some of the error cases from writers. It is 'more or less' Scheme-compliant for the floating-point constants, which is what it's used for in practice.
+	* Previous versions of this specification defined the floating-point constants as special IDs directly. However, the implementation of a robust Rust implementation of Datum revealed an issue: Writing certain numeric tokens would `panic!`, unacceptable in production Rust code, or would require returning an error, which would be extremely awkward to use.
+		* As Datum hasn't seen any outside use so far, the breaking changes of `#i-inf.0` now being written by the Java implementation as `-inf.0` has been considered an acceptable loss.
 
 ### Numbers
 
@@ -279,13 +270,17 @@ Firstly, the standard formats:
   
   - This is the standard integer format, followed immediately by 46 `.` and then another contiguous sequence of the 10 ASCII decimal digits, such as `0.0` (this does not cover, say, `0.` or `.0`).
 
+* The floating point constants, which *should* be supported (Note, though: these parse on Guile but not S9FES, and Datum only parses the negative constants correctly without an `#i` prefix. `#i` itself works on Guile and S9FES.):
+	* `+inf.0` or any case variation: Positive infinity.
+	* `-inf.0` or any case variation: Negative infinity.
+	* `+nan.0` or any case variation: Positive NaN.
+
 - The standard floating-point scientific notation format. This format *should* be supported:
-  
-  - This is the standard integer or floating-point format, followed immediately by 101 `e` or 69 `E`, followed by the standard integer format *again.*
-  - *Unfortunately, most programming language standard libraries will use this format under some set of conditions, and they make it rather difficult to override.*
-    - It is possible to write a string processing function that fixes these, but doing so also goes somewhat against the minimal-implementation ideals of Datum.
-      - In addition, `1e+308` is representable as a 64-bit floating-point number. The implication is that the results may be... amusing.
-  - This format *should never be written by humans.*
+	- This is the standard integer or floating-point format, followed immediately by 101 `e` or 69 `E`, followed by the standard integer format *again.*
+	- *Unfortunately, most programming language standard libraries will use this format under some set of conditions, and they make it rather difficult to override.*
+		- It is possible to write a string processing function that fixes these, but doing so also goes somewhat against the minimal-implementation ideals of Datum.
+			- In addition, `1e+308` is representable as a 64-bit floating-point number. The implication is that the results may be... amusing.
+	- This format *should never be written by humans.*
 
 These three formats are the mutual ground between most programming language's default integer and floating-point parsing and printing functions.
 
@@ -296,12 +291,10 @@ Secondly, things to consider:
 * It is advised to keep the full textual content available, particularly in callback tokenizers where doing so is a zero-cost operation.
 
 * Any reserved number identifier that does not parse as a number must be considered a distinct kind of value, and should be available via some hook for potential compatibility workaround code to pick up on.
-  
-  * The default handling, or that code, may provide an error -- in particular it's not recommended to try and implement these as actual literals in a tree data model unless you really need to load _any_ valid file. A visitor model might expose the information with a default implementation that throws an error.
+	* The default handling, or that code, may provide an error -- in particular it's not recommended to try and implement these as actual literals in a tree data model unless you really need to load _any_ valid file. A visitor model might expose the information with a default implementation that throws an error.
 
 * Using 44 `,`  in a real floating-point or real integer number is *never* valid. This is to avoid the "10,000 => 10000 or 10.000" problem between different cultures. Just don't. Do not do it.
-  
-  * Using it as part of a special kind of number not *expected* to be generally readable (Numeric vectors, complex numbers, possibly rational numbers but those would do better to use `/`) is theoretically fine, though an implementation should give some idea of the format of what such a number is, and the implementer may still wish to consider using alternative methods of expressing the number, *as the resulting format will be highly implementation-specific.*
+	* Using it as part of a special kind of number not *expected* to be generally readable (Numeric vectors, complex numbers, possibly rational numbers but those would do better to use `/`) is theoretically fine, though an implementation should give some idea of the format of what such a number is, and the implementer may still wish to consider using alternative methods of expressing the number, *as the resulting format will be highly implementation-specific.*
 
 In addition, it is *generally advised* (given the repository this is in) that whatever number format is used for writing follows the JSON specification, and can be parsed by Java `Long.parseLong` or `Double.parseDouble`; further, that the reader can handle the values that come from those functions, such as hexadecimal (`0x100` = `256`) and scientific notation, *but these formats shouldn't be machine-written as an R6RS parser (or Guile, even!) cannot handle it.*
 
@@ -331,7 +324,7 @@ An implementation may (but does not have to) make the following requirements, an
 
 1. That the input stream is valid UTF-8.
 
-2. That all `\u`-escaped codepoints are allowed to be used in UTF-8.
+2. That all `\u`-escaped codepoints are those allowed to be used in UTF-8 (i.e. in the range `U+000000`-`U+10FFFF` inclusive and are not UTF-16 surrogate pairs)
 
 3. That all strings and potential identifiers are valid UTF-8. (The first two points together guarantee this.)
 

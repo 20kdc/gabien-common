@@ -1,0 +1,4 @@
+[primary_testing_pass]
+all_features = true
+out = ["Html", "Xml"]
+run-types = ["Doctests", "Tests"]

@@ -143,13 +143,33 @@ public class DatumWriter extends DatumEncodingVisitor {
         queued = SpacingState.AfterToken;
     }
 
-    private void visitUnknownPID(DatumCharClass dcc, String s) {
-        if (s.length() == 0)
-            throw new RuntimeException("Cannot write an empty " + dcc + ".");
-        if (DatumCharClass.identify(s.charAt(0)) != dcc)
-            throw new RuntimeException("Cannot write a " + dcc + " with '" + s.charAt(0) + "' at the start.");
+    @Override
+    public void visitNumericUnknown(String s, DatumSrcLoc srcLoc) {
         emitQueued(false);
-        // Write directly
+        if (s.length() == 0 || s.equals("-") || (DatumCharClass.identify(s.charAt(0)) != DatumCharClass.NumericStart)) {
+            putChar('#');
+            putChar('i');
+            for (char c : s.toCharArray()) {
+                DatumCharClass cc = DatumCharClass.identify(c);
+                if (!cc.isValidPID)
+                    putChar('\\');
+                putChar(c);
+            }
+        } else {
+            for (char c : s.toCharArray()) {
+                DatumCharClass cc = DatumCharClass.identify(c);
+                if (!cc.isValidPID)
+                    putChar('\\');
+                putChar(c);
+            }
+        }
+        queued = SpacingState.AfterToken;
+    }
+
+    @Override
+    public void visitSpecialUnknown(String s, DatumSrcLoc srcLoc) {
+        emitQueued(false);
+        putChar('#');
         for (char c : s.toCharArray()) {
             DatumCharClass cc = DatumCharClass.identify(c);
             if (!cc.isValidPID)
@@ -160,23 +180,13 @@ public class DatumWriter extends DatumEncodingVisitor {
     }
 
     @Override
-    public void visitNumericUnknown(String s, DatumSrcLoc srcLoc) {
-        visitUnknownPID(DatumCharClass.NumericStart, s);
-    }
-
-    @Override
-    public void visitSpecialUnknown(String s, DatumSrcLoc srcLoc) {
-        visitUnknownPID(DatumCharClass.SpecialID, s);
-    }
-
-    @Override
     public void visitBoolean(boolean value, DatumSrcLoc srcLoc) {
-        visitSpecialUnknown(value ? "#t" : "#f", srcLoc);
+        visitSpecialUnknown(value ? "t" : "f", srcLoc);
     }
 
     @Override
     public void visitNull(DatumSrcLoc srcLoc) {
-        visitSpecialUnknown("#nil", srcLoc);
+        visitSpecialUnknown("nil", srcLoc);
     }
 
     @Override
@@ -186,10 +196,7 @@ public class DatumWriter extends DatumEncodingVisitor {
 
     @Override
     public void visitFloat(double value, String raw, DatumSrcLoc srcLoc) {
-        if (raw.startsWith("#"))
-            visitSpecialUnknown(raw, srcLoc);
-        else
-            visitNumericUnknown(raw, srcLoc);
+        visitNumericUnknown(raw, srcLoc);
     }
 
     /**

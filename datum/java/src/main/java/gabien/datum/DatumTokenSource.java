@@ -63,20 +63,16 @@ public abstract class DatumTokenSource {
             case SpecialID:
             {
                 String c = contents();
-                if (c.equalsIgnoreCase("#t")) {
+                if (c.equalsIgnoreCase("t")) {
                     visitor.visitBoolean(true, srcLoc());
-                } else if (c.equalsIgnoreCase("#f")) {
+                } else if (c.equalsIgnoreCase("f")) {
                     visitor.visitBoolean(false, srcLoc());
-                } else if (c.equals("#{}#")) {
+                } else if (c.equals("{}#")) {
                     visitor.visitId("", srcLoc());
-                } else if (c.equalsIgnoreCase("#nil")) {
+                } else if (c.equalsIgnoreCase("nil")) {
                     visitor.visitNull(srcLoc());
-                } else if (c.equalsIgnoreCase("#i+inf.0")) {
-                    visitor.visitFloat(Double.POSITIVE_INFINITY, c, srcLoc());
-                } else if (c.equalsIgnoreCase("#i-inf.0")) {
-                    visitor.visitFloat(Double.NEGATIVE_INFINITY, c, srcLoc());
-                } else if (c.equalsIgnoreCase("#i+nan.0")) {
-                    visitor.visitFloat(Double.NaN, c, srcLoc());
+                } else if (c.startsWith("i") || c.startsWith("I")) {
+                    visitNumeric(visitor, c.substring(1));
                 } else {
                     visitor.visitSpecialUnknown(c, srcLoc());
                 }
@@ -99,26 +95,8 @@ public abstract class DatumTokenSource {
                 listStart = storedListStarts.pop();
                 break;
             case Numeric:
-                // Conversion...
-            {
-                String c = contents();
-                long l = 0L;
-                try {
-                    l = Long.valueOf(c);
-                } catch (NumberFormatException nfe1) {
-                    double d = 0d;
-                    try {
-                        d = Double.valueOf(c);
-                    } catch (NumberFormatException nfe2) {
-                        visitor.visitNumericUnknown(c, srcLoc());
-                        break;
-                    }
-                    visitor.visitFloat(d, c, srcLoc());
-                    break;
-                }
-                visitor.visitInt(l, c, srcLoc());
+                visitNumeric(visitor, contents());
                 break;
-            }
             case Quote:
             {
                 DatumVisitor dv = visitor.visitList(srcLoc());
@@ -134,6 +112,35 @@ public abstract class DatumTokenSource {
             if (storedListVisitors.isEmpty())
                 return true;
         }
+    }
+
+    private final void visitNumeric(DatumVisitor visitor, String c) {
+        if (c.equalsIgnoreCase("+inf.0")) {
+            visitor.visitFloat(Double.POSITIVE_INFINITY, c, srcLoc());
+            return;
+        } else if (c.equalsIgnoreCase("-inf.0")) {
+            visitor.visitFloat(Double.NEGATIVE_INFINITY, c, srcLoc());
+            return;
+        } else if (c.equalsIgnoreCase("+nan.0")) {
+            visitor.visitFloat(Double.NaN, c, srcLoc());
+            return;
+        }
+        // Conversion...
+        long l = 0L;
+        try {
+            l = Long.valueOf(c);
+        } catch (NumberFormatException nfe1) {
+            double d = 0d;
+            try {
+                d = Double.valueOf(c);
+            } catch (NumberFormatException nfe2) {
+                visitor.visitNumericUnknown(c, srcLoc());
+                return;
+            }
+            visitor.visitFloat(d, c, srcLoc());
+            return;
+        }
+        visitor.visitInt(l, c, srcLoc());
     }
 
     /**

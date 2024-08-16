@@ -30,6 +30,7 @@ public abstract class DatumVisitor {
 
     /**
      * Called to visit an undecodable special identifier.
+     * The string does not include the opening '#'.
      */
     public abstract void visitSpecialUnknown(String s, DatumSrcLoc loc);
 
@@ -57,6 +58,7 @@ public abstract class DatumVisitor {
 
     /**
      * Called to visit a float.
+     * The raw value is equivalent to the parameter to visitNumericUnknown.
      */
     public abstract void visitFloat(double value, String raw, DatumSrcLoc loc);
 
@@ -67,11 +69,11 @@ public abstract class DatumVisitor {
         if (!Double.isFinite(value)) {
             if (Double.isInfinite(value)) {
                 if (value > 0)
-                    visitFloat(value, "#i+inf.0", loc);
+                    visitFloat(value, "+inf.0", loc);
                 else
-                    visitFloat(value, "#i-inf.0", loc);
+                    visitFloat(value, "-inf.0", loc);
             } else {
-                visitFloat(value, "#i+nan.0", loc);
+                visitFloat(value, "+nan.0", loc);
             }
         } else {
             visitFloat(value, Double.toString(value), loc);

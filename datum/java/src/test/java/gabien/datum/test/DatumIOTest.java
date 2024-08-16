@@ -34,7 +34,8 @@ public class DatumIOTest {
                     Arrays.asList(sym("pona")),
                     Arrays.asList(sym("tawa"), sym("mi")),
                     true, false, sym(""), sym("#escapethis"), sym("1234"), null,
-                    0.125d, "Hello\r\n\t\u5000\ud800\udc00", Arrays.asList(sym("quote"), sym("hi"))
+                    0.125d, "Hello\r\n\t\u5000\ud800\udc00", Arrays.asList(sym("quote"), sym("hi")),
+                    0.125d
                 );
     }
     @Test
@@ -75,7 +76,7 @@ public class DatumIOTest {
         assertEquals("a\\ ", DatumWriter.objectToString(sym("a ")));
         assertEquals("#nil", DatumWriter.objectToString(null));
         assertEquals("#i+inf.0", DatumWriter.objectToString(Double.POSITIVE_INFINITY));
-        assertEquals("#i-inf.0", DatumWriter.objectToString(Double.NEGATIVE_INFINITY));
+        assertEquals("-inf.0", DatumWriter.objectToString(Double.NEGATIVE_INFINITY));
         assertEquals("#i+nan.0", DatumWriter.objectToString(Double.NaN));
         assertEquals("123", DatumWriter.objectToString(123));
         assertEquals("\"\\\"\"", DatumWriter.objectToString("\""));
@@ -112,6 +113,7 @@ public class DatumIOTest {
                 "#t #f #{}# \\#escapethis \\1234 #nil\n" +
                 "; Floats, strings\n" +
                 "0.125 \"Hello\\r\\n\\t\\x5000;\\x10000;\" 'hi\n" +
+                "#i0.125\n" +
                 ")";
         DatumReaderTokenSource drs = new DatumReaderTokenSource("string", tcs);
         AtomicBoolean signalWasVisited = new AtomicBoolean();
@@ -134,7 +136,7 @@ public class DatumIOTest {
         StringWriter sw = new StringWriter();
         DatumWriter dw = new DatumWriter(sw);
         dw.visitTree(input, DatumSrcLoc.NONE);
-        assertEquals("((moku sina) li (pona) (tawa mi) #t #f #{}# \\#escapethis \\1234 #nil 0.125 \"Hello\\r\\n\\t\u5000\ud800\udc00\" (quote hi))", sw.toString());
+        assertEquals("((moku sina) li (pona) (tawa mi) #t #f #{}# \\#escapethis \\1234 #nil 0.125 \"Hello\\r\\n\\t\u5000\ud800\udc00\" (quote hi) 0.125)", sw.toString());
     }
 
 }

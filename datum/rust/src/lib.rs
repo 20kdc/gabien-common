@@ -22,8 +22,22 @@ pub use char_classes::*;
 mod decoder;
 pub use decoder::*;
 
-mod buffer;
-pub use buffer::*;
+mod byte_decoder;
+pub use byte_decoder::*;
+
+mod token_core;
+pub use token_core::*;
 
 mod token;
 pub use token::*;
+
+mod atom;
+pub use atom::*;
+
+#[cfg(feature = "alloc")]
+mod ast;
+#[cfg(feature = "alloc")]
+pub use ast::*;
+
+mod writer;
+pub use writer::*;
