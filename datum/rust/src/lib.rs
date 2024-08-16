@@ -16,6 +16,16 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+// Meta
+
+mod array;
+pub use array::*;
+
+mod pipeline;
+pub use pipeline::*;
+
+// Encoding
+
 mod char_classes;
 pub use char_classes::*;
 
@@ -25,19 +35,31 @@ pub use decoder::*;
 mod byte_decoder;
 pub use byte_decoder::*;
 
+// Tokenization
+
 mod token_core;
 pub use token_core::*;
 
 mod token;
 pub use token::*;
 
+// Values
+
 mod atom;
 pub use atom::*;
 
-#[cfg(feature = "alloc")]
 mod ast;
-#[cfg(feature = "alloc")]
 pub use ast::*;
+
+mod fixed_ast;
+pub use fixed_ast::*;
+
+#[cfg(feature = "alloc")]
+mod alloc_ast;
+#[cfg(feature = "alloc")]
+pub use alloc_ast::*;
+
+// Writing
 
 mod writer;
 pub use writer::*;

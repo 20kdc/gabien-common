@@ -10,7 +10,10 @@ use core::{fmt::{Display, Write}, ops::Deref};
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 
-use crate::{DatumChar, DatumCharClass, DatumTokenType};
+use crate::{DatumChar, DatumCharClass, DatumTokenType, DATUM_DECODER_MAX_SIZE, DATUM_UTF8_DECODER_MAX_SIZE, DATUM_TOKENIZER_MAX_SIZE};
+
+#[cfg(feature = "alloc")]
+use crate::{DatumArray, DatumFixedArray, DatumPipe, DatumTokenizer, DatumTokenizerAction};
 
 /// Datum token with integrated string.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -28,6 +31,14 @@ pub enum DatumToken<B: Deref<Target = str>> {
     ListEnd
 }
 
+impl<B: Deref<Target = str>> Default for DatumToken<B> {
+    fn default() -> Self {
+        // arbitrarily chosen
+        // this is array filler
+        Self::ListEnd
+    }
+}
+
 impl<B: Deref<Target = str>> DatumToken<B> {
     /// Return the token type of this token.
     #[cfg(not(tarpaulin_include))]
@@ -42,6 +53,7 @@ impl<B: Deref<Target = str>> DatumToken<B> {
             Self::ListEnd => DatumTokenType::ListEnd,
         }
     }
+
     /// Return the buffer of this token, if the type has one.
     #[cfg(not(tarpaulin_include))]
     pub fn buffer<'a>(&'a self) -> Option<&'a B> {
@@ -206,5 +218,62 @@ impl DatumToken<String> {
             DatumTokenType::ListStart => Self::ListStart,
             DatumTokenType::ListEnd => Self::ListEnd,
         }
+    }
+}
+
+/// Utility for composed decoder/tokenizer size.
+pub const DATUM_DECODER_TOKENIZER_MAX_SIZE: usize = DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2;
+
+/// Utility for composed utf8/decoder/tokenizer size.
+pub const DATUM_UTF8_DECODER_TOKENIZER_MAX_SIZE: usize = DATUM_UTF8_DECODER_MAX_SIZE * DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2 * 2;
+
+/// Tokenizer that uses String as an internal buffer and spits out DatumToken.
+/// ```
+/// use datum_rs::{DatumDecoder, DatumToken, DatumStringTokenizer, DatumComposePipe, DatumPipe, DATUM_DECODER_TOKENIZER_MAX_SIZE};
+/// let mut decoder: DatumComposePipe<_, _, {DATUM_DECODER_TOKENIZER_MAX_SIZE}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
+/// let mut out = Vec::new();
+/// decoder.feed_iter_to_vec(&mut out, ("these become test symbols").chars(), true);
+/// ```
+#[cfg(feature = "alloc")]
+#[derive(Clone, Default, Debug)]
+pub struct DatumStringTokenizer(String, DatumTokenizer);
+
+#[cfg(feature = "alloc")]
+impl DatumPipe for DatumStringTokenizer {
+    type Input = DatumChar;
+    type Output = DatumToken<String>;
+    type Array = DatumFixedArray<DatumToken<String>, DATUM_TOKENIZER_MAX_SIZE>;
+    const MAX_SIZE: usize = DATUM_TOKENIZER_MAX_SIZE;
+
+    fn feed(&mut self, i: Self::Input) -> Self::Array {
+        let buf = self.1.feed(i.class());
+        self.transform_actions(i.char(), buf)
+    }
+
+    fn eof(&mut self) -> Self::Array {
+        let buf = self.1.eof();
+        self.transform_actions(' ', buf)
+    }
+
+    fn has_error(&self) -> bool {
+        self.1.has_error()
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl DatumStringTokenizer {
+    fn transform_actions(&mut self, char: char, actions: impl DatumArray<DatumTokenizerAction>) -> DatumFixedArray<DatumToken<String>, DATUM_TOKENIZER_MAX_SIZE> {
+        let mut arr: DatumFixedArray<DatumToken<String>, DATUM_TOKENIZER_MAX_SIZE> = DatumFixedArray::default();
+        for v in actions {
+            match v {
+                DatumTokenizerAction::Push => {
+                    self.0.push(char);
+                },
+                DatumTokenizerAction::Token(v) => {
+                    arr.push_unwrap(DatumToken::new(v, core::mem::take(&mut self.0)));
+                }
+            }
+        }
+        arr
     }
 }

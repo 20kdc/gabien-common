@@ -5,10 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::DatumChar;
-
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+use crate::{DatumChar, DatumPipe};
 
 /// Decoder's state machine
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -23,6 +20,9 @@ enum DatumDecoderState {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct DatumDecoder(DatumDecoderState);
 
+/// Maximum amount of characters [DatumDecoder] will return at once.
+pub const DATUM_DECODER_MAX_SIZE: usize = 1;
+
 impl Default for DatumDecoder {
     #[inline]
     fn default() -> DatumDecoder {
@@ -30,42 +30,25 @@ impl Default for DatumDecoder {
     }
 }
 
-impl DatumDecoder {
-    /// Returns true if EOF is allowed.
-    /// In other words, if an EOF were to happen now, would any error (including invalid escape errors) have occurred?
-    /// ```
-    /// use datum_rs::DatumByteDecoder;
-    /// let mut decoder = DatumByteDecoder::default();
-    /// assert_eq!(decoder.allowed_to_eof(), true);
-    /// decoder.feed_byte(b'\\');
-    /// assert_eq!(decoder.allowed_to_eof(), false);
-    /// decoder.feed_byte(b'n');
-    /// assert_eq!(decoder.allowed_to_eof(), true);
-    /// ```
-    #[inline]
-    pub fn allowed_to_eof(&self) -> bool {
-        self.0 == DatumDecoderState::Normal
+impl DatumPipe for DatumDecoder {
+    type Input = char;
+    type Output = DatumChar;
+    type Array = Option<DatumChar>;
+    const MAX_SIZE: usize = DATUM_DECODER_MAX_SIZE;
+
+
+    fn eof(&mut self) -> Self::Array {
+        if self.0 != DatumDecoderState::Normal {
+            self.0 = DatumDecoderState::Error;
+        }
+        Self::Array::default()
     }
 
-    /// True if the decoder encountered invalid UTF-8 or an invalid escape.
-    /// The decoder will NOP once this occurs.
-    /// If you want to continue anyway, reconstruct the [DatumDecoder].
-    #[inline]
-    pub fn has_error(&self) -> bool {
+    fn has_error(&self) -> bool {
         self.0 == DatumDecoderState::Error
     }
 
-    /// Forces an error.
-    /// This is useful for things that might wrap the decoder.
-    #[inline]
-    pub fn force_error(&mut self) {
-        self.0 = DatumDecoderState::Error;
-    }
-
-    /// Given a char, returns a resulting [DatumChar], if any.
-    /// Beware: This should not be mixed with `feed_byte` unless the byte decoder (not this decoder!) is safe to EOF, which implies no UTF-8 sequences are buffered.
-    /// Multiple [DatumChar]s can be returned at once due to Unicode escapes.
-    pub fn feed_char(&mut self, char: char) -> Option<DatumChar> {
+    fn feed(&mut self, char: char) -> Self::Array {
         let mut res = None;
         self.0 = match self.0 {
             DatumDecoderState::Normal => {
@@ -129,29 +112,11 @@ impl DatumDecoder {
         };
         res
     }
-
-    /// Feeds into a vec from a byte slice. Remember to check for [DatumDecoder::has_error].
-    /// ```
-    /// use datum_rs::DatumDecoder;
-    /// let mut decoder = DatumDecoder::default();
-    /// let mut results = vec![];
-    /// decoder.feed_chars_into(&mut results, "example text".chars());
-    /// assert_eq!(results.len(), 12);
-    /// ```
-    #[cfg(feature = "alloc")]
-    #[inline]
-    pub fn feed_chars_into<S: IntoIterator<Item = char>>(&mut self, target: &mut Vec<DatumChar>, source: S) {
-        for v in source {
-            if let Some(c) = self.feed_char(v) {
-                target.push(c);
-            }
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::DatumCharClass;
+    use crate::{DatumArray, DatumCharClass};
 
     use super::*;
 
@@ -159,20 +124,21 @@ mod tests {
         let mut decoder = DatumDecoder::default();
         let mut output_iterator = output.chars();
         for v in input.chars() {
-            if let Some(c) = decoder.feed_char(v) {
+            if let Some(c) = decoder.feed(v) {
                 assert_eq!(c.char(), output_iterator.next().expect("early output end"));
                 assert_eq!(c.class(), out_class);
             }
         }
         assert!(!decoder.has_error());
-        assert!(decoder.allowed_to_eof());
+        _ = decoder.eof();
+        assert!(!decoder.has_error());
         assert_eq!(output_iterator.next(), None);
     }
 
     fn decoder_should_fail(input: &str) {
         let mut decoder = DatumDecoder::default();
         for v in input.chars() {
-            decoder.feed_char(v);
+            decoder.feed(v);
         }
         assert!(decoder.has_error());
     }
@@ -180,24 +146,26 @@ mod tests {
     fn decoder_should_not_allow_eof(input: &str) {
         let mut decoder = DatumDecoder::default();
         for v in input.chars() {
-            decoder.feed_char(v);
+            decoder.feed(v);
         }
-        assert!(!decoder.allowed_to_eof());
+        assert!(!decoder.has_error());
+        _ = decoder.eof();
+        assert!(decoder.has_error());
     }
 
     #[test]
     fn decoder_results_test() {
         let mut decoder = DatumDecoder::default();
-        assert_eq!(decoder.feed_char('\\'), None);
-        assert_eq!(decoder.feed_char('x'), None);
-        assert_eq!(decoder.feed_char('1'), None);
-        assert_eq!(decoder.feed_char('0'), None);
-        assert_eq!(decoder.feed_char('F'), None);
-        assert_eq!(decoder.feed_char('F'), None);
-        assert_eq!(decoder.feed_char('F'), None);
-        assert_eq!(decoder.feed_char('F'), None);
-        assert_eq!(decoder.feed_char(';'), Some(DatumChar::content('\u{10FFFF}' as char)));
-        assert_eq!(decoder.feed_char('a'), Some(DatumChar::content('a' as char)));
+        assert_eq!(decoder.feed('\\').pop(), None);
+        assert_eq!(decoder.feed('x').pop(), None);
+        assert_eq!(decoder.feed('1').pop(), None);
+        assert_eq!(decoder.feed('0').pop(), None);
+        assert_eq!(decoder.feed('F').pop(), None);
+        assert_eq!(decoder.feed('F').pop(), None);
+        assert_eq!(decoder.feed('F').pop(), None);
+        assert_eq!(decoder.feed('F').pop(), None);
+        assert_eq!(decoder.feed(';').pop(), Some(DatumChar::content('\u{10FFFF}' as char)));
+        assert_eq!(decoder.feed('a').pop(), Some(DatumChar::content('a' as char)));
     }
 
     #[test]

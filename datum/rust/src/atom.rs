@@ -22,6 +22,12 @@ pub enum DatumAtom<B: Deref<Target = str>> {
     Nil
 }
 
+impl<B: Deref<Target = str>> Default for DatumAtom<B> {
+    fn default() -> Self {
+        Self::Nil
+    }
+}
+
 impl<B: Deref<Target = str>> TryFrom<DatumToken<B>> for DatumAtom<B> {
     type Error = ();
 
