@@ -8,7 +8,7 @@
 use alloc::vec::Vec;
 use alloc::string::String;
 
-use crate::{DatumComposePipe, DatumDecoder, DatumParser, DatumPipe, DatumStringTokenizer, DatumWriter, DATUM_DECODER_TOKENIZER_MAX_SIZE, DATUM_PARSER_MAX_SIZE};
+use crate::{DatumComposePipe, DatumDecoder, DatumParser, DatumPipe, DatumStringTokenizer, DatumToken, DatumTokenType, DatumWriter, DATUM_DECODER_TOKENIZER_MAX_SIZE, DATUM_PARSER_MAX_SIZE};
 
 fn do_roundtrip_test(input: &str, output: &str) {
     let mut dectok1: DatumComposePipe<_, _, {DATUM_DECODER_TOKENIZER_MAX_SIZE}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
@@ -31,6 +31,23 @@ fn do_roundtrip_test(input: &str, output: &str) {
 }
 
 #[test]
+fn test_token_write() {
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::String, "Test\\\r\n\t").to_string(), "\"Test\\\\\\r\\n\\t\"");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::ID, "").to_string(), "#{}#");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::ID, "test").to_string(), "test");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::SpecialID, "test").to_string(), "#test");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "-").to_string(), "#i-");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "-1.0").to_string(), "-1.0");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "1").to_string(), "1");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "AA").to_string(), "#iAA");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "\\A").to_string(), "#i\\\\A");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "").to_string(), "#i");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Quote, "").to_string(), "'");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::ListStart, "").to_string(), "(");
+    assert_eq!(&DatumToken::new_not_into(DatumTokenType::ListEnd, "").to_string(), ")");
+}
+
+#[test]
 fn roundtrip_tests() {
     do_roundtrip_test("", "");
     do_roundtrip_test("hello", "hello");
@@ -44,6 +61,7 @@ fn roundtrip_tests() {
     do_roundtrip_test("#t", "#t");
     do_roundtrip_test("#f", "#f");
     do_roundtrip_test("#nil", "#nil");
+    do_roundtrip_test("#{}#", "#{}#");
     do_roundtrip_test("'hello", "(quote hello)");
     do_roundtrip_test("\"mi moku telo tan luka sina\"", "\"mi moku telo tan luka sina\"");
     // writer silly tests

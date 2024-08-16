@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::{DatumArray, DatumCharClass, DatumFixedArray, DatumPipe};
+use crate::{DatumPushable, DatumCharClass, DatumFixedArray, DatumPipe};
 
 /// Datum token type.
 /// This is paired with the token contents, if any.

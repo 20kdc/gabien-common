@@ -10,10 +10,7 @@ use core::{fmt::{Display, Write}, ops::Deref};
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 
-use crate::{DatumChar, DatumCharClass, DatumTokenType, DATUM_DECODER_MAX_SIZE, DATUM_UTF8_DECODER_MAX_SIZE, DATUM_TOKENIZER_MAX_SIZE};
-
-#[cfg(feature = "alloc")]
-use crate::{DatumArray, DatumFixedArray, DatumPipe, DatumTokenizer, DatumTokenizerAction};
+use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DATUM_DECODER_MAX_SIZE, DATUM_UTF8_DECODER_MAX_SIZE, DATUM_TOKENIZER_MAX_SIZE, DatumPipe, DatumTokenizerAction, DatumArray, DatumFixedArray};
 
 /// Datum token with integrated string.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -40,6 +37,32 @@ impl<B: Deref<Target = str>> Default for DatumToken<B> {
 }
 
 impl<B: Deref<Target = str>> DatumToken<B> {
+    /// Creates a DatumToken using a String or something that can be converted into it (such as [&str]).
+    /// It is possible to serialize anything you pass here into a token that can be read back, except that the three alone-group characters do not have buffers (so these will be lost).
+    pub fn new<T: Into<B>>(tt: DatumTokenType, text: T) -> Self {
+        match tt {
+            DatumTokenType::String => Self::String(text.into()),
+            DatumTokenType::ID => Self::ID(text.into()),
+            DatumTokenType::SpecialID => Self::SpecialID(text.into()),
+            DatumTokenType::Numeric => Self::Numeric(text.into()),
+            DatumTokenType::Quote => Self::Quote,
+            DatumTokenType::ListStart => Self::ListStart,
+            DatumTokenType::ListEnd => Self::ListEnd,
+        }
+    }
+    /// Similar to [DatumToken::new] but doesn't perform .into (prevents type issues sometimes)
+    pub fn new_not_into(tt: DatumTokenType, text: B) -> Self {
+        match tt {
+            DatumTokenType::String => Self::String(text),
+            DatumTokenType::ID => Self::ID(text),
+            DatumTokenType::SpecialID => Self::SpecialID(text),
+            DatumTokenType::Numeric => Self::Numeric(text),
+            DatumTokenType::Quote => Self::Quote,
+            DatumTokenType::ListStart => Self::ListStart,
+            DatumTokenType::ListEnd => Self::ListEnd,
+        }
+    }
+
     /// Return the token type of this token.
     #[cfg(not(tarpaulin_include))]
     pub fn token_type(&self) -> DatumTokenType {
@@ -188,39 +211,6 @@ impl<B: Deref<Target = str>> Display for DatumToken<B> {
     }
 }
 
-#[cfg(feature = "alloc")]
-impl DatumToken<String> {
-    /// Creates a DatumToken using a String or something that can be converted into it (such as [&str]).
-    /// It is possible to serialize anything you pass here into a token that can be read back, except that the three alone-group characters do not have buffers (so these will be lost).
-    /// ```
-    /// use datum_rs::{DatumToken, DatumTokenType};
-    /// assert_eq!(&DatumToken::new(DatumTokenType::String, "Test\\\r\n\t").to_string(), "\"Test\\\\\\r\\n\\t\"");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::ID, "").to_string(), "#{}#");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::ID, "test").to_string(), "test");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::SpecialID, "test").to_string(), "#test");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Numeric, "-").to_string(), "#i-");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Numeric, "-1.0").to_string(), "-1.0");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Numeric, "1").to_string(), "1");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Numeric, "AA").to_string(), "#iAA");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Numeric, "\\A").to_string(), "#i\\\\A");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Numeric, "").to_string(), "#i");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::Quote, "").to_string(), "'");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::ListStart, "").to_string(), "(");
-    /// assert_eq!(&DatumToken::new(DatumTokenType::ListEnd, "").to_string(), ")");
-    /// ```
-    pub fn new<T: Into<String>>(tt: DatumTokenType, text: T) -> Self {
-        match tt {
-            DatumTokenType::String => Self::String(text.into()),
-            DatumTokenType::ID => Self::ID(text.into()),
-            DatumTokenType::SpecialID => Self::SpecialID(text.into()),
-            DatumTokenType::Numeric => Self::Numeric(text.into()),
-            DatumTokenType::Quote => Self::Quote,
-            DatumTokenType::ListStart => Self::ListStart,
-            DatumTokenType::ListEnd => Self::ListEnd,
-        }
-    }
-}
-
 /// Utility for composed decoder/tokenizer size.
 pub const DATUM_DECODER_TOKENIZER_MAX_SIZE: usize = DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2;
 
@@ -234,15 +224,16 @@ pub const DATUM_UTF8_DECODER_TOKENIZER_MAX_SIZE: usize = DATUM_UTF8_DECODER_MAX_
 /// let mut out = Vec::new();
 /// decoder.feed_iter_to_vec(&mut out, ("these become test symbols").chars(), true);
 /// ```
-#[cfg(feature = "alloc")]
 #[derive(Clone, Default, Debug)]
-pub struct DatumStringTokenizer(String, DatumTokenizer);
+pub struct DatumPipeTokenizer<B: DatumPushable<char> + Deref<Target = str> + Default>(B, DatumTokenizer, bool);
 
 #[cfg(feature = "alloc")]
-impl DatumPipe for DatumStringTokenizer {
+pub type DatumStringTokenizer = DatumPipeTokenizer<String>;
+
+impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipe for DatumPipeTokenizer<B> {
     type Input = DatumChar;
-    type Output = DatumToken<String>;
-    type Array = DatumFixedArray<DatumToken<String>, DATUM_TOKENIZER_MAX_SIZE>;
+    type Output = DatumToken<B>;
+    type Array = DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE>;
     const MAX_SIZE: usize = DATUM_TOKENIZER_MAX_SIZE;
 
     fn feed(&mut self, i: Self::Input) -> Self::Array {
@@ -256,18 +247,19 @@ impl DatumPipe for DatumStringTokenizer {
     }
 
     fn has_error(&self) -> bool {
-        self.1.has_error()
+        self.1.has_error() || self.2
     }
 }
 
-#[cfg(feature = "alloc")]
-impl DatumStringTokenizer {
-    fn transform_actions(&mut self, char: char, actions: impl DatumArray<DatumTokenizerAction>) -> DatumFixedArray<DatumToken<String>, DATUM_TOKENIZER_MAX_SIZE> {
-        let mut arr: DatumFixedArray<DatumToken<String>, DATUM_TOKENIZER_MAX_SIZE> = DatumFixedArray::default();
+impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipeTokenizer<B> {
+    fn transform_actions(&mut self, char: char, actions: impl DatumArray<DatumTokenizerAction>) -> DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> {
+        let mut arr: DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> = DatumFixedArray::default();
         for v in actions {
             match v {
                 DatumTokenizerAction::Push => {
-                    self.0.push(char);
+                    if let Err(()) = self.0.push(char) {
+                        self.2 = true;
+                    }
                 },
                 DatumTokenizerAction::Token(v) => {
                     arr.push_unwrap(DatumToken::new(v, core::mem::take(&mut self.0)));

@@ -28,7 +28,7 @@ impl<B: Deref<Target = str>> Default for DatumAtom<B> {
     }
 }
 
-impl<B: Deref<Target = str>> TryFrom<DatumToken<B>> for DatumAtom<B> {
+impl<B: Default + Deref<Target = str>> TryFrom<DatumToken<B>> for DatumAtom<B> {
     type Error = ();
 
     /// Tries to convert from a DatumToken.
@@ -44,6 +44,8 @@ impl<B: Deref<Target = str>> TryFrom<DatumToken<B>> for DatumAtom<B> {
                     Ok(DatumAtom::Boolean(false))
                 } else if b.eq_ignore_ascii_case("nil") {
                     Ok(DatumAtom::Nil)
+                } else if b.eq("{}#") {
+                    Ok(DatumAtom::ID(B::default()))
                 } else {
                     if b.starts_with("i") || b.starts_with("I") {
                         // remove this prefix and parse as Numeric

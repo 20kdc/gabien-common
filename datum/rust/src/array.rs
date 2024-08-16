@@ -7,15 +7,21 @@
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+use alloc::string::String;
 
-/// Array-like entity.
-/// Implemented for vec and Datum's own fixed-array type.
-pub trait DatumArray<V>: IntoIterator<Item = V> {
+/// Fallible push
+pub trait DatumPushable<V> {
     /// Fallible push.
     #[must_use]
     fn push(&mut self, entry: V) -> Result<(), ()>;
     /// Pushes (appends element to end), relying on Rust bounds checking to panic appropriately if necessary.
     fn push_unwrap(&mut self, entry: V);
+}
+
+/// Array-like entity.
+/// Implemented for vec and Datum's own fixed-array type.
+pub trait DatumArray<V>: DatumPushable<V> + IntoIterator<Item = V> {
     /// Pops the last element.
     fn pop(&mut self) -> Option<V>;
     /// Returns the array length.
@@ -27,7 +33,18 @@ pub trait DatumArray<V>: IntoIterator<Item = V> {
 }
 
 #[cfg(feature = "alloc")]
-impl<V> DatumArray<V> for Vec<V> {
+impl DatumPushable<char> for String {
+    fn push(&mut self, entry: char) -> Result<(), ()> {
+        String::push(self, entry);
+        Ok(())
+    }
+    fn push_unwrap(&mut self, entry: char) {
+        String::push(self, entry);
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<V> DatumPushable<V> for Vec<V> {
     #[inline]
     fn push(&mut self, entry: V) -> Result<(), ()> {
         Vec::push(self, entry);
@@ -37,6 +54,10 @@ impl<V> DatumArray<V> for Vec<V> {
     fn push_unwrap(&mut self, entry: V) {
         Vec::push(self, entry);
     }
+}
+
+#[cfg(feature = "alloc")]
+impl<V> DatumArray<V> for Vec<V> {
     #[inline]
     fn pop(&mut self) -> Option<V> {
         Vec::pop(self)
@@ -47,7 +68,7 @@ impl<V> DatumArray<V> for Vec<V> {
     }
 }
 
-impl<V> DatumArray<V> for Option<V> {
+impl<V> DatumPushable<V> for Option<V> {
     #[inline]
     fn push(&mut self, entry: V) -> Result<(), ()> {
         if self.is_none() {
@@ -61,6 +82,9 @@ impl<V> DatumArray<V> for Option<V> {
     fn push_unwrap(&mut self, entry: V) {
         self.push(entry).unwrap();
     }
+}
+
+impl<V> DatumArray<V> for Option<V> {
     #[inline]
     fn pop(&mut self) -> Option<V> {
         core::mem::take(self)
@@ -92,7 +116,7 @@ impl<V: Default, const SIZE: usize> Default for DatumFixedArray<V, SIZE> {
     }
 }
 
-impl<V: Default, const SIZE: usize> DatumArray<V> for DatumFixedArray<V, SIZE> {
+impl<V: Default, const SIZE: usize> DatumPushable<V> for DatumFixedArray<V, SIZE> {
     #[inline]
     fn push(&mut self, entry: V) -> Result<(), ()> {
         if self.0 >= SIZE {
@@ -108,6 +132,9 @@ impl<V: Default, const SIZE: usize> DatumArray<V> for DatumFixedArray<V, SIZE> {
         self.1[self.0] = entry;
         self.0 += 1;
     }
+}
+
+impl<V: Default, const SIZE: usize> DatumArray<V> for DatumFixedArray<V, SIZE> {
     #[inline]
     fn pop(&mut self) -> Option<V> {
         if self.0 == 0 {
