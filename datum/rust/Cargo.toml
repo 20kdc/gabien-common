@@ -1,6 +1,6 @@
 [package]
 name = "datum-rs"
-version = "0.2.0"
+version = "0.3.0"
 description = "A portable, minimal S-expression format."
 repository = "https://github.com/20kdc/gabien-common/"
 license = "Unlicense"

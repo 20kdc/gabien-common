@@ -8,16 +8,15 @@
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
 
-use crate::{DatumComposePipe, DatumDecoder, DatumParser, DatumPipe, DatumStringTokenizer, DatumToken, DatumTokenType, DatumWriter, DATUM_DECODER_TOKENIZER_MAX_SIZE, DATUM_PARSER_MAX_SIZE};
+use crate::{datum_char_to_token_pipeline, datum_char_to_value_pipeline, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
 fn do_roundtrip_test(input: &str, output: &str) {
-    let mut dectok1: DatumComposePipe<_, _, {DATUM_DECODER_TOKENIZER_MAX_SIZE}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
+    let mut dectok1 = datum_char_to_token_pipeline();
     let mut ignoredout = Vec::new();
     dectok1.feed_iter_to_vec(&mut ignoredout, input.chars(), true);
     assert!(!dectok1.has_error());
     // ---
-    let dectok: DatumComposePipe<_, _, {DATUM_DECODER_TOKENIZER_MAX_SIZE}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
-    let mut dtparse: DatumComposePipe<_, _, {DATUM_DECODER_TOKENIZER_MAX_SIZE * DATUM_PARSER_MAX_SIZE * 2}> = DatumComposePipe(dectok, DatumParser::default());
+    let mut dtparse = datum_char_to_value_pipeline();
     let mut out = Vec::new();
     dtparse.feed_iter_to_vec(&mut out, input.chars(), true);
     // so, fun fact, in all the refactors, a bug snuck in where starting any list would enable the parse error flag

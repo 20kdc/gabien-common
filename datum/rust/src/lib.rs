@@ -60,6 +60,11 @@ mod ast;
 #[cfg(feature = "alloc")]
 pub use ast::*;
 
+#[cfg(feature = "alloc")]
+mod pipelines;
+#[cfg(feature = "alloc")]
+pub use pipelines::*;
+
 // Big test battery
 
 #[cfg(feature = "alloc")]

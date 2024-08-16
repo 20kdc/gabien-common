@@ -10,7 +10,7 @@ use core::{fmt::{Display, Write}, ops::Deref};
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 
-use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DATUM_DECODER_MAX_SIZE, DATUM_UTF8_DECODER_MAX_SIZE, DATUM_TOKENIZER_MAX_SIZE, DatumPipe, DatumTokenizerAction, DatumArray, DatumFixedArray};
+use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DATUM_TOKENIZER_MAX_SIZE, DatumPipe, DatumTokenizerAction, DatumArray, DatumFixedArray};
 
 /// Datum token with integrated string.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -211,16 +211,10 @@ impl<B: Deref<Target = str>> Display for DatumToken<B> {
     }
 }
 
-/// Utility for composed decoder/tokenizer size.
-pub const DATUM_DECODER_TOKENIZER_MAX_SIZE: usize = DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2;
-
-/// Utility for composed utf8/decoder/tokenizer size.
-pub const DATUM_UTF8_DECODER_TOKENIZER_MAX_SIZE: usize = DATUM_UTF8_DECODER_MAX_SIZE * DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2 * 2;
-
 /// Tokenizer that uses String as an internal buffer and spits out DatumToken.
 /// ```
-/// use datum_rs::{DatumDecoder, DatumToken, DatumStringTokenizer, DatumComposePipe, DatumPipe, DATUM_DECODER_TOKENIZER_MAX_SIZE};
-/// let mut decoder: DatumComposePipe<_, _, {DATUM_DECODER_TOKENIZER_MAX_SIZE}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
+/// use datum_rs::{DatumDecoder, DatumToken, DatumStringTokenizer, DatumComposePipe, DatumPipe, DATUM_DECODER_MAX_SIZE, DATUM_TOKENIZER_MAX_SIZE};
+/// let mut decoder: DatumComposePipe<_, _, {DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
 /// let mut out = Vec::new();
 /// decoder.feed_iter_to_vec(&mut out, ("these become test symbols").chars(), true);
 /// ```
