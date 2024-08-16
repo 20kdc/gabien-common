@@ -6,7 +6,7 @@
  */
 
 use alloc::vec::Vec;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 
 use crate::{DatumComposePipe, DatumDecoder, DatumParser, DatumPipe, DatumStringTokenizer, DatumToken, DatumTokenType, DatumWriter, DATUM_DECODER_TOKENIZER_MAX_SIZE, DATUM_PARSER_MAX_SIZE};
 
