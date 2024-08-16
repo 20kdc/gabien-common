@@ -45,30 +45,38 @@ impl<B: Deref<Target = str>> TryFrom<DatumToken<B>> for DatumAtom<B> {
                 } else if b.eq_ignore_ascii_case("nil") {
                     Ok(DatumAtom::Nil)
                 } else {
-                    Err(())
+                    if b.starts_with("i") || b.starts_with("I") {
+                        // remove this prefix and parse as Numeric
+                        DatumAtom::from_numeric(&b[1..])
+                    } else {
+                        Err(())
+                    }
                 }
             },
-            DatumToken::Numeric(b) => {
-                if b.eq_ignore_ascii_case("+nan.0") {
-                    Ok(DatumAtom::Float(f64::NAN))
-                } else if b.eq_ignore_ascii_case("+inf.0") {
-                    Ok(DatumAtom::Float(f64::INFINITY))
-                } else if b.eq_ignore_ascii_case("-inf.0") {
-                    Ok(DatumAtom::Float(f64::NEG_INFINITY))
-                } else if let Ok(v) = i64::from_str_radix(&b, 10) {
-                    Ok(DatumAtom::Integer(v))
-                } else if let Ok(v) = f64::from_str(&b) {
-                    Ok(DatumAtom::Float(v))
-                } else {
-                    Err(())
-                }
-            },
+            DatumToken::Numeric(b) => DatumAtom::from_numeric(&b),
             _ => Err(())
         }
     }
 }
 
 impl<B: Deref<Target = str>> DatumAtom<B> {
+    /// Assistant to conversion.
+    fn from_numeric(b: &str) -> Result<DatumAtom<B>, ()> {
+        if b.eq_ignore_ascii_case("+nan.0") {
+            Ok(DatumAtom::Float(f64::NAN))
+        } else if b.eq_ignore_ascii_case("+inf.0") {
+            Ok(DatumAtom::Float(f64::INFINITY))
+        } else if b.eq_ignore_ascii_case("-inf.0") {
+            Ok(DatumAtom::Float(f64::NEG_INFINITY))
+        } else if let Ok(v) = i64::from_str_radix(&b, 10) {
+            Ok(DatumAtom::Integer(v))
+        } else if let Ok(v) = f64::from_str(&b) {
+            Ok(DatumAtom::Float(v))
+        } else {
+            Err(())
+        }
+    }
+
     /// Writes a value from the atom.
     pub fn write(&self, f: &mut dyn Write) -> core::fmt::Result {
         match &self {
@@ -83,12 +91,12 @@ impl<B: Deref<Target = str>> DatumAtom<B> {
             },
             DatumAtom::Float(v) => {
                 if v.is_nan() {
-                    f.write_str("#+nan.0")?;
+                    f.write_str("#i+nan.0")?;
                 } else if v.is_infinite() {
                     if v.is_sign_positive() {
-                        f.write_str("#+inf.0")?;
+                        f.write_str("#i+inf.0")?;
                     } else {
-                        f.write_str("#-inf.0")?;
+                        f.write_str("#i-inf.0")?;
                     }
                 } else {
                     f.write_fmt(format_args!("{}", v))?;

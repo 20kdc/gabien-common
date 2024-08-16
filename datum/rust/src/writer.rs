@@ -7,7 +7,7 @@
 
 use core::{fmt::Write, ops::Deref};
 
-use crate::{DatumAtom, DatumToken, DatumTokenType, DatumTreeReader, DatumValue, DatumTree};
+use crate::{DatumAtom, DatumToken, DatumTokenType};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum DatumWriterState {
@@ -102,50 +102,6 @@ impl DatumWriter {
         self.emit_whitespace(f, false)?;
         value.write(f)?;
         self.state = DatumWriterState::AfterToken;
-        Ok(())
-    }
-
-    /// Writes a value from AST.
-    pub fn write_tree_value<M: DatumTreeReader>(&mut self, f: &mut dyn Write, tree: &M, value: &DatumValue<M>) -> core::fmt::Result {
-
-        match value {
-            DatumValue::Atom(v) => {
-                self.write_atom(f, v)?;
-            },
-            DatumValue::List(v) => {
-                self.emit_whitespace(f, false)?;
-                f.write_char('(')?;
-                self.state = DatumWriterState::None;
-                for i in 0..tree.len(v) {
-                    let element = tree.get_value(v, i);
-                    self.write_tree_value(f, tree, element)?;
-                }
-                self.emit_whitespace(f, true)?;
-                f.write_char(')')?;
-                self.state = DatumWriterState::AfterToken;
-            }
-        }
-        Ok(())
-    }
-
-    /// Writes a value from AST where the AST uses dereferencable slices.
-    pub fn write_value_deref_slices<M: DatumTree<ListRef = V>, V: Deref<Target = [DatumValue<M>]>>(&mut self, f: &mut dyn Write, value: &DatumValue<M>) -> core::fmt::Result {
-        match value {
-            DatumValue::Atom(v) => {
-                self.write_atom(f, v)?;
-            },
-            DatumValue::List(v) => {
-                self.emit_whitespace(f, false)?;
-                f.write_char('(')?;
-                self.state = DatumWriterState::None;
-                for element in v.deref() {
-                    self.write_value_deref_slices(f, element)?;
-                }
-                self.emit_whitespace(f, true)?;
-                f.write_char(')')?;
-                self.state = DatumWriterState::AfterToken;
-            }
-        }
         Ok(())
     }
 }

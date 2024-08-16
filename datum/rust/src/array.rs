@@ -114,7 +114,7 @@ impl<V: Default, const SIZE: usize> DatumArray<V> for DatumFixedArray<V, SIZE> {
             None
         } else {
             self.0 -= 1;
-            Some(core::mem::take(&mut self.1[self.0 - 1]))
+            Some(core::mem::take(&mut self.1[self.0]))
         }
     }
     #[inline]
@@ -146,5 +146,72 @@ impl<V: Default, const SIZE: usize> Iterator for DatumFixedArrayIter<V, SIZE> {
         } else {
             None
         }
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::vec::Vec;
+
+    fn array_i_test<A: DatumArray<u8> + Clone>(mut array: A) {
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.push(0), Ok(()));
+        assert!(!array.is_empty());
+        assert_eq!(array.len(), 1);
+        assert_eq!(array.push(1), Ok(()));
+        assert_eq!(array.len(), 2);
+        assert_eq!(array.clone().pop(), Some(1));
+        assert!(!array.is_empty());
+        assert_eq!(array.len(), 2);
+        assert_eq!(array.pop(), Some(1));
+        assert_eq!(array.len(), 1);
+        assert_eq!(array.pop(), Some(0));
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.pop(), None);
+        assert!(array.is_empty());
+    }
+
+    fn array_2_test<A: DatumArray<u8> + Clone>(mut array: A) {
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.push(0), Ok(()));
+        assert!(!array.is_empty());
+        assert_eq!(array.len(), 1);
+        assert_eq!(array.push(1), Ok(()));
+        assert_eq!(array.len(), 2);
+        assert_eq!(array.push(2), Err(()));
+        assert_eq!(array.clone().pop(), Some(1));
+        assert!(!array.is_empty());
+        assert_eq!(array.len(), 2);
+        assert_eq!(array.pop(), Some(1));
+        assert_eq!(array.len(), 1);
+        assert_eq!(array.pop(), Some(0));
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.pop(), None);
+        assert!(array.is_empty());
+    }
+
+    fn array_1_test<A: DatumArray<u8> + Clone>(mut array: A) {
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.push(1), Ok(()));
+        assert!(!array.is_empty());
+        assert_eq!(array.len(), 1);
+        assert_eq!(array.push(2), Err(()));
+        assert_eq!(array.clone().pop(), Some(1));
+        assert!(!array.is_empty());
+        assert_eq!(array.len(), 1);
+        assert_eq!(array.pop(), Some(1));
+        assert_eq!(array.len(), 0);
+        assert_eq!(array.pop(), None);
+        assert!(array.is_empty());
+    }
+
+    #[test]
+    fn array_tests() {
+        let array: DatumFixedArray<u8, 2> = DatumFixedArray::default();
+        array_2_test(array);
+        array_i_test(Vec::new());
+        array_1_test(None);
     }
 }

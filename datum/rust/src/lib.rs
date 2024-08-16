@@ -48,18 +48,20 @@ pub use token::*;
 mod atom;
 pub use atom::*;
 
-mod ast;
-pub use ast::*;
-
-mod fixed_ast;
-pub use fixed_ast::*;
-
-#[cfg(feature = "alloc")]
-mod alloc_ast;
-#[cfg(feature = "alloc")]
-pub use alloc_ast::*;
-
 // Writing
 
 mod writer;
 pub use writer::*;
+
+// AST (alloc-only)
+
+#[cfg(feature = "alloc")]
+mod ast;
+#[cfg(feature = "alloc")]
+pub use ast::*;
+
+// Big test battery
+
+#[cfg(feature = "alloc")]
+#[cfg(test)]
+mod tests;
