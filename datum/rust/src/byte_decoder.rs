@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::DatumPipe;
+use crate::{DatumFixedArray, DatumPipe};
 
 const UTF8_DECODE_BUFFER: usize = 4;
 
@@ -24,7 +24,7 @@ pub struct DatumUTF8Decoder {
 impl DatumPipe for DatumUTF8Decoder {
     type Input = u8;
     type Output = char;
-    type Array = Option<char>;
+    type Array = DatumFixedArray<char, DATUM_UTF8_DECODER_MAX_SIZE>;
     const MAX_SIZE: usize = DATUM_UTF8_DECODER_MAX_SIZE;
 
     #[inline]
@@ -32,7 +32,7 @@ impl DatumPipe for DatumUTF8Decoder {
         if self.buffer_len != 0 {
             self.has_error = true;
         }
-        None
+        DatumFixedArray::default()
     }
 
     #[inline]
@@ -42,31 +42,33 @@ impl DatumPipe for DatumUTF8Decoder {
 
     /// Given a [u8], returns a resulting [char], if any.
     fn feed(&mut self, byte: u8) -> Self::Array {
+        let mut arr = DatumFixedArray::default();
         if self.buffer_len >= (UTF8_DECODE_BUFFER as u8) {
             // this implies a UTF-8 character kept on continuing
             // and was not recognized as valid by Rust
             self.has_error = true;
-            None
+            DatumFixedArray::default()
         } else if self.buffer_len == 0 {
             // first char of sequence, use special handling to catch errors early
             if byte <= 127 {
                 // fast-path these
-                Some(byte as char)
+                arr.extend(Some(byte as char));
+                arr
             } else if byte >= 0x80 && byte <= 0xBF {
                 // can't start a sequence with a continuation
                 self.has_error = true;
-                None
+                arr
             } else {
                 // start bytes of multi-byte sequences
                 self.buffer[0] = byte;
                 self.buffer_len = 1;
-                None
+                arr
             }
         } else if byte < 0x80 || byte > 0xBF {
             // we're supposed to be adding continuations and suddenly this shows up?
             // (this path also catches if a character comes in that looks fine at a glance but from_utf8 doesn't like)
             self.has_error = true;
-            None
+            arr
         } else {
             self.buffer[self.buffer_len as usize] = byte;
             self.buffer_len += 1;
@@ -75,13 +77,14 @@ impl DatumPipe for DatumUTF8Decoder {
             if let Ok(res2) = res {
                 self.buffer_len = 0;
                 if let Some(v) = res2.chars().next() {
-                    Some(v)
+                    arr.extend(Some(v));
+                    arr
                 } else {
                     unreachable!()
                 }
             } else {
                 // could just mean the character hasn't finished yet
-                None
+                arr
             }
         }
     }

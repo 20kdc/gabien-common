@@ -36,7 +36,7 @@ use core::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use crate::{DatumAtom, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
+use crate::{DatumAtom, DatumFixedArray, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
 /// Datum AST node / value.
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
@@ -92,19 +92,19 @@ pub struct DatumParser {
 impl DatumPipe for DatumParser {
     type Input = DatumToken<String>;
     type Output = DatumValue;
-    type Array = Option<Self::Output>;
+    type Array = DatumFixedArray<Self::Output, DATUM_PARSER_MAX_SIZE>;
     const MAX_SIZE: usize = DATUM_PARSER_MAX_SIZE;
 
     fn feed(&mut self, token: Self::Input) -> Self::Array {
         match token.token_type() {
             DatumTokenType::Quote => {
                 self.stack.push(DatumParserState::InQuote);
-                None
+                Self::Array::default()
             },
             DatumTokenType::ListStart => {
                 let list = Vec::new();
                 self.stack.push(DatumParserState::InList(list));
-                None
+                Self::Array::default()
             },
             DatumTokenType::ListEnd => {
                 let res = self.stack.pop();
@@ -112,13 +112,13 @@ impl DatumPipe for DatumParser {
                     self.feed_value(DatumValue::List(v))
                 } else {
                     self.error = true;
-                    None
+                    Self::Array::default()
                 }
             },
             _ => match DatumAtom::try_from(token) {
                 Err(_) => {
                     self.error = true;
-                    None
+                    Self::Array::default()
                 },
                 Ok(v) => self.feed_value(DatumValue::Atom(v)),
             }
@@ -138,16 +138,18 @@ impl DatumPipe for DatumParser {
 }
 
 impl DatumParser {
-    fn feed_value(&mut self, mut v: DatumValue) -> Option<DatumValue> {
+    fn feed_value(&mut self, mut v: DatumValue) -> DatumFixedArray<DatumValue, DATUM_PARSER_MAX_SIZE> {
         loop {
             match self.stack.pop() {
                 None => {
-                    return Some(v);
+                    let mut res = DatumFixedArray::default();
+                    res.extend(Some(v));
+                    return res;
                 },
                 Some(DatumParserState::InList(mut list)) => {
                     list.push(v);
                     self.stack.push(DatumParserState::InList(list));
-                    return None;
+                    return DatumFixedArray::default();
                 },
                 Some(DatumParserState::InQuote) => {
                     let mut list = Vec::new();

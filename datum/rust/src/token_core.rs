@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::{DatumPushable, DatumCharClass, DatumFixedArray, DatumPipe};
+use crate::{DatumCharClass, DatumFixedArray, DatumPipe};
 
 /// Datum token type.
 /// This is paired with the token contents, if any.
@@ -42,8 +42,7 @@ enum DatumTokenizerState {
     /// potential identifier block, digit_class
     Numeric,
     /// potential identifier block
-    SpecialID,
-    Error
+    SpecialID
 }
 
 /// Action output by the tokenizer.
@@ -115,11 +114,11 @@ pub const DATUM_TOKENIZER_MAX_SIZE: usize = 2;
 /// ```
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct DatumTokenizer(DatumTokenizerState);
+pub struct DatumTokenizer(DatumTokenizerState, bool);
 
 impl Default for DatumTokenizer {
     fn default() -> Self {
-        Self(DatumTokenizerState::Start)
+        Self(DatumTokenizerState::Start, false)
     }
 }
 
@@ -133,41 +132,34 @@ impl DatumPipe for DatumTokenizer {
     const MAX_SIZE: usize = DATUM_TOKENIZER_MAX_SIZE;
 
     fn has_error(&self) -> bool {
-        self.0 == DatumTokenizerState::Error
+        self.1
     }
 
     /// Feeds an EOF to the tokenizer.
-    /// This also resets it.
     fn eof(&mut self) -> Self::Array {
         let mut arr: Self::Array = DatumFixedArray::default();
         self.0 = match self.0 {
-            DatumTokenizerState::Start => {
-                DatumTokenizerState::Start
-            },
-            DatumTokenizerState::LineComment => {
-                DatumTokenizerState::Start
-            },
+            DatumTokenizerState::Start => DatumTokenizerState::Start,
+            DatumTokenizerState::LineComment => DatumTokenizerState::Start,
             DatumTokenizerState::String => {
-                DatumTokenizerState::Error
+                self.1 = true;
+                DatumTokenizerState::Start
             },
             DatumTokenizerState::ID => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::ID));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::ID)));
                 DatumTokenizerState::Start
             },
             DatumTokenizerState::NumericSign => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::ID));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::ID)));
                 DatumTokenizerState::Start
             },
             DatumTokenizerState::Numeric => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::Numeric));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::Numeric)));
                 DatumTokenizerState::Start
             },
             DatumTokenizerState::SpecialID => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::SpecialID));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::SpecialID)));
                 DatumTokenizerState::Start
-            },
-            DatumTokenizerState::Error => {
-                DatumTokenizerState::Error
             }
         };
         arr
@@ -187,52 +179,51 @@ impl DatumPipe for DatumTokenizer {
             },
             DatumTokenizerState::String => {
                 if class == DatumCharClass::String {
-                    arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::String));
+                    arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::String)));
                     DatumTokenizerState::Start
                 } else {
-                    arr.push_unwrap(DatumTokenizerAction::Push);
+                    arr.extend(Some(DatumTokenizerAction::Push));
                     DatumTokenizerState::String
                 }
             },
             DatumTokenizerState::ID => {
                 if class.potential_identifier() {
-                    arr.push_unwrap(DatumTokenizerAction::Push);
+                    arr.extend(Some(DatumTokenizerAction::Push));
                     DatumTokenizerState::ID
                 } else {
-                    arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::ID));
+                    arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::ID)));
                     Self::start_feed(&mut arr, class)
                 }
             },
             DatumTokenizerState::NumericSign => {
                 if class.potential_identifier() {
-                    arr.push_unwrap(DatumTokenizerAction::Push);
+                    arr.extend(Some(DatumTokenizerAction::Push));
                     DatumTokenizerState::Numeric
                 } else {
                     // just a sign, so interpret as ID
-                    arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::ID));
+                    arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::ID)));
                     Self::start_feed(&mut arr, class)
                 }
             },
             DatumTokenizerState::Numeric => {
                 if class.potential_identifier() {
-                    arr.push_unwrap(DatumTokenizerAction::Push);
+                    arr.extend(Some(DatumTokenizerAction::Push));
                     DatumTokenizerState::Numeric
                 } else {
                     // if just "-", an ID, else numeric
-                    arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::Numeric));
+                    arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::Numeric)));
                     Self::start_feed(&mut arr, class)
                 }
             },
             DatumTokenizerState::SpecialID => {
                 if class.potential_identifier() {
-                    arr.push_unwrap(DatumTokenizerAction::Push);
+                    arr.extend(Some(DatumTokenizerAction::Push));
                     DatumTokenizerState::SpecialID
                 } else {
-                    arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::SpecialID));
+                    arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::SpecialID)));
                     Self::start_feed(&mut arr, class)
                 }
-            },
-            DatumTokenizerState::Error => DatumTokenizerState::Error
+            }
         };
         arr
     }
@@ -244,7 +235,7 @@ impl DatumTokenizer {
     fn start_feed(arr: &mut DatumFixedArray<DatumTokenizerAction, DATUM_TOKENIZER_MAX_SIZE>, class: DatumCharClass) -> DatumTokenizerState {
         match class {
             DatumCharClass::Content => {
-                arr.push_unwrap(DatumTokenizerAction::Push);
+                arr.extend(Some(DatumTokenizerAction::Push));
                 DatumTokenizerState::ID
             },
             DatumCharClass::Whitespace => DatumTokenizerState::Start,
@@ -252,26 +243,26 @@ impl DatumTokenizer {
             DatumCharClass::LineComment => DatumTokenizerState::LineComment,
             DatumCharClass::String => DatumTokenizerState::String,
             DatumCharClass::Quote => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::Quote));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::Quote)));
                 DatumTokenizerState::Start
             },
             DatumCharClass::ListStart => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::ListStart));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::ListStart)));
                 DatumTokenizerState::Start
             },
             DatumCharClass::ListEnd => {
-                arr.push_unwrap(DatumTokenizerAction::Token(DatumTokenType::ListEnd));
+                arr.extend(Some(DatumTokenizerAction::Token(DatumTokenType::ListEnd)));
                 DatumTokenizerState::Start
             },
             DatumCharClass::SpecialID => {
                 DatumTokenizerState::SpecialID
             },
             DatumCharClass::Sign => {
-                arr.push_unwrap(DatumTokenizerAction::Push);
+                arr.extend(Some(DatumTokenizerAction::Push));
                 DatumTokenizerState::NumericSign
             },
             DatumCharClass::Digit => {
-                arr.push_unwrap(DatumTokenizerAction::Push);
+                arr.extend(Some(DatumTokenizerAction::Push));
                 DatumTokenizerState::Numeric
             },
         }

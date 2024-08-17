@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::{DatumChar, DatumPipe};
+use crate::{DatumChar, DatumFixedArray, DatumPipe};
 
 /// Decoder's state machine
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -33,7 +33,7 @@ impl Default for DatumDecoder {
 impl DatumPipe for DatumDecoder {
     type Input = char;
     type Output = DatumChar;
-    type Array = Option<DatumChar>;
+    type Array = DatumFixedArray<DatumChar, DATUM_DECODER_MAX_SIZE>;
     const MAX_SIZE: usize = DATUM_DECODER_MAX_SIZE;
 
 
@@ -49,11 +49,12 @@ impl DatumPipe for DatumDecoder {
     }
 
     fn feed(&mut self, char: char) -> Self::Array {
-        let mut res = None;
+        let mut res = DatumFixedArray::default();
         self.0 = match self.0 {
             DatumDecoderState::Normal => {
-                res = DatumChar::identify(char);
-                match res {
+                let val = DatumChar::identify(char);
+                res.extend(val);
+                match val {
                     Some(_) => DatumDecoderState::Normal,
                     None => DatumDecoderState::Escaping
                 }
@@ -61,22 +62,22 @@ impl DatumPipe for DatumDecoder {
             DatumDecoderState::Escaping => {
                 match char {
                     'r' => {
-                        res = Some(DatumChar::content('\r'));
+                        res.extend(Some(DatumChar::content('\r')));
                         DatumDecoderState::Normal
                     },
                     'n' => {
-                        res = Some(DatumChar::content('\n'));
+                        res.extend(Some(DatumChar::content('\n')));
                         DatumDecoderState::Normal
                     },
                     't' => {
-                        res = Some(DatumChar::content('\t'));
+                        res.extend(Some(DatumChar::content('\t')));
                         DatumDecoderState::Normal
                     },
                     'x' => {
                         DatumDecoderState::HexEscape(0)
                     },
                     _ => {
-                        res = Some(DatumChar::content(char));
+                        res.extend(Some(DatumChar::content(char)));
                         DatumDecoderState::Normal
                     }
                 }
@@ -84,7 +85,7 @@ impl DatumPipe for DatumDecoder {
             DatumDecoderState::HexEscape(v) => {
                 if char == ';' {
                     if let Some(rustchar) = char::from_u32(v) {
-                        res = Some(DatumChar::content(rustchar));
+                        res.extend(Some(DatumChar::content(rustchar)));
                         DatumDecoderState::Normal
                     } else {
                         DatumDecoderState::Error
@@ -124,7 +125,7 @@ mod tests {
         let mut decoder = DatumDecoder::default();
         let mut output_iterator = output.chars();
         for v in input.chars() {
-            if let Some(c) = decoder.feed(v) {
+            for c in decoder.feed(v) {
                 assert_eq!(c.char(), output_iterator.next().expect("early output end"));
                 assert_eq!(c.class(), out_class);
             }

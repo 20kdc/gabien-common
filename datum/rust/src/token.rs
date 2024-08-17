@@ -10,7 +10,7 @@ use core::{fmt::{Display, Write}, ops::Deref};
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 
-use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DATUM_TOKENIZER_MAX_SIZE, DatumPipe, DatumTokenizerAction, DatumArray, DatumFixedArray};
+use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DATUM_TOKENIZER_MAX_SIZE, DatumPipe, DatumTokenizerAction, DatumFixedArray};
 
 /// Datum token with integrated string.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -260,7 +260,7 @@ impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipe for Datum
 }
 
 impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipeTokenizer<B> {
-    fn transform_actions(&mut self, char: char, actions: impl DatumArray<DatumTokenizerAction>) -> DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> {
+    fn transform_actions(&mut self, char: char, actions: impl IntoIterator<Item = DatumTokenizerAction>) -> DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> {
         let mut arr: DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> = DatumFixedArray::default();
         for v in actions {
             match v {
@@ -270,7 +270,7 @@ impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipeTokenizer<
                     }
                 },
                 DatumTokenizerAction::Token(v) => {
-                    arr.push_unwrap(DatumToken::new(v, core::mem::take(&mut self.0)));
+                    arr.extend(Some(DatumToken::new(v, core::mem::take(&mut self.0))));
                 }
             }
         }

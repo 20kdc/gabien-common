@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::{DatumPushable, DatumArray, DatumFixedArray};
+use crate::{DatumArray, DatumFixedArray};
 
 /// Generic "input X, get Y" function
 pub trait DatumPipe {
@@ -33,11 +33,9 @@ pub trait DatumPipe {
     /// decoder.feed_iter_to_vec(&mut results, "example text".chars(), true);
     /// assert_eq!(results.len(), 12);
     /// ```
-    fn feed_iter_to_vec<S: IntoIterator<Item = Self::Input>, V: DatumArray<Self::Output>>(&mut self, target: &mut V, source: S, eof: bool) {
+    fn feed_iter_to_vec<S: IntoIterator<Item = Self::Input>, V: Extend<Self::Output>>(&mut self, target: &mut V, source: S, eof: bool) {
         for v in source {
-            for o in self.feed(v) {
-                target.push_unwrap(o);
-            }
+            target.extend(self.feed(v));
         }
         if eof {
             self.eof_to_vec(target);
@@ -45,10 +43,8 @@ pub trait DatumPipe {
     }
 
     /// Returns EOF results into a vec or similar.
-    fn eof_to_vec<V: DatumArray<Self::Output>>(&mut self, target: &mut V) {
-        for o in self.eof() {
-            target.push_unwrap(o);
-        }
+    fn eof_to_vec<V: Extend<Self::Output>>(&mut self, target: &mut V) {
+        target.extend(self.eof());
     }
 
     /// Composes with another pipeline.
@@ -78,9 +74,7 @@ impl<A: DatumPipe, B: DatumPipe<Input = A::Output>, const MS: usize> DatumPipe f
         }
         let mut res: DatumFixedArray<Self::Output, MS> = DatumFixedArray::default();
         for v in self.0.feed(i) {
-            for v2 in self.1.feed(v) {
-                res.push_unwrap(v2);
-            }
+            res.extend(self.1.feed(v));
         }
         res
     }
@@ -91,13 +85,9 @@ impl<A: DatumPipe, B: DatumPipe<Input = A::Output>, const MS: usize> DatumPipe f
         }
         let mut res: DatumFixedArray<Self::Output, MS> = DatumFixedArray::default();
         for v in self.0.eof() {
-            for v2 in self.1.feed(v) {
-                res.push_unwrap(v2);
-            }
+            res.extend(self.1.feed(v));
         }
-        for v in self.1.eof() {
-            res.push_unwrap(v);
-        }
+        res.extend(self.1.eof());
         res
     }
 

@@ -8,7 +8,7 @@
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
 
-use crate::{datum_byte_to_value_pipeline, datum_char_to_token_pipeline, datum_char_to_value_pipeline, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
+use crate::{datum_byte_to_value_pipeline, datum_char_to_token_pipeline, datum_char_to_value_pipeline, DatumAtom, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
 fn do_roundtrip_test(input: &str, output: &str) {
     let mut dectok1 = datum_char_to_token_pipeline();
@@ -49,6 +49,14 @@ fn tokenizer_should_error_eof(input: &str) {
     assert!(dectok1.has_error());
 }
 
+fn parser_should_error(input: &str) {
+    let mut dtparse = datum_char_to_value_pipeline();
+    let mut out = Vec::new();
+    dtparse.feed_iter_to_vec(&mut out, input.chars(), true);
+    assert!(dtparse.has_error());
+}
+
+
 #[test]
 fn test_token_write() {
     assert_eq!(&DatumToken::new_not_into(DatumTokenType::String, "Test\\\r\n\t").to_string(), "\"Test\\\\\\r\\n\\t\"");
@@ -68,6 +76,9 @@ fn test_token_write() {
 
 #[test]
 fn roundtrip_tests() {
+    let niltest: DatumAtom<&str> = DatumAtom::Nil;
+    assert_eq!(DatumAtom::default(), niltest);
+
     do_roundtrip_test("", "");
     do_roundtrip_test("hello", "hello");
     do_roundtrip_test("(hello)", "(hello)");
@@ -76,9 +87,13 @@ fn roundtrip_tests() {
     do_roundtrip_test("#i+inf.0", "#i+inf.0");
     do_roundtrip_test("#i-inf.0", "#i-inf.0");
     do_roundtrip_test("10", "10");
+    do_roundtrip_test("10 ", "10");
     do_roundtrip_test("-10", "-10");
     do_roundtrip_test("-", "-");
+    do_roundtrip_test("- ", "-");
+    do_roundtrip_test("\\-a", "\\-a");
     do_roundtrip_test("#t", "#t");
+    do_roundtrip_test("#t ", "#t");
     do_roundtrip_test("#f", "#f");
     do_roundtrip_test("#nil", "#nil");
     do_roundtrip_test("#{}#", "#{}#");
@@ -86,8 +101,14 @@ fn roundtrip_tests() {
     do_roundtrip_test("\"mi moku telo tan luka sina\"", "\"mi moku telo tan luka sina\"");
     do_roundtrip_test("escape\\ me", "escape\\ me");
     do_roundtrip_test("; line comment\n", "");
+    do_roundtrip_test("\n", "");
 
     tokenizer_should_error_eof("\"a");
+
+    parser_should_error(")");
+    parser_should_error("(");
+    parser_should_error("#atom_conv_failure");
+    parser_should_error("#i0_numeric_conv_failure");
 
     // writer silly tests
     let mut writer_fmt = String::new();

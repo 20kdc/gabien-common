@@ -11,12 +11,10 @@ use alloc::vec::Vec;
 use alloc::string::String;
 
 /// Fallible push
-pub trait DatumPushable<V> {
+pub trait DatumPushable<V>: Extend<V> {
     /// Fallible push.
     #[must_use]
     fn push(&mut self, entry: V) -> Result<(), ()>;
-    /// Pushes (appends element to end), relying on Rust bounds checking to panic appropriately if necessary.
-    fn push_unwrap(&mut self, entry: V);
 }
 
 /// Array-like entity.
@@ -38,9 +36,6 @@ impl DatumPushable<char> for String {
         String::push(self, entry);
         Ok(())
     }
-    fn push_unwrap(&mut self, entry: char) {
-        String::push(self, entry);
-    }
 }
 
 #[cfg(feature = "alloc")]
@@ -49,10 +44,6 @@ impl<V> DatumPushable<V> for Vec<V> {
     fn push(&mut self, entry: V) -> Result<(), ()> {
         Vec::push(self, entry);
         Ok(())
-    }
-    #[inline]
-    fn push_unwrap(&mut self, entry: V) {
-        Vec::push(self, entry);
     }
 }
 
@@ -65,37 +56,6 @@ impl<V> DatumArray<V> for Vec<V> {
     #[inline]
     fn len(&self) -> usize {
         Vec::len(self)
-    }
-}
-
-impl<V> DatumPushable<V> for Option<V> {
-    #[inline]
-    fn push(&mut self, entry: V) -> Result<(), ()> {
-        if self.is_none() {
-            *self = Some(entry);
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-    #[inline]
-    fn push_unwrap(&mut self, entry: V) {
-        self.push(entry).unwrap();
-    }
-}
-
-impl<V> DatumArray<V> for Option<V> {
-    #[inline]
-    fn pop(&mut self) -> Option<V> {
-        core::mem::take(self)
-    }
-    #[inline]
-    fn len(&self) -> usize {
-        if self.is_some() {
-            1
-        } else {
-            0
-        }
     }
 }
 
@@ -116,6 +76,16 @@ impl<V: Default, const SIZE: usize> Default for DatumFixedArray<V, SIZE> {
     }
 }
 
+impl<V: Default, const SIZE: usize> Extend<V> for DatumFixedArray<V, SIZE> {
+    #[inline]
+    fn extend<T: IntoIterator<Item = V>>(&mut self, iter: T) {
+        for v in iter {
+            self.1[self.0] = v;
+            self.0 += 1;
+        }
+    }
+}
+
 impl<V: Default, const SIZE: usize> DatumPushable<V> for DatumFixedArray<V, SIZE> {
     #[inline]
     fn push(&mut self, entry: V) -> Result<(), ()> {
@@ -126,11 +96,6 @@ impl<V: Default, const SIZE: usize> DatumPushable<V> for DatumFixedArray<V, SIZE
             self.0 += 1;
             Ok(())
         }
-    }
-    #[inline]
-    fn push_unwrap(&mut self, entry: V) {
-        self.1[self.0] = entry;
-        self.0 += 1;
     }
 }
 
@@ -219,26 +184,10 @@ mod tests {
         assert!(array.is_empty());
     }
 
-    fn array_1_test<A: DatumArray<u8> + Clone>(mut array: A) {
-        assert_eq!(array.len(), 0);
-        assert_eq!(array.push(1), Ok(()));
-        assert!(!array.is_empty());
-        assert_eq!(array.len(), 1);
-        assert_eq!(array.push(2), Err(()));
-        assert_eq!(array.clone().pop(), Some(1));
-        assert!(!array.is_empty());
-        assert_eq!(array.len(), 1);
-        assert_eq!(array.pop(), Some(1));
-        assert_eq!(array.len(), 0);
-        assert_eq!(array.pop(), None);
-        assert!(array.is_empty());
-    }
-
     #[test]
     fn array_tests() {
         let array: DatumFixedArray<u8, 2> = DatumFixedArray::default();
         array_2_test(array);
         array_i_test(Vec::new());
-        array_1_test(None);
     }
 }
