@@ -9,6 +9,8 @@
 //! It's intended to be reasonably readable by R6RS readers, but not a strict subset (ultimately, this reduces complexity).
 //! The specification is available at <https://github.com/20kdc/gabien-common/blob/master/datum/specification.md>.
 
+#![forbid(unsafe_code)]
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // so this extern crate business is being weird, let's deal with it

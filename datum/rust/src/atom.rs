@@ -81,39 +81,25 @@ impl<B: Deref<Target = str>> DatumAtom<B> {
     /// Writes a value from the atom.
     pub fn write(&self, f: &mut dyn Write) -> core::fmt::Result {
         match &self {
-            DatumAtom::String(v) => {
-                DatumToken::String(v.deref()).write(f)?;
-            },
-            DatumAtom::ID(v) => {
-                DatumToken::ID(v.deref()).write(f)?;
-            },
-            DatumAtom::Integer(v) => {
-                f.write_fmt(format_args!("{}", v))?;
-            },
+            DatumAtom::String(v) => DatumToken::String(v.deref()).write(f),
+            DatumAtom::ID(v) => DatumToken::ID(v.deref()).write(f),
+            DatumAtom::Integer(v) => f.write_fmt(format_args!("{}", v)),
             DatumAtom::Float(v) => {
                 if v.is_nan() {
-                    f.write_str("#i+nan.0")?;
+                    f.write_str("#i+nan.0")
                 } else if v.is_infinite() {
                     if v.is_sign_positive() {
-                        f.write_str("#i+inf.0")?;
+                        f.write_str("#i+inf.0")
                     } else {
-                        f.write_str("#i-inf.0")?;
+                        f.write_str("#i-inf.0")
                     }
                 } else {
-                    f.write_fmt(format_args!("{}", v))?;
+                    f.write_fmt(format_args!("{}", v))
                 }
             },
-            DatumAtom::Boolean(v) => {
-                if *v {
-                    f.write_str("#t")?;
-                } else {
-                    f.write_str("#f")?;
-                }
-            },
-            DatumAtom::Nil => {
-                f.write_str("#nil")?;
-            }
+            DatumAtom::Boolean(true) => f.write_str("#t"),
+            DatumAtom::Boolean(false) => f.write_str("#f"),
+            DatumAtom::Nil => f.write_str("#nil")
         }
-        Ok(())
     }
 }

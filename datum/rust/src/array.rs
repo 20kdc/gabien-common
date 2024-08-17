@@ -14,7 +14,9 @@ use alloc::string::String;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct DatumNoRoomError;
 
-/// Fallible push
+/// Provides a target that data can be pushed to.
+/// This is similar to [Extend], and that trait is required (as an unwrapped version).
+/// Unlike [Extend], however, pushing to [DatumPushable] is single-item-at-a-time, and can fail.
 pub trait DatumPushable<V>: Extend<V> {
     /// Fallible push.
     fn push(&mut self, entry: V) -> Result<(), DatumNoRoomError>;

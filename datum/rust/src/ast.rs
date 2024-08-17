@@ -59,9 +59,7 @@ impl DatumValue {
     /// Writes a value from AST.
     pub fn write_to(&self, f: &mut dyn Write, writer: &mut DatumWriter) -> core::fmt::Result {
         match self {
-            DatumValue::Atom(v) => {
-                writer.write_atom(f, v)?;
-            },
+            DatumValue::Atom(v) => writer.write_atom(f, v),
             DatumValue::List(v) => {
                 let ls: DatumToken<&str> = DatumToken::ListStart;
                 let le: DatumToken<&str> = DatumToken::ListEnd;
@@ -69,10 +67,9 @@ impl DatumValue {
                 for e in v {
                     e.write_to(f, writer)?;
                 }
-                writer.write_token(f, &le)?;
+                writer.write_token(f, &le)
             }
         }
-        Ok(())
     }
 }
 
@@ -123,10 +120,9 @@ impl DatumPipe for DatumParser {
         }
     }
 
+    /// Sets the error flag if the parser is in the middle of a value.
     fn eof<F: FnMut(DatumValue)>(&mut self, _f: &mut F) {
-        if !self.stack.is_empty() {
-            self.error = true;
-        }
+        self.error |= !self.stack.is_empty();
     }
 
     fn has_error(&self) -> bool {
