@@ -37,7 +37,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use alloc::vec;
 
-use crate::{DatumAtom, DatumFixedArray, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
+use crate::{DatumAtom, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
 /// Datum AST node / value.
 #[derive(Clone, PartialEq, PartialOrd, Debug)]
@@ -47,6 +47,9 @@ pub enum DatumValue {
 }
 
 impl Default for DatumValue {
+    // tests.rs does cover this, but it's not detected
+    #[cfg(not(tarpaulin_include))]
+    #[inline]
     fn default() -> Self {
         Self::Atom(DatumAtom::Nil)
     }
@@ -93,44 +96,37 @@ pub struct DatumParser {
 impl DatumPipe for DatumParser {
     type Input = DatumToken<String>;
     type Output = DatumValue;
-    type Array = DatumFixedArray<Self::Output, DATUM_PARSER_MAX_SIZE>;
-    const MAX_SIZE: usize = DATUM_PARSER_MAX_SIZE;
 
-    fn feed(&mut self, token: Self::Input) -> Self::Array {
+    fn feed<F: FnMut(DatumValue)>(&mut self, token: Self::Input, f: &mut F) {
         match token.token_type() {
             DatumTokenType::Quote => {
                 self.stack.push(DatumParserState::InQuote);
-                Self::Array::default()
             },
             DatumTokenType::ListStart => {
                 let list = Vec::new();
                 self.stack.push(DatumParserState::InList(list));
-                Self::Array::default()
             },
             DatumTokenType::ListEnd => {
                 let res = self.stack.pop();
                 if let Some(DatumParserState::InList(v)) = res {
-                    self.feed_value(DatumValue::List(v))
+                    self.feed_value(DatumValue::List(v), f)
                 } else {
                     self.error = true;
-                    Self::Array::default()
                 }
             },
             _ => match DatumAtom::try_from(token) {
                 Err(_) => {
                     self.error = true;
-                    Self::Array::default()
                 },
-                Ok(v) => self.feed_value(DatumValue::Atom(v)),
+                Ok(v) => self.feed_value(DatumValue::Atom(v), f),
             }
         }
     }
 
-    fn eof(&mut self) -> Self::Array {
+    fn eof<F: FnMut(DatumValue)>(&mut self, _f: &mut F) {
         if !self.stack.is_empty() {
             self.error = true;
         }
-        Self::Array::default()
     }
 
     fn has_error(&self) -> bool {
@@ -139,18 +135,17 @@ impl DatumPipe for DatumParser {
 }
 
 impl DatumParser {
-    fn feed_value(&mut self, mut v: DatumValue) -> DatumFixedArray<DatumValue, DATUM_PARSER_MAX_SIZE> {
+    fn feed_value<F: FnMut(DatumValue)>(&mut self, mut v: DatumValue, f: &mut F) {
         loop {
             match self.stack.pop() {
                 None => {
-                    let mut res = DatumFixedArray::default();
-                    res.extend(Some(v));
-                    return res;
+                    f(v);
+                    break
                 },
                 Some(DatumParserState::InList(mut list)) => {
                     list.push(v);
                     self.stack.push(DatumParserState::InList(list));
-                    return DatumFixedArray::default();
+                    break
                 },
                 Some(DatumParserState::InQuote) => {
                     v = DatumValue::List(vec![

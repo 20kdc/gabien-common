@@ -10,7 +10,7 @@ use core::{fmt::{Display, Write}, ops::Deref};
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 
-use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DATUM_TOKENIZER_MAX_SIZE, DatumPipe, DatumTokenizerAction, DatumFixedArray};
+use crate::{DatumPushable, DatumTokenizer, DatumChar, DatumCharClass, DatumTokenType, DatumPipe, DatumTokenizerAction};
 
 /// Datum token with integrated string.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -227,8 +227,8 @@ impl<B: Deref<Target = str>> Display for DatumToken<B> {
 
 /// Tokenizer that uses String as an internal buffer and spits out DatumToken.
 /// ```
-/// use datum_rs::{DatumDecoder, DatumToken, DatumStringTokenizer, DatumComposePipe, DatumPipe, DATUM_DECODER_MAX_SIZE, DATUM_TOKENIZER_MAX_SIZE};
-/// let mut decoder: DatumComposePipe<_, _, {DATUM_DECODER_MAX_SIZE * DATUM_TOKENIZER_MAX_SIZE * 2}> = DatumComposePipe(DatumDecoder::default(), DatumStringTokenizer::default());
+/// use datum_rs::{DatumDecoder, DatumToken, DatumStringTokenizer, DatumComposePipe, DatumPipe};
+/// let mut decoder = DatumDecoder::default().compose(DatumStringTokenizer::default());
 /// let mut out = Vec::new();
 /// decoder.feed_iter_to_vec(&mut out, ("these become test symbols").chars(), true);
 /// ```
@@ -241,17 +241,21 @@ pub type DatumStringTokenizer = DatumPipeTokenizer<String>;
 impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipe for DatumPipeTokenizer<B> {
     type Input = DatumChar;
     type Output = DatumToken<B>;
-    type Array = DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE>;
-    const MAX_SIZE: usize = DATUM_TOKENIZER_MAX_SIZE;
 
-    fn feed(&mut self, i: Self::Input) -> Self::Array {
-        let buf = self.1.feed(i.class());
-        self.transform_actions(i.char(), buf)
+    fn feed<F: FnMut(Self::Output)>(&mut self, i: Self::Input, f: &mut F) {
+        let m0 = &mut self.0;
+        let m2 = &mut self.2;
+        self.1.feed(i.class(), &mut |v| {
+            Self::transform_action(m0, m2, i.char(), v, f)
+        })
     }
 
-    fn eof(&mut self) -> Self::Array {
-        let buf = self.1.eof();
-        self.transform_actions(' ', buf)
+    fn eof<F: FnMut(Self::Output)>(&mut self, f: &mut F) {
+        let m0 = &mut self.0;
+        let m2 = &mut self.2;
+        self.1.eof(&mut |v| {
+            Self::transform_action(m0, m2, ' ', v, f)
+        })
     }
 
     fn has_error(&self) -> bool {
@@ -260,20 +264,16 @@ impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipe for Datum
 }
 
 impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipeTokenizer<B> {
-    fn transform_actions(&mut self, char: char, actions: impl IntoIterator<Item = DatumTokenizerAction>) -> DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> {
-        let mut arr: DatumFixedArray<DatumToken<B>, DATUM_TOKENIZER_MAX_SIZE> = DatumFixedArray::default();
-        for v in actions {
-            match v {
-                DatumTokenizerAction::Push => {
-                    if self.0.push(char).is_err() {
-                        self.2 = true;
-                    }
-                },
-                DatumTokenizerAction::Token(v) => {
-                    arr.extend(Some(DatumToken::new(v, core::mem::take(&mut self.0))));
+    fn transform_action<F: FnMut(DatumToken<B>)>(buffer: &mut B, error: &mut bool, char: char, action: DatumTokenizerAction, f: &mut F) {
+        match action {
+            DatumTokenizerAction::Push => {
+                if buffer.push(char).is_err() {
+                    *error = true;
                 }
+            },
+            DatumTokenizerAction::Token(v) => {
+                f(DatumToken::new(v, core::mem::take(buffer)));
             }
         }
-        arr
     }
 }

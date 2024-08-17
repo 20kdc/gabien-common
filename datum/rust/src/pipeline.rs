@@ -5,20 +5,16 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use crate::{DatumArray, DatumFixedArray};
-
 /// Generic "input X, get Y" function
 pub trait DatumPipe {
     type Input;
-    type Output: Default;
-    type Array: DatumArray<Self::Output>;
-    const MAX_SIZE: usize;
+    type Output;
 
     /// Feeds in I, and you may get up to the given amount of O.
-    fn feed(&mut self, i: Self::Input) -> Self::Array;
+    fn feed<F: FnMut(Self::Output)>(&mut self, i: Self::Input, f: &mut F);
 
     /// EOF. May trigger errors.
-    fn eof(&mut self) -> Self::Array;
+    fn eof<F: FnMut(Self::Output)>(&mut self, f: &mut F);
 
     /// Returns true if an error has occurred.
     fn has_error(&self) -> bool;
@@ -35,7 +31,7 @@ pub trait DatumPipe {
     /// ```
     fn feed_iter_to_vec<S: IntoIterator<Item = Self::Input>, V: Extend<Self::Output>>(&mut self, target: &mut V, source: S, eof: bool) {
         for v in source {
-            target.extend(self.feed(v));
+            self.feed(v, &mut |o| target.extend(Some(o)));
         }
         if eof {
             self.eof_to_vec(target);
@@ -44,14 +40,12 @@ pub trait DatumPipe {
 
     /// Returns EOF results into a vec or similar.
     fn eof_to_vec<V: Extend<Self::Output>>(&mut self, target: &mut V) {
-        target.extend(self.eof());
+        self.eof(&mut |o| target.extend(Some(o)));
     }
 
     /// Composes with another pipeline.
-    /// Look for DatumStringTokenizer for an example.
-    fn compose<const MS: usize, P: DatumPipe<Input = Self::Output>>(self, other: P) -> impl DatumPipe<Input = Self::Input, Output = P::Output> where Self: Sized {
-        let res: DatumComposePipe<_, _, MS> = DatumComposePipe(self, other);
-        res
+    fn compose<P: DatumPipe<Input = Self::Output>>(self, other: P) -> impl DatumPipe<Input = Self::Input, Output = P::Output> where Self: Sized {
+        DatumComposePipe(self, other)
     }
 }
 
@@ -59,36 +53,27 @@ pub trait DatumPipe {
 /// Due to Rust limitations, you need to set MAX_SIZE manually to the multiplied max sizes of the input pipes, multiplied by 2.
 /// For this reason, you should always be careful to provide and use non-generic max size constants.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct DatumComposePipe<A: DatumPipe, B: DatumPipe<Input = A::Output>, const MS: usize>(pub A, pub B);
+pub struct DatumComposePipe<A: DatumPipe, B: DatumPipe<Input = A::Output>>(pub A, pub B);
 
-impl<A: DatumPipe, B: DatumPipe<Input = A::Output>, const MS: usize> DatumPipe for DatumComposePipe<A, B, MS> {
+impl<A: DatumPipe, B: DatumPipe<Input = A::Output>> DatumPipe for DatumComposePipe<A, B> {
     type Input = A::Input;
     type Output = B::Output;
-    type Array = DatumFixedArray<Self::Output, MS>;
-    // can be up to 2x because of EOF behaviour
-    const MAX_SIZE: usize = A::MAX_SIZE * B::MAX_SIZE * 2;
 
-    fn feed(&mut self, i: Self::Input) -> Self::Array {
-        if Self::MAX_SIZE != MS {
-            panic!("Self::MAX_SIZE is not the product of 2 * input max * output max. This would be a compile error if I could make it one, but I can't so it isn't.");
-        }
-        let mut res: DatumFixedArray<Self::Output, MS> = DatumFixedArray::default();
-        for v in self.0.feed(i) {
-            res.extend(self.1.feed(v));
-        }
-        res
+    fn feed<F: FnMut(Self::Output)>(&mut self, i: Self::Input, f: &mut F) {
+        let m0 = &mut self.0;
+        let m1 = &mut self.1;
+        m0.feed(i, &mut |v| {
+            m1.feed(v, f);
+        });
     }
 
-    fn eof(&mut self) -> Self::Array {
-        if Self::MAX_SIZE != MS {
-            panic!("Self::MAX_SIZE is not the product of 2 * input max * output max. This would be a compile error if I could make it one, but I can't so it isn't.");
-        }
-        let mut res: DatumFixedArray<Self::Output, MS> = DatumFixedArray::default();
-        for v in self.0.eof() {
-            res.extend(self.1.feed(v));
-        }
-        res.extend(self.1.eof());
-        res
+    fn eof<F: FnMut(Self::Output)>(&mut self, f: &mut F) {
+        let m0 = &mut self.0;
+        let m1 = &mut self.1;
+        m0.eof(&mut |v| {
+            m1.feed(v, f);
+        });
+        m1.eof(f);
     }
 
     #[inline]

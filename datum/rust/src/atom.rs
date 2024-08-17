@@ -23,6 +23,7 @@ pub enum DatumAtom<B: Deref<Target = str>> {
 }
 
 impl<B: Deref<Target = str>> Default for DatumAtom<B> {
+    #[inline]
     fn default() -> Self {
         Self::Nil
     }
