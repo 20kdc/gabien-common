@@ -25,6 +25,7 @@ fn do_roundtrip_test(input: &str, output: &str) {
     let mut writer = DatumWriter::default();
     for v in out {
         v.write_to(&mut out_str, &mut writer).unwrap();
+        writer.write_newline(&mut out_str).unwrap();
     }
     assert_eq!(out_str, output);
     // --- same again but with bytes
@@ -36,6 +37,7 @@ fn do_roundtrip_test(input: &str, output: &str) {
     let mut writer = DatumWriter::default();
     for v in out {
         v.write_to(&mut out_str, &mut writer).unwrap();
+        writer.write_newline(&mut out_str).unwrap();
     }
     assert_eq!(out_str, output);
 }
@@ -79,27 +81,16 @@ fn roundtrip_tests() {
     let niltest: DatumAtom<&str> = DatumAtom::Nil;
     assert_eq!(DatumAtom::default(), niltest);
 
+    let central_roundtrip_test_file = include_str!("../../roundtrip.scm");
+    do_roundtrip_test(central_roundtrip_test_file, central_roundtrip_test_file);
+
+    // EOF and quote tests tests
     do_roundtrip_test("", "");
-    do_roundtrip_test("hello", "hello");
-    do_roundtrip_test("(hello)", "(hello)");
-    do_roundtrip_test("1.23", "1.23");
-    do_roundtrip_test("#i+nan.0", "#i+nan.0");
-    do_roundtrip_test("#i+inf.0", "#i+inf.0");
-    do_roundtrip_test("#i-inf.0", "#i-inf.0");
-    do_roundtrip_test("10", "10");
-    do_roundtrip_test("10 ", "10");
-    do_roundtrip_test("-10", "-10");
-    do_roundtrip_test("-", "-");
-    do_roundtrip_test("- ", "-");
-    do_roundtrip_test("\\-a", "\\-a");
-    do_roundtrip_test("#t", "#t");
-    do_roundtrip_test("#t ", "#t");
-    do_roundtrip_test("#f", "#f");
-    do_roundtrip_test("#nil", "#nil");
-    do_roundtrip_test("#{}#", "#{}#");
-    do_roundtrip_test("'hello", "(quote hello)");
-    do_roundtrip_test("\"mi moku telo tan luka sina\"", "\"mi moku telo tan luka sina\"");
-    do_roundtrip_test("escape\\ me", "escape\\ me");
+    do_roundtrip_test("-10", "-10\n");
+    do_roundtrip_test("-", "-\n");
+    do_roundtrip_test("\\-a", "\\-a\n");
+    do_roundtrip_test("#t", "#t\n");
+    do_roundtrip_test("'hello", "(quote hello)\n");
     do_roundtrip_test("; line comment\n", "");
     do_roundtrip_test("\n", "");
 

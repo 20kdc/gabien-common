@@ -54,7 +54,7 @@ impl DatumPipe for DatumUTF8Decoder {
                 // fast-path these
                 arr.extend(Some(byte as char));
                 arr
-            } else if byte >= 0x80 && byte <= 0xBF {
+            } else if (0x80..=0xBF).contains(&byte) {
                 // can't start a sequence with a continuation
                 self.has_error = true;
                 arr
@@ -64,7 +64,7 @@ impl DatumPipe for DatumUTF8Decoder {
                 self.buffer_len = 1;
                 arr
             }
-        } else if byte < 0x80 || byte > 0xBF {
+        } else if !(0x80..=0xBF).contains(&byte) {
             // we're supposed to be adding continuations and suddenly this shows up?
             // (this path also catches if a character comes in that looks fine at a glance but from_utf8 doesn't like)
             self.has_error = true;

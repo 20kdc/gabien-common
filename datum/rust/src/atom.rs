@@ -5,7 +5,7 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-use core::{convert::TryFrom, fmt::Write, ops::Deref, str::FromStr};
+use core::{convert::TryFrom, fmt::Write, ops::Deref};
 
 use crate::DatumToken;
 
@@ -46,13 +46,11 @@ impl<B: Default + Deref<Target = str>> TryFrom<DatumToken<B>> for DatumAtom<B> {
                     Ok(DatumAtom::Nil)
                 } else if b.eq("{}#") {
                     Ok(DatumAtom::ID(B::default()))
+                } else if b.starts_with('i') || b.starts_with('I') {
+                    // remove this prefix and parse as Numeric
+                    DatumAtom::from_numeric(&b[1..])
                 } else {
-                    if b.starts_with("i") || b.starts_with("I") {
-                        // remove this prefix and parse as Numeric
-                        DatumAtom::from_numeric(&b[1..])
-                    } else {
-                        Err(())
-                    }
+                    Err(())
                 }
             },
             DatumToken::Numeric(b) => DatumAtom::from_numeric(&b),
@@ -70,9 +68,9 @@ impl<B: Deref<Target = str>> DatumAtom<B> {
             Ok(DatumAtom::Float(f64::INFINITY))
         } else if b.eq_ignore_ascii_case("-inf.0") {
             Ok(DatumAtom::Float(f64::NEG_INFINITY))
-        } else if let Ok(v) = i64::from_str_radix(&b, 10) {
+        } else if let Ok(v) = b.parse() {
             Ok(DatumAtom::Integer(v))
-        } else if let Ok(v) = f64::from_str(&b) {
+        } else if let Ok(v) = b.parse() {
             Ok(DatumAtom::Float(v))
         } else {
             Err(())

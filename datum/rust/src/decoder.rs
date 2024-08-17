@@ -93,14 +93,8 @@ impl DatumPipe for DatumDecoder {
                 } else {
                     let mut v_new = v;
                     v_new <<= 4;
-                    if char >= '0' && char <= '9' {
-                        v_new |= (char as u32) - ('0' as u32);
-                        DatumDecoderState::HexEscape(v_new)
-                    } else if char >= 'A' && char <= 'F' {
-                        v_new |= ((char as u32) - ('A' as u32)) + 0xA;
-                        DatumDecoderState::HexEscape(v_new)
-                    } else if char >= 'a' && char <= 'f' {
-                        v_new |= ((char as u32) - ('a' as u32)) + 0xA;
+                    if let Some(digit) = char.to_digit(16) {
+                        v_new |= digit;
                         DatumDecoderState::HexEscape(v_new)
                     } else {
                         DatumDecoderState::Error

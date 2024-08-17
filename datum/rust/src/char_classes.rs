@@ -43,13 +43,7 @@ impl DatumCharClass {
     /// ```
     #[inline]
     pub const fn potential_identifier(&self) -> bool {
-        match self {
-            Self::Content => true,
-            Self::Sign => true,
-            Self::Digit => true,
-            Self::SpecialID => true,
-            _ => false
-        }
+        matches!(self, Self::Content | Self::Sign | Self::Digit | Self::SpecialID)
     }
 
     /// If this character class starts a number.
@@ -60,11 +54,7 @@ impl DatumCharClass {
     /// ```
     #[inline]
     pub const fn numeric_start(&self) -> bool {
-        match self {
-            Self::Sign => true,
-            Self::Digit => true,
-            _ => false
-        }
+        matches!(self, Self::Sign | Self::Digit)
     }
 
     /// Identifies a character.
@@ -182,11 +172,8 @@ impl DatumChar {
             (2, ['\\', 't'])
         } else {
             match DatumCharClass::identify(v) {
-                None => (2, ['\\', v]),
-                Some(rchr) => match rchr {
-                    DatumCharClass::Content => (1, [v, '\x00']),
-                    _ => (2, ['\\', v])
-                }
+                Some(DatumCharClass::Content) => (1, [v, '\x00']),
+                _ => (2, ['\\', v])
             }
         };
         DatumChar { char: v, class: DatumCharClass::Content, emit_len: emit.0, emit_storage: emit.1 }

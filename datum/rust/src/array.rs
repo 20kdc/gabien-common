@@ -10,11 +10,14 @@ use alloc::vec::Vec;
 #[cfg(feature = "alloc")]
 use alloc::string::String;
 
+/// Indicates there was no room in whatever you were trying to push the value into.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct DatumNoRoomError;
+
 /// Fallible push
 pub trait DatumPushable<V>: Extend<V> {
     /// Fallible push.
-    #[must_use]
-    fn push(&mut self, entry: V) -> Result<(), ()>;
+    fn push(&mut self, entry: V) -> Result<(), DatumNoRoomError>;
 }
 
 /// Array-like entity.
@@ -32,7 +35,7 @@ pub trait DatumArray<V>: DatumPushable<V> + IntoIterator<Item = V> {
 
 #[cfg(feature = "alloc")]
 impl DatumPushable<char> for String {
-    fn push(&mut self, entry: char) -> Result<(), ()> {
+    fn push(&mut self, entry: char) -> Result<(), DatumNoRoomError> {
         String::push(self, entry);
         Ok(())
     }
@@ -41,7 +44,7 @@ impl DatumPushable<char> for String {
 #[cfg(feature = "alloc")]
 impl<V> DatumPushable<V> for Vec<V> {
     #[inline]
-    fn push(&mut self, entry: V) -> Result<(), ()> {
+    fn push(&mut self, entry: V) -> Result<(), DatumNoRoomError> {
         Vec::push(self, entry);
         Ok(())
     }
@@ -88,9 +91,9 @@ impl<V: Default, const SIZE: usize> Extend<V> for DatumFixedArray<V, SIZE> {
 
 impl<V: Default, const SIZE: usize> DatumPushable<V> for DatumFixedArray<V, SIZE> {
     #[inline]
-    fn push(&mut self, entry: V) -> Result<(), ()> {
+    fn push(&mut self, entry: V) -> Result<(), DatumNoRoomError> {
         if self.0 >= SIZE {
-            Err(())
+            Err(DatumNoRoomError)
         } else {
             self.1[self.0] = entry;
             self.0 += 1;
@@ -172,7 +175,7 @@ mod tests {
         assert_eq!(array.len(), 1);
         assert_eq!(array.push(1), Ok(()));
         assert_eq!(array.len(), 2);
-        assert_eq!(array.push(2), Err(()));
+        assert_eq!(array.push(2), Err(DatumNoRoomError));
         assert_eq!(array.clone().pop(), Some(1));
         assert!(!array.is_empty());
         assert_eq!(array.len(), 2);

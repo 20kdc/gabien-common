@@ -35,6 +35,7 @@ use core::{convert::TryFrom, fmt::Write};
 use core::fmt::Debug;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use alloc::vec;
 
 use crate::{DatumAtom, DatumFixedArray, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
@@ -56,7 +57,7 @@ impl DatumValue {
     pub fn write_to(&self, f: &mut dyn Write, writer: &mut DatumWriter) -> core::fmt::Result {
         match self {
             DatumValue::Atom(v) => {
-                writer.write_atom(f, &v)?;
+                writer.write_atom(f, v)?;
             },
             DatumValue::List(v) => {
                 let ls: DatumToken<&str> = DatumToken::ListStart;
@@ -152,10 +153,10 @@ impl DatumParser {
                     return DatumFixedArray::default();
                 },
                 Some(DatumParserState::InQuote) => {
-                    let mut list = Vec::new();
-                    list.push(DatumValue::Atom(DatumAtom::ID("quote".to_string())));
-                    list.push(v);
-                    v = DatumValue::List(list);
+                    v = DatumValue::List(vec![
+                        DatumValue::Atom(DatumAtom::ID("quote".to_string())),
+                        v
+                    ]);
                     // and continue
                 }
             }

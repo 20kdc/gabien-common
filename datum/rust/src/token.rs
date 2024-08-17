@@ -79,7 +79,7 @@ impl<B: Deref<Target = str>> DatumToken<B> {
 
     /// Return the buffer of this token, if the type has one.
     #[cfg(not(tarpaulin_include))]
-    pub fn buffer<'a>(&'a self) -> Option<&'a B> {
+    pub fn buffer(&self) -> Option<&B> {
         match &self {
             Self::String(b) => Some(b),
             Self::ID(b) => Some(b),
@@ -265,7 +265,7 @@ impl<B: DatumPushable<char> + Deref<Target = str> + Default> DatumPipeTokenizer<
         for v in actions {
             match v {
                 DatumTokenizerAction::Push => {
-                    if let Err(()) = self.0.push(char) {
+                    if self.0.push(char).is_err() {
                         self.2 = true;
                     }
                 },
