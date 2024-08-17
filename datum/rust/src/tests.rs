@@ -8,7 +8,7 @@
 use alloc::vec::Vec;
 use alloc::string::{String, ToString};
 
-use crate::{datum_char_to_token_pipeline, datum_char_to_value_pipeline, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
+use crate::{datum_byte_to_value_pipeline, datum_char_to_token_pipeline, datum_char_to_value_pipeline, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
 fn do_roundtrip_test(input: &str, output: &str) {
     let mut dectok1 = datum_char_to_token_pipeline();
@@ -27,6 +27,26 @@ fn do_roundtrip_test(input: &str, output: &str) {
         v.write_to(&mut out_str, &mut writer).unwrap();
     }
     assert_eq!(out_str, output);
+    // --- same again but with bytes
+    let mut dtparse = datum_byte_to_value_pipeline();
+    let mut out = Vec::new();
+    dtparse.feed_iter_to_vec(&mut out, input.bytes(), true);
+    assert!(!dtparse.has_error());
+    let mut out_str = String::new();
+    let mut writer = DatumWriter::default();
+    for v in out {
+        v.write_to(&mut out_str, &mut writer).unwrap();
+    }
+    assert_eq!(out_str, output);
+}
+
+fn tokenizer_should_error_eof(input: &str) {
+    let mut dectok1 = datum_char_to_token_pipeline();
+    let mut ignoredout = Vec::new();
+    dectok1.feed_iter_to_vec(&mut ignoredout, input.chars(), false);
+    assert!(!dectok1.has_error());
+    dectok1.eof_to_vec(&mut ignoredout);
+    assert!(dectok1.has_error());
 }
 
 #[test]
@@ -57,12 +77,18 @@ fn roundtrip_tests() {
     do_roundtrip_test("#i-inf.0", "#i-inf.0");
     do_roundtrip_test("10", "10");
     do_roundtrip_test("-10", "-10");
+    do_roundtrip_test("-", "-");
     do_roundtrip_test("#t", "#t");
     do_roundtrip_test("#f", "#f");
     do_roundtrip_test("#nil", "#nil");
     do_roundtrip_test("#{}#", "#{}#");
     do_roundtrip_test("'hello", "(quote hello)");
     do_roundtrip_test("\"mi moku telo tan luka sina\"", "\"mi moku telo tan luka sina\"");
+    do_roundtrip_test("escape\\ me", "escape\\ me");
+    do_roundtrip_test("; line comment\n", "");
+
+    tokenizer_should_error_eof("\"a");
+
     // writer silly tests
     let mut writer_fmt = String::new();
     let mut writer_fmt_test = DatumWriter::default();

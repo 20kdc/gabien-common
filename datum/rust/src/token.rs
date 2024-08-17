@@ -117,7 +117,21 @@ impl<B: Deref<Target = str>> DatumToken<B> {
                 let mut chars = b.chars();
                 match chars.next() {
                     Some(v) => {
-                        DatumChar::content(v).write(f)?;
+                        if DatumCharClass::identify(v) == Some(DatumCharClass::Sign) {
+                            match chars.next() {
+                                Some(v2) => {
+                                    // business as usual
+                                    DatumChar::content(v).write(f)?;
+                                    DatumChar::content(v2).write(f)?;
+                                },
+                                None => {
+                                    // lone sign
+                                    return f.write_char(v);
+                                }
+                            }
+                        } else {
+                            DatumChar::content(v).write(f)?;
+                        }
                         for remainder in chars {
                             DatumChar::potential_identifier(remainder).write(f)?;
                         }
