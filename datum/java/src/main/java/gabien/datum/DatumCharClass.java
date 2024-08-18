@@ -16,7 +16,6 @@ public enum DatumCharClass {
     Newline(false, null),
     LineComment(false, null),
     String(false, null),
-    Quote(false, DatumTokenType.Quote),
     ListStart(false, DatumTokenType.ListStart),
     ListEnd(false, DatumTokenType.ListEnd),
     SpecialID(true, null),
@@ -47,8 +46,6 @@ public enum DatumCharClass {
             return LineComment;
         if (c == '"')
             return String;
-        if (c == '\'')
-            return Quote;
         if (c == '(')
             return ListStart;
         if (c == ')')

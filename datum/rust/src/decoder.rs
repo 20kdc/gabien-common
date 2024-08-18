@@ -173,7 +173,6 @@ mod tests {
         decoder_test("\n", "\n", DatumCharClass::Newline);
         decoder_test(";", ";", DatumCharClass::LineComment);
         decoder_test("\"", "\"", DatumCharClass::String);
-        decoder_test("'", "'", DatumCharClass::Quote);
         decoder_test("(", "(", DatumCharClass::ListStart);
         decoder_test(")", ")", DatumCharClass::ListEnd);
         decoder_test("#", "#", DatumCharClass::SpecialID);

@@ -50,7 +50,6 @@ public class DatumIOTest {
         assertThrows(RuntimeException.class, () -> parseTestCase("("));
         assertThrows(RuntimeException.class, () -> parseTestCase(")"));
         assertThrows(RuntimeException.class, () -> parseTestCase("123notarealnumber"));
-        assertThrows(RuntimeException.class, () -> parseTestCase("'"));
         // position
         assertEquals("testL1", new DatumReaderTokenSource("test", "").position());
         
@@ -112,7 +111,7 @@ public class DatumIOTest {
                 "; Exceptional cases\n" +
                 "#t #f #{}# \\#escapethis \\1234 #nil\n" +
                 "; Floats, strings\n" +
-                "0.125 \"Hello\\r\\n\\t\\x5000;\\x10000;\" 'hi\n" +
+                "0.125 \"Hello\\r\\n\\t\\x5000;\\x10000;\" (quote hi)\n" +
                 "#i0.125\n" +
                 ")";
         DatumReaderTokenSource drs = new DatumReaderTokenSource("string", tcs);

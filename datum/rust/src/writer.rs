@@ -89,7 +89,7 @@ impl DatumWriter {
         let token_type = token.token_type();
         self.emit_whitespace(f, token_type == DatumTokenType::ListEnd)?;
         token.write(f)?;
-        if token_type != DatumTokenType::ListStart && token_type != DatumTokenType::Quote {
+        if token_type != DatumTokenType::ListStart {
             self.state = DatumWriterState::AfterToken;
         } else {
             self.state = DatumWriterState::None;

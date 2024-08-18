@@ -71,7 +71,6 @@ fn test_token_write() {
     assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "AA").to_string(), "#iAA");
     assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "\\A").to_string(), "#i\\\\A");
     assert_eq!(&DatumToken::new_not_into(DatumTokenType::Numeric, "").to_string(), "#i");
-    assert_eq!(&DatumToken::new_not_into(DatumTokenType::Quote, "").to_string(), "'");
     assert_eq!(&DatumToken::new_not_into(DatumTokenType::ListStart, "").to_string(), "(");
     assert_eq!(&DatumToken::new_not_into(DatumTokenType::ListEnd, "").to_string(), ")");
 }
@@ -84,13 +83,12 @@ fn roundtrip_tests() {
     let central_roundtrip_test_file = include_str!("../../roundtrip.scm");
     do_roundtrip_test(central_roundtrip_test_file, central_roundtrip_test_file);
 
-    // EOF and quote tests tests
+    // EOF and such tests
     do_roundtrip_test("", "");
     do_roundtrip_test("-10", "-10\n");
     do_roundtrip_test("-", "-\n");
     do_roundtrip_test("\\-a", "\\-a\n");
     do_roundtrip_test("#t", "#t\n");
-    do_roundtrip_test("'hello", "(quote hello)\n");
     do_roundtrip_test("; line comment\n", "");
     do_roundtrip_test("\n", "");
 

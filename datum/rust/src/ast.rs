@@ -33,9 +33,8 @@
 
 use core::{convert::TryFrom, fmt::Write};
 use core::fmt::Debug;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use alloc::vec::Vec;
-use alloc::vec;
 
 use crate::{DatumAtom, DatumPipe, DatumToken, DatumTokenType, DatumWriter};
 
@@ -73,20 +72,13 @@ impl DatumValue {
     }
 }
 
-/// These states represent ways of handling an emitted value.
-#[derive(Clone, Debug)]
-enum DatumParserState {
-    InList(Vec<DatumValue>),
-    InQuote
-}
-
 /// Maximum values that can be output from the parser per feed call
 pub const DATUM_PARSER_MAX_SIZE: usize = 1;
 
 /// Datum parser (from tokens into values).
 #[derive(Clone, Debug, Default)]
 pub struct DatumParser {
-    stack: Vec<DatumParserState>,
+    stack: Vec<Vec<DatumValue>>,
     error: bool
 }
 
@@ -96,16 +88,13 @@ impl DatumPipe for DatumParser {
 
     fn feed<F: FnMut(DatumValue)>(&mut self, token: Self::Input, f: &mut F) {
         match token.token_type() {
-            DatumTokenType::Quote => {
-                self.stack.push(DatumParserState::InQuote);
-            },
             DatumTokenType::ListStart => {
                 let list = Vec::new();
-                self.stack.push(DatumParserState::InList(list));
+                self.stack.push(list);
             },
             DatumTokenType::ListEnd => {
                 let res = self.stack.pop();
-                if let Some(DatumParserState::InList(v)) = res {
+                if let Some(v) = res {
                     self.feed_value(DatumValue::List(v), f)
                 } else {
                     self.error = true;
@@ -131,25 +120,12 @@ impl DatumPipe for DatumParser {
 }
 
 impl DatumParser {
-    fn feed_value<F: FnMut(DatumValue)>(&mut self, mut v: DatumValue, f: &mut F) {
-        loop {
-            match self.stack.pop() {
-                None => {
-                    f(v);
-                    break
-                },
-                Some(DatumParserState::InList(mut list)) => {
-                    list.push(v);
-                    self.stack.push(DatumParserState::InList(list));
-                    break
-                },
-                Some(DatumParserState::InQuote) => {
-                    v = DatumValue::List(vec![
-                        DatumValue::Atom(DatumAtom::ID("quote".to_string())),
-                        v
-                    ]);
-                    // and continue
-                }
+    fn feed_value<F: FnMut(DatumValue)>(&mut self, v: DatumValue, f: &mut F) {
+        match self.stack.pop() {
+            None => f(v),
+            Some(mut list) => {
+                list.push(v);
+                self.stack.push(list);
             }
         }
     }

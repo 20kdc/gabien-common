@@ -97,16 +97,6 @@ public abstract class DatumTokenSource {
             case Numeric:
                 visitNumeric(visitor, contents());
                 break;
-            case Quote:
-            {
-                DatumVisitor dv = visitor.visitList(srcLoc());
-                dv.visitId("quote", srcLoc());
-                // This works better because it doesn't allow quote followed by list-end
-                if (!visitValue(dv))
-                    throw new RuntimeException(position() + ": Hit quote, but did not get a value");
-                dv.visitEnd(srcLoc());
-            }
-                break;
             }
             // Read in a value (or started or ended a list), so if the stack is empty we are done here
             if (storedListVisitors.isEmpty())

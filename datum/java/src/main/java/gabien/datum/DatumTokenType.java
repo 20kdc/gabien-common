@@ -15,7 +15,6 @@ public enum DatumTokenType {
     ID,
     SpecialID,
     Numeric,
-    Quote,
     ListStart,
     ListEnd
 }

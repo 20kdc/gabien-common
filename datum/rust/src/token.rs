@@ -23,7 +23,6 @@ pub enum DatumToken<B: Deref<Target = str>> {
     SpecialID(B),
     /// Numeric. Buffer contents are simply the token.
     Numeric(B),
-    Quote,
     ListStart,
     ListEnd
 }
@@ -45,7 +44,6 @@ impl<B: Deref<Target = str>> DatumToken<B> {
             DatumTokenType::ID => Self::ID(text.into()),
             DatumTokenType::SpecialID => Self::SpecialID(text.into()),
             DatumTokenType::Numeric => Self::Numeric(text.into()),
-            DatumTokenType::Quote => Self::Quote,
             DatumTokenType::ListStart => Self::ListStart,
             DatumTokenType::ListEnd => Self::ListEnd,
         }
@@ -57,7 +55,6 @@ impl<B: Deref<Target = str>> DatumToken<B> {
             DatumTokenType::ID => Self::ID(text),
             DatumTokenType::SpecialID => Self::SpecialID(text),
             DatumTokenType::Numeric => Self::Numeric(text),
-            DatumTokenType::Quote => Self::Quote,
             DatumTokenType::ListStart => Self::ListStart,
             DatumTokenType::ListEnd => Self::ListEnd,
         }
@@ -71,7 +68,6 @@ impl<B: Deref<Target = str>> DatumToken<B> {
             Self::ID(_) => DatumTokenType::ID,
             Self::SpecialID(_) => DatumTokenType::SpecialID,
             Self::Numeric(_) => DatumTokenType::Numeric,
-            Self::Quote => DatumTokenType::Quote,
             Self::ListStart => DatumTokenType::ListStart,
             Self::ListEnd => DatumTokenType::ListEnd,
         }
@@ -204,9 +200,6 @@ impl<B: Deref<Target = str>> DatumToken<B> {
                         f.write_char('i')?;
                     }
                 }
-            },
-            Self::Quote => {
-                f.write_char('\'')?;
             },
             Self::ListStart => {
                 f.write_char('(')?;

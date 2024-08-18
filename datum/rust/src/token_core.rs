@@ -19,8 +19,6 @@ pub enum DatumTokenType {
     SpecialID,
     /// Numeric
     Numeric,
-    /// Quote. Buffer is empty.
-    Quote,
     /// List start. Buffer is empty.
     ListStart,
     /// List end. Buffer is empty.
@@ -228,10 +226,6 @@ impl DatumTokenizer {
             DatumCharClass::Newline => DatumTokenizerState::Start,
             DatumCharClass::LineComment => DatumTokenizerState::LineComment,
             DatumCharClass::String => DatumTokenizerState::String,
-            DatumCharClass::Quote => {
-                f(DatumTokenizerAction::Token(DatumTokenType::Quote));
-                DatumTokenizerState::Start
-            },
             DatumCharClass::ListStart => {
                 f(DatumTokenizerAction::Token(DatumTokenType::ListStart));
                 DatumTokenizerState::Start

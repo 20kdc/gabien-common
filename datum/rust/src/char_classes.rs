@@ -20,8 +20,6 @@ pub enum DatumCharClass {
     LineComment,
     /// '"'
     String,
-    /// '\''
-    Quote,
     /// '('
     ListStart,
     /// ')'
@@ -70,8 +68,6 @@ impl DatumCharClass {
             Some(DatumCharClass::LineComment)
         } else if v == '"' {
             Some(DatumCharClass::String)
-        } else if v == '\'' {
-            Some(DatumCharClass::Quote)
         } else if v == '(' {
             Some(DatumCharClass::ListStart)
         } else if v == ')' {
