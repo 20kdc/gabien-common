@@ -12,7 +12,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 unzip -o uslx/target/gabien-uslx-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o datum/java/target/gabien-datum-0.666-SNAPSHOT.jar -d "$1" &&
+unzip -o ../datum/java/target/gabien-datum-0.666-SNAPSHOT.jar -d "$1" &&
 unzip -o media/target/gabien-media-0.666-SNAPSHOT.jar -d "$1" &&
 unzip -o common/target/gabien-common-0.666-SNAPSHOT.jar -d "$1" &&
 unzip -o ui/target/gabien-ui-0.666-SNAPSHOT.jar -d "$1" &&

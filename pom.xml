@@ -17,7 +17,6 @@
 
 	<modules>
 		<module>uslx</module>
-		<module>datum/java</module>
 		<module>media</module>
 		<module>common</module>
 		<module>ui</module>
@@ -27,5 +26,16 @@
 		<module>natives-util</module>
 		<!-- tools, native examples not included; it adds build time to application projects -->
 	</modules>
+
+	<repositories>
+		<repository>
+			<id>kdc-pages</id>
+			<name>20kdc GitHub Pages</name>
+			<url>https://20kdc.github.io/maven</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 </project>
 

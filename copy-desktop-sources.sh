@@ -13,7 +13,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 cp -r uslx/src/main/* $1 &&
-cp -r datum/java/src/main/* $1 &&
+cp -r ../datum/java/src/main/* $1 &&
 cp -r media/src/main/* $1 &&
 cp -r common/src/main/* $1 &&
 cp -r ui/src/main/* $1 &&
