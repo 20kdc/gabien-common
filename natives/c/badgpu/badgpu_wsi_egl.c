@@ -116,10 +116,12 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, int32_t ap
     const char * wsiClarifier = tryNoWSI ? " (even without allowing WSI)" : "";
     // So, fun fact I didn't know until WAAAYYYY later than I'd like:
     // This is how EGL decides which API to use!
-    if (!ctx->eglBindAPI(api)) {
-        if (logDetailed)
-            printf("BADGPU: eglBindAPI %s error: %i\n", modeName, ctx->eglGetError());
-        return 0;
+    if (ctx->eglBindAPI) {
+        if (!ctx->eglBindAPI(api)) {
+            if (logDetailed)
+                printf("BADGPU: eglBindAPI %s error: %i\n", modeName, ctx->eglGetError());
+            return 0;
+        }
     }
     if (!ctx->eglChooseConfig(ctx->dsp, tryNoWSI ? attribsNoWSI : attribs, &config, 1, &configCount)) {
         if (logDetailed)
