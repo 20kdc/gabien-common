@@ -9,9 +9,9 @@ package gabien.ui.theming;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
 
+import datum.*;
 import gabien.GaBIEn;
 import gabien.backend.IGaBIEn;
-import gabien.datum.*;
 
 /**
  * This is holding all the stuff that's being pulled out of UIBorderedElement.

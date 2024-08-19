@@ -8,8 +8,6 @@
 package gabien.ui;
 
 import gabien.GaBIEnUI;
-import gabien.datum.DatumSrcLoc;
-import gabien.datum.DatumWriter;
 import gabien.render.IGrDriver;
 import gabien.uslx.append.Block;
 import gabien.uslx.append.Rect;
@@ -21,6 +19,9 @@ import java.util.LinkedList;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+
+import datum.DatumSrcLoc;
+import datum.DatumWriter;
 
 /**
  * Once a simple class. Now it's not.

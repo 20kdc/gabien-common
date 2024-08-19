@@ -8,14 +8,14 @@ package gabien.ui.theming;
 
 import java.util.HashMap;
 
+import datum.DatumInvalidVisitor;
+import datum.DatumODec1Visitor;
+import datum.DatumODecVisitor;
+import datum.DatumSeqVisitor;
+import datum.DatumSrcLoc;
+import datum.DatumTreeUtils;
+import datum.DatumVisitor;
 import gabien.GaBIEn;
-import gabien.datum.DatumInvalidVisitor;
-import gabien.datum.DatumODec1Visitor;
-import gabien.datum.DatumODecVisitor;
-import gabien.datum.DatumSeqVisitor;
-import gabien.datum.DatumSrcLoc;
-import gabien.datum.DatumTreeUtils;
-import gabien.datum.DatumVisitor;
 import gabien.render.ITexRegion;
 import gabien.uslx.append.Rect;
 

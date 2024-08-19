@@ -8,8 +8,6 @@
 package gabien.ui.layouts;
 
 import gabien.GaBIEnUI;
-import gabien.datum.DatumSrcLoc;
-import gabien.datum.DatumWriter;
 import gabien.render.IGrDriver;
 import gabien.ui.FontManager;
 import gabien.ui.IPointerReceiver;
@@ -22,6 +20,8 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.function.Consumer;
 
+import datum.DatumSrcLoc;
+import datum.DatumWriter;
 import gabien.uslx.append.*;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;

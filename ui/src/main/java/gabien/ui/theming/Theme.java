@@ -6,23 +6,23 @@
  */
 package gabien.ui.theming;
 
+import static datum.DatumTreeUtils.isSym;
+
 import java.util.HashMap;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import gabien.datum.DatumDecToLambdaVisitor;
-import gabien.datum.DatumKVDVisitor;
-import gabien.datum.DatumODecVisitor;
-import gabien.datum.DatumSeqVisitor;
-import gabien.datum.DatumSrcLoc;
-import gabien.datum.DatumVisitor;
-import gabien.datum.DatumODecVisitor.Handler;
+import datum.DatumDecToLambdaVisitor;
+import datum.DatumKVDVisitor;
+import datum.DatumODecVisitor;
+import datum.DatumSeqVisitor;
+import datum.DatumSrcLoc;
+import datum.DatumVisitor;
+import datum.DatumODecVisitor.Handler;
 import gabien.render.ITexRegion;
 import gabien.ui.FontManager;
 import gabien.ui.LAFChain;
-
-import static gabien.datum.DatumTreeUtils.isSym;
 
 /**
  * Immutable (*in theory) theme.
