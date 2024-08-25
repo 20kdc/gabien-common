@@ -24,16 +24,30 @@ public class RawAudioDriver implements IRawAudioDriver {
         Thread t = new Thread() {
             @Override
             public void run() {
-                AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 22050, AudioFormat.CHANNEL_OUT_STEREO,
-                        AudioFormat.ENCODING_PCM_16BIT, 1024,
-                        AudioTrack.MODE_STREAM);
-                short[] dataIL = new short[1024];
+                System.err.println("gabien.RawAudioDriver: Audio start...");
                 while (keepAlive) {
-                    source.get().pullData(dataIL, 0, dataIL.length / 2);
-                    at.write(dataIL, 0, dataIL.length);
-                    if (at.getPlayState() != AudioTrack.PLAYSTATE_PLAYING)
-                        at.play();
+                    AudioTrack at = new AudioTrack(AudioManager.STREAM_MUSIC, 22050, AudioFormat.CHANNEL_OUT_STEREO,
+                            AudioFormat.ENCODING_PCM_16BIT, 1024,
+                            AudioTrack.MODE_STREAM);
+                    if (at.getState() != AudioTrack.STATE_INITIALIZED) {
+                        System.err.println("gabien.RawAudioDriver: Audio track failed to initialize!!!");
+                    }
+                    short[] dataIL = new short[1024];
+                    while (keepAlive) {
+                        source.get().pullData(dataIL, 0, dataIL.length / 2);
+                        // ERROR_DEAD_OBJECT
+                        if (at.write(dataIL, 0, dataIL.length) < 0) {
+                            System.err.println("gabien.RawAudioDriver: Audio track returned write error. Assuming dead");
+                            break;
+                        }
+                        if (at.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) {
+                            System.err.println("gabien.RawAudioDriver: Audio getPlayState rerun");
+                            at.play();
+                        }
+                    }
+                    at.release();
                 }
+                System.err.println("gabien.RawAudioDriver: Audio stop...");
             }
         };
         t.start();
