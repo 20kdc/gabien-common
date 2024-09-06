@@ -16,9 +16,6 @@
 	</properties>
 
 	<modules>
-		<!-- evil stuff to let R48 still be co-developed with Datum as Datum formally leaves gabien -->
-		<module>../datum/java</module>
-		<!-- continue. -->
 		<module>uslx</module>
 		<module>media</module>
 		<module>common</module>

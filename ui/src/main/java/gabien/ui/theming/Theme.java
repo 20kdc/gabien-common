@@ -6,20 +6,19 @@
  */
 package gabien.ui.theming;
 
-import static datum.DatumTreeUtils.isSym;
+import static datum.DatumTreeUtils.*;
 
 import java.util.HashMap;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
-import datum.DatumDecToLambdaVisitor;
-import datum.DatumKVDVisitor;
-import datum.DatumODecVisitor;
-import datum.DatumSeqVisitor;
 import datum.DatumSrcLoc;
 import datum.DatumVisitor;
-import datum.DatumODecVisitor.Handler;
+import gabien.datum.DatumKVDVisitor;
+import gabien.datum.DatumODec1Visitor;
+import gabien.datum.DatumSeqVisitor;
+import gabien.datum.DatumODec1Visitor.Handler;
 import gabien.render.ITexRegion;
 import gabien.ui.FontManager;
 import gabien.ui.LAFChain;
@@ -186,12 +185,12 @@ public final class Theme {
         return new DatumKVDVisitor() {
             Theme theme = new Theme(ROOT);
             @Override
-            public DatumVisitor handle(final String key) {
+            public DatumVisitor handle(final String key, DatumSrcLoc loc) {
                 if (key.equals("parent"))
-                    return resCtx.genVisitor((obj, ctx) -> {
+                    return resCtx.genVisitor((obj, ctx, srcLoc) -> {
                         theme = new Theme((Theme) obj);
                     }, null);
-                return resCtx.genVisitor((obj, ctx) -> {
+                return resCtx.genVisitor((obj, ctx, srcLoc) -> {
                     theme.set(key, obj);
                 }, null);
             }
@@ -199,14 +198,14 @@ public final class Theme {
             @Override
             public void visitEnd(DatumSrcLoc srcLoc) {
                 // and return
-                parent.visitTree(theme, srcLoc);
+                parent.returnVal(theme, srcLoc);
             }
         };
     };
     static final Handler<ThemingResCtx> brHandler = (k, parent, resCtx) -> {
         return makeGenericBorderVisitor(parent, resCtx);
     };
-    private static DatumVisitor makeGenericBorderVisitor(DatumODecVisitor<ThemingResCtx> parent, ThemingResCtx resCtx) {
+    private static DatumVisitor makeGenericBorderVisitor(DatumODec1Visitor<ThemingResCtx, ?> parent, ThemingResCtx resCtx) {
         return new DatumSeqVisitor() {
             ITexRegion basis;
             int flags = 0;
@@ -215,8 +214,8 @@ public final class Theme {
             @Override
             public DatumVisitor handle(int idx) {
                 if (idx == 0)
-                    return resCtx.genVisitor((obj, srcLoc) -> basis = (ITexRegion) obj, null);
-                return new DatumDecToLambdaVisitor((res, srcLoc) -> {
+                    return resCtx.genVisitor((obj, ctx, srcLoc) -> basis = (ITexRegion) obj, null);
+                return decVisitor((res, srcLoc) -> {
                     if (isSym(res, "moveDown")) {
                         flags |= ThemingCentral.BF_MOVEDOWN;
                         return;
@@ -236,7 +235,7 @@ public final class Theme {
                 if (basis == null)
                     throw new RuntimeException("Border missing base image @ " + srcLoc);
                 IBorder b = tiled ? new TiledBorder(flags, basis) : new StretchBorder(flags, basis);
-                parent.visitTree(b, srcLoc);
+                parent.returnVal(b, srcLoc);
             }
         };
     }

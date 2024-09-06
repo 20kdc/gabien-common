@@ -9,13 +9,13 @@ package gabien.ui.theming;
 import java.util.HashMap;
 
 import datum.DatumInvalidVisitor;
-import datum.DatumODec1Visitor;
-import datum.DatumODecVisitor;
-import datum.DatumSeqVisitor;
 import datum.DatumSrcLoc;
+import datum.DatumSymbol;
 import datum.DatumTreeUtils;
 import datum.DatumVisitor;
 import gabien.GaBIEn;
+import gabien.datum.DatumODec1Visitor;
+import gabien.datum.DatumSeqVisitor;
 import gabien.render.ITexRegion;
 import gabien.uslx.append.Rect;
 
@@ -26,7 +26,7 @@ import gabien.uslx.append.Rect;
 class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
     public final HashMap<String, Object> resources = new HashMap<>();
 
-    static final HashMap<String, DatumODecVisitor.Handler<ThemingResCtx>> handlers = new HashMap<>();
+    static final HashMap<String, DatumODec1Visitor.Handler<ThemingResCtx>> handlers = new HashMap<>();
     static {
         handlers.put("img", (k, parent, resCtx) -> {
             return new DatumSeqVisitor() {
@@ -34,14 +34,14 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
                 @Override
                 public DatumVisitor handle(int idx) {
                     if (idx == 0)
-                        return resCtx.genVisitor((val, ign) -> fn = (String) val, null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> fn = (String) val, null);
                     return DatumInvalidVisitor.INSTANCE;
                 }
                 @Override
                 public void visitEnd(DatumSrcLoc srcLoc) {
                     if (seqPos != 1)
                         throw new RuntimeException("Can't finish image yet @ " + srcLoc);
-                    parent.visitTree(GaBIEn.getImageEx(fn, false, true), srcLoc);
+                    parent.returnVal(GaBIEn.getImageEx(fn, false, true), srcLoc);
                 }
             };
         });
@@ -52,16 +52,16 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
                 @Override
                 public DatumVisitor handle(int idx) {
                     if (idx == 0)
-                        return resCtx.genVisitor((val, ign) -> src = (ITexRegion) val, null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> src = (ITexRegion) val, null);
                     if (idx == 1)
-                        return resCtx.genVisitor((val, ign) -> rct = (Rect) val, null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> rct = (Rect) val, null);
                     return DatumInvalidVisitor.INSTANCE;
                 }
                 @Override
                 public void visitEnd(DatumSrcLoc srcLoc) {
                     if (seqPos != 2)
                         throw new RuntimeException("Can't finish region yet @ " + srcLoc);
-                    parent.visitTree(src.subRegion(rct.x, rct.y, rct.width, rct.height), srcLoc);
+                    parent.returnVal(src.subRegion(rct.x, rct.y, rct.width, rct.height), srcLoc);
                 }
             };
         });
@@ -71,20 +71,20 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
                 @Override
                 public DatumVisitor handle(int idx) {
                     if (idx == 0)
-                        return resCtx.genVisitor((val, ign) -> x = DatumTreeUtils.cInt(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> x = DatumTreeUtils.cInt(val), null);
                     if (idx == 1)
-                        return resCtx.genVisitor((val, ign) -> y = DatumTreeUtils.cInt(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> y = DatumTreeUtils.cInt(val), null);
                     if (idx == 2)
-                        return resCtx.genVisitor((val, ign) -> w = DatumTreeUtils.cInt(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> w = DatumTreeUtils.cInt(val), null);
                     if (idx == 3)
-                        return resCtx.genVisitor((val, ign) -> h = DatumTreeUtils.cInt(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> h = DatumTreeUtils.cInt(val), null);
                     return DatumInvalidVisitor.INSTANCE;
                 }
                 @Override
                 public void visitEnd(DatumSrcLoc srcLoc) {
                     if (seqPos != 4)
                         throw new RuntimeException("Can't finish region yet @ " + srcLoc);
-                    parent.visitTree(new Rect(x, y, w, h), srcLoc);
+                    parent.returnVal(new Rect(x, y, w, h), srcLoc);
                 }
             };
         });
@@ -97,22 +97,22 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
                 @Override
                 public DatumVisitor handle(int idx) {
                     if (idx == 0)
-                        return resCtx.genVisitor((val, ign) -> rotation = DatumTreeUtils.cInt(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> rotation = DatumTreeUtils.cInt(val), null);
                     if (idx == 1)
-                        return resCtx.genVisitor((val, ign) -> r = DatumTreeUtils.cFloat(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> r = DatumTreeUtils.cFloat(val), null);
                     if (idx == 2)
-                        return resCtx.genVisitor((val, ign) -> g = DatumTreeUtils.cFloat(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> g = DatumTreeUtils.cFloat(val), null);
                     if (idx == 3)
-                        return resCtx.genVisitor((val, ign) -> b = DatumTreeUtils.cFloat(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> b = DatumTreeUtils.cFloat(val), null);
                     if (idx == 4)
-                        return resCtx.genVisitor((val, ign) -> a = DatumTreeUtils.cFloat(val), null);
+                        return resCtx.genVisitor((val, ign, srcLoc) -> a = DatumTreeUtils.cFloat(val), null);
                     return DatumInvalidVisitor.INSTANCE;
                 }
                 @Override
                 public void visitEnd(DatumSrcLoc srcLoc) {
                     if (seqPos != 5)
                         throw new RuntimeException("Can't finish defaultArrowIcon yet @ " + srcLoc);
-                    parent.visitTree(new DefaultArrowIcon(rotation, r, g, b, a), srcLoc);
+                    parent.returnVal(new DefaultArrowIcon(rotation, r, g, b, a), srcLoc);
                 }
             };
         });
@@ -122,7 +122,7 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
     }
 
     @Override
-    public void accept(Object value, String context) {
+    public void accept(Object value, String context, DatumSrcLoc srcLoc) {
         if (context.endsWith("?")) {
             context = context.substring(0, context.length() - 1);
             // Skip already defined resources.
@@ -134,14 +134,16 @@ class ThemingResCtx implements DatumODec1Visitor.Returner<String> {
     }
 
     public <T> DatumVisitor genVisitor(DatumODec1Visitor.Returner<T> returner, T returnerCtx) {
-        return new DatumODec1Visitor<ThemingResCtx, T>(handlers, this, returner, returnerCtx) {
-            @Override
-            public void visitId(String s, DatumSrcLoc srcLoc) {
+        return new DatumODec1Visitor<ThemingResCtx, T>(handlers, this, (value, context, srcLoc) -> {
+            if (value instanceof DatumSymbol) {
+                String s = ((DatumSymbol) value).id;
                 Object resGet = resources.get(s);
                 if (resGet == null)
                     throw new RuntimeException("No such resource: " + s + " @ " + srcLoc);
-                returner.accept(resGet, returnerCtx);
+                returner.accept(resGet, returnerCtx, srcLoc);
+            } else {
+                returner.accept(value, returnerCtx, srcLoc);
             }
-        };
+        }, returnerCtx);
     }
 }

@@ -25,7 +25,7 @@
 		<dependency>
 			<groupId>t20kdc.datum</groupId>
 			<artifactId>datum</artifactId>
-			<version>0.7-SNAPSHOT</version>
+			<version>1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>t20kdc.hs2</groupId>

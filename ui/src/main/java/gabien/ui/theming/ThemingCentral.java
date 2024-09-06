@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import datum.*;
 import gabien.GaBIEn;
 import gabien.backend.IGaBIEn;
+import gabien.datum.DatumKVDVisitor;
 
 /**
  * This is holding all the stuff that's being pulled out of UIBorderedElement.
@@ -49,7 +50,7 @@ public class ThemingCentral {
                     if (themesISR != null) {
                         new DatumReaderTokenSource(file, themesISR).visit(new DatumKVDVisitor() {
                             @Override
-                            public DatumVisitor handle(String key) {
+                            public DatumVisitor handle(String key, DatumSrcLoc loc) {
                                 return resCtx.genVisitor(resCtx, key);
                             }
                         });
