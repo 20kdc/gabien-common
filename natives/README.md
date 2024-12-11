@@ -28,9 +28,10 @@ _API design is under revision, though the reference implementation is complete e
 ## Build Instructions
 
 1. Be running Linux or something that can imitate it, via say Docker. (The build process is already enough of a mess...)
-2. You need the Android NDK, versions `r9d` and `r12b`.
-3. You need Zig `0.11.0-dev.2892+fd6200eda` ; other versions may work, no guarantee
-4. You need to *symlink* these into `thirdparty` as follows:
+2. You need `i686-w64-mingw32-gcc` and `x86_64-w64-mingw32-gcc`.
+3. You need the Android NDK, versions `r9d` and `r12b`.
+4. You need Zig `0.11.0-dev.2892+fd6200eda` ; other versions may work, no guarantee
+5. You need to *symlink* the NDK and Zig into `thirdparty` as follows:
 
 ```
 natives/thirdparty/android-ndk-r9d (to corresponding NDK)

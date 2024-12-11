@@ -95,8 +95,6 @@ typedef struct BADGPUGLBind {
     void (KHRABI *Scissor)(int32_t, int32_t, int32_t, int32_t);
     void (KHRABI *Viewport)(int32_t, int32_t, int32_t, int32_t);
     void (KHRABI *ClearColor)(float, float, float, float);
-    void (KHRABI *ClearDepthf)(float);
-    void (KHRABI *DepthRangef)(float, float);
     void (KHRABI *PolygonOffset)(float, float);
     void (KHRABI *PointSize)(float);
     void (KHRABI *LineWidth)(float);
@@ -140,7 +138,11 @@ typedef struct BADGPUGLBind {
     void (KHRABI *BindRenderbuffer)(int32_t, uint32_t);
     // Variant-dependent
     void (KHRABI *ClipPlane)(int32_t, const double *);
+    void (KHRABI *ClearDepth)(double);
+    void (KHRABI *DepthRange)(double, double);
     void (KHRABI *ClipPlanef)(int32_t, const float *);
+    void (KHRABI *ClearDepthf)(float);
+    void (KHRABI *DepthRangef)(float, float);
 } BADGPUGLBind;
 
 // returns failed function name, if any

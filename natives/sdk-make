@@ -20,7 +20,6 @@ fi
 
 COMMONFLAGS="-Wno-attributes -O4 -shared"
 TARGETS="x86-linux-gnu"
-TARGETS_W="x86-windows-gnu x86_64-windows-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
 SOURCES="c/version.c c/badgpu_jni.c c/loader_jni.c c/vorbis_jni.c c/mp3_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c"
@@ -43,12 +42,6 @@ for TARGET in $TARGETS ; do
  echo $TARGET
  "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS
 done
-for TARGET in $TARGETS_W ; do
- echo $TARGET
- "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$TARGET $COMMONFLAGS -lgdi32 -lopengl32
- # Compile the EGL-using variant.
- "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET.CX_BackPath $COMMONFLAGS -lgdi32 -lopengl32
-done
 # LTO not yet supported
 for TARGET in $TARGETS_M ; do
  echo $TARGET
@@ -61,6 +54,16 @@ for TARGET in $TARGETS_NSL ; do
  echo $TARGET
  "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib
 done
+# Windows with style
+doMinGWW64Build() {
+ echo $1 mingw-w64
+ $2-gcc -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
+ $2-gcc -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$1.CX_BackPath $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
+ $2-strip $LIBUNA/natives.$1
+ $2-strip $LIBUNA/natives.$1.CX_BackPath
+}
+doMinGWW64Build x86-windows-gnu i686-w64-mingw32
+doMinGWW64Build x86_64-windows-gnu x86_64-w64-mingw32
 # ANDROID IS REALLY REALLY WEIRD
 echo THE ANDROID BUILDS
 doAndroidBuild() {
@@ -83,8 +86,8 @@ echo THE ANDROID BUILDS ARE OVER NOW
 rm -f $LIBUNA/*.lib
 rm -f $LIBUNA/*.pdb
 # strip anything we can
-for x in `ls $LIBUNA`; do
- llvm-strip $LIBUNA/$x
+for x in `ls $LIBUNA` ; do
+ llvm-strip $LIBUNA/$x || true
 done
 
 # Fake Maven metadata

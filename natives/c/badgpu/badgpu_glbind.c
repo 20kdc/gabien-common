@@ -37,8 +37,6 @@ CHKGLFN(fn)
     BINDGLFN(Scissor);
     BINDGLFN(Viewport);
     BINDGLFN(ClearColor);
-    BINDGLFN(ClearDepthf);
-    BINDGLFN(DepthRangef);
     BINDGLFN(PolygonOffset);
     BINDGLFN(PointSize);
     BINDGLFN(LineWidth);
@@ -82,6 +80,8 @@ CHKGLFN(fn)
         BINDGLFN2(BindRenderbuffer, EXT);
         // Variant-dependent
         BINDGLFN(ClipPlane);
+        BINDGLFN(ClearDepth);
+        BINDGLFN(DepthRange);
     } else {
         BINDGLFN2(BlendFuncSeparate, OES);
         BINDGLFN2(BlendEquationSeparate, OES);
@@ -97,6 +97,8 @@ CHKGLFN(fn)
         BINDGLFN2(BindRenderbuffer, OES);
         // Variant-dependent
         BINDGLFN(ClipPlanef);
+        BINDGLFN(ClearDepthf);
+        BINDGLFN(DepthRangef);
     }
     return NULL;
 }

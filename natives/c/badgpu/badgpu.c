@@ -544,7 +544,11 @@ BADGPU_EXPORT BADGPUBool badgpuDrawClear(
     // OPT: If we don't have a DSBuffer we don't need to setup the clear for it.
     if (sDSBuffer) {
         if (sFlags & BADGPUSessionFlags_MaskDepth) {
-            bi->gl.ClearDepthf(depth);
+            if (bi->gl.ClearDepthf) {
+                bi->gl.ClearDepthf(depth);
+            } else {
+                bi->gl.ClearDepth(depth);
+            }
             cFlags |= GL_DEPTH_BUFFER_BIT;
         }
         if (sFlags & BADGPUSessionFlags_StencilAll) {
@@ -698,7 +702,11 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     //  both)
     // That in mind, skip anything we dare to.
     if (sDSBuffer) {
-        bi->gl.DepthRangef(depthN, depthF);
+        if (bi->gl.DepthRangef) {
+            bi->gl.DepthRangef(depthN, depthF);
+        } else {
+            bi->gl.DepthRange(depthN, depthF);
+        }
 
         // PolygonOffset
         bi->gl.Enable(GL_POLYGON_OFFSET_FILL);
@@ -863,7 +871,11 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
     bi->gl.Disable(GL_CLIP_PLANE0);
     bi->gl.Disable(GL_ALPHA_TEST);
 
-    bi->gl.DepthRangef(0, 1);
+    if (bi->gl.DepthRangef) {
+        bi->gl.DepthRangef(0, 1);
+    } else {
+        bi->gl.DepthRange(0, 1);
+    }
 
     bi->gl.Disable(GL_POLYGON_OFFSET_FILL);
     bi->gl.Disable(GL_STENCIL_TEST);
