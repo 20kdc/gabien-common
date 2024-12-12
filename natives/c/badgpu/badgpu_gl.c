@@ -9,10 +9,8 @@
  * BadGPU Reference Implementation : GL wrapper
  */
 
-#include "badgpu.h"
 #include "badgpu_internal.h"
 #include "badgpu_glbind.h"
-
 
 typedef struct BADGPUInstanceGL {
     BADGPUInstancePriv base;
@@ -358,18 +356,6 @@ static BADGPUBool bglDrawGeom(
     BADGPUInstanceGL * bi = BG_INSTANCE_GL(instance);
     if (!drawingCmdSetup(bi, BADGPU_SESSIONFLAGS_PASSTHROUGH))
         return 0;
-
-    if (!vPos)
-        return badgpuErr(&bi->base, "badgpuDrawGeom: vPos is NULL");
-
-    if ((iCount < 0) || (iCount > 65536))
-        return badgpuErr(&bi->base, "badgpuDrawGeom: iCount out of range");
-
-    if ((vPosD < 2) || (vPosD > 4))
-        return badgpuErr(&bi->base, "badgpuDrawGeom: vPosD out of range");
-
-    if ((vTCD < 2) || (vTCD > 4))
-        return badgpuErr(&bi->base, "badgpuDrawGeom: vTCD out of range");
 
     // Vertex Shader
     bi->gl.MatrixMode(GL_MODELVIEW);

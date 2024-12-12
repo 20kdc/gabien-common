@@ -260,6 +260,19 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     BADGPUInstancePriv * bi = dcFindInstance(sTexture, sDSBuffer);
     if (!badgpuBChk((BADGPUInstance) bi, "badgpuDrawGeom"))
         return 0;
+
+    if (!vPos)
+        return badgpuErr(bi, "badgpuDrawGeom: vPos is NULL");
+
+    if ((iCount < 0) || (iCount > 65536))
+        return badgpuErr(bi, "badgpuDrawGeom: iCount out of range");
+
+    if ((vPosD < 2) || (vPosD > 4))
+        return badgpuErr(bi, "badgpuDrawGeom: vPosD out of range");
+
+    if ((vTCD < 2) || (vTCD > 4))
+        return badgpuErr(bi, "badgpuDrawGeom: vTCD out of range");
+
     return bi->drawGeom(bi, BADGPU_SESSIONFLAGS_PASSTHROUGH,
         flags,
         vPosD, vPos,
@@ -352,6 +365,5 @@ BADGPU_EXPORT BADGPUBool badgpuResetGLState(BADGPUInstance instance) {
         return 0;
     if (bi->resetGLState)
         return bi->resetGLState(bi);
-    badgpuErr(BG_INSTANCE(bi), "badgpuResetGLState: Backend does not support this operation.");
-    return NULL;
+    return badgpuErr(BG_INSTANCE(bi), "badgpuResetGLState: Backend does not support this operation.");
 }

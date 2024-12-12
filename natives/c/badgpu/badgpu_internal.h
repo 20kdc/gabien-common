@@ -189,5 +189,117 @@ static inline BADGPUInstancePriv * badgpuBChk(BADGPUInstance bi, const char * lo
     return bip;
 }
 
+// Instance w/ Software TnL (not yet implemented, but...)
+
+typedef struct BADGPURasterizerContext {
+    BADGPUTexture sTexture;
+    BADGPUDSBuffer sDSBuffer;
+    uint32_t sFlags;
+    // Scissor
+    int32_t sScX, sScY, sScWidth, sScHeight;
+    uint32_t flags;
+    // Viewport
+    int32_t vX, vY, vW, H;
+    // Fragment Shader
+    BADGPUTexture texture;
+    const float * clipPlane;
+    BADGPUCompare atFunc;
+    float atRef;
+    // Stencil Test
+    BADGPUCompare stFunc;
+    uint8_t stRef, stMask;
+    BADGPUStencilOp stSF, stDF, stDP;
+    // Depth Test / DepthRange / PolygonOffset
+    BADGPUCompare dtFunc;
+    float depthN, depthF, poFactor, poUnits;
+    // Blending
+    uint32_t blendProgram;
+} BADGPURasterizerContext;
+
+typedef struct BADGPURasterizerVertex {
+    BADGPUVector p;
+    BADGPUVector c;
+    float u, v;
+} BADGPURasterizerVertex;
+
+/**
+ * For 'primitive-at-a-time' backends.
+ */
+typedef struct BADGPUInstanceSWTNL {
+    BADGPUInstancePriv base;
+
+    BADGPUBool (*drawPoint)(
+        struct BADGPUInstanceSWTNL *,
+        const BADGPURasterizerContext * ctx,
+        BADGPURasterizerVertex a,
+        float plSize
+    );
+    BADGPUBool (*drawLine)(
+        struct BADGPUInstanceSWTNL *,
+        const BADGPURasterizerContext * ctx,
+        BADGPURasterizerVertex a,
+        BADGPURasterizerVertex b,
+        float plSize
+    );
+    BADGPUBool (*drawTriangle)(
+        struct BADGPUInstanceSWTNL *,
+        const BADGPURasterizerContext * ctx,
+        BADGPURasterizerVertex a,
+        BADGPURasterizerVertex b,
+        BADGPURasterizerVertex c
+    );
+} BADGPUInstanceSWTNL;
+#define BG_INSTANCE_SWTNL(x) ((BADGPUInstanceSWTNL *) (x))
+
+static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMatrix * matrix) {
+    BADGPUVector out = {
+        (matrix->x.x * v.x) + (matrix->y.x * v.y) + (matrix->z.x * v.z) + (matrix->w.x * v.w),
+        (matrix->x.y * v.x) + (matrix->y.y * v.y) + (matrix->z.y * v.z) + (matrix->w.y * v.w),
+        (matrix->x.z * v.x) + (matrix->y.z * v.y) + (matrix->z.z * v.z) + (matrix->w.z * v.w),
+        (matrix->x.w * v.x) + (matrix->y.w * v.y) + (matrix->z.w * v.z) + (matrix->w.w * v.w)
+    };
+    return out;
+}
+
+void badgpu_swtnl_transform(
+    // Vertex Loader
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
+    uint32_t iStart, const uint16_t * indices,
+    // Vertex Shader
+    const BADGPUMatrix * mvMatrix,
+    // Fragment Shader
+    const BADGPUMatrix * matrixT,
+    BADGPURasterizerVertex * out
+);
+
+BADGPUBool badgpu_swtnl_drawGeom(
+    // assumed to be BADGPUInstanceSWTNL
+    struct BADGPUInstancePriv *,
+    BADGPU_SESSIONFLAGS,
+    uint32_t flags,
+    // Vertex Loader
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
+    BADGPUPrimitiveType pType, float plSize,
+    uint32_t iStart, uint32_t iCount, const uint16_t * indices,
+    // Vertex Shader
+    const BADGPUMatrix * mvMatrix,
+    // Viewport
+    int32_t vX, int32_t vY, int32_t vW, int32_t vH,
+    // Fragment Shader
+    BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    const float * clipPlane, BADGPUCompare atFunc, float atRef,
+    // Stencil Test
+    BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
+    BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
+    // Depth Test / DepthRange / PolygonOffset
+    BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
+    // Blending
+    uint32_t blendProgram
+);
+
 #endif
 
