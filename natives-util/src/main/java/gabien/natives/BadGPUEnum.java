@@ -19,6 +19,9 @@ public class BadGPUEnum {
         public static final int CanPrintf = 1;
         public static final int BackendCheck = 2;
         public static final int BackendCheckAggressive = 4;
+        public static final int PreferEGL = 8;
+        public static final int NeverInternalRasterizer = 16;
+        public static final int ForceInternalRasterizer = 32;
         private NewInstanceFlags() {
         }
     }
