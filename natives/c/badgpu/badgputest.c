@@ -7,6 +7,7 @@
 
 #include "badgpu.h"
 #include <stdio.h>
+#include <string.h>
 
 void writeQOIFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h);
 
@@ -22,9 +23,21 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h);
 
 void render3DTest(BADGPUTexture tex, BADGPUDSBuffer dsb, BADGPUTexture texSrc);
 
-int main() {
+int main(int argc, char ** argv) {
+    int flags = BADGPUNewInstanceFlags_CanPrintf | BADGPUNewInstanceFlags_BackendCheck;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "egl")) {
+            flags |= BADGPUNewInstanceFlags_PreferEGL;
+        } else if (!strcmp(argv[i], "sw")) {
+            flags |= BADGPUNewInstanceFlags_ForceInternalRasterizer;
+        } else {
+            printf("Unknown arg %s\n", argv[i]);
+            return 1;
+        }
+    }
+
     const char * error;
-    BADGPUInstance bi = badgpuNewInstance(BADGPUNewInstanceFlags_CanPrintf | BADGPUNewInstanceFlags_BackendCheck, &error);
+    BADGPUInstance bi = badgpuNewInstance(flags, &error);
     if (!bi) {
         puts(error);
         return 1;
