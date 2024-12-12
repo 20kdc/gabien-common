@@ -84,9 +84,110 @@ BADGPUBool badgpu_newWsiCtxPlatformIsEGL();
 // Creates a new WSICtx.
 BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed);
 
-// IMPLBASE
+// OBJ
 
-// todo!
+// Object Management
+
+struct BADGPUObject {
+    size_t refs;
+    void (*destroy)(BADGPUObject);
+};
+
+static inline void badgpu_initObj(BADGPUObject obj, void (*destroy)(BADGPUObject)) {
+    obj->refs = 1;
+    obj->destroy = destroy;
+}
+
+// Instance Base
+
+typedef struct BADGPUInstancePriv {
+    struct BADGPUObject obj;
+    int isBound;
+    int backendCheck;
+    int backendCheckAggressive;
+    int canPrintf;
+    BADGPUWSIContext ctx;
+    // vtbl
+    BADGPUBool (*bind)(struct BADGPUInstancePriv *); // optional (defaults to NOP)
+    void (*unbind)(struct BADGPUInstancePriv *); // optional (defaults to NOP)
+    void (*flush)(struct BADGPUInstancePriv *); // optional (defaults to NOP)
+    void (*finish)(struct BADGPUInstancePriv *); // optional (defaults to NOP)
+    BADGPUBool (*resetGLState)(struct BADGPUInstancePriv *); // optional (defaults to fail)
+    BADGPUTexture (*newTextureFromGL)(struct BADGPUInstancePriv *, uint32_t glTex); // optional (defaults to fail)
+    // --
+    const char * (*getMetaInfo)(struct BADGPUInstancePriv *, BADGPUMetaInfoType);
+    BADGPUTextureLoadFormat texLoadFormat;
+    BADGPUTexture (*newTexture)(struct BADGPUInstancePriv *, int16_t width, int16_t height, const void * data);
+    BADGPUDSBuffer (*newDSBuffer)(struct BADGPUInstancePriv * instance, int16_t width, int16_t height);
+    BADGPUBool (*generateMipmap)(void *);
+    BADGPUBool (*readPixelsRGBA8888)(void *, uint16_t x, uint16_t y, int16_t width, int16_t height, void * data);
+    BADGPUBool (*drawClear)(
+        struct BADGPUInstancePriv *,
+        BADGPU_SESSIONFLAGS,
+        float cR, float cG, float cB, float cA, float depth, uint8_t stencil
+    );
+    BADGPUBool (*drawGeom)(
+        struct BADGPUInstancePriv *,
+        BADGPU_SESSIONFLAGS,
+        uint32_t flags,
+        // Vertex Loader
+        int32_t vPosD, const float * vPos,
+        const float * vCol,
+        int32_t vTCD, const float * vTC,
+        BADGPUPrimitiveType pType, float plSize,
+        uint32_t iStart, uint32_t iCount, const uint16_t * indices,
+        // Vertex Shader
+        const BADGPUMatrix * mvMatrix,
+        // Viewport
+        int32_t vX, int32_t vY, int32_t vW, int32_t vH,
+        // Fragment Shader
+        BADGPUTexture texture, const BADGPUMatrix * matrixT,
+        const float * clipPlane, BADGPUCompare atFunc, float atRef,
+        // Stencil Test
+        BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
+        BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
+        // Depth Test / DepthRange / PolygonOffset
+        BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
+        // Blending
+        uint32_t blendProgram
+    );
+} BADGPUInstancePriv;
+#define BG_INSTANCE(x) ((BADGPUInstancePriv *) (x))
+
+typedef struct BADGPUTexturePriv {
+    struct BADGPUObject obj;
+    BADGPUInstancePriv * i;
+    // Value returned from badgpuGetGLTexture
+    uint32_t glTex;
+    int autoDel;
+} BADGPUTexturePriv;
+#define BG_TEXTURE(x) ((BADGPUTexturePriv *) (x))
+
+typedef struct BADGPUDSBufferPriv {
+    struct BADGPUObject obj;
+    BADGPUInstancePriv * i;
+} BADGPUDSBufferPriv;
+#define BG_DSBUFFER(x) ((BADGPUDSBufferPriv *) (x))
+
+static inline BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * location) {
+    BADGPUInstancePriv * bi = BG_INSTANCE(instance);
+    if (bi->canPrintf)
+        printf("BADGPU: %s\n", location);
+    return 0;
+}
+
+// Checks that the instance is bound.
+static inline BADGPUInstancePriv * badgpuBChk(BADGPUInstance bi, const char * location) {
+    BADGPUInstancePriv * bip = BG_INSTANCE(bi);
+    if (!bip)
+        return 0;
+    if (!bip->isBound) {
+        if (bip->canPrintf)
+            printf("BADGPU: %s: Instance not bound\n", location);
+        return 0;
+    }
+    return bip;
+}
 
 #endif
 
