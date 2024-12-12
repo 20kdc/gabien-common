@@ -8,5 +8,5 @@ i686-w64-mingw32-gcc -g badgpu.c badgpu_glbind.c badgpu_tce.c badgpu_dl.c badgpu
 i686-w64-mingw32-gcc -g badgpu.c badgpu_glbind.c badgpu_tce.c badgpu_dl.c badgpu_wsi_egl.c badgputest.c -o badgputest_egl.exe &&
 ./badgputest &&
 qoiconv tmp.qoi tmp.png &&
+qoiconv tmp2.qoi tmp2.png &&
 ./badgputest_tce
-

@@ -8,7 +8,7 @@
 #include "badgpu.h"
 #include <stdio.h>
 
-void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h);
+void writeQOIFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h);
 
 #define T_WIDTH 320
 #define T_HEIGHT 200
@@ -19,6 +19,8 @@ void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h);
 void renderFlagMain(BADGPUTexture tex, int w, int h);
 
 void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h);
+
+void render3DTest(BADGPUTexture tex, BADGPUDSBuffer dsb, BADGPUTexture texSrc);
 
 int main() {
     const char * error;
@@ -55,7 +57,18 @@ int main() {
     0, 0, 1, 1, 0, 0);
 
     // Save the output.
-    writeQOIFromTex(tex2, T_WIDTH, T_HEIGHT);
+    writeQOIFromTex("tmp.qoi", tex2, T_WIDTH, T_HEIGHT);
+
+    // 3D scene test
+    BADGPUDSBuffer dsb = badgpuNewDSBuffer(bi, T_WIDTH, T_HEIGHT);
+
+    // Make a third texture (for checkerboard)
+    int chk[16] = { -1, 0xFF000000, -1, 0xFF000000, 0xFF000000, -1, 0xFF000000, -1, -1, 0xFF000000, -1, 0xFF000000, 0xFF000000, -1, 0xFF000000, -1 };
+    BADGPUTexture tex3 = badgpuNewTexture(bi, 4, 4, BADGPUTextureLoadFormat_ARGBI32, chk);
+
+    render3DTest(tex2, dsb, tex3);
+
+    writeQOIFromTex("tmp2.qoi", tex2, T_WIDTH, T_HEIGHT);
 
     if (!badgpuUnref(tex)) {
         puts("hanging references: BADGPUTexture 1");
@@ -63,6 +76,14 @@ int main() {
     }
     if (!badgpuUnref(tex2)) {
         puts("hanging references: BADGPUTexture 2");
+        return 1;
+    }
+    if (!badgpuUnref(tex3)) {
+        puts("hanging references: BADGPUTexture 3");
+        return 1;
+    }
+    if (!badgpuUnref(dsb)) {
+        puts("hanging references: BADGPUDSBuffer");
         return 1;
     }
     if (!badgpuUnref(bi)) {
@@ -198,12 +219,106 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
     );
 }
 
-void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba);
+void render3DTestSpecific(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc, const BADGPUMatrix * matrix) {
+    // Mesh to test 3D
+    float pos[] = {
+        -1, 1, 1,
+         1, 1, 1,
+         1, 1, 0,
+        -1, 1, 1,
+         1, 1, 0,
+        -1, 1, 0
+    };
+    float tc[] = {
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 0,
+        1, 1,
+        0, 1
+    };
+    // Matrix to test 3D.
+    badgpuDrawGeom(tex2, dsb, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+        BADGPUDrawFlags_StencilTest,
+        // Vertex Loader
+        3, pos, NULL, 2, tc,
+        BADGPUPrimitiveType_Triangles, 1,
+        0, 6, NULL,
+        // Vertex Shader
+        matrix,
+        // Viewport
+        0, 0, T_WIDTH, T_HEIGHT,
+        // Fragment Shader
+        texSrc, NULL,
+        NULL, BADGPUCompare_Always, 0,
+        // Stencil Test
+        BADGPUCompare_Always, 0, 0xFF,
+        BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Inc,
+        // Depth Test
+        BADGPUCompare_LEqual, 0, 1, 0, 0,
+        // Blending
+        0
+    );
+}
 
-void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h) {
+void render3DTest(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc) {
+    badgpuDrawClear(tex2, dsb, BADGPUSessionFlags_MaskAll, 0, 0, T_WIDTH, T_HEIGHT, 0, 0, 0, 0, 1, 0);
+    // First obj
+    BADGPUMatrix matrix1 = {
+        { 1,  0,  0,  0},
+        { 0,  1,  0,  0},
+        { 0,  0,  1,  1},
+        { 0,  0,  0,  1}
+    };
+    // Second obj, should be partially occluded by object 1
+    BADGPUMatrix matrix2 = {
+        { 0.5,  0,  0.5,  0.5},
+        {   0,  0,    1,    1},
+        {   0,  2,    0,    0},
+        {   0,  0, -0.5,  0.5}
+    };
+    render3DTestSpecific(tex2, dsb, texSrc, &matrix1);
+    render3DTestSpecific(tex2, dsb, texSrc, &matrix2);
+    // Mesh to test 3D
+    float pos[] = {
+        -1,  1,
+         1,  1,
+         1, -1,
+        -1,  1,
+         1, -1,
+        -1, -1,
+    };
+    // Overdraw2 indicator
+    float col[] = {1, 0, 1, 1};
+    badgpuDrawGeom(tex2, dsb, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+        BADGPUDrawFlags_FreezeColour | BADGPUDrawFlags_StencilTest,
+        // Vertex Loader
+        2, pos, col, 2, NULL,
+        BADGPUPrimitiveType_Triangles, 1,
+        0, 6, NULL,
+        // Vertex Shader
+        NULL,
+        // Viewport
+        0, 0, T_WIDTH, T_HEIGHT,
+        // Fragment Shader
+        NULL, NULL,
+        NULL, BADGPUCompare_Always, 0,
+        // Stencil Test
+        BADGPUCompare_Equal, 2, 0xFF,
+        BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Keep,
+        // Depth Test
+        BADGPUCompare_Always, 0, 1, 0, 0,
+        // Blending
+        0
+    );
+}
+
+void awfulqoiwriter(const char * name, uint32_t w, uint32_t h, const uint8_t * rgba);
+
+void writeQOIFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h) {
     uint8_t imgData[((size_t) w) * ((size_t) h) * 4];
     badgpuReadPixels(tex, 0, 0, w, h, BADGPUTextureLoadFormat_RGBA8888, imgData);
-    awfulqoiwriter(w, h, imgData);
+    awfulqoiwriter(name, w, h, imgData);
 }
 
 // This is not how you're supposed to write QOI files.
@@ -211,8 +326,8 @@ void writeQOIFromTex(BADGPUTexture tex, uint32_t w, uint32_t h) {
 //  of legacy stuff nobody cares about in favour of simplicity.
 // (Hilariously, despite this, it also actually has a reasonable approach to
 //  the whole sRGB/linear light debate. What a world.)
-void awfulqoiwriter(uint32_t w, uint32_t h, const uint8_t * rgba) {
-    FILE * f = fopen("tmp.qoi", "wb");
+void awfulqoiwriter(const char * name, uint32_t w, uint32_t h, const uint8_t * rgba) {
+    FILE * f = fopen(name, "wb");
     putc('q', f);
     putc('o', f);
     putc('i', f);
