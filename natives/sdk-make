@@ -22,8 +22,8 @@ COMMONFLAGS="-Wno-attributes -O4 -shared"
 TARGETS="x86-linux-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
-SOURCES="c/version.c c/badgpu_jni.c c/loader_jni.c c/vorbis_jni.c c/mp3_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c"
-SOURCES_U="c/badgpu/badgpu_wsi_egl.c"
+SOURCES="c/version.c c/badgpu_jni.c c/loader_jni.c c/vorbis_jni.c c/mp3_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c c/badgpu/badgpu_wsi_egl.c"
+SOURCES_U="c/badgpu/badgpu_wsi_zzz.c"
 SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
 SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
 
@@ -46,8 +46,6 @@ done
 for TARGET in $TARGETS_M ; do
  echo $TARGET
  "$ZIG" cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
- # Compile the EGL-using variant.
- "$ZIG" cc -target $TARGET $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET.CX_BackPath $COMMONFLAGS
 done
 # on most of the Linuxy targets, use "fake libc" (this particularly works well with the Androids)
 for TARGET in $TARGETS_NSL ; do
@@ -58,9 +56,7 @@ done
 doMinGWW64Build() {
  echo $1 mingw-w64
  $2-gcc -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
- $2-gcc -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$1.CX_BackPath $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
  $2-strip $LIBUNA/natives.$1
- $2-strip $LIBUNA/natives.$1.CX_BackPath
 }
 doMinGWW64Build x86-windows-gnu i686-w64-mingw32
 doMinGWW64Build x86_64-windows-gnu x86_64-w64-mingw32

@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.2.0`
+ * Version: `1.3.0`
  *
  * ## Formatting Policy
  *
@@ -420,7 +420,7 @@ typedef BADGPUObject BADGPUInstance;
  *  otherwise functioning application.
  */
 typedef enum BADGPUNewInstanceFlags {
-    // If true, BADGPU is allowed to use printf to report errors and so forth.
+    // If true, BadGPU is allowed to use printf to report errors and so forth.
     // (Errors that leave the function with no instance won't be reported.)
     // Note that printf is substituted with Android logging functions there.
     BADGPUNewInstanceFlags_CanPrintf = 1,
@@ -429,6 +429,21 @@ typedef enum BADGPUNewInstanceFlags {
     BADGPUNewInstanceFlags_BackendCheck = 2,
     // Allows BackendCheck to outright halt operations.
     BADGPUNewInstanceFlags_BackendCheckAggressive = 4,
+    // On all platforms so far, the current reference implementation of BadGPU
+    //  includes a WSI creation mechanism which attempts to use EGL.
+    // Usually, the native context creation mechanism is not EGL.
+    // So EGL is not preferred. This flag changes that.
+    // Worth mentioning is that the fallback error message is suppressed.
+    BADGPUNewInstanceFlags_PreferEGL = 8,
+    // If the BadGPU implementation supports an internal rasterizer,
+    //  never use it.
+    // This flag is ignored by badgpuNewInstanceWithWSI.
+    BADGPUNewInstanceFlags_NeverInternalRasterizer = 16,
+    // Never use any external accelerated graphics API. If the BadGPU
+    //  implementation does not have an internal rasterizer, instance creation
+    //  will be impossible.
+    // This flag is ignored by badgpuNewInstanceWithWSI.
+    BADGPUNewInstanceFlags_ForceInternalRasterizer = 32,
     BADGPUNewInstanceFlags_Force32 = 0x7FFFFFFF
 } BADGPUNewInstanceFlags;
 
@@ -1354,6 +1369,8 @@ typedef enum BADGPUContextType {
     // See Intel and to a lesser extent AMD.
     // Not supported in reference implementation anyway.
     BADGPUContextType_GL3Core = 0x00000003,
+    // Indicates that there is no OpenGL context.
+    BADGPUContextType_None =    0x00000004,
 
     BADGPUContextType_Force32 = 0x7FFFFFFF
 } BADGPUContextType;

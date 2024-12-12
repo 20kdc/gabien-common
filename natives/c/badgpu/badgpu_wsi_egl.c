@@ -214,7 +214,7 @@ static BADGPUBool attemptInitSurfacelessDisplay(BADGPUWSICtx ctx, BADGPUBool log
     return 1;
 }
 
-BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
+BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed) {
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");

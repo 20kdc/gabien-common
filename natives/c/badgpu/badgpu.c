@@ -126,17 +126,32 @@ static inline BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * l
     return 0;
 }
 
-static KHRABI void badgpuDebugCB(int32_t a, int32_t b, int32_t c, int32_t d, int32_t len, const char * text, const void * g) {
-    printf("BADGPU: GLDebug: %s\n", text);
+BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
+    if (flags & BADGPUNewInstanceFlags_ForceInternalRasterizer) {
+        if (error)
+            *error = "No internal rasterizer.";
+        return 0;
+    }
+    BADGPUBool logDetailed = (flags & BADGPUNewInstanceFlags_CanPrintf) ? 1 : 0;
+    BADGPUWSIContext wsi;
+    if (flags & BADGPUNewInstanceFlags_PreferEGL) {
+        wsi = badgpu_newWsiCtxEGL(error, logDetailed);
+        if (!wsi && !badgpu_newWsiCtxPlatformIsEGL())
+            wsi = badgpu_newWsiCtxPlatform(NULL, logDetailed);
+    } else {
+        wsi = badgpu_newWsiCtxPlatform(error, logDetailed);
+        if (!wsi && !badgpu_newWsiCtxPlatformIsEGL())
+            wsi = badgpu_newWsiCtxEGL(NULL, logDetailed);
+    }
+    // error provided by preferred hardware source
+    if (!wsi)
+        return NULL;
+    BADGPUInstance instance = badgpuNewInstanceWithWSI(flags, error, wsi);
+    return instance;
 }
 
-BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
-    BADGPUWSIContext wsi = badgpu_newWsiCtx(error, (flags & BADGPUNewInstanceFlags_CanPrintf) ? 1 : 0);
-    if (!wsi) {
-        // error provided by badgpu_newWsiCtx
-        return NULL;
-    }
-    return badgpuNewInstanceWithWSI(flags, error, wsi);
+static KHRABI void badgpuDebugCB(int32_t a, int32_t b, int32_t c, int32_t d, int32_t len, const char * text, const void * g) {
+    printf("BADGPU: GLDebug: %s\n", text);
 }
 
 BADGPU_EXPORT BADGPUInstance badgpuNewInstanceWithWSI(uint32_t flags, const char ** error, BADGPUWSIContext wsi) {

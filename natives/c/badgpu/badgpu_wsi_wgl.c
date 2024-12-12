@@ -27,7 +27,7 @@ static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
 static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
 static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
 
-BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
+BADGPUWSIContext badgpu_newWsiCtxPlatform(const char ** error, BADGPUBool logDetailed) {
     BADGPUWSICtx ctx = malloc(sizeof(struct BADGPUWSICtx));
     if (!ctx)
         return badgpu_newWsiCtxError(error, "Could not allocate BADGPUWSICtx");
@@ -71,6 +71,10 @@ BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed) {
         return badgpu_newWsiCtxError(error, "Could not create GL context");
     }
     return (BADGPUWSIContext) ctx;
+}
+
+BADGPUBool badgpu_newWsiCtxPlatformIsEGL() {
+    return 0;
 }
 
 BADGPUBool badgpu_wsiCtxMakeCurrent(BADGPUWSICtx ctx) {

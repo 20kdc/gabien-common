@@ -78,7 +78,15 @@ void badgpu_dlClose(BADGPUDynLib lib);
 // WSI
 
 // Creates a new WSICtx.
-BADGPUWSIContext badgpu_newWsiCtx(const char ** error, BADGPUBool logDetailed);
+BADGPUWSIContext badgpu_newWsiCtxPlatform(const char ** error, BADGPUBool logDetailed);
+// Determines if the platform context creation is EGL.
+BADGPUBool badgpu_newWsiCtxPlatformIsEGL();
+// Creates a new WSICtx.
+BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed);
+
+// IMPLBASE
+
+// todo!
 
 #endif
 
