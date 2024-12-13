@@ -10,9 +10,11 @@
  * It's probably not going to be used anytime soon...?
  */
 
+#include "badgpu.h"
 #include "badgpu_internal.h"
 
 void badgpu_swtnl_transform(
+    uint32_t flags,
     // Vertex Loader
     int32_t vPosD, const float * vPos,
     const float * vCol,
@@ -24,32 +26,37 @@ void badgpu_swtnl_transform(
     const BADGPUMatrix * matrixT,
     BADGPURasterizerVertex * out
 ) {
-    BADGPUVector posi = { vPos[0], vPos[1], 0, 1 };
+    size_t vtxIdx = indices ? indices[iStart] : iStart;
+    vtxIdx *= vPosD;
+    size_t tIdx = (flags & BADGPUDrawFlags_FreezeTC) ? 0 : vtxIdx;
+    size_t cIdx = (flags & BADGPUDrawFlags_FreezeColour) ? 0 : vtxIdx;
+
+    BADGPUVector posi = { vPos[vtxIdx], vPos[vtxIdx + 1], 0, 1 };
     if (vPosD >= 3)
-        posi.z = vPos[2];
+        posi.z = vPos[vtxIdx + 2];
     if (vPosD >= 4)
-        posi.w = vPos[3];
+        posi.w = vPos[vtxIdx + 3];
 
     BADGPUVector tci = { 0, 0, 0, 1 };
     if (vTC) {
-        tci.x = vTC[0];
-        tci.y = vTC[1];
+        tci.x = vTC[tIdx];
+        tci.y = vTC[tIdx + 1];
         if (vTCD >= 3)
-            tci.z = vTC[2];
+            tci.z = vTC[tIdx + 2];
         if (vTCD >= 4)
-            tci.w = vTC[3];
+            tci.w = vTC[tIdx + 3];
     }
 
-    out->p = badgpu_vectorByMatrix(posi, mvMatrix);
-    BADGPUVector tco = badgpu_vectorByMatrix(posi, matrixT);
+    out->p = mvMatrix ? badgpu_vectorByMatrix(posi, mvMatrix) : posi;
+    BADGPUVector tco = matrixT ? badgpu_vectorByMatrix(tci, matrixT) : tci;
     out->u = tco.x;
     out->v = tco.y;
 
     if (vCol) {
-        out->c.x = vCol[0];
-        out->c.y = vCol[1];
-        out->c.z = vCol[2];
-        out->c.w = vCol[3];
+        out->c.x = vCol[cIdx];
+        out->c.y = vCol[cIdx + 1];
+        out->c.z = vCol[cIdx + 2];
+        out->c.w = vCol[cIdx + 3];
     } else {
         out->c.x = 1;
         out->c.y = 1;
@@ -103,7 +110,7 @@ BADGPUBool badgpu_swtnl_drawGeom(
         BADGPURasterizerVertex vtx[3];
         int rr = 0;
         while (iCount) {
-            badgpu_swtnl_transform(vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, vtx + rr);
+            badgpu_swtnl_transform(flags, vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, vtx + rr);
             rr = (rr + 1) % 3;
             iCount--;
             iStart++;
@@ -115,7 +122,7 @@ BADGPUBool badgpu_swtnl_drawGeom(
         BADGPURasterizerVertex vtx[2];
         int rr = 0;
         while (iCount) {
-            badgpu_swtnl_transform(vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, vtx + rr);
+            badgpu_swtnl_transform(flags, vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, vtx + rr);
             rr ^= 1;
             iCount--;
             iStart++;
@@ -126,7 +133,7 @@ BADGPUBool badgpu_swtnl_drawGeom(
     } else if (pType == BADGPUPrimitiveType_Points) {
         BADGPURasterizerVertex vtx;
         while (iCount) {
-            badgpu_swtnl_transform(vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, &vtx);
+            badgpu_swtnl_transform(flags, vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, &vtx);
             iCount--;
             iStart++;
             bi->drawPoint(bi, &rc, vtx, plSize);

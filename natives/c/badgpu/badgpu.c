@@ -9,6 +9,7 @@
  * BadGPU Reference Implementation
  */
 
+#include "badgpu.h"
 #include "badgpu_internal.h"
 
 // Object Management
@@ -31,6 +32,24 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj) {
         return 1;
     }
     return 0;
+}
+
+// Internal utilities
+
+uint32_t badgpu_findVertexCount(uint32_t iStart, uint32_t iCount, const uint16_t * indices) {
+    if (indices) {
+        uint32_t vCount = 0;
+        uint32_t i;
+        for (i = 0; i < iCount; i++) {
+            uint32_t nCount = indices[iStart + i];
+            nCount += 1;
+            if (nCount > vCount)
+                vCount = nCount;
+        }
+        return vCount;
+    } else {
+        return iStart + iCount;
+    }
 }
 
 // Instance Creation
@@ -181,16 +200,19 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
         return badgpuErr(bi, "badgpuReadPixels: data == NULL for non-zero area");
 
     BADGPUBool res;
-    if (fmt == BADGPUTextureLoadFormat_RGBA8888) {
+    if (fmt == BADGPUTextureLoadFormat_RGBA8888 && bi->readPixelsRGBA8888) {
         res = bi->readPixelsRGBA8888(texture, x, y, width, height, data);
-    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32) {
-        // special fast-path because profiling said so
-        res = bi->readPixelsRGBA8888(texture, x, y, width, height, data);
-        badgpuPixelsConvertRGBA8888ToARGBI32InPlace(width, height, data);
-    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32_SA) {
-        // special fast-path because profiling said so
+    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32 && bi->readPixelsRGBA8888) {
         res = bi->readPixelsRGBA8888(texture, x, y, width, height, data);
         badgpuPixelsConvertRGBA8888ToARGBI32InPlace(width, height, data);
+    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32_SA && bi->readPixelsRGBA8888) {
+        res = bi->readPixelsRGBA8888(texture, x, y, width, height, data);
+        badgpuPixelsConvertRGBA8888ToARGBI32InPlace(width, height, data);
+        badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(width, height, data);
+    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32 && bi->readPixelsARGBI32) {
+        res = bi->readPixelsARGBI32(texture, x, y, width, height, data);
+    } else if (fmt == BADGPUTextureLoadFormat_ARGBI32_SA && bi->readPixelsARGBI32) {
+        res = bi->readPixelsARGBI32(texture, x, y, width, height, data);
         badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(width, height, data);
     } else {
         uint32_t sz = badgpuPixelsSize(BADGPUTextureLoadFormat_RGBA8888, width, height);
@@ -199,8 +221,18 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
         void * tmpBuf = malloc(sz);
         if (!tmpBuf)
             return badgpuErr(bi, "badgpuReadPixels: Unable to allocate conversion buffer.");
-        res = bi->readPixelsRGBA8888(texture, x, y, width, height, tmpBuf);
-        badgpuPixelsConvert(BADGPUTextureLoadFormat_RGBA8888, fmt, width, height, tmpBuf, data);
+        BADGPUTextureLoadFormat tlf;
+        if (bi->readPixelsRGBA8888) {
+            tlf = BADGPUTextureLoadFormat_RGBA8888;
+            res = bi->readPixelsRGBA8888(texture, x, y, width, height, tmpBuf);
+        } else if (bi->readPixelsARGBI32) {
+            tlf = BADGPUTextureLoadFormat_ARGBI32;
+            res = bi->readPixelsARGBI32(texture, x, y, width, height, tmpBuf);
+        } else {
+            free(tmpBuf);
+            return badgpuErr(bi, "badgpuReadPixels: Backend is broken and has no read function");
+        }
+        badgpuPixelsConvert(tlf, fmt, width, height, tmpBuf, data);
         free(tmpBuf);
     }
     return res;

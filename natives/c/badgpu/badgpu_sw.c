@@ -11,20 +11,12 @@
 
 #include "badgpu.h"
 #include "badgpu_internal.h"
-
-typedef struct {
-    uint8_t r, g, b, a;
-} badgpu_pixel_t;
-
-typedef struct {
-    float depth;
-    uint8_t stencil;
-} badgpu_ds_t;
+#include "badgpu_sw.h"
 
 typedef struct BADGPUTextureSW {
     BADGPUTexturePriv base;
     int w, h;
-    badgpu_pixel_t data[];
+    uint32_t data[];
 } BADGPUTextureSW;
 #define BG_TEXTURE_SW(x) ((BADGPUTextureSW *) (x))
 
@@ -60,7 +52,7 @@ static const char * bswGetMetaInfo(struct BADGPUInstancePriv * instance, BADGPUM
 }
 
 static BADGPUTexture bswNewTexture(struct BADGPUInstancePriv * instance, int16_t width, int16_t height, const void * data) {
-    size_t datasize = ((size_t) width) * ((size_t) height) * sizeof(badgpu_pixel_t);
+    size_t datasize = ((size_t) width) * ((size_t) height) * sizeof(uint32_t);
     BADGPUTextureSW * tex = malloc(sizeof(BADGPUTextureSW) + datasize);
     if (!tex) {
         badgpuErr(instance, "badgpuNewTexture: Unable to allocate memory.");
@@ -100,56 +92,44 @@ static BADGPUBool bswGenerateMipmap(void * texture) {
     return 0;
 }
 
-static BADGPUBool bswReadPixelsRGBA8888(void * texture, uint16_t x, uint16_t y, int16_t width, int16_t height, void * data) {
+static BADGPUBool bswReadPixelsARGBI32(void * texture, uint16_t x, uint16_t y, int16_t width, int16_t height, uint32_t * data) {
     BADGPUTextureSW * tex = BG_TEXTURE_SW(texture);
     int w = width;
     int h = height;
     int i;
     if (x + w > tex->w || y + h > tex->h)
         return badgpuErr(tex->base.i, "badgpuReadPixels: Read out of range");
-    const badgpu_pixel_t * texdata = tex->data;
-    size_t stride = width * sizeof(badgpu_pixel_t);
+    const uint32_t * texdata = tex->data;
     for (i = 0; i < height; i++) {
-        memcpy(data, texdata, stride);
-        data += stride;
+        memcpy(data, texdata, width * sizeof(uint32_t));
+        data += width;
         texdata += width;
     }
     return 1;
 }
 
-// -- core maths --
-
-static inline uint8_t f8tou8(float c) {
-    int r = (int) ((c * 255) + 0.5);
-    if (r < 0)
-        return 0;
-    if (r > 255)
-        return 255;
-    return r;
-}
-
 // -- renderfuncs --
 
-static BADGPUBool bswVSize(BADGPUTextureSW * sTexture, BADGPUDSBufferSW * sDSBuffer, int * w, int * h) {
+static BADGPUBool bswVSize(BADGPU_SESSIONFLAGS, int * w, int * h, badgpu_rect_t * region) {
     if (!sTexture) {
         if (sDSBuffer) {
-            *w = sDSBuffer->w;
-            *h = sDSBuffer->h;
+            *w = BG_DSBUFFER_SW(sDSBuffer)->w;
+            *h = BG_DSBUFFER_SW(sDSBuffer)->h;
             return 1;
         } else {
             return 0;
         }
     } else if (sDSBuffer) {
-        if (sTexture->w != sDSBuffer->w)
+        if (BG_TEXTURE_SW(sTexture)->w != BG_DSBUFFER_SW(sDSBuffer)->w)
             return 0;
-        if (sTexture->h != sDSBuffer->h)
+        if (BG_TEXTURE_SW(sTexture)->h != BG_DSBUFFER_SW(sDSBuffer)->h)
             return 0;
-        *w = sTexture->w;
-        *h = sTexture->h;
+        *w = BG_TEXTURE_SW(sTexture)->w;
+        *h = BG_TEXTURE_SW(sTexture)->h;
         return 1;
     } else {
-        *w = sTexture->w;
-        *h = sTexture->h;
+        *w = BG_TEXTURE_SW(sTexture)->w;
+        *h = BG_TEXTURE_SW(sTexture)->h;
         return 1;
     }
 }
@@ -159,89 +139,99 @@ static BADGPUBool bswDrawClear(
     BADGPU_SESSIONFLAGS,
     float cR, float cG, float cB, float cA, float depth, uint8_t stencil
 ) {
-    badgpu_pixel_t pixel = { f8tou8(cR), f8tou8(cG), f8tou8(cB), f8tou8(cA) };
+    uint32_t pixel = f8topixel(cR, cG, cB, cA);
     badgpu_ds_t ds = { depth, stencil };
 
     int vpW, vpH;
     BADGPUTextureSW * rTex = BG_TEXTURE_SW(sTexture);
     BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(sDSBuffer);
-    if (!bswVSize(rTex, rDS, &vpW, &vpH))
+    badgpu_rect_t region;
+    if (!bswVSize(BADGPU_SESSIONFLAGS_PASSTHROUGH, &vpW, &vpH, &region))
         return 0;
 
-    int rrL = 0;
-    int rrU = 0;
-    int rrR = vpW;
-    int rrD = vpH;
     int x, y;
 
-    if (sFlags & BADGPUSessionFlags_Scissor) {
-        if (rrL < sScX)
-            rrL = sScX;
-        if (rrU < sScY)
-            rrU = sScY;
-        if (rrR > sScX + sScWidth)
-            rrR = sScX + sScWidth;
-        if (rrD > sScY + sScHeight)
-            rrD = sScY + sScHeight;
-    }
-
-    for (y = rrU; y < rrD; y++) {
-        for (x = rrL; x < rrR; x++) {
-            size_t p = x + (y * vpW);
-            if (rTex) {
-                if (sFlags & BADGPUSessionFlags_MaskR)
-                    rTex->data[p].r = pixel.r;
-                if (sFlags & BADGPUSessionFlags_MaskG)
-                    rTex->data[p].g = pixel.g;
-                if (sFlags & BADGPUSessionFlags_MaskB)
-                    rTex->data[p].b = pixel.b;
-                if (sFlags & BADGPUSessionFlags_MaskA)
-                    rTex->data[p].a = pixel.a;
+    if (rTex && (sFlags & BADGPUSessionFlags_MaskRGBA)) {
+        uint32_t mask = sessionFlagsToARGBMask(sFlags);
+        pixel &= mask;
+        for (y = region.u; y < region.d; y++) {
+            for (x = region.l; x < region.r; x++) {
+                size_t p = x + (y * vpW);
+                rTex->data[p] &= ~mask;
+                rTex->data[p] |= pixel;
+                p++;
             }
-            if (rDS) {
+        }
+    }
+    if (rDS && (sFlags & BADGPUSessionFlags_StencilAll)) {
+        for (y = region.u; y < region.d; y++) {
+            for (x = region.l; x < region.r; x++) {
+                size_t p = x + (y * vpW);
                 if (sFlags & BADGPUSessionFlags_MaskDepth)
                     rDS->data[p].depth = ds.depth;
                 rDS->data[p].stencil &= ~(sFlags & BADGPUSessionFlags_StencilAll);
                 rDS->data[p].stencil |= ds.stencil & sFlags;
+                p++;
             }
-            p++;
         }
     }
     return 1;
 }
 
-static BADGPUBool bswDrawGeom(
-    struct BADGPUInstancePriv * instance,
-    BADGPU_SESSIONFLAGS,
-    uint32_t flags,
-    // Vertex Loader
-    int32_t vPosD, const float * vPos,
-    const float * vCol,
-    int32_t vTCD, const float * vTC,
-    BADGPUPrimitiveType pType, float plSize,
-    uint32_t iStart, uint32_t iCount, const uint16_t * indices,
-    // Vertex Shader
-    const BADGPUMatrix * mvMatrix,
-    // Viewport
-    int32_t vX, int32_t vY, int32_t vW, int32_t vH,
-    // Fragment Shader
-    BADGPUTexture texture, const BADGPUMatrix * matrixT,
-    const float * clipPlane, BADGPUCompare atFunc, float atRef,
-    // Stencil Test
-    BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
-    BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
-    // Depth Test / DepthRange / PolygonOffset
-    BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
-    // Blending
-    uint32_t blendProgram
+static void bswDrawPoint(
+    struct BADGPUInstanceSWTNL * instance,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    float plSize
 ) {
     int vpW, vpH;
-    BADGPUTextureSW * rTex = BG_TEXTURE_SW(sTexture);
-    BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(sDSBuffer);
-    if (!bswVSize(rTex, rDS, &vpW, &vpH))
-        return 0;
+    BADGPUTextureSW * rTex = BG_TEXTURE_SW(ctx->sTexture);
+    BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(ctx->sDSBuffer);
+    badgpu_rect_t region;
+    if (!bswVSize(ctx->sTexture, ctx->sDSBuffer, ctx->sFlags, ctx->sScX, ctx->sScY, ctx->sScWidth, ctx->sScHeight, &vpW, &vpH, &region))
+        return;
+    badgpu_swrop_t rop;
+    badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
     // would be nice if there was something actually here
-    return 0;
+    return;
+}
+
+static void bswDrawLine(
+    struct BADGPUInstanceSWTNL * instance,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    BADGPURasterizerVertex b,
+    float plSize
+) {
+    int vpW, vpH;
+    BADGPUTextureSW * rTex = BG_TEXTURE_SW(ctx->sTexture);
+    BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(ctx->sDSBuffer);
+    badgpu_rect_t region;
+    if (!bswVSize(ctx->sTexture, ctx->sDSBuffer, ctx->sFlags, ctx->sScX, ctx->sScY, ctx->sScWidth, ctx->sScHeight, &vpW, &vpH, &region))
+        return;
+    badgpu_swrop_t rop;
+    badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
+    // would be nice if there was something actually here
+    return;
+}
+
+static void bswDrawTriangle(
+    struct BADGPUInstanceSWTNL * instance,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    BADGPURasterizerVertex b,
+    BADGPURasterizerVertex c
+) {
+    int vpW, vpH;
+    BADGPUTextureSW * rTex = BG_TEXTURE_SW(ctx->sTexture);
+    BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(ctx->sDSBuffer);
+    badgpu_rect_t region;
+    if (!bswVSize(ctx->sTexture, ctx->sDSBuffer, ctx->sFlags, ctx->sScX, ctx->sScY, ctx->sScWidth, ctx->sScHeight, &vpW, &vpH, &region))
+        return;
+    badgpu_swrop_t rop;
+    badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
+    // would be nice if there was something actually here
+    return;
 }
 
 // -- the instance --
@@ -261,12 +251,15 @@ BADGPUInstance badgpu_newSoftwareInstance(BADGPUNewInstanceFlags flags, const ch
     badgpu_initObj((BADGPUObject) bi, destroySWInstance);
     // vtbl
     bi->base.getMetaInfo = bswGetMetaInfo;
-    bi->base.texLoadFormat = BADGPUTextureLoadFormat_RGBA8888;
+    bi->base.texLoadFormat = BADGPUTextureLoadFormat_ARGBI32;
     bi->base.newTexture = bswNewTexture;
     bi->base.newDSBuffer = bswNewDSBuffer;
     bi->base.generateMipmap = bswGenerateMipmap;
-    bi->base.readPixelsRGBA8888 = bswReadPixelsRGBA8888;
+    bi->base.readPixelsARGBI32 = bswReadPixelsARGBI32;
     bi->base.drawClear = bswDrawClear;
-    bi->base.drawGeom = bswDrawGeom;
+    bi->base.drawGeom = badgpu_swtnl_drawGeom;
+    bi->drawPoint = bswDrawPoint;
+    bi->drawLine = bswDrawLine;
+    bi->drawTriangle = bswDrawTriangle;
     return (BADGPUInstance) bi;
 }

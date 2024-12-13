@@ -358,7 +358,7 @@ static BADGPUBool bglDrawGeom(
         return 0;
 
     // Vertex Shader
-    bi->gl.MatrixMode(GL_MODELVIEW);
+    bi->gl.MatrixMode(GL_PROJECTION);
     if (!mvMatrix) bi->gl.LoadIdentity(); else bi->gl.LoadMatrixf((void *) mvMatrix);
 
     // DepthRange/Viewport
@@ -462,13 +462,13 @@ static BADGPUBool bglDrawGeom(
     if (flags & BADGPUDrawFlags_Blend) {
         bi->gl.Enable(GL_BLEND);
         bi->gl.BlendFuncSeparate(
-            convertBlendWeight((blendProgram >> 24) & 077),  // RGB S
-            convertBlendWeight((blendProgram >> 18) & 077),  // RGB D
-            convertBlendWeight((blendProgram >>  9) & 077),  // A   S
-            convertBlendWeight((blendProgram >>  3) & 077)); // A   D
+            convertBlendWeight(BADGPU_BP_RGBS(blendProgram)),
+            convertBlendWeight(BADGPU_BP_RGBD(blendProgram)),
+            convertBlendWeight(BADGPU_BP_AS(blendProgram)),
+            convertBlendWeight(BADGPU_BP_AD(blendProgram)));
         bi->gl.BlendEquationSeparate(
-            convertBlendOp((blendProgram >> 15) & 07),
-            convertBlendOp(blendProgram & 07));
+            convertBlendOp(BADGPU_BP_RGBE(blendProgram)),
+            convertBlendOp(BADGPU_BP_AE(blendProgram)));
     } else {
         bi->gl.Disable(GL_BLEND);
     }

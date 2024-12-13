@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.3.0`
+ * Version: `1.3.2`
  *
  * ## Formatting Policy
  *
@@ -442,6 +442,10 @@ typedef enum BADGPUNewInstanceFlags {
     // Never use any external accelerated graphics API. If the BadGPU
     //  implementation does not have an internal rasterizer, instance creation
     //  will be impossible.
+    // Importantly, BadGPU may use an incomplete or broken internal rasterizer
+    //  even if it would normally rather fail than use that rasterizer.
+    // This is to allow testing of such an internal rasterizer, or as a last
+    //  resort with known reliability implications.
     // This flag is ignored by badgpuNewInstanceWithWSI.
     BADGPUNewInstanceFlags_ForceInternalRasterizer = 32,
     BADGPUNewInstanceFlags_Force32 = 0x7FFFFFFF
@@ -1167,23 +1171,29 @@ typedef enum BADGPUBlendWeight {
  *  are indices into the vertex arrays. \
  * If `indices` is `NULL`, then it is essentially as if an array was passed with
  *  values 0 to 65535. \
- * `iCount` must not be below 0 or above 65536.
+ * `iCount` must not be below 0 or above 65536. \
+ * Vertex data for vertices 0 to the highest vertex index in
+ *  `iStart` to `iStart + iCount` exclusive must be valid to access, even if it
+ *  is not used.
  *
  * `mvMatrix` can be `NULL`. In this case, it is effectively identity. \
  * Otherwise, see `BADGPUMatrix`. \
- * It is worth noting that this is formally the `GL_MODELVIEW` matrix by OpenGL
- *  rules, which changes how it interacts with other features; mainly it ensures
- *  that this matrix counts as a modification to the input vertices.
+ * This is formally the `GL_PROJECTION` matrix in OpenGL; GL_MODELVIEW is always
+ *  identity to avoid clip-plane issues.
  *
  * `vX`, `vY`, `vW`, `vH` make up the viewport.
  *
  * `texture` is multiplied with the vertex colours. \
  * (If `NULL`, then the vertex colours are used as-is.) \
- * The texture coordinates are multiplied with the texture coordinate matrix.
+ * The texture coordinates are multiplied with `matrixT`, if not `NULL`. \
+ * (The texture matrix may not be available on Android emulators. This cannot
+ *  be detected in advance; texture matrix use is presently discouraged. \
+ *  The texture matrix will NOP if this is the case. \
+ *  Devices with this issue may violate the OpenGL ES 1.1 specification.)
  *
  * `clipPlane` specifies a clip plane, or can be `NULL` to disable it. \
  * Clip planes are in the space after transformation by the matrix, but before
- *  the perspective divide.
+ *  the perspective divide, also known as clip space.
  *
  * `atFunc` and `atRef` specify the alpha test.
  *
@@ -1223,11 +1233,13 @@ typedef enum BADGPUBlendWeight {
  * + Specifying integer vertex/TCs is more trouble than it is worth.
  *   There may be merit to specifying colours as RGBA bytes, but it would make
  *    some pretty useful stuff have to go onto a slowpath if actually used.
- * + The projection matrix was removed because the driver simply does the work
+ * + The modelview matrix was removed because the driver simply does the work
  *    on-CPU these days anyway. It doesn't even bother to ask if the work really
  *    has to be done on that HW, it's all done in the state tracker. \
- *   The modelview matrix was chosen as the surviving one, as it's a natural
- *    extension of the vertices, and the clip plane would act weird otherwise.
+ *   The projection matrix was chosen as the surviving one, as it's a natural
+ *    extension of the vertices, and the clip plane would act weird otherwise. \
+ *   An earlier version of the specification had these matrices swapped. This
+ *    was a bug.
  * + Flat-shading makes no sense without lighting.
  * + The `MULTISAMPLE` and `POINT_SPRITE_OES` enables are a mess.
  * + Logic ops aren't in ES2.

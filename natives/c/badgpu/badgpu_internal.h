@@ -101,6 +101,18 @@ static inline void badgpu_initObj(BADGPUObject obj, void (*destroy)(BADGPUObject
     obj->destroy = destroy;
 }
 
+// IUTIL
+
+// Finds the vertex count for the given indices array.
+uint32_t badgpu_findVertexCount(uint32_t iStart, uint32_t iCount, const uint16_t * indices);
+
+#define BADGPU_BP_RGBS(blendProgram) (((blendProgram) >> 24) & 077)
+#define BADGPU_BP_RGBD(blendProgram) (((blendProgram) >> 18) & 077)
+#define BADGPU_BP_AS(blendProgram)   (((blendProgram) >>  9) & 077)
+#define BADGPU_BP_AD(blendProgram)   (((blendProgram) >>  3) & 077)
+#define BADGPU_BP_RGBE(blendProgram) (((blendProgram) >> 15) & 07)
+#define BADGPU_BP_AE(blendProgram)   ((blendProgram) & 07)
+
 // Instance Base
 
 typedef struct BADGPUInstancePriv {
@@ -123,7 +135,9 @@ typedef struct BADGPUInstancePriv {
     BADGPUTexture (*newTexture)(struct BADGPUInstancePriv *, int16_t width, int16_t height, const void * data);
     BADGPUDSBuffer (*newDSBuffer)(struct BADGPUInstancePriv * instance, int16_t width, int16_t height);
     BADGPUBool (*generateMipmap)(void *);
+    // one of these two must be implemented
     BADGPUBool (*readPixelsRGBA8888)(void *, uint16_t x, uint16_t y, int16_t width, int16_t height, void * data);
+    BADGPUBool (*readPixelsARGBI32)(void *, uint16_t x, uint16_t y, int16_t width, int16_t height, uint32_t * data);
     BADGPUBool (*drawClear)(
         struct BADGPUInstancePriv *,
         BADGPU_SESSIONFLAGS,
@@ -192,6 +206,33 @@ static inline BADGPUInstancePriv * badgpuBChk(BADGPUInstance bi, const char * lo
     return bip;
 }
 
+// Vector maths
+
+static inline float badgpu_lerp(float a, float b, float v) {
+    return (a * (1 - v)) + (b * v);
+}
+
+static inline BADGPUVector badgpu_vecLerp(BADGPUVector a, BADGPUVector b, float v) {
+    BADGPUVector res = {
+        badgpu_lerp(a.x, b.x, v),
+        badgpu_lerp(a.y, b.y, v),
+        badgpu_lerp(a.z, b.z, v),
+        badgpu_lerp(a.w, b.w, v)
+    };
+    return res;
+}
+
+static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMatrix * matrix) {
+    BADGPUVector out = {
+        (matrix->x.x * v.x) + (matrix->y.x * v.y) + (matrix->z.x * v.z) + (matrix->w.x * v.w),
+        (matrix->x.y * v.x) + (matrix->y.y * v.y) + (matrix->z.y * v.z) + (matrix->w.y * v.w),
+        (matrix->x.z * v.x) + (matrix->y.z * v.y) + (matrix->z.z * v.z) + (matrix->w.z * v.w),
+        (matrix->x.w * v.x) + (matrix->y.w * v.y) + (matrix->z.w * v.z) + (matrix->w.w * v.w)
+    };
+    return out;
+}
+
+
 // Instance w/ Software TnL (not yet implemented, but...)
 
 typedef struct BADGPURasterizerContext {
@@ -220,10 +261,23 @@ typedef struct BADGPURasterizerContext {
 } BADGPURasterizerContext;
 
 typedef struct BADGPURasterizerVertex {
+    // Position in clip coordinates (ES11p27)
     BADGPUVector p;
+    // Colour.
     BADGPUVector c;
+    // Texture coordinate.
     float u, v;
 } BADGPURasterizerVertex;
+
+static inline BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, BADGPURasterizerVertex b, float v) {
+    BADGPURasterizerVertex res = {
+        .p = badgpu_vecLerp(a.p, b.p, v),
+        .c = badgpu_vecLerp(a.p, b.p, v),
+        .u = badgpu_lerp(a.u, b.u, v),
+        .v = badgpu_lerp(a.v, b.v, v)
+    };
+    return res;
+}
 
 /**
  * For 'primitive-at-a-time' backends.
@@ -231,20 +285,20 @@ typedef struct BADGPURasterizerVertex {
 typedef struct BADGPUInstanceSWTNL {
     BADGPUInstancePriv base;
 
-    BADGPUBool (*drawPoint)(
+    void (*drawPoint)(
         struct BADGPUInstanceSWTNL *,
         const BADGPURasterizerContext * ctx,
         BADGPURasterizerVertex a,
         float plSize
     );
-    BADGPUBool (*drawLine)(
+    void (*drawLine)(
         struct BADGPUInstanceSWTNL *,
         const BADGPURasterizerContext * ctx,
         BADGPURasterizerVertex a,
         BADGPURasterizerVertex b,
         float plSize
     );
-    BADGPUBool (*drawTriangle)(
+    void (*drawTriangle)(
         struct BADGPUInstanceSWTNL *,
         const BADGPURasterizerContext * ctx,
         BADGPURasterizerVertex a,
@@ -254,17 +308,8 @@ typedef struct BADGPUInstanceSWTNL {
 } BADGPUInstanceSWTNL;
 #define BG_INSTANCE_SWTNL(x) ((BADGPUInstanceSWTNL *) (x))
 
-static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMatrix * matrix) {
-    BADGPUVector out = {
-        (matrix->x.x * v.x) + (matrix->y.x * v.y) + (matrix->z.x * v.z) + (matrix->w.x * v.w),
-        (matrix->x.y * v.x) + (matrix->y.y * v.y) + (matrix->z.y * v.z) + (matrix->w.y * v.w),
-        (matrix->x.z * v.x) + (matrix->y.z * v.y) + (matrix->z.z * v.z) + (matrix->w.z * v.w),
-        (matrix->x.w * v.x) + (matrix->y.w * v.y) + (matrix->z.w * v.z) + (matrix->w.w * v.w)
-    };
-    return out;
-}
-
 void badgpu_swtnl_transform(
+    uint32_t flags,
     // Vertex Loader
     int32_t vPosD, const float * vPos,
     const float * vCol,

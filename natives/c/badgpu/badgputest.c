@@ -21,7 +21,7 @@ void renderFlagMain(BADGPUTexture tex, int w, int h);
 
 void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h);
 
-void render3DTest(BADGPUTexture tex, BADGPUDSBuffer dsb, BADGPUTexture texSrc);
+void render3DTest(BADGPUTexture tex, BADGPUDSBuffer dsb, BADGPUTexture texSrc, const float * clipPlane);
 
 int main(int argc, char ** argv) {
     int flags = BADGPUNewInstanceFlags_CanPrintf | BADGPUNewInstanceFlags_BackendCheck;
@@ -79,9 +79,16 @@ int main(int argc, char ** argv) {
     int chk[16] = { -1, 0xFF000000, -1, 0xFF000000, 0xFF000000, -1, 0xFF000000, -1, -1, 0xFF000000, -1, 0xFF000000, 0xFF000000, -1, 0xFF000000, -1 };
     BADGPUTexture tex3 = badgpuNewTexture(bi, 4, 4, BADGPUTextureLoadFormat_ARGBI32, chk);
 
-    render3DTest(tex2, dsb, tex3);
+    render3DTest(tex2, dsb, tex3, NULL);
 
     writeQOIFromTex("tmp2.qoi", tex2, T_WIDTH, T_HEIGHT);
+
+    // ???
+    float clipPlane[4] = {-1.0f, 0, 0.5f, 0.0f};
+
+    render3DTest(tex2, dsb, tex3, clipPlane);
+
+    writeQOIFromTex("tmp3.qoi", tex2, T_WIDTH, T_HEIGHT);
 
     if (!badgpuUnref(tex)) {
         puts("hanging references: BADGPUTexture 1");
@@ -232,7 +239,7 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
     );
 }
 
-void render3DTestSpecific(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc, const BADGPUMatrix * matrix) {
+void render3DTestSpecific(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc, const BADGPUMatrix * matrix, const float * clipPlane) {
     // Mesh to test 3D
     float pos[] = {
         -1, 1, 1,
@@ -263,7 +270,7 @@ void render3DTestSpecific(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture 
         0, 0, T_WIDTH, T_HEIGHT,
         // Fragment Shader
         texSrc, NULL,
-        NULL, BADGPUCompare_Always, 0,
+        clipPlane, BADGPUCompare_Always, 0,
         // Stencil Test
         BADGPUCompare_Always, 0, 0xFF,
         BADGPUStencilOp_Keep, BADGPUStencilOp_Keep, BADGPUStencilOp_Inc,
@@ -274,7 +281,7 @@ void render3DTestSpecific(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture 
     );
 }
 
-void render3DTest(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc) {
+void render3DTest(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc, const float * clipPlane) {
     badgpuDrawClear(tex2, dsb, BADGPUSessionFlags_MaskAll, 0, 0, T_WIDTH, T_HEIGHT, 0, 0, 0, 0, 1, 0);
     // First obj
     BADGPUMatrix matrix1 = {
@@ -290,8 +297,8 @@ void render3DTest(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc) 
         {   0,  2,    0,    0},
         {   0,  0, -0.5,  0.5}
     };
-    render3DTestSpecific(tex2, dsb, texSrc, &matrix1);
-    render3DTestSpecific(tex2, dsb, texSrc, &matrix2);
+    render3DTestSpecific(tex2, dsb, texSrc, &matrix1, clipPlane);
+    render3DTestSpecific(tex2, dsb, texSrc, &matrix2, clipPlane);
     // Mesh to test 3D
     float pos[] = {
         -1,  1,
