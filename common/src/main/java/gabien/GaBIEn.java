@@ -776,10 +776,28 @@ public final class GaBIEn {
     }
 
     /**
+     * Returns new instance flags inferred from the environment.
+     * CanPrintf is not inferred, on purpose, to avoid polluting stdout on embedded use
+     */
+    static int inferNewInstanceFlags() {
+        // Backup mechanism laying around to run this on EGL even on systems that don't traditionally do that.
+        if (System.getenv("BADGPU_EGL_LIBRARY") != null)
+            return BadGPU.NewInstanceFlags.PreferEGL;
+        return 0;
+    }
+
+    /**
+     * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
+     */
+    static void setupNativesAndAssetsForTests() {
+        setupNativesAndAssets(inferNewInstanceFlags() | BadGPU.NewInstanceFlags.CanPrintf | BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive, false, false);
+    }
+
+    /**
      * Initializes gabien internal stuff. Expected to be called from gabien.Main.initializeEmbedded and other places.
      * All callers of this must call GaBIEnUI.setupAssets if that still exists.
      */
-    static void setupNativesAndAssets(boolean debug, boolean setupTimeLogger, boolean isCrashingVopeks) {
+    static void setupNativesAndAssets(int newInstanceFlags, boolean setupTimeLogger, boolean isCrashingVopeks) {
         try {
             String[] str = (String[]) Class.forName("gabienapp.Application").getField("appPrefixes").get(null);
             appPrefixes = str;
@@ -804,9 +822,6 @@ public final class GaBIEn {
             if (!gabien.natives.Loader.defaultLoader(GaBIEn::getResource, internal::nativeDestinationSetup))
                 System.err.println("GaBIEn: Natives did not initialize. And before it gets better, it's getting worse...");
             System.err.println("GaBIEn: Natives: " + gabien.natives.Loader.getNativesVersion());
-            int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf;
-            if (debug)
-                newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
             vopeks = new Vopeks(newInstanceFlags, timeLogger, isCrashingVopeks);
             // spin until Vopeks has initialized as it is VERY IMPORTANT
             while (!vopeks.initComplete.get());

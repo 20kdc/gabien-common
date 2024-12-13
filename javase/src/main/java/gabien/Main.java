@@ -90,15 +90,15 @@ abstract class Main {
         boolean tryForceOpenGL = false;
         boolean ignoreDPI = false;
         boolean useInternalBrowser = false;
-        boolean isDebug = false;
         boolean isTimeLogging = false;
         boolean isCrashingVopeks = false;
+        int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf | GaBIEn.inferNewInstanceFlags();
         if (args.length > 0) {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
                     tryForceOpenGL = true;
                 if (s.equalsIgnoreCase("debug"))
-                    isDebug = true;
+                    newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
                 if (s.equalsIgnoreCase("stopImmediately"))
                     throw new RuntimeException("stopImmediately passed on command line");
                 if (s.equalsIgnoreCase("crashVopeks"))
@@ -115,6 +115,10 @@ abstract class Main {
                     ignoreBlindingSun = true;
                 if (s.equalsIgnoreCase("useInternalBrowser"))
                     useInternalBrowser = true;
+                if (s.equalsIgnoreCase("swrForced"))
+                    newInstanceFlags |= BadGPU.NewInstanceFlags.ForceInternalRasterizer;
+                if (s.equalsIgnoreCase("swrRefused"))
+                    newInstanceFlags |= BadGPU.NewInstanceFlags.NeverInternalRasterizer;
             }
         }
         if (tryForceOpenGL) {
@@ -122,21 +126,21 @@ abstract class Main {
             System.setProperty("sun.java2d.xrender", "true");
         }
         if (!ignoreDPI) {
-        	try {
-            	System.setProperty("sun.java2d.uiScale", "1");
-            	int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
-            	GrInDriver.uiGuessScaleTenths = (int) Math.max(10, Math.ceil(dpi / 9.6d));
-        	} catch (Exception e) {
-        		// number format exception, probably, but whatever happens DON'T FAIL
-        		e.printStackTrace();
-        	}
+            try {
+                System.setProperty("sun.java2d.uiScale", "1");
+                int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
+                GrInDriver.uiGuessScaleTenths = (int) Math.max(10, Math.ceil(dpi / 9.6d));
+            } catch (Exception e) {
+                // number format exception, probably, but whatever happens DON'T FAIL
+                e.printStackTrace();
+            }
         }
-        initializeEmbedded(isDebug, isTimeLogging, isCrashingVopeks);
+        initializeEmbedded(newInstanceFlags, isTimeLogging, isCrashingVopeks);
         // System.err.println("GJSEStartProfile after initializeEmbedded: " + GaBIEn.getTime());
         if (GaBIEnImpl.mobileEmulation) {
-        	WindowSpecs ws = new WindowSpecs(GaBIEn.internal);
-        	ws.resizable = false;
-        	GaBIEn.internalWindowing = new WindowMux(GaBIEn.internal, GaBIEn.internalWindowing.makeGrIn("Mobile", 960, 540, ws));
+            WindowSpecs ws = new WindowSpecs(GaBIEn.internal);
+            ws.resizable = false;
+            GaBIEn.internalWindowing = new WindowMux(GaBIEn.internal, GaBIEn.internalWindowing.makeGrIn("Mobile", 960, 540, ws));
             useInternalBrowser = true;
         }
         if (useInternalBrowser)
@@ -148,12 +152,15 @@ abstract class Main {
      * See GaBIEn.initializeEmbedded.
      */
     public static void initializeEmbedded() {
-        initializeEmbedded(false, false, false);
+        // Note that CanPrintf is *not* inferred (on purpose).
+        initializeEmbedded(GaBIEn.inferNewInstanceFlags(), false, false);
     }
 
-    private static void initializeEmbedded(boolean isDebug, boolean isTimeLogging, boolean isCrashingVopeks) {
+    private static void initializeEmbedded(int newInstanceFlags, boolean isTimeLogging, boolean isCrashingVopeks) {
         if (!ignoreBlindingSun) {
-            // Seriously, Sun, were you trying to cause epilepsy episodes?!?!
+            // do not clear controls on behalf of the user
+            // do not clear controls on behalf of the user
+            // do not clear controls on behalf of the user
             System.setProperty("sun.awt.noerasebackground", "true");
             System.setProperty("sun.awt.erasebackgroundonresize", "true");
         }
@@ -181,7 +188,7 @@ abstract class Main {
         GaBIEn.internalWindowing = impl;
         GaBIEn.internalFileBrowser = (GaBIEnImpl) GaBIEn.internal;
         // pretty much all the startup time goes here
-        GaBIEn.setupNativesAndAssets(isDebug, isTimeLogging, isCrashingVopeks);
+        GaBIEn.setupNativesAndAssets(newInstanceFlags, isTimeLogging, isCrashingVopeks);
         GaBIEnUI.setupAssets();
     }
 }

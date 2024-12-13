@@ -20,6 +20,7 @@ import gabien.audio.IRawAudioDriver;
 import gabien.backend.EmulatedFileBrowser;
 import gabien.backend.IGaBIEn;
 import gabien.backend.WindowMux;
+import gabien.natives.BadGPU;
 import gabien.render.WSIImage;
 import gabien.text.ITypeface;
 import gabien.uslx.vfs.impl.*;
@@ -51,16 +52,21 @@ public final class GaBIenImpl implements IGaBIEn {
     public static void main() throws Exception {
         GaBIEn.fontsReady = true;
         final GaBIenImpl impl = new GaBIenImpl();
-    	GaBIEn.internal = impl;
-    	GaBIEn.clipboard = new ClipboardImpl();
-    	GaBIEn.mutableDataFS = JavaIOFSBackend.from(new File("/sdcard"));
-    	// Use these "key files" to control startup. Only their existence matters, contents don't.
-        GaBIEn.setupNativesAndAssets(AndroidPortGlobals.debugFlag, new File("/sdcard/gabien_android_enable_timelogger").exists(), false);
+        GaBIEn.internal = impl;
+        GaBIEn.clipboard = new ClipboardImpl();
+        GaBIEn.mutableDataFS = JavaIOFSBackend.from(new File("/sdcard"));
+        // Use these "key files" to control startup. Only their existence matters, contents don't.
+        // Software renderer is disabled because of the requirement to prefer EGL.
+        int newInstanceFlags = BadGPU.NewInstanceFlags.CanPrintf | BadGPU.NewInstanceFlags.PreferEGL | BadGPU.NewInstanceFlags.NeverInternalRasterizer;
+        if (AndroidPortGlobals.debugFlag) {
+            newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
+        }
+        GaBIEn.setupNativesAndAssets(newInstanceFlags, new File("/sdcard/gabien_android_enable_timelogger").exists(), false);
         GaBIEnUI.setupAssets();
         AndroidPortGlobals.theMainWindow = new GrInDriver(800, 600);
-    	GaBIEn.internalWindowing = new WindowMux(impl, AndroidPortGlobals.theMainWindow);
-    	GaBIEn.internalFileBrowser = new EmulatedFileBrowser(impl);
-    	Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
+        GaBIEn.internalWindowing = new WindowMux(impl, AndroidPortGlobals.theMainWindow);
+        GaBIEn.internalFileBrowser = new EmulatedFileBrowser(impl);
+        Class.forName("gabienapp.Application").getDeclaredMethod("gabienmain").invoke(null);
     }
 
     /**

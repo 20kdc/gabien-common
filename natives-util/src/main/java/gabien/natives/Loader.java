@@ -93,12 +93,12 @@ public abstract class Loader {
         // get desperate
         String detectedCPU = detectCPU();
         for (String o : os)
-            if (defaultLoaderConfigTmpWithBackpathCheck(detectedCPU + "-" + o, assetLookup, destinationSetup, errorsP))
+            if (loadWithTmpfile(detectedCPU + "-" + o, assetLookup, destinationSetup, errorsP))
                 return true;
         // get REALLY desperate
         for (String o : os)
             for (String c : cpu)
-                if (defaultLoaderConfigTmpWithBackpathCheck(c + "-" + o, assetLookup, destinationSetup, errorsP))
+                if (loadWithTmpfile(c + "-" + o, assetLookup, destinationSetup, errorsP))
                     return true;
         // uhoh.
         System.err.println("gabien.natives.Loader: Failed, information:");
@@ -139,13 +139,6 @@ public abstract class Loader {
             errorsP.append("gabien.natives.Loader: load(" + fn + "): " + ex + "\n");
         }
         return false;
-    }
-    private static boolean defaultLoaderConfigTmpWithBackpathCheck(String config, Function<String, InputStream> assetLookup, Function<String, File> destinationSetup, PrintWriter errorsP) {
-        // Backup mechanism laying around to run this on EGL even on systems that don't traditionally do that.
-        if (System.getenv("BADGPU_EGL_LIBRARY") != null)
-            if (loadWithTmpfile(config + ".CX_BackPath", assetLookup, destinationSetup, errorsP))
-                return true;
-        return loadWithTmpfile(config, assetLookup, destinationSetup, errorsP);
     }
     private static boolean loadWithTmpfile(String config, Function<String, InputStream> assetLookup, Function<String, File> destinationSetup, PrintWriter errorsP) {
         String fn = "natives." + config;
