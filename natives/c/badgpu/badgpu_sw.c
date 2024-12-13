@@ -104,11 +104,12 @@ static BADGPUBool bswReadPixelsRGBA8888(void * texture, uint16_t x, uint16_t y, 
     BADGPUTextureSW * tex = BG_TEXTURE_SW(texture);
     int w = width;
     int h = height;
+    int i;
     if (x + w > tex->w || y + h > tex->h)
         return badgpuErr(tex->base.i, "badgpuReadPixels: Read out of range");
     const badgpu_pixel_t * texdata = tex->data;
     size_t stride = width * sizeof(badgpu_pixel_t);
-    for (int i = 0; i < height; i++) {
+    for (i = 0; i < height; i++) {
         memcpy(data, texdata, stride);
         data += stride;
         texdata += width;
