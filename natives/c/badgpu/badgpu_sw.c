@@ -163,7 +163,6 @@ static BADGPUBool bswDrawClear(
                 size_t p = x + (y * vpW);
                 rTex->data[p] &= ~mask;
                 rTex->data[p] |= pixel;
-                p++;
             }
         }
     }
@@ -175,7 +174,6 @@ static BADGPUBool bswDrawClear(
                     rDS->data[p].depth = ds.depth;
                 rDS->data[p].stencil &= ~(sFlags & BADGPUSessionFlags_StencilAll);
                 rDS->data[p].stencil |= ds.stencil & sFlags;
-                p++;
             }
         }
     }
@@ -296,6 +294,7 @@ static void bswDrawLineClipper(
     BADGPURasterizerVertex a,
     BADGPURasterizerVertex b,
     float plSize,
+    int vpW,
     const badgpu_rect_t * region,
     const badgpu_swrop_t * rop,
     int planeIndex
@@ -306,11 +305,11 @@ static void bswDrawLineClipper(
         if (clip.type == CLIPCON_CUT)
             return;
         if (clip.type == CLIPCON_NEG) {
-            bswDrawLineClipper(instance, ctx, badgpu_rvtxLerp(a, b, clip.point), b, plSize, region, rop, planeIndex);
+            bswDrawLineClipper(instance, ctx, badgpu_rvtxLerp(a, b, clip.point), b, plSize, vpW, region, rop, planeIndex);
             return;
         }
         if (clip.type == CLIPCON_POS) {
-            bswDrawLineClipper(instance, ctx, a, badgpu_rvtxLerp(a, b, clip.point), plSize, region, rop, planeIndex);
+            bswDrawLineClipper(instance, ctx, a, badgpu_rvtxLerp(a, b, clip.point), plSize, vpW, region, rop, planeIndex);
             return;
         }
     }
@@ -332,7 +331,7 @@ static void bswDrawLine(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
-    bswDrawLineClipper(instance, ctx, a, b, plSize, &region, &rop, 0);
+    bswDrawLineClipper(instance, ctx, a, b, plSize, vpW, &region, &rop, 0);
     return;
 }
 
@@ -342,6 +341,7 @@ static void bswDrawTriangleClipper(
     BADGPURasterizerVertex a,
     BADGPURasterizerVertex b,
     BADGPURasterizerVertex c,
+    int vpW,
     const badgpu_rect_t * region,
     const badgpu_swrop_t * rop,
     int planeIndex
@@ -358,23 +358,48 @@ static void bswDrawTriangleClipper(
             return;
         } else if (clipAB.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
             BADGPURasterizerVertex mid = badgpu_rvtxLerp(a, b, clipAB.point);
-            bswDrawTriangleClipper(instance, ctx, a, mid, c, region, rop, planeIndex);
-            bswDrawTriangleClipper(instance, ctx, mid, b, c, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, a, mid, c, vpW, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, mid, b, c, vpW, region, rop, planeIndex);
             return;
         } else if (clipBC.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
             BADGPURasterizerVertex mid = badgpu_rvtxLerp(b, c, clipBC.point);
-            bswDrawTriangleClipper(instance, ctx, a, mid, c, region, rop, planeIndex);
-            bswDrawTriangleClipper(instance, ctx, a, b, mid, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, a, mid, c, vpW, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, a, b, mid, vpW, region, rop, planeIndex);
             return;
         } else if (clipCA.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
             BADGPURasterizerVertex mid = badgpu_rvtxLerp(c, a, clipCA.point);
-            bswDrawTriangleClipper(instance, ctx, mid, b, c, region, rop, planeIndex);
-            bswDrawTriangleClipper(instance, ctx, a, b, mid, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, mid, b, c, vpW, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, a, b, mid, vpW, region, rop, planeIndex);
             return;
         }
         planeIndex++;
     }
-    // would be nice if there was something actually here
+
+    // to window coordinates
+
+    float ndcax = a.p.x / a.p.w;
+    float ndcay = a.p.y / a.p.w;
+    float ndcbx = b.p.x / b.p.w;
+    float ndcby = b.p.y / b.p.w;
+    float ndccx = c.p.x / c.p.w;
+    float ndccy = c.p.y / c.p.w;
+
+    float wax = ctx->vX + (((ndcax + 1) / 2) * ctx->vW);
+    float way = ctx->vY + (((ndcay + 1) / 2) * ctx->vH);
+    float wbx = ctx->vX + (((ndcbx + 1) / 2) * ctx->vW);
+    float wby = ctx->vY + (((ndcby + 1) / 2) * ctx->vH);
+    float wcx = ctx->vX + (((ndccx + 1) / 2) * ctx->vW);
+    float wcy = ctx->vY + (((ndccy + 1) / 2) * ctx->vH);
+
+    int x, y;
+
+    for (y = region->u; y < region->d; y++) {
+        for (x = region->l; x < region->r; x++) {
+            size_t p = x + (y * vpW);
+            uint32_t * rgb = ctx->sTexture ? (BG_TEXTURE_SW(ctx->sTexture)->data + p) : NULL;
+            //badgpu_rop(rgb, NULL, a.c.x, a.c.y, a.c.z, a.c.w, rop);
+        }
+    }
 }
 
 static void bswDrawTriangle(
@@ -392,7 +417,7 @@ static void bswDrawTriangle(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
-    bswDrawTriangleClipper(instance, ctx, a, b, c, &region, &rop, 0);
+    bswDrawTriangleClipper(instance, ctx, a, b, c, vpW, &region, &rop, 0);
     return;
 }
 

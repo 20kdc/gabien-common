@@ -243,7 +243,7 @@ typedef struct BADGPURasterizerContext {
     int32_t sScX, sScY, sScWidth, sScHeight;
     uint32_t flags;
     // Viewport
-    int32_t vX, vY, vW, H;
+    int32_t vX, vY, vW, vH;
     // Fragment Shader
     BADGPUTexture texture;
     const float * clipPlane;
