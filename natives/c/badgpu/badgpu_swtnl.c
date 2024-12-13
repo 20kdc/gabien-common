@@ -10,7 +10,6 @@
  * It's probably not going to be used anytime soon...?
  */
 
-#include "badgpu.h"
 #include "badgpu_internal.h"
 
 void badgpu_swtnl_transform(

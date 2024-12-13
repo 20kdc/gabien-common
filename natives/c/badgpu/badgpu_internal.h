@@ -84,6 +84,9 @@ BADGPUBool badgpu_newWsiCtxPlatformIsEGL();
 // Creates a new WSICtx.
 BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed);
 
+// Creates a new software renderer instance.
+BADGPUInstance badgpu_newSoftwareInstance(BADGPUNewInstanceFlags flags, const char ** error);
+
 // OBJ
 
 // Object Management

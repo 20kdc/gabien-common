@@ -9,9 +9,7 @@
  * BadGPU Reference Implementation
  */
 
-#include "badgpu.h"
 #include "badgpu_internal.h"
-#include "badgpu_glbind.h"
 
 // Object Management
 
@@ -39,9 +37,7 @@ BADGPU_EXPORT BADGPUBool badgpuUnref(BADGPUObject obj) {
 
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
     if (flags & BADGPUNewInstanceFlags_ForceInternalRasterizer) {
-        if (error)
-            *error = "No internal rasterizer.";
-        return 0;
+        return badgpu_newSoftwareInstance(flags, error);
     }
     BADGPUBool logDetailed = (flags & BADGPUNewInstanceFlags_CanPrintf) ? 1 : 0;
     BADGPUWSIContext wsi;
