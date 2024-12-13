@@ -130,6 +130,30 @@ static inline uint8_t f8tou8(float c) {
 
 // -- renderfuncs --
 
+static BADGPUBool bswVSize(BADGPUTextureSW * sTexture, BADGPUDSBufferSW * sDSBuffer, int * w, int * h) {
+    if (!sTexture) {
+        if (sDSBuffer) {
+            *w = sDSBuffer->w;
+            *h = sDSBuffer->h;
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if (sDSBuffer) {
+        if (sTexture->w != sDSBuffer->w)
+            return 0;
+        if (sTexture->h != sDSBuffer->h)
+            return 0;
+        *w = sTexture->w;
+        *h = sTexture->h;
+        return 1;
+    } else {
+        *w = sTexture->w;
+        *h = sTexture->h;
+        return 1;
+    }
+}
+
 static BADGPUBool bswDrawClear(
     struct BADGPUInstancePriv * instance,
     BADGPU_SESSIONFLAGS,
@@ -137,7 +161,52 @@ static BADGPUBool bswDrawClear(
 ) {
     badgpu_pixel_t pixel = { f8tou8(cR), f8tou8(cG), f8tou8(cB), f8tou8(cA) };
     badgpu_ds_t ds = { depth, stencil };
-    // would be nice if there was something actually here
+
+    int vpW, vpH;
+    BADGPUTextureSW * rTex = BG_TEXTURE_SW(sTexture);
+    BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(sDSBuffer);
+    if (!bswVSize(rTex, rDS, &vpW, &vpH))
+        return 0;
+
+    int rrL = 0;
+    int rrU = 0;
+    int rrR = vpW;
+    int rrD = vpH;
+    int x, y;
+
+    if (sFlags & BADGPUSessionFlags_Scissor) {
+        if (rrL < sScX)
+            rrL = sScX;
+        if (rrU < sScY)
+            rrU = sScY;
+        if (rrR > sScX + sScWidth)
+            rrR = sScX + sScWidth;
+        if (rrD > sScY + sScHeight)
+            rrD = sScY + sScHeight;
+    }
+
+    for (y = rrU; y < rrD; y++) {
+        for (x = rrL; x < rrR; x++) {
+            size_t p = x + (y * vpW);
+            if (rTex) {
+                if (sFlags & BADGPUSessionFlags_MaskR)
+                    rTex->data[p].r = pixel.r;
+                if (sFlags & BADGPUSessionFlags_MaskG)
+                    rTex->data[p].g = pixel.g;
+                if (sFlags & BADGPUSessionFlags_MaskB)
+                    rTex->data[p].b = pixel.b;
+                if (sFlags & BADGPUSessionFlags_MaskA)
+                    rTex->data[p].a = pixel.a;
+            }
+            if (rDS) {
+                if (sFlags & BADGPUSessionFlags_MaskDepth)
+                    rDS->data[p].depth = ds.depth;
+                rDS->data[p].stencil &= ~(sFlags & BADGPUSessionFlags_StencilAll);
+                rDS->data[p].stencil |= ds.stencil & sFlags;
+            }
+            p++;
+        }
+    }
     return 1;
 }
 
@@ -166,6 +235,11 @@ static BADGPUBool bswDrawGeom(
     // Blending
     uint32_t blendProgram
 ) {
+    int vpW, vpH;
+    BADGPUTextureSW * rTex = BG_TEXTURE_SW(sTexture);
+    BADGPUDSBufferSW * rDS = BG_DSBUFFER_SW(sDSBuffer);
+    if (!bswVSize(rTex, rDS, &vpW, &vpH))
+        return 0;
     // would be nice if there was something actually here
     return 0;
 }
