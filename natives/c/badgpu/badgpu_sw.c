@@ -115,7 +115,6 @@ static BADGPUBool bswVSize(BADGPU_SESSIONFLAGS, int * w, int * h, badgpu_rect_t 
         if (sDSBuffer) {
             *w = BG_DSBUFFER_SW(sDSBuffer)->w;
             *h = BG_DSBUFFER_SW(sDSBuffer)->h;
-            return 1;
         } else {
             return 0;
         }
@@ -126,12 +125,17 @@ static BADGPUBool bswVSize(BADGPU_SESSIONFLAGS, int * w, int * h, badgpu_rect_t 
             return 0;
         *w = BG_TEXTURE_SW(sTexture)->w;
         *h = BG_TEXTURE_SW(sTexture)->h;
-        return 1;
     } else {
         *w = BG_TEXTURE_SW(sTexture)->w;
         *h = BG_TEXTURE_SW(sTexture)->h;
-        return 1;
     }
+    region->l = 0;
+    region->u = 0;
+    region->r = *w;
+    region->d = *h;
+    if (sFlags & BADGPUSessionFlags_Scissor)
+        badgpu_rectClip(region, badgpu_rect(sScX, sScY, sScWidth, sScHeight));
+    return 1;
 }
 
 static BADGPUBool bswDrawClear(
@@ -178,6 +182,96 @@ static BADGPUBool bswDrawClear(
     return 1;
 }
 
+#define CLIPCON_NON 0
+#define CLIPCON_POS 1
+#define CLIPCON_NEG 2
+#define CLIPCON_CUT 3
+
+typedef struct {
+    int type;
+    float point;
+} clipconclusion_t;
+
+// Find the intersection of two slopes.
+// For slope1Offset == 0 && slope2Offset == 0 the answer is always 0.
+static inline float slopeIntersection(float slope1Offset, float slope, float slope2Offset, float slope2) {
+    // the difference from slope to slope2 increases at this rate
+    float diffRate = slope2 - slope;
+    return (slope2Offset - slope1Offset) / -diffRate;
+}
+
+static clipconclusion_t bswClipperInner(float ax, float aw, float bx, float bw) {
+    clipconclusion_t res = {CLIPCON_NON, 0.0f};
+    if (ax < -aw) {
+        if (bx < -bw) {
+            res.type = CLIPCON_CUT;
+        } else {
+            float xSlope = bx - ax;
+            float wSlope = (-bw) - (-aw);
+            res.type = CLIPCON_POS;
+            res.point = slopeIntersection(ax, xSlope, -aw, wSlope);
+            if (res.point <= 0 || res.point >= 1)
+                res.type = CLIPCON_CUT;
+        }
+        return res;
+    }
+    if (ax > aw) {
+        if (bx > bw) {
+            res.type = CLIPCON_CUT;
+        } else {
+            float xSlope = bx - ax;
+            float wSlope = bw - aw;
+            res.type = CLIPCON_NEG;
+            res.point = slopeIntersection(ax, xSlope, aw, wSlope);
+            if (res.point <= 0 || res.point >= 1)
+                res.type = CLIPCON_CUT;
+        }
+        return res;
+    }
+    if (bx < -bw) {
+        float xSlope = bx - ax;
+        float wSlope = (-bw) - (-aw);
+        res.type = CLIPCON_POS;
+        res.point = slopeIntersection(ax, xSlope, -aw, wSlope);
+        if (res.point <= 0 || res.point >= 1)
+            res.type = CLIPCON_CUT;
+        return res;
+    }
+    if (bx > bw) {
+        float xSlope = bx - ax;
+        float wSlope = bw - aw;
+        res.type = CLIPCON_NEG;
+        res.point = slopeIntersection(ax, xSlope, aw, wSlope);
+        if (res.point <= 0 || res.point >= 1)
+            res.type = CLIPCON_CUT;
+        return res;
+    }
+    return res;
+}
+
+#define PLANE_COUNT 4
+
+// Finds the clip point (0-1) between two vectors for the given plane.
+static clipconclusion_t bswClipper(const BADGPUVector * a, const BADGPUVector * b, const BADGPURasterizerContext * ctx, int planeIndex) {
+    if (planeIndex == 0) {
+        return bswClipperInner(a->x, a->w, b->x, b->w);
+    } else if (planeIndex == 1) {
+        return bswClipperInner(a->y, a->w, b->y, b->w);
+    } else if (planeIndex == 2) {
+        return bswClipperInner(a->z, a->w, b->z, b->w);
+    } else if (planeIndex == 3) {
+        if (ctx->clipPlane) {
+            // todo, understand this well enough to implement
+        }
+        clipconclusion_t res = {CLIPCON_NON, 0.0f};
+        return res;
+    } else {
+        // non-intersecting
+        clipconclusion_t res = {CLIPCON_NON, 0.0f};
+        return res;
+    }
+}
+
 static void bswDrawPoint(
     struct BADGPUInstanceSWTNL * instance,
     const BADGPURasterizerContext * ctx,
@@ -196,6 +290,33 @@ static void bswDrawPoint(
     return;
 }
 
+static void bswDrawLineClipper(
+    struct BADGPUInstanceSWTNL * instance,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    BADGPURasterizerVertex b,
+    float plSize,
+    const badgpu_rect_t * region,
+    const badgpu_swrop_t * rop,
+    int planeIndex
+) {
+    while (planeIndex < PLANE_COUNT) {
+        clipconclusion_t clip = bswClipper(&a.p, &b.p, ctx, planeIndex);
+        planeIndex++;
+        if (clip.type == CLIPCON_CUT)
+            return;
+        if (clip.type == CLIPCON_NEG) {
+            bswDrawLineClipper(instance, ctx, badgpu_rvtxLerp(a, b, clip.point), b, plSize, region, rop, planeIndex);
+            return;
+        }
+        if (clip.type == CLIPCON_POS) {
+            bswDrawLineClipper(instance, ctx, a, badgpu_rvtxLerp(a, b, clip.point), plSize, region, rop, planeIndex);
+            return;
+        }
+    }
+    // would be nice if there was something actually here
+}
+
 static void bswDrawLine(
     struct BADGPUInstanceSWTNL * instance,
     const BADGPURasterizerContext * ctx,
@@ -211,8 +332,49 @@ static void bswDrawLine(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
-    // would be nice if there was something actually here
+    bswDrawLineClipper(instance, ctx, a, b, plSize, &region, &rop, 0);
     return;
+}
+
+static void bswDrawTriangleClipper(
+    struct BADGPUInstanceSWTNL * instance,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    BADGPURasterizerVertex b,
+    BADGPURasterizerVertex c,
+    const badgpu_rect_t * region,
+    const badgpu_swrop_t * rop,
+    int planeIndex
+) {
+    while (planeIndex < PLANE_COUNT) {
+        clipconclusion_t clipAB = bswClipper(&a.p, &b.p, ctx, planeIndex);
+        clipconclusion_t clipBC = bswClipper(&b.p, &c.p, ctx, planeIndex);
+        clipconclusion_t clipCA = bswClipper(&c.p, &a.p, ctx, planeIndex);
+        if (clipAB.type == CLIPCON_CUT && clipBC.type == CLIPCON_CUT) {
+            return;
+        } else if (clipBC.type == CLIPCON_CUT && clipCA.type == CLIPCON_CUT) {
+            return;
+        } else if (clipAB.type == CLIPCON_CUT && clipCA.type == CLIPCON_CUT) {
+            return;
+        } else if (clipAB.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
+            BADGPURasterizerVertex mid = badgpu_rvtxLerp(a, b, clipAB.point);
+            bswDrawTriangleClipper(instance, ctx, a, mid, c, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, mid, b, c, region, rop, planeIndex);
+            return;
+        } else if (clipBC.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
+            BADGPURasterizerVertex mid = badgpu_rvtxLerp(b, c, clipBC.point);
+            bswDrawTriangleClipper(instance, ctx, a, mid, c, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, a, b, mid, region, rop, planeIndex);
+            return;
+        } else if (clipCA.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
+            BADGPURasterizerVertex mid = badgpu_rvtxLerp(c, a, clipCA.point);
+            bswDrawTriangleClipper(instance, ctx, mid, b, c, region, rop, planeIndex);
+            bswDrawTriangleClipper(instance, ctx, a, b, mid, region, rop, planeIndex);
+            return;
+        }
+        planeIndex++;
+    }
+    // would be nice if there was something actually here
 }
 
 static void bswDrawTriangle(
@@ -230,7 +392,7 @@ static void bswDrawTriangle(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->sFlags, ctx->blendProgram);
-    // would be nice if there was something actually here
+    bswDrawTriangleClipper(instance, ctx, a, b, c, &region, &rop, 0);
     return;
 }
 
