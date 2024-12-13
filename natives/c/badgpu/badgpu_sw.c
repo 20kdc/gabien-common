@@ -299,6 +299,7 @@ static void bswDrawLineClipper(
     const badgpu_swrop_t * rop,
     int planeIndex
 ) {
+    /*
     while (planeIndex < PLANE_COUNT) {
         clipconclusion_t clip = bswClipper(&a.p, &b.p, ctx, planeIndex);
         planeIndex++;
@@ -313,6 +314,7 @@ static void bswDrawLineClipper(
             return;
         }
     }
+    */
     // would be nice if there was something actually here
 }
 
@@ -346,6 +348,7 @@ static void bswDrawTriangleClipper(
     const badgpu_swrop_t * rop,
     int planeIndex
 ) {
+    /*
     while (planeIndex < PLANE_COUNT) {
         clipconclusion_t clipAB = bswClipper(&a.p, &b.p, ctx, planeIndex);
         clipconclusion_t clipBC = bswClipper(&b.p, &c.p, ctx, planeIndex);
@@ -374,6 +377,7 @@ static void bswDrawTriangleClipper(
         }
         planeIndex++;
     }
+    */
 
     // to window coordinates
 
