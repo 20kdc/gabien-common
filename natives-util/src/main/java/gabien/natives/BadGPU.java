@@ -35,6 +35,13 @@ public abstract class BadGPU extends BadGPUEnum {
         }
     }
 
+    @SuppressWarnings("serial")
+    public static class InstanceBindException extends RuntimeException {
+        public InstanceBindException() {
+            super("Instance bind failed.");
+        }
+    }
+
     /**
      * Manages transfer of the BadGPU instance between threads.
      */
@@ -50,7 +57,8 @@ public abstract class BadGPU extends BadGPUEnum {
         protected void bindImpl() {
             if (shutdown)
                 return;
-            BadGPUUnsafe.bindInstance(instance);
+            if (!BadGPUUnsafe.bindInstance(instance))
+                throw new InstanceBindException();
         }
 
         @Override

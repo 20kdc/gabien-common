@@ -76,7 +76,12 @@ public class ThreadOwned {
             }
         }
         // Object is now bound to this thread, do the thing.
-        bindImpl();
+        try {
+            bindImpl();
+        } catch (Throwable t) {
+            boundThread = null;
+            throw t;
+        }
     }
 
     /**
@@ -118,8 +123,14 @@ public class ThreadOwned {
         public Locked open() {
             boolean actuallyBind = !lock.isHeldByCurrentThread();
             lock.lock();
-            if (actuallyBind)
-                underlying.bind();
+            if (actuallyBind) {
+                try {
+                    underlying.bind();
+                } catch (Throwable t) {
+                    lock.unlock();
+                    throw t;
+                }
+            }
             return this;
         }
 

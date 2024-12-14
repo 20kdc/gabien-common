@@ -57,7 +57,7 @@ public class Main implements IMain {
 
     public Main() {
         lastFrameTS = System.currentTimeMillis();
-        instance = BadGPU.newInstance(BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.CanPrintf);
+        instance = BadGPU.newInstance(BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive | BadGPU.NewInstanceFlags.CanPrintf);
         instanceLock = new ThreadOwned.Locked(instance.syncObject);
         try (ThreadOwned.Locked tmp = instanceLock) {
             System.out.println("init: vendor: " + instance.getMetaInfo(MetaInfoType.Vendor));
@@ -87,8 +87,10 @@ public class Main implements IMain {
                         if (clampedCH > 32767)
                             clampedCH = 32767;
                         if (screen1 == null || clampedCW != currentBufferWidth || clampedCH != currentBufferHeight) {
-                            System.out.println(" -- RECREATING TEXTURE --");
+                            System.out.println(" -- RECREATING TEXTURE: " + clampedCW + " " + clampedCH + " --");
                             screen1 = instance.newTexture(clampedCW, clampedCH);
+                            if (screen1 == null)
+                                System.out.println("Instance refused to create the texture.");
                             dataSrcA = new int[clampedCW * clampedCH];
                             dataSrcB = new int[clampedCW * clampedCH];
                             currentBufferWidth = clampedCW;

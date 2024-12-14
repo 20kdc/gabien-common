@@ -72,9 +72,9 @@ static BADGPUBool bglBindInstance(BADGPUInstancePriv * instance) {
     if (!bi->base.ctx->makeCurrent(bi->base.ctx)) {
         if (bi->base.canPrintf)
             printf("BADGPU: badgpuBindInstance: failed to bind\n");
-        return 1;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 static void bglUnbindInstance(BADGPUInstancePriv * bi) {

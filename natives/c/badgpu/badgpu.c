@@ -95,9 +95,9 @@ BADGPU_EXPORT BADGPUBool badgpuBindInstance(BADGPUInstance instance) {
     }
     if (bi->bind)
         if (!bi->bind(bi))
-            return 1;
+            return 0;
     bi->isBound = 1;
-    return 0;
+    return 1;
 }
 
 BADGPU_EXPORT void badgpuUnbindInstance(BADGPUInstance instance) {
@@ -139,14 +139,14 @@ BADGPU_EXPORT BADGPUTexture badgpuNewTexture(BADGPUInstance instance,
         return NULL;
     }
 
-    void * tmpBuf = 0;
+    void * tmpBuf = NULL;
 
     if (data && fmt != bi->texLoadFormat) {
         // Setup conversion buffer and convert
         uint32_t sz = badgpuPixelsSize(bi->texLoadFormat, width, height);
         if (!sz) {
             badgpuErr(bi, "badgpuNewTexture: Invalid format.");
-            return 0;
+            return NULL;
         }
         tmpBuf = malloc(sz);
         if (!tmpBuf) {
