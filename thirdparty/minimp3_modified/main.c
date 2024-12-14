@@ -25,6 +25,8 @@ int main(int argc, char ** argv) {
     // pass 1
     int loaded_bytes = 0;
     int total_samples = 0;
+    int last_ok_hz = 0;
+    int last_ok_ch = 0;
     while (1) {
         while (loaded_bytes < 65536) {
             int res = fgetc(fn);
@@ -42,11 +44,14 @@ int main(int argc, char ** argv) {
             fb = loaded_bytes;
             if (fb > 4096)
                 fb = 4096;
+        } else {
+            last_ok_hz = dec.last_frame_info.hz;
+            last_ok_ch = dec.last_frame_info.channels;
         }
         memmove(load_buffer, load_buffer + fb, loaded_bytes - fb);
         loaded_bytes -= fb;
     }
-    printf("%ihz %ich // play -r %i -e float -b 32 -c %i %s\n", dec.last_frame_info.hz, dec.last_frame_info.channels, dec.last_frame_info.hz, dec.last_frame_info.channels, argv[2]);
+    printf("%ihz %ich // play -r %i -t f32 -c %i %s\n", last_ok_hz, last_ok_ch, last_ok_hz, last_ok_ch, argv[2]);
     // pass 2
     memset(&dec, 0, sizeof(dec));
     fo = fopen(argv[2], "wb");
