@@ -9,7 +9,12 @@
  */
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,31 +25,41 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class umvn {
+    public static boolean LOG_DISCOVERY = false;
+
     public static HashMap<File, umvn> PARSED_POM_FILES = new HashMap<>();
     public static HashMap<String, umvn> PARSED_POM_MODULES = new HashMap<>();
-    public static LinkedList<String> REPOSITORIES = new LinkedList<>();
+    public static final LinkedList<String> REPOSITORIES = new LinkedList<>();
 
     /**
      * pom.xml / .pom file
      */
     public final File pomFile;
 
-    public final String groupId, artifactId, version;
+    /**
+     * A "source" POM is a POM we should be compiling.
+     * It must not be in the local repo.
+     */
+    public final boolean isSource;
+
+    public final String groupId, artifactId, version, triple;
 
     public final umvn parent;
 
     public final LinkedList<umvn> modules = new LinkedList<>();
     public final HashMap<String, String> properties = new HashMap<>();
 
-    public final LinkedList<umvn> dependenciesClasspath = new LinkedList<>();
-    public final LinkedList<umvn> dependenciesPackaged = new LinkedList<>();
+    public final LinkedList<String> depTriplesClasspath = new LinkedList<>();
+    public final LinkedList<String> depTriplesPackaged = new LinkedList<>();
 
     public boolean isPOMPackaged;
 
-    private umvn(File pom, boolean mayUseRelativePath) {
-        System.err.print(pom);
+    private umvn(File pom, boolean isSource) {
+        this.isSource = isSource;
+        if (LOG_DISCOVERY)
+            System.err.print(pom);
         try {
-            File relBase = mayUseRelativePath ? pom.getParentFile() : null;
+            File relBase = isSource ? pom.getParentFile() : null;
             pomFile = pom;
             Document pomDoc = parseXML(pomFile);
             Element projectElement = findElement(pomDoc, "project", true);
@@ -55,7 +70,7 @@ public class umvn {
             String theArtifactId = null;
             String theVersion = null;
             if (elm != null) {
-                theParent = loadReferencePOM(elm, relBase);
+                theParent = getPOMByTriple(getTriplePOMRef(elm, relBase));
                 theGroupId = theParent.groupId;
                 theArtifactId = theParent.artifactId;
                 theVersion = theParent.version;
@@ -64,10 +79,12 @@ public class umvn {
             groupId = ensureSpecifierHelper(theGroupId, "groupId", projectElement);
             artifactId = ensureSpecifierHelper(theArtifactId, "artifactId", projectElement);
             version = ensureSpecifierHelper(theVersion, "version", projectElement);
+            triple = getTriple(groupId, artifactId, version);
             parent = theParent;
             PARSED_POM_FILES.put(pom, this);
             PARSED_POM_MODULES.put(getTriple(groupId, artifactId, version), this);
-            System.err.println(" = " + getTriple(groupId, artifactId, version));
+            if (LOG_DISCOVERY)
+                System.err.println(" = " + getTriple(groupId, artifactId, version));
             // -- <packaging> --
             elm = findElement(projectElement, "packaging", false);
             if (elm != null) {
@@ -107,19 +124,19 @@ public class umvn {
                         if (scopeNode != null)
                             scope = scopeNode.getTextContent();
                         if (scope.equals("compile")) {
-                            umvn depPom = loadReferencePOM(n, relBase);
-                            dependenciesClasspath.add(depPom);
-                            dependenciesPackaged.add(depPom);
+                            String dep = getTriplePOMRef(n, relBase);
+                            depTriplesClasspath.add(dep);
+                            depTriplesPackaged.add(dep);
                         } else if (scope.equals("provided")) {
-                            umvn depPom = loadReferencePOM(n, relBase);
-                            dependenciesClasspath.add(depPom);
+                            String dep = getTriplePOMRef(n, relBase);
+                            depTriplesClasspath.add(dep);
                         }
                         // other scopes = not relevant
                     }
                 }
             }
             // -- <modules> --
-            if (mayUseRelativePath) {
+            if (isSource) {
                 elm = findElement(projectElement, "modules", false);
                 if (elm != null) {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
@@ -142,6 +159,8 @@ public class umvn {
         return old;
     }
 
+    // -- POM management --
+
     public static umvn loadPOM(File f, boolean mayUseRelativePath) {
         f = f.getAbsoluteFile();
         umvn res = PARSED_POM_FILES.get(f);
@@ -151,12 +170,123 @@ public class umvn {
         return res;
     }
 
+    /**
+     * Returns a triple.
+     * Enthusiastically loads relative paths to ensure we have them discovered for later.
+     */
+    public String getTriplePOMRef(Node ref, File relativePathDir) {
+        String theGroupId = template(findElement(ref, "groupId", true).getTextContent());
+        String theArtifactId = template(findElement(ref, "artifactId", true).getTextContent());
+        String theVersion = template(findElement(ref, "version", true).getTextContent());
+        String triple = getTriple(theGroupId, theArtifactId, theVersion);
+        umvn possibleMatch = PARSED_POM_MODULES.get(triple);
+        if (possibleMatch == null && relativePathDir != null) {
+            Node relPathNode = findElement(ref, "relativePath", false);
+            if (relPathNode != null)
+                loadPOM(new File(relativePathDir, relPathNode.getTextContent()), true);
+        }
+        return triple;
+    }
+
+    /**
+     * Returns the POM from a triple.
+     */
+    public static umvn getPOMByTriple(String triple) {
+        umvn trivial = PARSED_POM_MODULES.get(triple);
+        if (trivial != null)
+            return trivial;
+        String[] parts = triple.split(":");
+        if (parts.length != 3)
+            throw new RuntimeException("Invalid triple: " + triple);
+        return loadPOM(getOrDownloadArtifactPath(getArtifactPath(parts[0], parts[1], parts[2]) + ".pom"), false);
+    }
+
+    /**
+     * Returns a colon-separated triple string.
+     */
+    public static String getTriple(String groupId, String artifactId, String version) {
+        return groupId + ":" + artifactId + ":" + version;
+    }
+
+    // -- Classpath/Compile Management --
+
+    /**
+     * If this is a source POM, gets the source directory.
+     */
+    public File getSourceJavaDir() {
+        return new File(pomFile.getParentFile(), "src/main/java");
+    }
+
+    /**
+     * If this is a source POM, gets the source directory.
+     */
+    public File getSourceResourcesDir() {
+        return new File(pomFile.getParentFile(), "src/main/resources");
+    }
+
+    /**
+     * If this is a source POM, gets the target classes directory.
+     */
+    public File getSourceTargetDir() {
+        return new File(pomFile.getParentFile(), "target");
+    }
+
+    /**
+     * If this is a source POM, gets the target classes directory.
+     */
+    public File getSourceTargetClassesDir() {
+        return new File(getSourceTargetDir(), "classes");
+    }
+
+    /**
+     * If this is a source POM, gets the target JAR file.
+     */
+    public File getSourceTargetJARFile() {
+        return new File(getSourceTargetDir(), artifactId + "-" + version + ".jar");
+    }
+
+    /**
+     * If this is a source POM, gets the target packaged JAR file.
+     */
+    public File getSourceTargetPackagedJARFile() {
+        return new File(getSourceTargetDir(), artifactId + "-" + version + "-jar-with-dependencies.jar");
+    }
+
+    /**
+     * All POMs we want to compile when compiling this POM.
+     * Won't do anything if this POM is already in the list.
+     */
+    public void addFullCompileSet(HashSet<umvn> compileThese) {
+        if (compileThese.add(this))
+            for (umvn s : modules)
+                s.addFullCompileSet(compileThese);
+    }
+
+    /**
+     * All POMs we want in the classpath/packaging when compiling this POM.
+     * Won't do anything if this POM is already in the list.
+     */
+    public void addFullClasspathSet(HashSet<umvn> compileThese, boolean packaging) {
+        if (compileThese.add(this))
+            for (String s : (packaging ? depTriplesPackaged : depTriplesClasspath))
+                getPOMByTriple(s).addFullClasspathSet(compileThese, packaging);
+    }
+
+    // -- Templating --
+
     public String getPropertyFull(String basis) {
         String pv = properties.get(basis);
         if (pv == null)
             pv = System.getProperty(basis);
         if (pv == null)
             throw new RuntimeException("Unable to get property: " + basis);
+        return pv;
+    }
+
+    public String getPropertyFull(String basis, String def) {
+        String pv = properties.get(basis);
+        if (pv == null)
+            pv = System.getProperty(basis, def);
         return pv;
     }
 
@@ -180,33 +310,227 @@ public class umvn {
         }
     }
 
-    public umvn loadReferencePOM(Node ref, File relativePathDir) {
-        String theGroupId = template(findElement(ref, "groupId", true).getTextContent());
-        String theArtifactId = template(findElement(ref, "artifactId", true).getTextContent());
-        String theVersion = template(findElement(ref, "version", true).getTextContent());
-        umvn possibleMatch = PARSED_POM_MODULES.get(getTriple(theGroupId, theArtifactId, theVersion));
-        if (possibleMatch != null)
-            return possibleMatch;
-        if (relativePathDir != null) {
-            Node relPathNode = findElement(ref, "relativePath", false);
-            if (relPathNode != null)
-                return loadPOM(relativePathDir, true);
+    // -- XML --
+
+    public static Document parseXML(File f) {
+        try {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            return dbf.newDocumentBuilder().parse(f);
+        } catch (Exception ex) {
+            throw new RuntimeException("parsing " + f, ex);
         }
+    }
+
+    public static Node[] nodeChildrenArray(NodeList list) {
+        Node[] nodes = new Node[list.getLength()];
+        for (int i = 0; i < nodes.length; i++)
+            nodes[i] = list.item(i);
+        return nodes;
+    }
+
+    public static Element findElement(Node pomDoc, String string, boolean required) {
+        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
+            // System.out.println(n);
+            if (n instanceof Element) {
+                if (n.getNodeName().equals(string))
+                    return (Element) n;
+            }
+        }
+        if (required)
+            throw new RuntimeException("Unable to find element <" + string + ">");
+        return null;
+    }
+
+    // -- Java --
+
+    public static String getJavaTool(String tool) {
+        String home = System.getenv("MICROMVN_JAVA_HOME");
+        if (home == null)
+            home = System.getenv("JAVA_HOME");
+        String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase().startsWith("windows") ? ".exe" : "";
+        if (home != null)
+            if (home.endsWith(File.separator))
+                return home + "bin" + File.separator + tool + possiblyExe;
+            else
+                return home + File.separator + "bin" + File.separator + tool + possiblyExe;
+        File f = new File(System.getProperty("java.home"));
+        if (f.getName().equals("jre"))
+            f = f.getParentFile();
+        File expectedTool = new File(f, "bin" + File.separator + tool + possiblyExe);
+        // validate
+        if (expectedTool.exists())
+            return expectedTool.toString();
+        // we could have a problem here. fall back to PATH
+        return tool;
+    }
+
+    /**
+     * Cleans the project.
+     */
+    public void clean() {
+        recursivelyDelete(getSourceTargetDir());
+    }
+
+    /**
+     * Compiles the project. Returns false on compile error.
+     */
+    public boolean compile() throws Exception {
+        if (isPOMPackaged)
+            return true;
+        File classes = getSourceTargetClassesDir();
+        File java = getSourceJavaDir();
+        File resources = getSourceResourcesDir();
+        classes.mkdirs();
+        // compile classes
+        HashSet<String> copy = new HashSet<>();
+        buildListOfRelativePaths(java, "", copy);
+        LinkedList<Process> processes = new LinkedList<>();
+        // batch into separate processes based on command line length because Windows borked?
+        // uh, no, because javac also borked. uhhhh
+        LinkedList<File> listForCurrentProcess = new LinkedList<>();
+        for (String sourceFileName : copy) {
+            if (!sourceFileName.endsWith(".java"))
+                continue;
+            listForCurrentProcess.add(new File(java, sourceFileName));
+        }
+        if (!listForCurrentProcess.isEmpty())
+            processes.add(runJavac(listForCurrentProcess.toArray(new File[0])));
+        // done!
+        boolean ok = true;
+        for (Process p : processes)
+            ok &= p.waitFor() == 0;
+        // copy resources
+        copy.clear();
+        buildListOfRelativePaths(resources, "", copy);
+        for (String s : copy) {
+            File dstFile = new File(classes, s);
+            dstFile.getParentFile().mkdirs();
+            Files.copy(new File(resources, s).toPath(), dstFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        return ok;
+    }
+
+    /**
+     * Runs javac as configured for this project.
+     */
+    private Process runJavac(File[] s) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder();
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        LinkedList<String> command = new LinkedList<>();
+        command.add(getJavaTool("javac"));
+        command.add("-d");
+        command.add(getSourceTargetClassesDir().toString());
+        // build classpath/sourcepath
+        StringBuilder classpath = new StringBuilder();
+        StringBuilder sourcepath = new StringBuilder();
+        HashSet<umvn> classpathSet = new HashSet<>();
+        addFullClasspathSet(classpathSet, false);
+        for (umvn classpathEntry : classpathSet) {
+            if (classpathEntry.isSource) {
+                if (sourcepath.length() != 0)
+                    sourcepath.append(File.pathSeparatorChar);
+                sourcepath.append(classpathEntry.getSourceJavaDir().toString());
+            } else {
+                if (classpath.length() != 0)
+                    classpath.append(File.pathSeparatorChar);
+                String jarfile = getArtifactPath(classpathEntry.groupId, classpathEntry.artifactId, classpathEntry.version) + ".jar";
+                classpath.append(getOrDownloadArtifactPath(jarfile).toString());
+            }
+        }
+        if (sourcepath.length() != 0) {
+            command.add("-sourcepath");
+            command.add(sourcepath.toString());
+        }
+        if (classpath.length() != 0) {
+            command.add("-classpath");
+            command.add(classpath.toString());
+        }
+        // continue
+        String sourceVer = getPropertyFull("maven.compiler.source", null);
+        if (sourceVer != null) {
+            command.add("-source");
+            command.add(sourceVer);
+        }
+        String targetVer = getPropertyFull("maven.compiler.target", null);
+        if (targetVer != null) {
+            command.add("-target");
+            command.add(targetVer);
+        }
+        for (File f : s)
+            command.add(f.toString());
+        pb.command(command);
+        return pb.start();
+    }
+
+    // -- Repository Management --
+
+    /**
+     * Gets or downloads a file into the local repo by artifact path.
+     */
+    public static File getOrDownloadArtifactPath(String artifactPath) {
         // look for it locally
-        File possiblePom = getLocalRepoArtifact(theGroupId, theArtifactId, theVersion, ".pom");
-        if (possiblePom.exists())
-            return loadPOM(possiblePom, false);
+        File localRepoFile = new File(getLocalRepo(), artifactPath);
+        if (localRepoFile.exists())
+            return localRepoFile;
+        localRepoFile.getParentFile().mkdirs();
         // this is the ugly part where we'd have to go find it on the server
-        throw new RuntimeException("NYI; wanted remote retrieve of " + getTriple(theGroupId, theArtifactId, theVersion));
+        throw new RuntimeException("NYI; wanted remote retrieve of " + artifactPath);
     }
 
-    public static String getTriple(String groupId, String artifactId, String version) {
-        return groupId + "/" + artifactId + "/" + version;
+    public static File getLocalRepo() {
+        String localRepo = System.getProperty("maven.repo.local");
+        if (localRepo == null)
+            return new File(System.getProperty("user.home"), ".m2/repository");
+        return new File(localRepo);
     }
 
-    public static void main(String[] args) {
+    public String getArtifactPath() {
+        return getArtifactPath(groupId, artifactId, version);
+    }
+
+    public static String getArtifactPath(String groupId, String artifactId, String version) {
+        return groupId.replace(".", "/") + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version;
+    }
+
+    // -- IO Utilities --
+
+    public static void buildListOfRelativePaths(File currentDir, String currentPrefix, HashSet<String> paths) {
+        if (!currentDir.isDirectory())
+            return;
+        for (File f : currentDir.listFiles()) {
+            if (f.isDirectory()) {
+                buildListOfRelativePaths(f, currentPrefix + f.getName() + "/", paths);
+            } else {
+                paths.add(currentPrefix + f.getName());
+            }
+        }
+    }
+
+    public static void recursivelyDelete(File sourceTargetDir) {
+        try {
+            sourceTargetDir = sourceTargetDir.getCanonicalFile();
+            Path p = sourceTargetDir.toPath();
+            if (Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)) {
+                for (File sub : sourceTargetDir.listFiles()) {
+                    if (!sub.getCanonicalFile().getParentFile().equals(sourceTargetDir))
+                        throw new RuntimeException("Will not recursively delete, weird structure");
+                    recursivelyDelete(sub);
+                }
+            }
+            sourceTargetDir.delete();
+        } catch (Exception ex) {
+            throw new RuntimeException("during recursive delete @ " + sourceTargetDir);
+        }
+    }
+
+    // -- Main --
+
+    public static void main(String[] args) throws Exception {
         REPOSITORIES.add("https://repo1.maven.org/maven2/");
-        String versionInfo = "micromvn java.version=" + System.getProperty("java.version") + " jdk=" + getJavaHome() + " repo=" + getLocalRepo();
+        String versionInfo = "micromvn java.version=" + System.getProperty("java.version") + " javac=" + getJavaTool("javac") + " repo=" + getLocalRepo();
+        LOG_DISCOVERY = System.getProperty("micromvn.logDiscovery", "false").equals("true");
         // continue
         LinkedList<String> goalsAndPhases = new LinkedList<>();
         for (String s : args) {
@@ -258,71 +582,53 @@ public class umvn {
                 throw new RuntimeException("Unsupported goal/phase: " + s);
             }
         }
+
+        // Set of all POMs to clean/compile.
+        HashSet<umvn> compileThese = new HashSet<>();
+        rootPom.addFullCompileSet(compileThese);
+
         if (doGather) {
-            //
+            // This is used to make sure we have all necessary files for the rest of the build.
+            HashSet<umvn> allCompile = new HashSet<>();
+            HashSet<umvn> allPackage = new HashSet<>();
+            for (umvn subPom : compileThese) {
+                // System.out.println(subPom.triple);
+                if (doCompile)
+                    subPom.addFullClasspathSet(allCompile, false);
+                if (doPackage)
+                    subPom.addFullClasspathSet(allPackage, true);
+            }
+
+            // Join those together...
+            HashSet<umvn> gatherStep = new HashSet<>();
+            gatherStep.addAll(allCompile);
+            gatherStep.addAll(allPackage);
+
+            for (umvn u : gatherStep)
+                if (!(u.isSource || u.isPOMPackaged))
+                    getOrDownloadArtifactPath(u.getArtifactPath() + ".jar");
         }
         if (doClean) {
-            //
+            for (umvn target : compileThese)
+                target.clean();
         }
         if (doCompile) {
-            //
+            boolean compileError = false;
+            for (umvn target : compileThese)
+                compileError |= !target.compile();
+            if (compileError)
+                System.exit(1);
         }
         if (doPackage) {
             //
+            System.out.println("NYI: Packaging");
         }
         if (doInstall) {
-            //
-        }
-    }
-
-    public static Document parseXML(File f) {
-        try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            return dbf.newDocumentBuilder().parse(f);
-        } catch (Exception ex) {
-            throw new RuntimeException("parsing " + f, ex);
-        }
-    }
-
-    public static Node[] nodeChildrenArray(NodeList list) {
-        Node[] nodes = new Node[list.getLength()];
-        for (int i = 0; i < nodes.length; i++)
-            nodes[i] = list.item(i);
-        return nodes;
-    }
-
-    public static Element findElement(Node pomDoc, String string, boolean required) {
-        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
-            // System.out.println(n);
-            if (n instanceof Element) {
-                if (n.getNodeName().equals(string))
-                    return (Element) n;
+            for (umvn target : compileThese) {
+                Files.copy(target.pomFile.toPath(), new File(getLocalRepo(), target.getArtifactPath() + ".pom").toPath(), StandardCopyOption.REPLACE_EXISTING);
+                if (!target.isPOMPackaged)
+                    Files.copy(target.getSourceTargetJARFile().toPath(), new File(getLocalRepo(), target.getArtifactPath() + ".jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        if (required)
-            throw new RuntimeException("Unable to find element <" + string + ">");
-        return null;
-    }
-
-    public static File getJavaHome() {
-        String home = System.getenv("JAVA_HOME");
-        if (home != null)
-            return new File(home);
-        File f = new File(System.getProperty("java.home"));
-        if (f.getName().equals("jre"))
-            f = f.getParentFile();
-        return f;
-    }
-    public static File getLocalRepo() {
-        String localRepo = System.getProperty("maven.repo.local");
-        if (localRepo == null)
-            return new File(System.getProperty("user.home"), ".m2/repository");
-        return new File(localRepo);
-    }
-    public static String getArtifactPath(String groupId, String artifactId, String version) {
-        return groupId.replace(".", "/") + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version;
-    }
-    public static File getLocalRepoArtifact(String groupId, String artifactId, String version, String extension) {
-        return new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version) + extension);
     }
 }
