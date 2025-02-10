@@ -8,7 +8,7 @@
 #include "badgpu.h"
 #include "badgpu_internal.h"
 
-#define REMINDER_PINCH "\nWhile you should report this, it is worth noting that on desktop platforms, you may set the environment variable BADGPU_EGL_LIBRARY to the location of a 'libGLESv2.so' library (from any Chromium-based application). This may provide working service."
+#define REMINDER_PINCH "\nWhile you should report this, it is worth noting that on desktop platforms, you may set the environment variable BADGPU_EGL_LIBRARY to the location of an ANGLE 'libGLESv2.so' library (from any Chromium-based application).\nThis may provide working service.\nDO NOT use a non-ANGLE libGLESv2.so file; this won't work."
 
 // WSICTX
 typedef struct BADGPUWSICtx {
