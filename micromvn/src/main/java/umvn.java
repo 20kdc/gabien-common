@@ -9,6 +9,7 @@
  */
 
 import java.io.File;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -24,13 +25,23 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+/**
+ * microMVN: "Not quite Maven" in a single class file.
+ * Created February 10th, 2025.
+ */
 public class umvn {
+    // -- how-to-find this --
+    public static final String URL = "https://github.com/20kdc/gabien-common/tree/master/micromvn";
+
+    // -- switches --
     public static boolean LOG_DISCOVERY = false;
 
+    // -- cache --
     public static HashMap<File, umvn> PARSED_POM_FILES = new HashMap<>();
     public static HashMap<String, umvn> PARSED_POM_MODULES = new HashMap<>();
     public static final LinkedList<String> REPOSITORIES = new LinkedList<>();
 
+    // -- POM --
     /**
      * pom.xml / .pom file
      */
@@ -86,16 +97,13 @@ public class umvn {
             if (LOG_DISCOVERY)
                 System.err.println(" = " + getTriple(groupId, artifactId, version));
             // -- <packaging> --
-            elm = findElement(projectElement, "packaging", false);
-            if (elm != null) {
-                String tc = elm.getTextContent();
-                if (tc.equals("pom")) {
-                    isPOMPackaged = true;
-                } else if (tc.equals("jar")) {
-                    isPOMPackaged = false;
-                } else {
-                    throw new RuntimeException("Unknown packaging type: " + tc);
-                }
+            String packaging = templateFindElement(projectElement, "packaging", "jar");
+            if (packaging.equals("pom")) {
+                isPOMPackaged = true;
+            } else if (packaging.equals("jar")) {
+                isPOMPackaged = false;
+            } else {
+                throw new RuntimeException("Unknown packaging type: " + packaging);
             }
             // -- <properties> --
             elm = findElement(projectElement, "properties", false);
@@ -103,13 +111,22 @@ public class umvn {
                 for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                     if (n instanceof Element) {
                         // System.out.println(n.getNodeName() + "=" + n.getTextContent());
-                        properties.put(n.getNodeName(), n.getTextContent());
+                        properties.put(n.getNodeName(), template(n.getTextContent()));
                     }
                 }
             }
             // -- <repositories> --
             elm = findElement(projectElement, "repositories", false);
             if (elm != null) {
+                for (Node n : nodeChildrenArray(elm.getChildNodes())) {
+                    if (n instanceof Element && n.getNodeName().equals("repository")) {
+                        String url = templateFindElement(n, "url", true);
+                        if (!url.endsWith("/"))
+                            url += "/";
+                        if (!REPOSITORIES.contains(url))
+                            REPOSITORIES.add(url);
+                    }
+                }
             }
             // -- <dependencies> --
             elm = findElement(projectElement, "dependencies", false);
@@ -141,7 +158,7 @@ public class umvn {
                 if (elm != null) {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                         if (n instanceof Element && n.getNodeName().equals("module")) {
-                            String moduleName = n.getTextContent();
+                            String moduleName = template(n.getTextContent());
                             modules.add(loadPOM(new File(moduleName + "/pom.xml"), true));
                         }
                     }
@@ -175,15 +192,15 @@ public class umvn {
      * Enthusiastically loads relative paths to ensure we have them discovered for later.
      */
     public String getTriplePOMRef(Node ref, File relativePathDir) {
-        String theGroupId = template(findElement(ref, "groupId", true).getTextContent());
-        String theArtifactId = template(findElement(ref, "artifactId", true).getTextContent());
-        String theVersion = template(findElement(ref, "version", true).getTextContent());
+        String theGroupId = templateFindElement(ref, "groupId", true);
+        String theArtifactId = templateFindElement(ref, "artifactId", true);
+        String theVersion = templateFindElement(ref, "version", true);
         String triple = getTriple(theGroupId, theArtifactId, theVersion);
         umvn possibleMatch = PARSED_POM_MODULES.get(triple);
         if (possibleMatch == null && relativePathDir != null) {
-            Node relPathNode = findElement(ref, "relativePath", false);
+            String relPathNode = templateFindElement(ref, "relativePath", false);
             if (relPathNode != null)
-                loadPOM(new File(relativePathDir, relPathNode.getTextContent()), true);
+                loadPOM(new File(relativePathDir, relPathNode), true);
         }
         return triple;
     }
@@ -290,6 +307,9 @@ public class umvn {
         return pv;
     }
 
+    /**
+     * Templates property references. Needed because of hamcrest.
+     */
     public String template(String text) {
         String res = "";
         int at = 0;
@@ -308,6 +328,26 @@ public class umvn {
             res += getPropertyFull(prop);
             at = idx2 + 1;
         }
+    }
+
+    /**
+     * Kind of shorthand for template(findElement().getTextContent()) but passes through null.
+     */
+    public String templateFindElement(Node pomDoc, String string, boolean required) {
+        Node n = findElement(pomDoc, string, required);
+        if (n == null)
+            return null;
+        return template(n.getTextContent());
+    }
+
+    /**
+     * Finds an element. If it fails, returns the default. Otherwise, templates its text contents.
+     */
+    public String templateFindElement(Node pomDoc, String string, String def) {
+        Node n = findElement(pomDoc, string, false);
+        if (n == null)
+            return def;
+        return template(n.getTextContent());
     }
 
     // -- XML --
@@ -411,6 +451,15 @@ public class umvn {
     }
 
     /**
+     * Install this package.
+     */
+    public void install() throws Exception {
+        Files.copy(pomFile.toPath(), new File(getLocalRepo(), getArtifactPath() + ".pom").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        if (!isPOMPackaged)
+            Files.copy(getSourceTargetJARFile().toPath(), new File(getLocalRepo(), getArtifactPath() + ".jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /**
      * Runs javac as configured for this project.
      */
     private Process runJavac(File[] s) throws Exception {
@@ -475,8 +524,22 @@ public class umvn {
         if (localRepoFile.exists())
             return localRepoFile;
         localRepoFile.getParentFile().mkdirs();
-        // this is the ugly part where we'd have to go find it on the server
-        throw new RuntimeException("NYI; wanted remote retrieve of " + artifactPath);
+        // this is the ugly part where we have to go find it on the server
+        for (String repo : REPOSITORIES) {
+            String urlString = repo + artifactPath;
+            try {
+                java.net.URL url = new java.net.URL(urlString);
+                URLConnection conn = url.openConnection();
+                conn.setRequestProperty("User-Agent", "micromvn");
+                conn.connect();
+                Files.copy(conn.getInputStream(), localRepoFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Thread.sleep(100);
+                return localRepoFile;
+            } catch (Exception ex) {
+                System.err.println("Failed download @ " + urlString + ": " + ex);
+            }
+        }
+        throw new RuntimeException("Failed to retrieve " + artifactPath);
     }
 
     public static File getLocalRepo() {
@@ -624,11 +687,8 @@ public class umvn {
             System.out.println("NYI: Packaging");
         }
         if (doInstall) {
-            for (umvn target : compileThese) {
-                Files.copy(target.pomFile.toPath(), new File(getLocalRepo(), target.getArtifactPath() + ".pom").toPath(), StandardCopyOption.REPLACE_EXISTING);
-                if (!target.isPOMPackaged)
-                    Files.copy(target.getSourceTargetJARFile().toPath(), new File(getLocalRepo(), target.getArtifactPath() + ".jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
+            for (umvn target : compileThese)
+                target.install();
         }
     }
 }
