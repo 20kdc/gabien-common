@@ -36,7 +36,7 @@ fi
 if [ ! -e "$ANDROID_BT" ]; then
  echo "ANDROID_BT (Android SDK build-tools directory) not set or doesn't exist."
  echo "Value: $ANDROID_BT"
- echo "Example: $HOME/Android/Sdk/platforms/android-7/android.jar"
+ echo "Example: $HOME/Android/Sdk/build-tools/34.0.0"
  exit 1
 fi
 
