@@ -1,11 +1,5 @@
 /*
- * umvn - Hyperportable Java 8 build tool
- *
- * Written starting in 2025 by:
- *  20kdc
- *
- * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
- * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
+ * See doCopying function for disclaimer of copyright.
  */
 
 import java.io.ByteArrayInputStream;
@@ -27,6 +21,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -45,12 +41,17 @@ import org.w3c.dom.NodeList;
  */
 public final class umvn {
     // -- how-to-find this --
+    public static final String VERSION = "CommitIDHere";
     public static final String URL = "https://github.com/20kdc/gabien-common/tree/master/micromvn";
 
     // -- switches --
     public static boolean LOG_HEADER_FOOTER = true;
     public static boolean LOG_DEBUG = false;
     public static boolean OFFLINE = false;
+    /**
+     * So this works kind of as a semaphore in regards to maximum independent javac processes.
+     */
+    public static AtomicInteger JAVAC_PROCESSES = new AtomicInteger(Runtime.getRuntime().availableProcessors());
 
     // -- cache --
     /**
@@ -90,10 +91,13 @@ public final class umvn {
     public final LinkedList<umvn> modules = new LinkedList<>();
     public final HashMap<String, String> properties = new HashMap<>();
 
-    public final LinkedList<String> depTriplesOptionalClasspath = new LinkedList<>();
-    public final LinkedList<String> depTriplesOptionalPackaged = new LinkedList<>();
-    public final LinkedList<String> depTriplesClasspath = new LinkedList<>();
-    public final LinkedList<String> depTriplesPackaged = new LinkedList<>();
+    // Each of these sets can be used by itself (i.e. it is never necessary to OR the sets).
+    public final LinkedList<String> depTriplesTransitiveCompile = new LinkedList<>();
+    public final LinkedList<String> depTriplesTransitivePackaged = new LinkedList<>();
+    public final LinkedList<String> depTriplesTransitiveRuntime = new LinkedList<>();
+    public final LinkedList<String> depTriplesRootCompile = new LinkedList<>();
+    public final LinkedList<String> depTriplesRootPackaged = new LinkedList<>();
+    public final LinkedList<String> depTriplesTest = new LinkedList<>();
 
     public boolean isPOMPackaged;
 
@@ -172,11 +176,9 @@ public final class umvn {
                 for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                     if (n instanceof Element && n.getNodeName().equals("dependency")) {
                         Node optionalNode = findElement(n, "optional", false);
-                        LinkedList<String> lstClasspath = depTriplesClasspath;
-                        LinkedList<String> lstPackaged = depTriplesPackaged;
+                        boolean optional = false;
                         if (optionalNode != null && optionalNode.getTextContent().equals("true")) {
-                            lstClasspath = depTriplesOptionalClasspath;
-                            lstPackaged = depTriplesOptionalPackaged;
+                            optional = true;
                         }
                         Node scopeNode = findElement(n, "scope", false);
                         String scope = "compile";
@@ -184,11 +186,30 @@ public final class umvn {
                             scope = scopeNode.getTextContent();
                         if (scope.equals("compile")) {
                             String dep = getTriplePOMRef(n, sourceDir);
-                            lstClasspath.add(dep);
-                            lstPackaged.add(dep);
+                            depTriplesRootCompile.add(dep);
+                            depTriplesRootPackaged.add(dep);
+                            if (!optional) {
+                                depTriplesTransitiveCompile.add(dep);
+                                depTriplesTransitivePackaged.add(dep);
+                                depTriplesTransitiveRuntime.add(dep);
+                            }
+                            depTriplesTest.add(dep);
                         } else if (scope.equals("provided")) {
                             String dep = getTriplePOMRef(n, sourceDir);
-                            lstClasspath.add(dep);
+                            depTriplesRootCompile.add(dep);
+                            depTriplesTest.add(dep);
+                        } else if (scope.equals("runtime")) {
+                            String dep = getTriplePOMRef(n, sourceDir);
+                            depTriplesRootPackaged.add(dep);
+                            if (!optional) {
+                                depTriplesTransitiveRuntime.add(dep);
+                                depTriplesTransitivePackaged.add(dep);
+                            }
+                            depTriplesTest.add(dep);
+                        } else if (scope.equals("test")) {
+                            String dep = getTriplePOMRef(n, sourceDir);
+                            // test scope only ever ends up in test
+                            depTriplesTest.add(dep);
                         }
                         // other scopes = not relevant
                     }
@@ -296,18 +317,29 @@ public final class umvn {
 
     // -- Classpath/Compile Management --
 
+    public static final int SRCGROUP_MAIN = 0;
+    public static final int SRCGROUP_TEST = 1;
+
     /**
      * If this is a source POM, gets the source directory.
      */
-    public File getSourceJavaDir() {
-        return new File(sourceDir, "src/main/java");
+    public File getSourceJavaDir(int group) {
+        if (group == SRCGROUP_MAIN)
+            return new File(sourceDir, "src/main/java");
+        if (group == SRCGROUP_TEST)
+            return new File(sourceDir, "src/test/java");
+        throw new RuntimeException("unknown srcgroup");
     }
 
     /**
      * If this is a source POM, gets the source directory.
      */
-    public File getSourceResourcesDir() {
-        return new File(sourceDir, "src/main/resources");
+    public File getSourceResourcesDir(int group) {
+        if (group == SRCGROUP_MAIN)
+            return new File(sourceDir, "src/main/resources");
+        if (group == SRCGROUP_TEST)
+            return new File(sourceDir, "src/test/resources");
+        throw new RuntimeException("unknown srcgroup");
     }
 
     /**
@@ -320,8 +352,12 @@ public final class umvn {
     /**
      * If this is a source POM, gets the target classes directory.
      */
-    public File getSourceTargetClassesDir() {
-        return new File(getSourceTargetDir(), "classes");
+    public File getSourceTargetClassesDir(int group) {
+        if (group == SRCGROUP_MAIN)
+            return new File(getSourceTargetDir(), "classes");
+        if (group == SRCGROUP_TEST)
+            return new File(getSourceTargetDir(), "test-classes");
+        throw new RuntimeException("unknown srcgroup");
     }
 
     /**
@@ -342,25 +378,64 @@ public final class umvn {
      * All POMs we want to compile when compiling this POM.
      * Won't do anything if this POM is already in the list.
      */
-    public void addFullCompileSet(HashSet<umvn> compileThese) {
+    public void aggregateSet(HashSet<umvn> compileThese) {
         if (compileThese.add(this))
             for (umvn s : modules)
-                s.addFullCompileSet(compileThese);
+                s.aggregateSet(compileThese);
+    }
+
+    public static final int PACKAGESET_TRANSITIVE = 0;
+    public static final int PACKAGESET_ROOT = 1;
+    public static final int PACKAGESET_TEST = 2;
+
+    /**
+     * All POMs we want in the classpath when compiling this POM.
+     * Won't do anything if this POM is already in the list.
+     */
+    public void addCompilePackageSet(HashSet<umvn> compileThese, int set) {
+        if (compileThese.add(this)) {
+            LinkedList<String> depTriples = null;
+            switch (set) {
+            case PACKAGESET_ROOT: depTriples = depTriplesRootCompile; break;
+            case PACKAGESET_TRANSITIVE: depTriples = depTriplesTransitiveCompile; break;
+            case PACKAGESET_TEST: depTriples = depTriplesTest; break;
+            }
+            for (String s : depTriples)
+                getPOMByTriple(s).addCompilePackageSet(compileThese, PACKAGESET_TRANSITIVE);
+        }
     }
 
     /**
-     * All POMs we want in the classpath/packaging when compiling this POM.
+     * All POMs we want in the classpath when compiling this POM.
      * Won't do anything if this POM is already in the list.
      */
-    public void addFullClasspathSet(HashSet<umvn> compileThese, boolean packaging, boolean root) {
+    public void addAssemblyPackageSet(HashSet<umvn> compileThese, int set) {
         if (compileThese.add(this)) {
-            if (root) {
-                // Optional deps count for the root only.
-                for (String s : (packaging ? depTriplesOptionalPackaged : depTriplesOptionalClasspath))
-                    getPOMByTriple(s).addFullClasspathSet(compileThese, packaging, false);
+            LinkedList<String> depTriples = null;
+            switch (set) {
+            case PACKAGESET_ROOT: depTriples = depTriplesRootPackaged; break;
+            case PACKAGESET_TRANSITIVE: depTriples = depTriplesTransitivePackaged; break;
+            case PACKAGESET_TEST: depTriples = depTriplesTest; break;
             }
-            for (String s : (packaging ? depTriplesPackaged : depTriplesClasspath))
-                getPOMByTriple(s).addFullClasspathSet(compileThese, packaging, false);
+            for (String s : depTriples)
+                getPOMByTriple(s).addAssemblyPackageSet(compileThese, PACKAGESET_TRANSITIVE);
+        }
+    }
+
+    /**
+     * All POMs we want in the classpath when executing this POM.
+     * Won't do anything if this POM is already in the list.
+     */
+    public void addRuntimePackageSet(HashSet<umvn> compileThese, int set) {
+        if (compileThese.add(this)) {
+            LinkedList<String> depTriples = null;
+            switch (set) {
+            case PACKAGESET_ROOT: depTriples = depTriplesTest; break;
+            case PACKAGESET_TRANSITIVE: depTriples = depTriplesTransitiveRuntime; break;
+            case PACKAGESET_TEST: depTriples = depTriplesTest; break;
+            }
+            for (String s : depTriples)
+                getPOMByTriple(s).addRuntimePackageSet(compileThese, PACKAGESET_TRANSITIVE);
         }
     }
 
@@ -496,42 +571,140 @@ public final class umvn {
     }
 
     /**
-     * Compiles the project. Returns false on compile error.
+     * Begins compiling the project.
+     * To parallelize the compile, all project compiles are started at once.
+     * The completion code is stored in a Runnable.
      */
-    public boolean compile() throws Exception {
+    public void beginCompile(int group, LinkedList<Runnable> queue, AtomicBoolean errorSignal) throws Exception {
         if (isPOMPackaged)
-            return true;
-        File classes = getSourceTargetClassesDir();
-        File java = getSourceJavaDir();
-        File resources = getSourceResourcesDir();
+            return;
+
+        String groupName;
+        if (group == SRCGROUP_MAIN)
+            groupName = "main";
+        else if (group == SRCGROUP_TEST)
+            groupName = "test";
+        else
+            groupName = "unk" + group;
+
+        File classes = getSourceTargetClassesDir(group);
+        File java = getSourceJavaDir(group);
+        File resources = getSourceResourcesDir(group);
         classes.mkdirs();
         // compile classes
         HashSet<String> copy = new HashSet<>();
         buildListOfRelativePaths(java, "", copy);
-        LinkedList<Process> processes = new LinkedList<>();
-        // batch into separate processes based on command line length because Windows borked?
-        // uh, no, because javac also borked. uhhhh
+
+        HashSet<File> classpath = new HashSet<>();
+        HashSet<File> sourcepath = new HashSet<>();
+        HashSet<umvn> classpathSet = new HashSet<>();
+
+        addCompilePackageSet(classpathSet, (group == SRCGROUP_TEST) ? PACKAGESET_TEST : PACKAGESET_ROOT);
+        for (umvn classpathEntry : classpathSet) {
+            if (classpathEntry.sourceDir != null) {
+                sourcepath.add(classpathEntry.getSourceJavaDir(SRCGROUP_MAIN));
+            } else {
+                classpath.add(getOrDownloadArtifact(classpathEntry, ".jar"));
+            }
+        }
+
+        // explicitly re-add this; the test compile won't include us
+        sourcepath.add(java);
+
         LinkedList<File> listForCurrentProcess = new LinkedList<>();
         for (String sourceFileName : copy) {
             if (!sourceFileName.endsWith(".java"))
                 continue;
             listForCurrentProcess.add(new File(java, sourceFileName));
         }
-        if (!listForCurrentProcess.isEmpty())
-            processes.add(runJavac(listForCurrentProcess.toArray(new File[0])));
-        // done!
-        boolean ok = true;
-        for (Process p : processes)
-            ok &= p.waitFor() == 0;
-        // copy resources
-        copy.clear();
-        buildListOfRelativePaths(resources, "", copy);
-        for (String s : copy) {
-            File dstFile = new File(classes, s);
-            dstFile.getParentFile().mkdirs();
-            Files.copy(new File(resources, s).toPath(), dstFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        if (!listForCurrentProcess.isEmpty()) {
+            ensureProcessSlotFree(queue);
+            if (LOG_DEBUG)
+                System.err.println("[compile start] " + triple + " " + groupName);
+            runJavac(classes, listForCurrentProcess.toArray(new File[0]), classpath, sourcepath, queue, (v) -> {
+                if (v != 0)
+                    errorSignal.set(true);
+                if (LOG_DEBUG)
+                    System.err.println("[compile end  ] " + triple + " " + groupName);
+            });
+        } else {
+            System.err.println("[compile empty] " + triple + " " + groupName);
         }
-        return ok;
+
+        queue.add(() -> {
+            try {
+                // copy resources
+                copy.clear();
+                buildListOfRelativePaths(resources, "", copy);
+                for (String s : copy) {
+                    File dstFile = new File(classes, s);
+                    dstFile.getParentFile().mkdirs();
+                    Files.copy(new File(resources, s).toPath(), dstFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (Exception ex) {
+                throw new RuntimeException("at tail of " + triple + " compile", ex);
+            }
+        });
+    }
+
+    /**
+     * Begins testing the project.
+     * Same idea as with compiles.
+     */
+    public void beginTest(LinkedList<Runnable> queue, AtomicBoolean errorSignal) throws Exception {
+        if (isPOMPackaged)
+            return;
+
+        File classes = getSourceTargetClassesDir(SRCGROUP_TEST);
+
+        // listclasses
+        HashSet<String> copy = new HashSet<>();
+        buildListOfRelativePaths(classes, "", copy);
+
+        HashSet<String> listForCurrentProcess = new HashSet<>();
+        byte[] expected = ("Lorg/junit/Test;").getBytes(StandardCharsets.UTF_8);
+        for (String sourceFileName : copy) {
+            if (!sourceFileName.endsWith(".class"))
+                continue;
+            if (sourceFileName.contains("$"))
+                continue;
+            // check if we can reasonably believe the class is a test
+            byte[] data = Files.readAllBytes(new File(classes, sourceFileName).toPath());
+            boolean classIsATest = false;
+            for (int i = 0; i <= data.length - expected.length; i++) {
+                boolean match = true;
+                for (int j = 0; j < expected.length; j++) {
+                    if (expected[j] != data[i + j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    classIsATest = true;
+                    break;
+                }
+            }
+            if (!classIsATest)
+                continue;
+            if (LOG_DEBUG)
+                System.err.println(triple + " " + sourceFileName + " is a test");
+            // alright, it looks like it
+            listForCurrentProcess.add(sourceFileName.substring(0, sourceFileName.indexOf('.')).replace(File.separatorChar, '.'));
+        }
+        if (!listForCurrentProcess.isEmpty()) {
+            ensureProcessSlotFree(queue);
+            if (LOG_DEBUG)
+                System.err.println("[test start] " + triple);
+            LinkedList<String> argsFinal = new LinkedList<>();
+            argsFinal.add("org.junit.runner.JUnitCore");
+            argsFinal.addAll(listForCurrentProcess);
+            runJava(argsFinal, queue, (v) -> {
+                if (v != 0)
+                    errorSignal.set(true);
+                if (LOG_DEBUG)
+                    System.err.println("[test end  ] " + triple);
+            });
+        }
     }
 
     /**
@@ -550,7 +723,7 @@ public final class umvn {
     /**
      * Runs javac as configured for this project.
      */
-    private Process runJavac(File[] s) throws Exception {
+    private Process runJavac(File dest, File[] s, HashSet<File> classpath, HashSet<File> sourcepath, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
@@ -558,30 +731,16 @@ public final class umvn {
         LinkedList<String> command = new LinkedList<>();
         command.add(getPropertyFull("maven.compiler.executable"));
         command.add("-d");
-        command.add(getSourceTargetClassesDir().toString());
+        command.add(dest.toString());
+        command.add("-implicit:none");
         // build classpath/sourcepath
-        StringBuilder classpath = new StringBuilder();
-        StringBuilder sourcepath = new StringBuilder();
-        HashSet<umvn> classpathSet = new HashSet<>();
-        addFullClasspathSet(classpathSet, false, true);
-        for (umvn classpathEntry : classpathSet) {
-            if (classpathEntry.sourceDir != null) {
-                if (sourcepath.length() != 0)
-                    sourcepath.append(File.pathSeparatorChar);
-                sourcepath.append(classpathEntry.getSourceJavaDir().toString());
-            } else {
-                if (classpath.length() != 0)
-                    classpath.append(File.pathSeparatorChar);
-                classpath.append(getOrDownloadArtifact(classpathEntry, ".jar").toString());
-            }
-        }
-        if (sourcepath.length() != 0) {
+        if (!sourcepath.isEmpty()) {
             command.add("-sourcepath");
-            command.add(sourcepath.toString());
+            command.add(assembleClasspath(sourcepath));
         }
-        if (classpath.length() != 0) {
+        if (!classpath.isEmpty()) {
             command.add("-classpath");
-            command.add(classpath.toString());
+            command.add(assembleClasspath(classpath));
         }
         // continue
         command.add("-encoding");
@@ -599,7 +758,64 @@ public final class umvn {
         for (File f : s)
             command.add(f.toString());
         pb.command(command);
-        return pb.start();
+        return startProcess(pb, queue, onEnd);
+    }
+
+    /**
+     * Gets the test runtime classpath as a string.
+     */
+    public String getTestRuntimeClasspath() {
+        HashSet<File> classpath = new HashSet<>();
+        HashSet<umvn> classpathSet = new HashSet<>();
+
+        addRuntimePackageSet(classpathSet, PACKAGESET_TEST);
+        for (umvn classpathEntry : classpathSet) {
+            if (classpathEntry.sourceDir != null) {
+                classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_MAIN));
+                classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_TEST));
+            } else {
+                classpath.add(getOrDownloadArtifact(classpathEntry, ".jar"));
+            }
+        }
+
+        return assembleClasspath(classpath);
+    }
+
+    /**
+     * Runs java as configured for testing this project.
+     */
+    private Process runJava(Collection<String> args, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder();
+        pb.directory(sourceDir);
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+        LinkedList<String> command = new LinkedList<>();
+        command.add(getPropertyFull("micromvn.java"));
+
+        String classpath = getTestRuntimeClasspath();
+
+        if (!classpath.isEmpty()) {
+            command.add("-classpath");
+            command.add(classpath);
+        }
+
+        command.addAll(args);
+        pb.command(command);
+        return startProcess(pb, queue, onEnd);
+    }
+
+    /**
+     * Assembles a classpath/sourcepath from a set of File objects.
+     */
+    public static String assembleClasspath(Collection<File> files) {
+        StringBuilder classpath = new StringBuilder();
+        for (File f : files) {
+            if (classpath.length() != 0)
+                classpath.append(File.pathSeparatorChar);
+            classpath.append(f);
+        }
+        return classpath.toString();
     }
 
     /**
@@ -622,7 +838,7 @@ public final class umvn {
             zip.put("META-INF/MANIFEST.MF", zipMakeFile(createManifest(false)));
             zip.put("META-INF/maven/" + groupId + "/" + artifactId + "/pom.xml", zipMakeFile(pomFileContent));
             HashSet<String> files = new HashSet<>();
-            File classes = getSourceTargetClassesDir();
+            File classes = getSourceTargetClassesDir(SRCGROUP_MAIN);
             buildListOfRelativePaths(classes, "", files);
             zipIntegrateRelativePaths(zip, "", classes, files);
         } else {
@@ -654,7 +870,7 @@ public final class umvn {
             return;
         HashMap<String, Consumer<OutputStream>> zip = new HashMap<>();
         HashSet<umvn> myDeps = new HashSet<umvn>();
-        addFullClasspathSet(myDeps, true, true);
+        addAssemblyPackageSet(myDeps, PACKAGESET_ROOT);
         myDeps.remove(this);
         for (umvn various : myDeps)
             various.integrateJAR(zip);
@@ -666,7 +882,7 @@ public final class umvn {
     }
 
     public String createManifest(boolean packaging) {
-        String manifest = "Manifest-Version: 1.0\r\nCreated-By: micromvn\r\n";
+        String manifest = "Manifest-Version: 1.0\r\nCreated-By: microMVN " + VERSION + "\r\n";
         if (mainClass != null)
             manifest += "Main-Class: " + mainClass + "\r\n";
         return manifest;
@@ -738,7 +954,7 @@ public final class umvn {
         try {
             java.net.URL url = new java.net.URL(urlString);
             URLConnection conn = url.openConnection();
-            conn.setRequestProperty("User-Agent", "micromvn");
+            conn.setRequestProperty("User-Agent", "microMVN " + VERSION);
             conn.connect();
             Files.copy(conn.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             Thread.sleep(100);
@@ -877,22 +1093,74 @@ public final class umvn {
         Files.write(new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".pom")).toPath(), data);
     }
 
+    // -- Staging --
+
+    /**
+     * Executes all runnables in a queue.
+     * Queues are used to try and provide 'good enough' parallelization for compiles/etc while keeping the code simple.
+     * Notably, queues start executing earlier than runQueue!
+     * This is because startProcessAndEnqueueWait may be out of process slots, so it needs the queue to catch up.
+     */
+    public static void runQueue(LinkedList<Runnable> list) {
+        while (!list.isEmpty()) {
+            Runnable first = list.pop();
+            first.run();
+        }
+    }
+
+    /**
+     * Before announcing a process has been started, it is useful to ensure process end announcements have been seen.
+     */
+    public static void ensureProcessSlotFree(LinkedList<Runnable> queue) {
+        while (JAVAC_PROCESSES.get() == 0) {
+            queue.pop().run();
+        }
+    }
+
+    /**
+     * Starts a process.
+     * Also enqueues a wait (to ensure that there will eventually be a process slot for another javac)
+     */
+    public static Process startProcess(ProcessBuilder pb, LinkedList<Runnable> queue, Consumer<Integer> onEnd) {
+        ensureProcessSlotFree(queue);
+        Process process;
+        try {
+            process = pb.start();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        JAVAC_PROCESSES.decrementAndGet();
+        queue.add(() -> {
+            try {
+                int v = process.waitFor();
+                JAVAC_PROCESSES.incrementAndGet();
+                onEnd.accept(v);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+        return process;
+    }
+
     // -- Main --
 
     public static void main(String[] args) throws Exception {
         // autodetect javac
-
         if (System.getProperty("maven.compiler.executable") == null) {
+            String java;
             String javac;
             String home = System.getenv("MICROMVN_JAVA_HOME");
             if (home == null)
                 home = System.getenv("JAVA_HOME");
             String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase().startsWith("windows") ? ".exe" : "";
             if (home != null) {
-                if (home.endsWith(File.separator))
+                if (home.endsWith(File.separator)) {
                     javac = home + "bin" + File.separator + "javac" + possiblyExe;
-                else
+                    java = home + "bin" + File.separator + "java" + possiblyExe;
+                } else {
                     javac = home + File.separator + "bin" + File.separator + "javac" + possiblyExe;
+                    java = home + File.separator + "bin" + File.separator + "java" + possiblyExe;
+                }
             } else {
                 File f = new File(System.getProperty("java.home"));
                 if (f.getName().equals("jre"))
@@ -905,7 +1173,18 @@ public final class umvn {
                     // we could have a problem here. fall back to PATH
                     javac = "javac";
                 }
+                expectedTool = new File(f, "bin" + File.separator + "java" + possiblyExe);
+                // validate
+                if (expectedTool.exists()) {
+                    java = expectedTool.toString();
+                } else {
+                    // we could have a problem here. fall back to PATH
+                    java = "java";
+                }
             }
+            // need to find a better property for this, but what?
+            System.setProperty("micromvn.java", java);
+            // this is expected at least
             System.setProperty("maven.compiler.executable", javac);
         }
 
@@ -917,6 +1196,8 @@ public final class umvn {
         // arg parsing & init properties
 
         String goal = null;
+        LinkedList<String> extraArgs = new LinkedList<>();
+
         for (int argIndex = 0; argIndex < args.length; argIndex++) {
             String s = args[argIndex];
             if (s.startsWith("-")) {
@@ -930,8 +1211,15 @@ public final class umvn {
                     String k = info.substring(0, infoSplitterIndex);
                     String v = info.substring(infoSplitterIndex + 1);
                     System.setProperty(k, v);
+                } else if (s.startsWith("-T")) {
+                    String info = s.substring(2);
+                    if (info.length() == 0)
+                        info = args[++argIndex];
+                    JAVAC_PROCESSES.set(Integer.parseInt(info));
                 } else if (s.equals("--version") || s.equals("-v")) {
                     System.out.println(doVersionInfo());
+                    System.out.println("");
+                    doCopying();
                     return;
                 } else if (s.equals("--help") || s.equals("-h")) {
                     doHelp();
@@ -947,12 +1235,17 @@ public final class umvn {
                 }
             } else {
                 if (goal != null)
-                    throw new RuntimeException("Can't specify multiple goals in micromvn.");
+                    throw new RuntimeException("Can't specify multiple goals in microMVN.");
                 int colon = s.lastIndexOf(':');
                 if (colon == -1) {
                     goal = s;
                 } else {
                     goal = s.substring(colon + 1);
+                }
+                if (goal.equals("umvn-run")) {
+                    argIndex++;
+                    while (argIndex < args.length)
+                        extraArgs.add(args[argIndex++]);
                 }
             }
         }
@@ -976,18 +1269,48 @@ public final class umvn {
         // goal
 
         if (goal.equals("clean")) {
-            doBuild(0);
+            HashSet<umvn> buildAggregate = doAggregate();
+            doClean(buildAggregate);
+            doFinalStatusOK(buildAggregate.size() + " projects cleaned.");
         } else if (goal.equals("compile")) {
-            doBuild(1);
+            HashSet<umvn> buildAggregate = doAggregate();
+            doClean(buildAggregate);
+            doGather(buildAggregate, true, false, false, false);
+            doCompile(buildAggregate, false);
+            doFinalStatusOK(buildAggregate.size() + " projects compiled.");
+        } else if (goal.equals("test-compile")) {
+            HashSet<umvn> buildAggregate = doAggregate();
+            doClean(buildAggregate);
+            doGather(buildAggregate, true, false, true, false);
+            doCompile(buildAggregate, true);
+            doFinalStatusOK(buildAggregate.size() + " projects compiled with tests.");
+        } else if (goal.equals("test")) {
+            HashSet<umvn> buildAggregate = doAggregate();
+            doClean(buildAggregate);
+            doGather(buildAggregate, true, false, true, true);
+            doCompile(buildAggregate, true);
+            doTest(buildAggregate);
+            doFinalStatusOK(buildAggregate.size() + " projects tested.");
         } else if (goal.equals("package")) {
-            doBuild(2);
+            HashSet<umvn> buildAggregate = doAggregate();
+            doClean(buildAggregate);
+            doGather(buildAggregate, true, true, false, false);
+            doCompile(buildAggregate, false);
+            doPackageAndInstall(buildAggregate, true, false);
+            doFinalStatusOK(buildAggregate.size() + " projects packaged.");
         } else if (goal.equals("install")) {
-            doBuild(3);
+            HashSet<umvn> buildAggregate = doAggregate();
+            doClean(buildAggregate);
+            doGather(buildAggregate, true, true, false, false);
+            doCompile(buildAggregate, false);
+            doPackageAndInstall(buildAggregate, true, true);
+            doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
             String prop = System.getProperty("artifact");
             if (prop == null)
                 throw new RuntimeException("get requires -Dartifact=...");
             getPOMByTriple(prop).completeDownload();
+            doFinalStatusOK("Installed.");
         } else if (goal.equals("install-file")) {
             String file = System.getProperty("artifact");
             String pomFile = System.getProperty("pomFile");
@@ -1021,20 +1344,43 @@ public final class umvn {
             } else {
                 createDummyPOM(groupId, artifactId, version, packaging);
             }
+            doFinalStatusOK("Installed.");
+        } else if (goal.equals("umvn-test-classpath")) {
+            umvn rootPom = doSinglePOM();
+            HashSet<umvn> onePom = new HashSet<umvn>();
+            onePom.add(rootPom);
+            doGather(onePom, false, false, false, true);
+            System.out.println(rootPom.getTestRuntimeClasspath());
+        } else if (goal.equals("umvn-run")) {
+            umvn rootPom = doSinglePOM();
+            HashSet<umvn> onePom = new HashSet<umvn>();
+            onePom.add(rootPom);
+            doGather(onePom, false, false, false, true);
+            extraArgs.addFirst(rootPom.getTestRuntimeClasspath());
+            extraArgs.addFirst("-classpath");
+            extraArgs.addFirst(System.getProperty("micromvn.java"));
+
+            ProcessBuilder pb = new ProcessBuilder();
+            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+
+            pb.command(extraArgs);
+            System.exit(pb.start().waitFor());
         } else {
-            throw new RuntimeException("Unsupported goal/phase: " + goal);
+            doFinalStatusError("Unsupported goal/phase: " + goal);
         }
     }
 
     public static String doVersionInfo() {
-        return "micromvn CommitIDHere\njava.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " maven.repo.local=" + System.getProperty("maven.repo.local");
+        return "microMVN " + VERSION + "\njava.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " maven.repo.local=" + System.getProperty("maven.repo.local");
     }
 
     public static void doHelp() {
-        System.out.println("# micromvn: a Maven'-ish' builder in a single Java class");
+        System.out.println("# microMVN: a Maven'-ish' builder in a single Java class");
         System.out.println("");
-        System.out.println("micromvn is not Maven, it's not almost Maven, it's not a program which downloads Maven.\\");
-        System.out.println("micromvn is a self-contained Java build tool small enough to be shipped with your projects, which acts enough like Maven for usecases that don't require full Maven, and doesn't add another installation step for new contributors.");
+        System.out.println("microMVN is not Maven, it's not almost Maven, it's not a program which downloads Maven.\\");
+        System.out.println("microMVN is a self-contained Java build tool small enough to be shipped with your projects, which acts enough like Maven for usecases that don't require full Maven, and doesn't add another installation step for new contributors.");
         System.out.println("");
         System.out.println("Usage: `java umvn [options] <goal> [options]`");
         System.out.println("");
@@ -1046,6 +1392,11 @@ public final class umvn {
         System.out.println("   Cleans all target projects (deletes target directory).");
         System.out.println(" * `compile`\\");
         System.out.println("   Cleans and compiles all target projects.");
+        System.out.println(" * `test-compile`\\");
+        System.out.println("   Cleans and compiles all target projects along with their tests.");
+        System.out.println(" * `test`\\");
+        System.out.println("   Runs the JUnit 4 console runner, `org.junit.runner.JUnitCore`, on all tests in all target projects.\\");
+        System.out.println("   Tests are assumed to be non-inner classes in the test source tree that appear to refer to `org.junit.Test`.\\");
         System.out.println(" * `package`\\");
         System.out.println("   Cleans, compiles, and packages all target projects to JAR files.");
         System.out.println("   This also includes an imitation of maven-assembly-plugin.");
@@ -1059,11 +1410,19 @@ public final class umvn {
         System.out.println("   Installs a JAR to the local Maven repo, importing an existing POM.");
         System.out.println(" * `help`\\");
         System.out.println("   Shows this text.");
+        System.out.println(" * `umvn-test-classpath`\\");
+        System.out.println("   Dumps the test classpath to standard output.");
+        System.out.println(" * `umvn-run <...>`\\");
+        System.out.println("   This goal causes all options after it to be instead passed to `java`.\\");
+        System.out.println("   It runs `java`, similarly to how `test` works, setting up the test classpath for you.\\");
+        System.out.println("   *It does not automatically run a clean/compile.*");
         System.out.println("");
         System.out.println("## Options");
         System.out.println("");
         System.out.println(" * `-D<key>=<value>`\\");
         System.out.println("   Sets a Java System Property. These are inherited into the POM property space.");
+        System.out.println(" * `-T<num>`\\");
+        System.out.println("   Sets the maximum number of `javac` processes to run at any given time.");
         System.out.println(" * `--version` / `-v`\\");
         System.out.println("   Reports the version + some other info and exits.");
         System.out.println(" * `--help` / `-h`\\");
@@ -1102,6 +1461,9 @@ public final class umvn {
         System.out.println(" * `maven.compiler.executable`\\");
         System.out.println("   `javac` used for the build.\\");
         System.out.println("   This completely overrides the javac detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
+        System.out.println(" * `micromvn.java`\\");
+        System.out.println("   `java` used for executing tests/etc.\\");
+        System.out.println("   This completely overrides the java detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
         System.out.println("");
         System.out.println("## POM Support");
         System.out.println("");
@@ -1119,8 +1481,8 @@ public final class umvn {
         System.out.println("");
         System.out.println("To prevent breakage with non-critical parts of complex POMs, unknown properties aren't interpolated.");
         System.out.println("");
-        System.out.println("micromvn makes a distinction between *source POMs* and *repo POMs.*\\");
-        System.out.println("Source POMs are the root POM (where micromvn is run) or any POM findable via a `<module>` or `<relativePath>` chain.\\");
+        System.out.println("microMVN makes a distinction between *source POMs* and *repo POMs.*\\");
+        System.out.println("Source POMs are the root POM (where it's run) or any POM findable via a `<module>` or `<relativePath>` chain.\\");
         System.out.println("Source POM code is *always* passed to javac via `-sourcepath`.\\");
         System.out.println("Repo POMs live in the local repo as usual and their JARs are passed to javac via `-classpath`.");
         System.out.println("");
@@ -1137,7 +1499,7 @@ public final class umvn {
         System.out.println("* `project.repositories.repository.url`\\");
         System.out.println("  Adds a custom repository.");
         System.out.println("* `project.dependencies.dependency.optional/scope/groupId/artifactId/version/relativePath`\\");
-        System.out.println("  Dependency. `compile` and `provided` are supported (need to check if this acts correct w/ assembly).\\");
+        System.out.println("  Dependency. `compile`, `provided`, `runtime` and `test` are supported (need to check if this acts correct w/ assembly).\\");
         System.out.println("  As per Maven docs, optional dependencies only 'count' when compiling the project directly depending on them.");
         System.out.println("* `project.modules.module`\\");
         System.out.println("  Adds a module that will be compiled with this project.");
@@ -1150,65 +1512,145 @@ public final class umvn {
         System.out.println("* `maven-assembly-plugin` is very partially emulated and always runs during package.");
         System.out.println("* Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.");
         System.out.println("* All projects have a `jar-with-dependencies` build during the package phase.");
-        System.out.println("* It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and micromvn will attempt to package it.");
-        System.out.println("* As far as micromvn is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.");
+        System.out.println("* It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and microMVN will attempt to package it.");
+        System.out.println("* As far as microMVN is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.");
+        System.out.println("* Testing only supports JUnit 4 and the way the test code discovers tests is awful.\\");
+        System.out.println("  `umvn-test-classpath` and `umvn-run` exist as a 'good enough' workaround to attach your own runner.");
+        System.out.println("* You don't need to explicitly skip tests. (This is an intentional difference.)");
+        System.out.println("* Builds are *always* clean builds.");
         System.out.println("");
-        System.out.println("If any of these things are a problem, you probably should not use micromvn.");
+        System.out.println("If any of these things are a problem, you probably should not use microMVN.");
     }
 
-    public static void doBuild(int level) throws Exception {
-        umvn rootPom = loadPOM(new File("pom.xml"), true);
-        boolean doClean = level >= 0;
-        boolean doCompile = level >= 1;
-        boolean doPackage = level >= 2;
-        boolean doInstall = level >= 3;
+    public static void doCopying() {
+        System.out.println("microMVN - Hyperportable Java 8 build tool");
+        System.out.println("");
+        System.out.println("Written starting in 2025 by:");
+        System.out.println(" 20kdc");
+        System.out.println("");
+        System.out.println("This is free and unencumbered software released into the public domain.");
+        System.out.println("");
+        System.out.println("Anyone is free to copy, modify, publish, use, compile, sell, or");
+        System.out.println("distribute this software, either in source code form or as a compiled");
+        System.out.println("binary, for any purpose, commercial or non-commercial, and by any");
+        System.out.println("means.");
+        System.out.println("");
+        System.out.println("In jurisdictions that recognize copyright laws, the author or authors");
+        System.out.println("of this software dedicate any and all copyright interest in the");
+        System.out.println("software to the public domain. We make this dedication for the benefit");
+        System.out.println("of the public at large and to the detriment of our heirs and");
+        System.out.println("successors. We intend this dedication to be an overt act of");
+        System.out.println("relinquishment in perpetuity of all present and future rights to this");
+        System.out.println("software under copyright law.");
+        System.out.println("");
+        System.out.println("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,");
+        System.out.println("EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF");
+        System.out.println("MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.");
+        System.out.println("IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR");
+        System.out.println("OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,");
+        System.out.println("ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR");
+        System.out.println("OTHER DEALINGS IN THE SOFTWARE.");
+        System.out.println("");
+        System.out.println("For more information, please refer to <http://unlicense.org>");
+    }
 
-        // Set of all POMs to clean/compile.
+    public static umvn doSinglePOM() {
+        return loadPOM(new File("pom.xml"), true);
+    }
+
+    public static HashSet<umvn> doAggregate() {
+        umvn rootPom = doSinglePOM();
         HashSet<umvn> compileThese = new HashSet<>();
-        rootPom.addFullCompileSet(compileThese);
+        rootPom.aggregateSet(compileThese);
+        return compileThese;
+    }
 
-        if (doCompile || doPackage) {
-            // This is used to make sure we have all necessary files for the rest of the build.
-            HashSet<umvn> allCompile = new HashSet<>();
-            HashSet<umvn> allPackage = new HashSet<>();
-            for (umvn subPom : compileThese) {
-                // System.out.println(subPom.triple);
-                if (doCompile)
-                    subPom.addFullClasspathSet(allCompile, false, true);
-                if (doPackage)
-                    subPom.addFullClasspathSet(allPackage, true, true);
-            }
+    public static void doGather(HashSet<umvn> packages, boolean doCompile, boolean doPackage, boolean doTestCompile, boolean doTestRuntime) {
+        // This is used to make sure we have all necessary files for the rest of the build.
+        HashSet<umvn> allCompile = new HashSet<>();
+        HashSet<umvn> allPackage = new HashSet<>();
+        HashSet<umvn> allTestCompile = new HashSet<>();
+        HashSet<umvn> allTestRuntime = new HashSet<>();
+        for (umvn subPom : packages) {
+            // System.out.println(subPom.triple);
+            if (doCompile)
+                subPom.addCompilePackageSet(allCompile, PACKAGESET_ROOT);
+            if (doPackage)
+                subPom.addAssemblyPackageSet(allPackage, PACKAGESET_ROOT);
+            if (doTestCompile)
+                subPom.addCompilePackageSet(allTestCompile, PACKAGESET_TEST);
+            if (doTestRuntime)
+                subPom.addRuntimePackageSet(allTestRuntime, PACKAGESET_TEST);
+        }
 
-            // Join those together...
-            HashSet<umvn> gatherStep = new HashSet<>();
-            gatherStep.addAll(allCompile);
-            gatherStep.addAll(allPackage);
+        // Join those together...
+        HashSet<umvn> gatherStep = new HashSet<>();
+        gatherStep.addAll(allCompile);
+        gatherStep.addAll(allPackage);
+        gatherStep.addAll(allTestCompile);
+        gatherStep.addAll(allTestRuntime);
 
-            for (umvn u : gatherStep)
-                u.completeDownload();
+        for (umvn u : gatherStep)
+            u.completeDownload();
+    }
+
+    public static void doClean(HashSet<umvn> packages) {
+        for (umvn target : packages)
+            target.clean();
+    }
+
+    public static void doCompile(HashSet<umvn> packages, boolean tests) throws Exception {
+        AtomicBoolean compileError = new AtomicBoolean(false);
+        LinkedList<Runnable> completing = new LinkedList<>();
+        for (umvn target : packages) {
+            target.beginCompile(SRCGROUP_MAIN, completing, compileError);
+            if (tests)
+                target.beginCompile(SRCGROUP_TEST, completing, compileError);
         }
-        if (doClean) {
-            for (umvn target : compileThese)
-                target.clean();
+        runQueue(completing);
+        if (compileError.get()) {
+            doFinalStatusError("Compile failed");
+            System.exit(1);
         }
-        if (doCompile) {
-            boolean compileError = false;
-            for (umvn target : compileThese)
-                compileError |= !target.compile();
-            if (compileError)
-                System.exit(1);
+    }
+
+    public static void doTest(HashSet<umvn> packages) throws Exception {
+        AtomicBoolean testError = new AtomicBoolean(false);
+        LinkedList<Runnable> completing = new LinkedList<>();
+        for (umvn target : packages) {
+            target.beginTest(completing, testError);
         }
+        runQueue(completing);
+        if (testError.get()) {
+            doFinalStatusError("Tests failed");
+            System.exit(1);
+        }
+    }
+
+    public static void doPackageAndInstall(HashSet<umvn> packages, boolean doPackage, boolean doInstall) throws Exception {
         if (doPackage) {
-            for (umvn target : compileThese)
+            for (umvn target : packages)
                 target.packageJAR();
-            for (umvn target : compileThese)
+            for (umvn target : packages)
                 target.packageJARWithDependencies();
         }
         if (doInstall) {
-            for (umvn target : compileThese)
+            for (umvn target : packages)
                 target.install();
         }
         if (LOG_HEADER_FOOTER)
-            System.err.println(compileThese.size() + " units processed.");
+            System.err.println(packages.size() + " units processed.");
+    }
+
+    public static void doFinalStatusError(String err) {
+        if (LOG_HEADER_FOOTER)
+            System.err.println("[ERR] " + err);
+        System.exit(1);
+    }
+
+    public static void doFinalStatusOK(String err) {
+        if (LOG_HEADER_FOOTER)
+            System.err.println("[OK] " + err);
+        System.exit(0);
     }
 }
