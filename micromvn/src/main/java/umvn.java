@@ -8,15 +8,29 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -29,29 +43,45 @@ import org.w3c.dom.NodeList;
  * microMVN: "Not quite Maven" in a single class file.
  * Created February 10th, 2025.
  */
-public class umvn {
+public final class umvn {
     // -- how-to-find this --
     public static final String URL = "https://github.com/20kdc/gabien-common/tree/master/micromvn";
 
     // -- switches --
-    public static boolean LOG_DISCOVERY = false;
+    public static boolean LOG_HEADER_FOOTER = true;
+    public static boolean LOG_DEBUG = false;
+    public static boolean OFFLINE = false;
 
     // -- cache --
-    public static HashMap<File, umvn> PARSED_POM_FILES = new HashMap<>();
-    public static HashMap<String, umvn> PARSED_POM_MODULES = new HashMap<>();
+    /**
+     * Maps absolute files to their POM objects.
+     */
+    public static HashMap<File, umvn> POM_BY_FILE = new HashMap<>();
+    /**
+     * Maps triples to their POM objects.
+     */
+    public static HashMap<String, umvn> POM_BY_TRIPLE = new HashMap<>();
+    /**
+     * Maps triples to their remote repositories.
+     * This prevents redundant lookups.
+     */
+    public static HashMap<String, String> REPO_BY_TRIPLE = new HashMap<>();
+    /**
+     * Repository list. All repository URLs end in '/'.
+     */
     public static final LinkedList<String> REPOSITORIES = new LinkedList<>();
 
     // -- POM --
     /**
-     * pom.xml / .pom file
+     * pom.xml / .pom file contents
      */
-    public final File pomFile;
+    public final byte[] pomFileContent;
 
     /**
      * A "source" POM is a POM we should be compiling.
      * It must not be in the local repo.
      */
-    public final boolean isSource;
+    public final File sourceDir;
 
     public final String groupId, artifactId, version, triple;
 
@@ -60,19 +90,31 @@ public class umvn {
     public final LinkedList<umvn> modules = new LinkedList<>();
     public final HashMap<String, String> properties = new HashMap<>();
 
+    public final LinkedList<String> depTriplesOptionalClasspath = new LinkedList<>();
+    public final LinkedList<String> depTriplesOptionalPackaged = new LinkedList<>();
     public final LinkedList<String> depTriplesClasspath = new LinkedList<>();
     public final LinkedList<String> depTriplesPackaged = new LinkedList<>();
 
     public boolean isPOMPackaged;
 
-    private umvn(File pom, boolean isSource) {
-        this.isSource = isSource;
-        if (LOG_DISCOVERY)
-            System.err.print(pom);
+    public String mainClass;
+
+    // -- Loader --
+
+    private umvn(byte[] pomFileContent, File pomFileAssoc, File sourceDir) {
+        this.pomFileContent = pomFileContent;
+        this.sourceDir = sourceDir;
+        // do this immediately, even though we're invalid
+        // this should help prevent infinite loops
+        String debugInfo = "[POM in memory]";
+        if (pomFileAssoc != null) {
+            debugInfo = pomFileAssoc.toString();
+            POM_BY_FILE.put(pomFileAssoc, this);
+        }
+        if (LOG_DEBUG)
+            System.err.println(debugInfo);
         try {
-            File relBase = isSource ? pom.getParentFile() : null;
-            pomFile = pom;
-            Document pomDoc = parseXML(pomFile);
+            Document pomDoc = parseXML(pomFileContent);
             Element projectElement = findElement(pomDoc, "project", true);
             // -- Parent must happen first so that we resolve related modules early and so we know our triple --
             Element elm = findElement(projectElement, "parent", false);
@@ -81,7 +123,7 @@ public class umvn {
             String theArtifactId = null;
             String theVersion = null;
             if (elm != null) {
-                theParent = getPOMByTriple(getTriplePOMRef(elm, relBase));
+                theParent = getPOMByTriple(getTriplePOMRef(elm, sourceDir));
                 theGroupId = theParent.groupId;
                 theArtifactId = theParent.artifactId;
                 theVersion = theParent.version;
@@ -92,9 +134,8 @@ public class umvn {
             version = ensureSpecifierHelper(theVersion, "version", projectElement);
             triple = getTriple(groupId, artifactId, version);
             parent = theParent;
-            PARSED_POM_FILES.put(pom, this);
-            PARSED_POM_MODULES.put(getTriple(groupId, artifactId, version), this);
-            if (LOG_DISCOVERY)
+            POM_BY_TRIPLE.put(triple, this);
+            if (LOG_DEBUG)
                 System.err.println(" = " + getTriple(groupId, artifactId, version));
             // -- <packaging> --
             String packaging = templateFindElement(projectElement, "packaging", "jar");
@@ -121,10 +162,7 @@ public class umvn {
                 for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                     if (n instanceof Element && n.getNodeName().equals("repository")) {
                         String url = templateFindElement(n, "url", true);
-                        if (!url.endsWith("/"))
-                            url += "/";
-                        if (!REPOSITORIES.contains(url))
-                            REPOSITORIES.add(url);
+                        installCorrectedRepoUrl(url);
                     }
                 }
             }
@@ -134,26 +172,30 @@ public class umvn {
                 for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                     if (n instanceof Element && n.getNodeName().equals("dependency")) {
                         Node optionalNode = findElement(n, "optional", false);
-                        if (optionalNode != null && optionalNode.getTextContent().equals("true"))
-                            continue;
+                        LinkedList<String> lstClasspath = depTriplesClasspath;
+                        LinkedList<String> lstPackaged = depTriplesPackaged;
+                        if (optionalNode != null && optionalNode.getTextContent().equals("true")) {
+                            lstClasspath = depTriplesOptionalClasspath;
+                            lstPackaged = depTriplesOptionalPackaged;
+                        }
                         Node scopeNode = findElement(n, "scope", false);
                         String scope = "compile";
                         if (scopeNode != null)
                             scope = scopeNode.getTextContent();
                         if (scope.equals("compile")) {
-                            String dep = getTriplePOMRef(n, relBase);
-                            depTriplesClasspath.add(dep);
-                            depTriplesPackaged.add(dep);
+                            String dep = getTriplePOMRef(n, sourceDir);
+                            lstClasspath.add(dep);
+                            lstPackaged.add(dep);
                         } else if (scope.equals("provided")) {
-                            String dep = getTriplePOMRef(n, relBase);
-                            depTriplesClasspath.add(dep);
+                            String dep = getTriplePOMRef(n, sourceDir);
+                            lstClasspath.add(dep);
                         }
                         // other scopes = not relevant
                     }
                 }
             }
             // -- <modules> --
-            if (isSource) {
+            if (sourceDir != null) {
                 elm = findElement(projectElement, "modules", false);
                 if (elm != null) {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
@@ -164,8 +206,27 @@ public class umvn {
                     }
                 }
             }
+            // -- <build> --
+            Element buildElm = findElement(projectElement, "build", false);
+            if (buildElm != null) {
+                elm = findElement(buildElm, "plugins", false);
+                if (elm != null) {
+                    for (Node plugin : nodeChildrenArray(elm.getChildNodes())) {
+                        if (plugin instanceof Element && plugin.getNodeName().equals("plugin")) {
+                            String pluginId = templateFindElement(plugin, "artifactId", "unknown-dont-care");
+                            if (LOG_DEBUG)
+                                System.err.println(" plugin: " + pluginId);
+                            if (pluginId.equals("maven-assembly-plugin")) {
+                                Element a1 = findElementRecursive(plugin, "manifest", false);
+                                if (a1 != null)
+                                    this.mainClass = templateFindElement(a1, "mainClass", null);
+                            }
+                        }
+                    }
+                }
+            }
         } catch (Exception e) {
-            throw new RuntimeException("loading POM " + pom, e);
+            throw new RuntimeException("loading POM " + debugInfo, e);
         }
     }
 
@@ -178,13 +239,21 @@ public class umvn {
 
     // -- POM management --
 
-    public static umvn loadPOM(File f, boolean mayUseRelativePath) {
+    /**
+     * Loads a POM from a file.
+     */
+    public static umvn loadPOM(File f, boolean isSource) {
         f = f.getAbsoluteFile();
-        umvn res = PARSED_POM_FILES.get(f);
+        umvn res = POM_BY_FILE.get(f);
         if (res != null)
             return res;
-        res = new umvn(f, mayUseRelativePath);
-        return res;
+        byte[] pomFileBytes;
+        try {
+            pomFileBytes = Files.readAllBytes(f.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot read " + f, e);
+        }
+        return new umvn(pomFileBytes, f, isSource ? f.getParentFile() : null);
     }
 
     /**
@@ -196,7 +265,7 @@ public class umvn {
         String theArtifactId = templateFindElement(ref, "artifactId", true);
         String theVersion = templateFindElement(ref, "version", true);
         String triple = getTriple(theGroupId, theArtifactId, theVersion);
-        umvn possibleMatch = PARSED_POM_MODULES.get(triple);
+        umvn possibleMatch = POM_BY_TRIPLE.get(triple);
         if (possibleMatch == null && relativePathDir != null) {
             String relPathNode = templateFindElement(ref, "relativePath", false);
             if (relPathNode != null)
@@ -209,13 +278,13 @@ public class umvn {
      * Returns the POM from a triple.
      */
     public static umvn getPOMByTriple(String triple) {
-        umvn trivial = PARSED_POM_MODULES.get(triple);
+        umvn trivial = POM_BY_TRIPLE.get(triple);
         if (trivial != null)
             return trivial;
         String[] parts = triple.split(":");
         if (parts.length != 3)
             throw new RuntimeException("Invalid triple: " + triple);
-        return loadPOM(getOrDownloadArtifactPath(getArtifactPath(parts[0], parts[1], parts[2]) + ".pom"), false);
+        return loadPOM(getOrDownloadArtifact(parts[0], parts[1], parts[2], ".pom"), false);
     }
 
     /**
@@ -231,21 +300,21 @@ public class umvn {
      * If this is a source POM, gets the source directory.
      */
     public File getSourceJavaDir() {
-        return new File(pomFile.getParentFile(), "src/main/java");
+        return new File(sourceDir, "src/main/java");
     }
 
     /**
      * If this is a source POM, gets the source directory.
      */
     public File getSourceResourcesDir() {
-        return new File(pomFile.getParentFile(), "src/main/resources");
+        return new File(sourceDir, "src/main/resources");
     }
 
     /**
      * If this is a source POM, gets the target classes directory.
      */
     public File getSourceTargetDir() {
-        return new File(pomFile.getParentFile(), "target");
+        return new File(sourceDir, "target");
     }
 
     /**
@@ -283,25 +352,39 @@ public class umvn {
      * All POMs we want in the classpath/packaging when compiling this POM.
      * Won't do anything if this POM is already in the list.
      */
-    public void addFullClasspathSet(HashSet<umvn> compileThese, boolean packaging) {
-        if (compileThese.add(this))
+    public void addFullClasspathSet(HashSet<umvn> compileThese, boolean packaging, boolean root) {
+        if (compileThese.add(this)) {
+            if (root) {
+                // Optional deps count for the root only.
+                for (String s : (packaging ? depTriplesOptionalPackaged : depTriplesOptionalClasspath))
+                    getPOMByTriple(s).addFullClasspathSet(compileThese, packaging, false);
+            }
             for (String s : (packaging ? depTriplesPackaged : depTriplesClasspath))
-                getPOMByTriple(s).addFullClasspathSet(compileThese, packaging);
+                getPOMByTriple(s).addFullClasspathSet(compileThese, packaging, false);
+        }
     }
 
     // -- Templating --
 
     public String getPropertyFull(String basis) {
-        String pv = properties.get(basis);
+        if (basis.equals("project.artifactId"))
+            return artifactId;
+        if (basis.equals("project.groupId"))
+            return groupId;
+        if (basis.equals("project.version"))
+            return version;
+        String pv = null;
+        if (basis.startsWith("env."))
+            pv = System.getenv(basis.substring(4));
+        if (pv == null)
+            pv = properties.get(basis);
         if (pv == null)
             pv = System.getProperty(basis);
-        if (pv == null)
-            throw new RuntimeException("Unable to get property: " + basis);
         return pv;
     }
 
     public String getPropertyFull(String basis, String def) {
-        String pv = properties.get(basis);
+        String pv = getPropertyFull(basis);
         if (pv == null)
             pv = System.getProperty(basis, def);
         return pv;
@@ -325,7 +408,15 @@ public class umvn {
             if (idx2 == -1)
                 throw new RuntimeException("Unclosed template @ " + text);
             String prop = text.substring(idx + 2, idx2);
-            res += getPropertyFull(prop);
+            String propVal = getPropertyFull(prop);
+            if (propVal != null) {
+                res += propVal;
+            } else {
+                // failed to template
+                if (LOG_DEBUG)
+                    System.err.println("Skipping template of property " + prop + "; doesn't exist");
+                res += text.substring(at, idx2 + 1);
+            }
             at = idx2 + 1;
         }
     }
@@ -352,10 +443,10 @@ public class umvn {
 
     // -- XML --
 
-    public static Document parseXML(File f) {
+    public static Document parseXML(byte[] f) {
         try {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            return dbf.newDocumentBuilder().parse(f);
+            return dbf.newDocumentBuilder().parse(new ByteArrayInputStream(f));
         } catch (Exception ex) {
             throw new RuntimeException("parsing " + f, ex);
         }
@@ -366,6 +457,20 @@ public class umvn {
         for (int i = 0; i < nodes.length; i++)
             nodes[i] = list.item(i);
         return nodes;
+    }
+
+    public static Element findElementRecursive(Node pomDoc, String string, boolean required) {
+        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
+            if (n instanceof Element)
+                if (n.getNodeName().equals(string))
+                    return (Element) n;
+            Element result = findElementRecursive(n, string, required);
+            if (result != null)
+                return result;
+        }
+        if (required)
+            throw new RuntimeException("Unable to find element <" + string + ">");
+        return null;
     }
 
     public static Element findElement(Node pomDoc, String string, boolean required) {
@@ -381,28 +486,7 @@ public class umvn {
         return null;
     }
 
-    // -- Java --
-
-    public static String getJavaTool(String tool) {
-        String home = System.getenv("MICROMVN_JAVA_HOME");
-        if (home == null)
-            home = System.getenv("JAVA_HOME");
-        String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase().startsWith("windows") ? ".exe" : "";
-        if (home != null)
-            if (home.endsWith(File.separator))
-                return home + "bin" + File.separator + tool + possiblyExe;
-            else
-                return home + File.separator + "bin" + File.separator + tool + possiblyExe;
-        File f = new File(System.getProperty("java.home"));
-        if (f.getName().equals("jre"))
-            f = f.getParentFile();
-        File expectedTool = new File(f, "bin" + File.separator + tool + possiblyExe);
-        // validate
-        if (expectedTool.exists())
-            return expectedTool.toString();
-        // we could have a problem here. fall back to PATH
-        return tool;
-    }
+    // -- Build --
 
     /**
      * Cleans the project.
@@ -454,9 +538,13 @@ public class umvn {
      * Install this package.
      */
     public void install() throws Exception {
-        Files.copy(pomFile.toPath(), new File(getLocalRepo(), getArtifactPath() + ".pom").toPath(), StandardCopyOption.REPLACE_EXISTING);
-        if (!isPOMPackaged)
-            Files.copy(getSourceTargetJARFile().toPath(), new File(getLocalRepo(), getArtifactPath() + ".jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        File artifactPOM = getLocalRepoArtifact(".pom");
+        artifactPOM.getParentFile().mkdirs();
+        Files.write(artifactPOM.toPath(), pomFileContent);
+        if (!isPOMPackaged) {
+            Files.copy(getSourceTargetJARFile().toPath(), getLocalRepoArtifact(".jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(getSourceTargetPackagedJARFile().toPath(), getLocalRepoArtifact("-jar-with-dependencies.jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     /**
@@ -468,24 +556,23 @@ public class umvn {
         pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         LinkedList<String> command = new LinkedList<>();
-        command.add(getJavaTool("javac"));
+        command.add(getPropertyFull("maven.compiler.executable"));
         command.add("-d");
         command.add(getSourceTargetClassesDir().toString());
         // build classpath/sourcepath
         StringBuilder classpath = new StringBuilder();
         StringBuilder sourcepath = new StringBuilder();
         HashSet<umvn> classpathSet = new HashSet<>();
-        addFullClasspathSet(classpathSet, false);
+        addFullClasspathSet(classpathSet, false, true);
         for (umvn classpathEntry : classpathSet) {
-            if (classpathEntry.isSource) {
+            if (classpathEntry.sourceDir != null) {
                 if (sourcepath.length() != 0)
                     sourcepath.append(File.pathSeparatorChar);
                 sourcepath.append(classpathEntry.getSourceJavaDir().toString());
             } else {
                 if (classpath.length() != 0)
                     classpath.append(File.pathSeparatorChar);
-                String jarfile = getArtifactPath(classpathEntry.groupId, classpathEntry.artifactId, classpathEntry.version) + ".jar";
-                classpath.append(getOrDownloadArtifactPath(jarfile).toString());
+                classpath.append(getOrDownloadArtifact(classpathEntry, ".jar").toString());
             }
         }
         if (sourcepath.length() != 0) {
@@ -497,6 +584,8 @@ public class umvn {
             command.add(classpath.toString());
         }
         // continue
+        command.add("-encoding");
+        command.add(getPropertyFull("project.build.sourceEncoding", "UTF-8"));
         String sourceVer = getPropertyFull("maven.compiler.source", null);
         if (sourceVer != null) {
             command.add("-source");
@@ -513,33 +602,151 @@ public class umvn {
         return pb.start();
     }
 
+    /**
+     * Creates the base JAR.
+     */
+    public void packageJAR() {
+        if (isPOMPackaged)
+            return;
+        HashMap<String, Consumer<OutputStream>> zip = new HashMap<>();
+        integrateJAR(zip);
+        zipBuild(getSourceTargetJARFile(), zip);
+    }
+
+    /**
+     * Creates the base JAR 'in-memory', or integrates the existing base JAR for non-source POMs.
+     */
+    public void integrateJAR(HashMap<String, Consumer<OutputStream>> zip) {
+        if (sourceDir != null) {
+            // note that the manifest can (deliberately) be overwritten!
+            zip.put("META-INF/MANIFEST.MF", zipMakeFile(createManifest(false)));
+            zip.put("META-INF/maven/" + groupId + "/" + artifactId + "/pom.xml", zipMakeFile(pomFileContent));
+            HashSet<String> files = new HashSet<>();
+            File classes = getSourceTargetClassesDir();
+            buildListOfRelativePaths(classes, "", files);
+            zipIntegrateRelativePaths(zip, "", classes, files);
+        } else {
+            if (isPOMPackaged)
+                return;
+            File myJAR = getOrDownloadArtifact(this, ".jar");
+            try {
+                ZipInputStream zis = new ZipInputStream(new FileInputStream(myJAR), StandardCharsets.UTF_8);
+                while (true) {
+                    ZipEntry ze = zis.getNextEntry();
+                    if (ze == null)
+                        break;
+                    if (!ze.isDirectory())
+                        zip.put(ze.getName(), zipMakeFileByBufferingInputStream(zis));
+                    zis.closeEntry();
+                }
+                zis.close();
+            } catch (Exception ex) {
+                throw new RuntimeException("integrating zip " + myJAR, ex);
+            }
+        }
+    }
+
+    /**
+     * Creates the assembly.
+     */
+    public void packageJARWithDependencies() {
+        if (isPOMPackaged)
+            return;
+        HashMap<String, Consumer<OutputStream>> zip = new HashMap<>();
+        HashSet<umvn> myDeps = new HashSet<umvn>();
+        addFullClasspathSet(myDeps, true, true);
+        myDeps.remove(this);
+        for (umvn various : myDeps)
+            various.integrateJAR(zip);
+        // re-add self to ensure last
+        integrateJAR(zip);
+        zip.put("META-INF/MANIFEST.MF", zipMakeFile(createManifest(true)));
+        // done
+        zipBuild(getSourceTargetPackagedJARFile(), zip);
+    }
+
+    public String createManifest(boolean packaging) {
+        String manifest = "Manifest-Version: 1.0\r\nCreated-By: micromvn\r\n";
+        if (mainClass != null)
+            manifest += "Main-Class: " + mainClass + "\r\n";
+        return manifest;
+    }
+
     // -- Repository Management --
+
+    /**
+     * Corrects and adds a repo URL.
+     */
+    public static void installCorrectedRepoUrl(String url) {
+        if (!url.endsWith("/"))
+            url += "/";
+        if (!REPOSITORIES.contains(url))
+            REPOSITORIES.add(url);
+    }
+
+    /**
+     * Downloads this POM & JAR/etc.
+     */
+    public void completeDownload() {
+        if (sourceDir != null)
+            return;
+        if (isPOMPackaged)
+            return;
+        getOrDownloadArtifact(this, ".jar");
+    }
 
     /**
      * Gets or downloads a file into the local repo by artifact path.
      */
-    public static File getOrDownloadArtifactPath(String artifactPath) {
+    public static File getOrDownloadArtifact(umvn pom, String suffix) {
+        return getOrDownloadArtifact(pom.groupId, pom.artifactId, pom.version, suffix);
+    }
+
+    /**
+     * Gets or downloads a file into the local repo by artifact.
+     */
+    public static File getOrDownloadArtifact(String groupId, String artifactId, String version, String suffix) {
+        String artifactPath = getArtifactPath(groupId, artifactId, version, suffix);
         // look for it locally
         File localRepoFile = new File(getLocalRepo(), artifactPath);
         if (localRepoFile.exists())
             return localRepoFile;
         localRepoFile.getParentFile().mkdirs();
-        // this is the ugly part where we have to go find it on the server
-        for (String repo : REPOSITORIES) {
-            String urlString = repo + artifactPath;
-            try {
-                java.net.URL url = new java.net.URL(urlString);
-                URLConnection conn = url.openConnection();
-                conn.setRequestProperty("User-Agent", "micromvn");
-                conn.connect();
-                Files.copy(conn.getInputStream(), localRepoFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                Thread.sleep(100);
-                return localRepoFile;
-            } catch (Exception ex) {
-                System.err.println("Failed download @ " + urlString + ": " + ex);
+        if (!OFFLINE) {
+            String triple = getTriple(groupId, artifactId, version);
+            // this is the ugly part where we have to go find it on the server
+            String cachedRepo = REPO_BY_TRIPLE.get(triple);
+            if (cachedRepo != null)
+                if (download(localRepoFile, cachedRepo + artifactPath))
+                    return localRepoFile;
+            // did not match cache
+            for (String repo : REPOSITORIES) {
+                if (cachedRepo != null && repo.equals(cachedRepo))
+                    continue;
+                if (download(localRepoFile, repo + artifactPath)) {
+                    REPO_BY_TRIPLE.put(triple, repo);
+                    return localRepoFile;
+                }
             }
+            throw new RuntimeException("Failed to retrieve " + artifactPath);
+        } else {
+            throw new RuntimeException(artifactPath + " not in local repo, and OFFLINE enabled.");
         }
-        throw new RuntimeException("Failed to retrieve " + artifactPath);
+    }
+
+    public static boolean download(File target, String urlString) {
+        try {
+            java.net.URL url = new java.net.URL(urlString);
+            URLConnection conn = url.openConnection();
+            conn.setRequestProperty("User-Agent", "micromvn");
+            conn.connect();
+            Files.copy(conn.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Thread.sleep(100);
+            return true;
+        } catch (Exception ex) {
+            System.err.println("Failed download @ " + urlString + ": " + ex);
+            return false;
+        }
     }
 
     public static File getLocalRepo() {
@@ -549,12 +756,16 @@ public class umvn {
         return new File(localRepo);
     }
 
-    public String getArtifactPath() {
-        return getArtifactPath(groupId, artifactId, version);
+    public File getLocalRepoArtifact(String suffix) {
+        return new File(getLocalRepo(), getArtifactPath(suffix));
     }
 
-    public static String getArtifactPath(String groupId, String artifactId, String version) {
-        return groupId.replace(".", "/") + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version;
+    public String getArtifactPath(String suffix) {
+        return getArtifactPath(groupId, artifactId, version, suffix);
+    }
+
+    public static String getArtifactPath(String groupId, String artifactId, String version, String suffix) {
+        return groupId.replace(".", "/") + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + suffix;
     }
 
     // -- IO Utilities --
@@ -588,78 +799,399 @@ public class umvn {
         }
     }
 
+    public static void zipIntegrateRelativePaths(HashMap<String, Consumer<OutputStream>> zip, String prefix, File dir, Collection<String> paths) {
+        for (String p : paths)
+            zip.put(prefix + p, zipMakeFileReader(new File(dir, p)));
+    }
+
+    public static Consumer<OutputStream> zipMakeFile(String text) {
+        return zipMakeFile(text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static Consumer<OutputStream> zipMakeFile(byte[] text) {
+        return (os) -> {
+            try {
+                os.write(text);
+            } catch (Exception ex) {
+                throw new RuntimeException("Adding binary file", ex);
+            }
+        };
+    }
+
+    public static Consumer<OutputStream> zipMakeFileByBufferingInputStream(InputStream ins) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        while (true) {
+            int len = ins.read(buffer);
+            if (len <= 0)
+                break;
+            baos.write(buffer, 0, len);
+        }
+        return (os) -> {
+            try {
+                baos.writeTo(os);
+            } catch (Exception ex) {
+                throw new RuntimeException("Adding text file", ex);
+            }
+        };
+    }
+
+    public static Consumer<OutputStream> zipMakeFileReader(File inputFile) {
+        return (os) -> {
+            try {
+                Files.copy(inputFile.toPath(), os);
+            } catch (Exception ex) {
+                throw new RuntimeException("Copying " + inputFile + " to ZIP", ex);
+            }
+        };
+    }
+
+    public static void zipBuild(File outputFile, HashMap<String, Consumer<OutputStream>> files) {
+        try {
+            outputFile.getParentFile().mkdirs();
+            ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
+            for (Map.Entry<String, Consumer<OutputStream>> ent : files.entrySet()) {
+                zos.putNextEntry(new ZipEntry(ent.getKey()));
+                ent.getValue().accept(zos);
+                zos.closeEntry();
+            }
+            zos.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Writing ZIP: " + outputFile, e);
+        }
+    }
+
+    // -- install-file --
+
+    /**
+     * Creates a dummy POM file for a file being installed by `install-file`.
+     */
+    public static void createDummyPOM(String groupId, String artifactId, String version, String packaging) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.append("<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
+        sb.append("<modelVersion>4.0.0</modelVersion>\n");
+        sb.append("<groupId>" + groupId + "</groupId>\n");
+        sb.append("<artifactId>" + artifactId + "</artifactId>\n");
+        sb.append("<version>" + version + "</version>\n");
+        sb.append("<packaging>" + packaging + "</packaging>\n");
+        sb.append("</project>\n");
+        byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
+        Files.write(new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".pom")).toPath(), data);
+    }
+
     // -- Main --
 
     public static void main(String[] args) throws Exception {
-        REPOSITORIES.add("https://repo1.maven.org/maven2/");
-        String versionInfo = "micromvn java.version=" + System.getProperty("java.version") + " javac=" + getJavaTool("javac") + " repo=" + getLocalRepo();
-        LOG_DISCOVERY = System.getProperty("micromvn.logDiscovery", "false").equals("true");
-        // continue
-        LinkedList<String> goalsAndPhases = new LinkedList<>();
-        for (String s : args) {
+        // autodetect javac
+        if (System.getProperty("maven.compiler.executable") == null) {
+            String javac;
+            String home = System.getenv("MICROMVN_JAVA_HOME");
+            if (home == null)
+                home = System.getenv("JAVA_HOME");
+            String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase().startsWith("windows") ? ".exe" : "";
+            if (home != null) {
+                if (home.endsWith(File.separator))
+                    javac = home + "bin" + File.separator + "javac" + possiblyExe;
+                else
+                    javac = home + File.separator + "bin" + File.separator + "javac" + possiblyExe;
+            } else {
+                File f = new File(System.getProperty("java.home"));
+                if (f.getName().equals("jre"))
+                    f = f.getParentFile();
+                File expectedTool = new File(f, "bin" + File.separator + "javac" + possiblyExe);
+                // validate
+                if (expectedTool.exists()) {
+                    javac = expectedTool.toString();
+                } else {
+                    // we could have a problem here. fall back to PATH
+                    javac = "javac";
+                }
+            }
+            System.setProperty("maven.compiler.executable", javac);
+        }
+
+        // arg parsing & init properties
+
+        String goal = null;
+        for (int argIndex = 0; argIndex < args.length; argIndex++) {
+            String s = args[argIndex];
             if (s.startsWith("-")) {
                 if (s.startsWith("-D")) {
                     String info = s.substring(2);
+                    if (info.length() == 0)
+                        info = args[++argIndex];
                     int infoSplitterIndex = info.indexOf('=');
                     if (infoSplitterIndex == -1)
                         throw new RuntimeException("define " + info + " invalid, no =");
                     String k = info.substring(0, infoSplitterIndex);
                     String v = info.substring(infoSplitterIndex + 1);
                     System.setProperty(k, v);
-                } else if (s.equals("--version")) {
-                    System.out.println(versionInfo);
+                } else if (s.equals("--version") || s.equals("-v")) {
+                    System.out.println(doVersionInfo());
                     return;
+                } else if (s.equals("--help") || s.equals("-h")) {
+                    doHelp();
+                    return;
+                } else if (s.equals("--quiet") || s.equals("-q")) {
+                    LOG_HEADER_FOOTER = false;
+                } else if (s.equals("--debug") || s.equals("-X")) {
+                    LOG_DEBUG = true;
+                } else if (s.equals("--offline") || s.equals("-o")) {
+                    OFFLINE = true;
                 } else {
                     throw new RuntimeException("Unknown option " + s);
                 }
             } else {
-                goalsAndPhases.add(s);
+                if (goal != null)
+                    throw new RuntimeException("Can't specify multiple goals in micromvn.");
+                int colon = s.lastIndexOf(':');
+                if (colon == -1) {
+                    goal = s;
+                } else {
+                    goal = s.substring(colon + 1);
+                }
             }
         }
-        System.err.println(versionInfo);
-        umvn rootPom = loadPOM(new File("pom.xml"), true);
-        boolean doGather = false;
-        boolean doClean = false;
-        boolean doCompile = false;
-        boolean doPackage = false;
-        boolean doInstall = false;
-        for (String s : goalsAndPhases) {
-            if (s.equals("clean")) {
-                doClean = true;
-            } else if (s.equals("compile")) {
-                doGather = true;
-                doClean = true;
-                doCompile = true;
-            } else if (s.equals("package")) {
-                doGather = true;
-                doClean = true;
-                doCompile = true;
-                doPackage = true;
-            } else if (s.equals("install")) {
-                doGather = true;
-                doClean = true;
-                doCompile = true;
-                doPackage = true;
-                doInstall = true;
+        if ((goal == null) || goal.equals("help")) {
+            doHelp();
+            return;
+        }
+
+        // handle properties
+
+        String possibleRepoOverride = System.getProperty("repoUrl");
+        if (possibleRepoOverride == null)
+            possibleRepoOverride = "https://repo1.maven.org/maven2/";
+        installCorrectedRepoUrl(possibleRepoOverride);
+
+        // version
+
+        if (LOG_HEADER_FOOTER)
+            System.err.println(doVersionInfo());
+
+        // goal
+
+        if (goal.equals("clean")) {
+            doBuild(0);
+        } else if (goal.equals("compile")) {
+            doBuild(1);
+        } else if (goal.equals("package")) {
+            doBuild(2);
+        } else if (goal.equals("install")) {
+            doBuild(3);
+        } else if (goal.equals("get")) {
+            String prop = System.getProperty("artifact");
+            if (prop == null)
+                throw new RuntimeException("get requires -Dartifact=...");
+            getPOMByTriple(prop).completeDownload();
+        } else if (goal.equals("install-file")) {
+            String file = System.getProperty("artifact");
+            String pomFile = System.getProperty("pomFile");
+            String groupId = System.getProperty("groupId");
+            String artifactId = System.getProperty("artifactId");
+            String version = System.getProperty("version");
+            String packaging = System.getProperty("packaging");
+            if (file == null)
+                throw new RuntimeException("install-file requires -Dfile=...");
+            if (pomFile != null) {
+                umvn resPom = loadPOM(new File(pomFile), false);
+                groupId = resPom.groupId;
+                artifactId = resPom.artifactId;
+                version = resPom.version;
+                packaging = resPom.isPOMPackaged ? "pom" : "jar";
+            }
+            if (groupId == null)
+                throw new RuntimeException("install-file requires -DgroupId=... (or -DpomFile=...)");
+            if (artifactId == null)
+                throw new RuntimeException("install-file requires -DartifactId=... (or -DpomFile=...)");
+            if (version == null)
+                throw new RuntimeException("install-file requires -Dversion=... (or -DpomFile=...)");
+            if (packaging == null)
+                throw new RuntimeException("install-file requires -Dpackaging=... (or -DpomFile=...)");
+            File outPOM = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".pom"));
+            File outJAR = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".jar"));
+            if (!packaging.equals("pom"))
+                Files.copy(new File(file).toPath(), outJAR.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            if (pomFile != null) {
+                Files.copy(new File(pomFile).toPath(), outPOM.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } else {
-                throw new RuntimeException("Unsupported goal/phase: " + s);
+                createDummyPOM(groupId, artifactId, version, packaging);
             }
+        } else {
+            throw new RuntimeException("Unsupported goal/phase: " + goal);
         }
+    }
+
+    public static String doVersionInfo() {
+        return "micromvn java.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " repo=" + getLocalRepo();
+    }
+
+    public static void doHelp() {
+        System.out.println("# micromvn: a Maven'-ish' builder in a single Java class");
+        System.out.println("");
+        System.out.println("micromvn is not Maven.\\");
+        System.out.println("micromvn is not almost Maven.\\");
+        System.out.println("micromvn is not a program which downloads Maven.\\");
+        System.out.println("micromvn is a self-contained Java build tool small enough to be shipped with your projects, which acts enough like Maven for usecases that don't require full Maven, and doesn't add another installation step for new contributors.");
+        System.out.println("");
+        System.out.println("micromvn is intended to be shipped with your project, kind of like the Gradle wrapper; but much more reliable.\\");
+        System.out.println("Gradle wrappers require an internet connection to download Gradle and break all the time due to libraries that can't keep up with the JDK.\\");
+        System.out.println("micromvn requires only a Java 8 or newer JDK.\\");
+        System.out.println("I believe it supports enough to compile *reasonable* projects.\\");
+        System.out.println("The idea is that the project is Maven as far as the IDE is concerned and umvn as far as final build is concerned.");
+        System.out.println("");
+        System.out.println("Usage: `java umvn [options] <goal> [options]`");
+        System.out.println("");
+        System.out.println("If a goal contains a colon, the last colon and everything before it is discarded.");
+        System.out.println("");
+        System.out.println("Goals are:");
+        System.out.println("");
+        System.out.println(" * `clean`\\");
+        System.out.println("   Cleans all target projects (deletes target directory).");
+        System.out.println(" * `compile`\\");
+        System.out.println("   Cleans and compiles all target projects.");
+        System.out.println(" * `package`\\");
+        System.out.println("   Cleans, compiles, and packages all target projects to JAR files.");
+        System.out.println("   This also includes an imitation of maven-assembly-plugin.");
+        System.out.println(" * `install`\\");
+        System.out.println("   Cleans, compiles, packages, and installs all target projects to the local Maven repo.");
+        System.out.println(" * `dependency:get -Dartifact=<...>`\\");
+        System.out.println("   Downloads a specific artifact to the local Maven repo.");
+        System.out.println(" * `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
+        System.out.println("   Installs a JAR to the local Maven repo, creating a dummy POM for it.");
+        System.out.println(" * `install:install-file -Dfile=<...> -DpomFile=<...>`\\");
+        System.out.println("   Installs a JAR to the local Maven repo, importing an existing POM.");
+        System.out.println(" * `help`\\");
+        System.out.println("   Shows this text.");
+        System.out.println("");
+        System.out.println("## Options");
+        System.out.println("");
+        System.out.println(" * `-D<key>=<value>`\\");
+        System.out.println("   Sets a Java System Property. These are inherited into the POM property space.");
+        System.out.println(" * `--version` / `-v`\\");
+        System.out.println("   Reports the version + some other info and exits.");
+        System.out.println(" * `--help` / `-h`\\");
+        System.out.println("   Shows this help text.");
+        System.out.println(" * `--quiet` / `-q`\\");
+        System.out.println("   Hides the header and footer.");
+        System.out.println(" * `--debug` / `-X`\\");
+        System.out.println("   Makes things loud for debugging.");
+        System.out.println(" * `--offline` / `-o`\\");
+        System.out.println("   Disables touching the network.");
+        System.out.println("");
+        System.out.println("## Environment Variables");
+        System.out.println("");
+        System.out.println(" * `MICROMVN_JAVA_HOME` / `JAVA_HOME`: JDK location for javac.\\");
+        System.out.println("   If both are specified, `MICROMVN_JAVA_HOME` is preferred.\\");
+        System.out.println("   If neither are specified, `java.home` will be used as a base.\\");
+        System.out.println("   The `jre` directory will be stripped.\\");
+        System.out.println("   If a tool cannot be found this way, it will be used from PATH.");
+        System.out.println("");
+        System.out.println("## Java System Properties");
+        System.out.println("");
+        System.out.println("* `user.home`: `.m2` directory is placed here.");
+        System.out.println("* `maven.repo.local`: Maven repository is placed here (defaults to `${user.home}/.m2/repository`)");
+        System.out.println("* `repoUrl`: Overrides the default remote repository.");
+        System.out.println("");
+        System.out.println("## Compiler Properties");
+        System.out.println("");
+        System.out.println("Compiler properties are inherited from Java properties and then overridden by POM.");
+        System.out.println("");
+        System.out.println(" * `project.build.sourceEncoding`\\");
+        System.out.println("   Source file encoding (defaults to UTF-8)");
+        System.out.println(" * `maven.compiler.source`\\");
+        System.out.println("   Source version (`javac -source`)");
+        System.out.println(" * `maven.compiler.target`\\");
+        System.out.println("   Target version (`javac -target`)");
+        System.out.println(" * `maven.compiler.executable`\\");
+        System.out.println("   `javac` used for the build.\\");
+        System.out.println("   This completely overrides the javac detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
+        System.out.println("");
+        System.out.println("## POM Support");
+        System.out.println("");
+        System.out.println("The POM support here is pretty bare-bones. Inheritance support in particular is flakey.");
+        System.out.println("");
+        System.out.println("POM interpolation is supported, though the inheritance model isn't exact.\\");
+        System.out.println("`env.` properties are supported, and the following *specific* `project.` properties:");
+        System.out.println("");
+        System.out.println("* `project.groupId`");
+        System.out.println("* `project.artifactId`");
+        System.out.println("* `project.version`");
+        System.out.println("");
+        System.out.println("Java System Properties are supported (but might have the wrong priority) and `<properties>` is supported.\\");
+        System.out.println("No other properties are supported.");
+        System.out.println("");
+        System.out.println("To prevent breakage with non-critical parts of complex POMs, unknown properties aren't interpolated.");
+        System.out.println("");
+        System.out.println("micromvn makes a distinction between *source POMs* and *repo POMs.*\\");
+        System.out.println("Source POMs are the root POM (where micromvn is run) or any POM findable via a `<module>` or `<relativePath>` chain.\\");
+        System.out.println("Source POM code is *always* passed to javac via `-sourcepath`.\\");
+        System.out.println("Repo POMs live in the local repo as usual and their JARs are passed to javac via `-classpath`.");
+        System.out.println("");
+        System.out.println("These exact POM elements are supported:");
+        System.out.println("");
+        System.out.println("* `project.groupId/artifactId/version`\\");
+        System.out.println("  Project artifact coordinate.");
+        System.out.println("* `project.parent.groupId/artifactId/version/relativePath`\\");
+        System.out.println("  Parent project.");
+        System.out.println("* `project.packaging`\\");
+        System.out.println("  Sets the project's packaging type.");
+        System.out.println("* `project.properties.*`\\");
+        System.out.println("  Properties.");
+        System.out.println("* `project.repositories.repository.url`\\");
+        System.out.println("  Adds a custom repository.");
+        System.out.println("* `project.dependencies.dependency.optional/scope/groupId/artifactId/version/relativePath`\\");
+        System.out.println("  Dependency. `compile` and `provided` are supported (need to check if this acts correct w/ assembly).\\");
+        System.out.println("  As per Maven docs, optional dependencies only 'count' when compiling the project directly depending on them.");
+        System.out.println("* `project.modules.module`\\");
+        System.out.println("  Adds a module that will be compiled with this project.");
+        System.out.println("* `project.build.plugins.plugin.(...).manifest.mainClass` (where the plugin's `artifactId` is `maven-assembly-plugin`)\\");
+        System.out.println("  Project's main class.");
+        System.out.println("");
+        System.out.println("## Quirks");
+        System.out.println("");
+        System.out.println("* The main hazard is a lack of real plugins or compile-time source generation.");
+        System.out.println("* `maven-assembly-plugin` is very partially emulated and always runs during package.");
+        System.out.println("* Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.");
+        System.out.println("* All projects have a `jar-with-dependencies` build during the package phase.");
+        System.out.println("* It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and micromvn will attempt to package it.");
+        System.out.println("* As far as micromvn is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.");
+        System.out.println("");
+        System.out.println("If any of these things are a problem, you probably should not use micromvn.");
+        System.out.println("");
+        System.out.println("## Toolchains");
+        System.out.println("");
+        System.out.println("micromvn was originally created because Maven toolchain files are awkward to setup compared to one environment variable.");
+        System.out.println("");
+        System.out.println("For the R48 project to continue to support legacy devices, it needs to be compiled on OpenJDK 8.\\");
+        System.out.println("However, for the R48 project to continue to be maintained, it needs to be easy to setup a development environment.\\");
+        System.out.println("Compiling in a manner supported by Android D8 requires an increasingly complicated series of workarounds.\\");
+        System.out.println("When compiling for Java 8, OpenJDK 21 creates class files not compatible with Android D8.\\");
+        System.out.println("But latest versions of Maven do not run on Java 8!");
+    }
+
+    public static void doBuild(int level) throws Exception {
+        umvn rootPom = loadPOM(new File("pom.xml"), true);
+        boolean doClean = level >= 0;
+        boolean doCompile = level >= 1;
+        boolean doPackage = level >= 2;
+        boolean doInstall = level >= 3;
 
         // Set of all POMs to clean/compile.
         HashSet<umvn> compileThese = new HashSet<>();
         rootPom.addFullCompileSet(compileThese);
 
-        if (doGather) {
+        if (doCompile || doPackage) {
             // This is used to make sure we have all necessary files for the rest of the build.
             HashSet<umvn> allCompile = new HashSet<>();
             HashSet<umvn> allPackage = new HashSet<>();
             for (umvn subPom : compileThese) {
                 // System.out.println(subPom.triple);
                 if (doCompile)
-                    subPom.addFullClasspathSet(allCompile, false);
+                    subPom.addFullClasspathSet(allCompile, false, true);
                 if (doPackage)
-                    subPom.addFullClasspathSet(allPackage, true);
+                    subPom.addFullClasspathSet(allPackage, true, true);
             }
 
             // Join those together...
@@ -668,8 +1200,7 @@ public class umvn {
             gatherStep.addAll(allPackage);
 
             for (umvn u : gatherStep)
-                if (!(u.isSource || u.isPOMPackaged))
-                    getOrDownloadArtifactPath(u.getArtifactPath() + ".jar");
+                u.completeDownload();
         }
         if (doClean) {
             for (umvn target : compileThese)
@@ -683,12 +1214,16 @@ public class umvn {
                 System.exit(1);
         }
         if (doPackage) {
-            //
-            System.out.println("NYI: Packaging");
+            for (umvn target : compileThese)
+                target.packageJAR();
+            for (umvn target : compileThese)
+                target.packageJARWithDependencies();
         }
         if (doInstall) {
             for (umvn target : compileThese)
                 target.install();
         }
+        if (LOG_HEADER_FOOTER)
+            System.err.println(compileThese.size() + " units processed.");
     }
 }
