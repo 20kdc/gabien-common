@@ -7,8 +7,5 @@
 # Ensures gabien-common is ready for use in a release.
 # Be sure to set GABIEN_NATIVES_DEV=1 to unlock the natives test for dev releases.
 
-mvn clean -q &&
-mvn package -q -DskipTests &&
-mvn install -q
-# The above runs tests, important for ensuring natives are installed/etc.
-
+./umvn test -q &&
+./umvn install -q

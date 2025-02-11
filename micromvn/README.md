@@ -15,14 +15,17 @@ Goals are:
    Cleans and compiles all target projects.
  * `test-compile`\
    Cleans and compiles all target projects along with their tests.
- * `test`\
+ * `test[-only]`\
    Runs the JUnit 4 console runner, `org.junit.runner.JUnitCore`, on all tests in all target projects.\
    Tests are assumed to be non-inner classes in the test source tree that appear to refer to `org.junit.Test`.\
- * `package`\
-   Cleans, compiles, and packages all target projects to JAR files.
-   This also includes an imitation of maven-assembly-plugin.
- * `install`\
-   Cleans, compiles, packages, and installs all target projects to the local Maven repo.
+   `-only` suffix skips clean/compile.
+ * `package[-only]`\
+   Cleans, compiles, and packages all target projects to JAR files.\
+   This also includes an imitation of maven-assembly-plugin.\
+   `-only` suffix skips clean/compile.
+ * `install[-only]`\
+   Cleans, compiles, packages, and installs all target projects to the local Maven repo.\
+   `-only` suffix skips clean/compile/package.
  * `dependency:get -Dartifact=<...>`\
    Downloads a specific artifact to the local Maven repo.
  * `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\

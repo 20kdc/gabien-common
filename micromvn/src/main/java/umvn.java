@@ -1291,11 +1291,21 @@ public final class umvn {
             doCompile(buildAggregate, true);
             doTest(buildAggregate);
             doFinalStatusOK(buildAggregate.size() + " projects tested.");
+        } else if (goal.equals("test-only")) {
+            HashSet<umvn> buildAggregate = doAggregate();
+            doGather(buildAggregate, false, false, false, true);
+            doTest(buildAggregate);
+            doFinalStatusOK(buildAggregate.size() + " projects tested.");
         } else if (goal.equals("package")) {
             HashSet<umvn> buildAggregate = doAggregate();
             doClean(buildAggregate);
             doGather(buildAggregate, true, true, false, false);
             doCompile(buildAggregate, false);
+            doPackageAndInstall(buildAggregate, true, false);
+            doFinalStatusOK(buildAggregate.size() + " projects packaged.");
+        } else if (goal.equals("package-only")) {
+            HashSet<umvn> buildAggregate = doAggregate();
+            doGather(buildAggregate, false, true, false, false);
             doPackageAndInstall(buildAggregate, true, false);
             doFinalStatusOK(buildAggregate.size() + " projects packaged.");
         } else if (goal.equals("install")) {
@@ -1304,6 +1314,11 @@ public final class umvn {
             doGather(buildAggregate, true, true, false, false);
             doCompile(buildAggregate, false);
             doPackageAndInstall(buildAggregate, true, true);
+            doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
+        } else if (goal.equals("install-only")) {
+            HashSet<umvn> buildAggregate = doAggregate();
+            doGather(buildAggregate, false, true, false, false);
+            doPackageAndInstall(buildAggregate, false, true);
             doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
             String prop = System.getProperty("artifact");
@@ -1394,14 +1409,17 @@ public final class umvn {
         System.out.println("   Cleans and compiles all target projects.");
         System.out.println(" * `test-compile`\\");
         System.out.println("   Cleans and compiles all target projects along with their tests.");
-        System.out.println(" * `test`\\");
+        System.out.println(" * `test[-only]`\\");
         System.out.println("   Runs the JUnit 4 console runner, `org.junit.runner.JUnitCore`, on all tests in all target projects.\\");
         System.out.println("   Tests are assumed to be non-inner classes in the test source tree that appear to refer to `org.junit.Test`.\\");
-        System.out.println(" * `package`\\");
-        System.out.println("   Cleans, compiles, and packages all target projects to JAR files.");
-        System.out.println("   This also includes an imitation of maven-assembly-plugin.");
-        System.out.println(" * `install`\\");
-        System.out.println("   Cleans, compiles, packages, and installs all target projects to the local Maven repo.");
+        System.out.println("   `-only` suffix skips clean/compile.");
+        System.out.println(" * `package[-only]`\\");
+        System.out.println("   Cleans, compiles, and packages all target projects to JAR files.\\");
+        System.out.println("   This also includes an imitation of maven-assembly-plugin.\\");
+        System.out.println("   `-only` suffix skips clean/compile.");
+        System.out.println(" * `install[-only]`\\");
+        System.out.println("   Cleans, compiles, packages, and installs all target projects to the local Maven repo.\\");
+        System.out.println("   `-only` suffix skips clean/compile/package.");
         System.out.println(" * `dependency:get -Dartifact=<...>`\\");
         System.out.println("   Downloads a specific artifact to the local Maven repo.");
         System.out.println(" * `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
