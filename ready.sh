@@ -8,4 +8,5 @@
 # Be sure to set GABIEN_NATIVES_DEV=1 to unlock the natives test for dev releases.
 
 ./umvn test -q &&
-./umvn install -q
+./umvn package-only -q &&
+./umvn install-only -q
