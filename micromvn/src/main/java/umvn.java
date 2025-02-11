@@ -750,10 +750,7 @@ public final class umvn {
     }
 
     public static File getLocalRepo() {
-        String localRepo = System.getProperty("maven.repo.local");
-        if (localRepo == null)
-            return new File(System.getProperty("user.home"), ".m2/repository");
-        return new File(localRepo);
+        return new File(System.getProperty("maven.repo.local"));
     }
 
     public File getLocalRepoArtifact(String suffix) {
@@ -884,6 +881,7 @@ public final class umvn {
 
     public static void main(String[] args) throws Exception {
         // autodetect javac
+
         if (System.getProperty("maven.compiler.executable") == null) {
             String javac;
             String home = System.getenv("MICROMVN_JAVA_HOME");
@@ -910,6 +908,11 @@ public final class umvn {
             }
             System.setProperty("maven.compiler.executable", javac);
         }
+
+        // autodetect local repo
+
+        if (System.getProperty("maven.repo.local") == null)
+            System.setProperty("maven.repo.local", new File(System.getProperty("user.home"), ".m2/repository").toString());
 
         // arg parsing & init properties
 
@@ -1024,22 +1027,14 @@ public final class umvn {
     }
 
     public static String doVersionInfo() {
-        return "micromvn java.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " repo=" + getLocalRepo();
+        return "micromvn CommitIDHere\njava.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " maven.repo.local=" + System.getProperty("maven.repo.local");
     }
 
     public static void doHelp() {
         System.out.println("# micromvn: a Maven'-ish' builder in a single Java class");
         System.out.println("");
-        System.out.println("micromvn is not Maven.\\");
-        System.out.println("micromvn is not almost Maven.\\");
-        System.out.println("micromvn is not a program which downloads Maven.\\");
+        System.out.println("micromvn is not Maven, it's not almost Maven, it's not a program which downloads Maven.\\");
         System.out.println("micromvn is a self-contained Java build tool small enough to be shipped with your projects, which acts enough like Maven for usecases that don't require full Maven, and doesn't add another installation step for new contributors.");
-        System.out.println("");
-        System.out.println("micromvn is intended to be shipped with your project, kind of like the Gradle wrapper; but much more reliable.\\");
-        System.out.println("Gradle wrappers require an internet connection to download Gradle and break all the time due to libraries that can't keep up with the JDK.\\");
-        System.out.println("micromvn requires only a Java 8 or newer JDK.\\");
-        System.out.println("I believe it supports enough to compile *reasonable* projects.\\");
-        System.out.println("The idea is that the project is Maven as far as the IDE is concerned and umvn as far as final build is concerned.");
         System.out.println("");
         System.out.println("Usage: `java umvn [options] <goal> [options]`");
         System.out.println("");
@@ -1159,16 +1154,6 @@ public final class umvn {
         System.out.println("* As far as micromvn is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.");
         System.out.println("");
         System.out.println("If any of these things are a problem, you probably should not use micromvn.");
-        System.out.println("");
-        System.out.println("## Toolchains");
-        System.out.println("");
-        System.out.println("micromvn was originally created because Maven toolchain files are awkward to setup compared to one environment variable.");
-        System.out.println("");
-        System.out.println("For the R48 project to continue to support legacy devices, it needs to be compiled on OpenJDK 8.\\");
-        System.out.println("However, for the R48 project to continue to be maintained, it needs to be easy to setup a development environment.\\");
-        System.out.println("Compiling in a manner supported by Android D8 requires an increasingly complicated series of workarounds.\\");
-        System.out.println("When compiling for Java 8, OpenJDK 21 creates class files not compatible with Android D8.\\");
-        System.out.println("But latest versions of Maven do not run on Java 8!");
     }
 
     public static void doBuild(int level) throws Exception {

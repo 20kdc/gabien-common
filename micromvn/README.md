@@ -1,15 +1,7 @@
 # micromvn: a Maven'-ish' builder in a single Java class
 
-micromvn is not Maven.\
-micromvn is not almost Maven.\
-micromvn is not a program which downloads Maven.\
+micromvn is not Maven, it's not almost Maven, it's not a program which downloads Maven.\
 micromvn is a self-contained Java build tool small enough to be shipped with your projects, which acts enough like Maven for usecases that don't require full Maven, and doesn't add another installation step for new contributors.
-
-micromvn is intended to be shipped with your project, kind of like the Gradle wrapper; but much more reliable.\
-Gradle wrappers require an internet connection to download Gradle and break all the time due to libraries that can't keep up with the JDK.\
-micromvn requires only a Java 8 or newer JDK.\
-I believe it supports enough to compile *reasonable* projects.\
-The idea is that the project is Maven as far as the IDE is concerned and umvn as far as final build is concerned.
 
 Usage: `java umvn [options] <goal> [options]`
 
@@ -129,13 +121,3 @@ These exact POM elements are supported:
 * As far as micromvn is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.
 
 If any of these things are a problem, you probably should not use micromvn.
-
-## Toolchains
-
-micromvn was originally created because Maven toolchain files are awkward to setup compared to one environment variable.
-
-For the R48 project to continue to support legacy devices, it needs to be compiled on OpenJDK 8.\
-However, for the R48 project to continue to be maintained, it needs to be easy to setup a development environment.\
-Compiling in a manner supported by Android D8 requires an increasingly complicated series of workarounds.\
-When compiling for Java 8, OpenJDK 21 creates class files not compatible with Android D8.\
-But latest versions of Maven do not run on Java 8!
