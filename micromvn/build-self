@@ -7,3 +7,4 @@ export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 "$JAVA_HOME/bin/java" -jar target/micromvn-0.666-SNAPSHOT-jar-with-dependencies.jar help > README.md
 cp target/classes/umvn.class ./
 sed -i "s/CommitIDHere/`git show-ref HEAD --hash=12`/" umvn.class
+cp umvn.class ../
