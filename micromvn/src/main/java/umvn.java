@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -222,7 +223,7 @@ public final class umvn {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                         if (n instanceof Element && n.getNodeName().equals("module")) {
                             String moduleName = template(n.getTextContent());
-                            modules.add(loadPOM(new File(sourceDir, moduleName + "/pom.xml"), true));
+                            modules.add(loadPOM(new File(sourceDir, moduleName), true));
                         }
                     }
                 }
@@ -267,6 +268,8 @@ public final class umvn {
         byte[] pomFileBytes;
         try {
             f = f.getCanonicalFile();
+            if (f.isDirectory())
+                f = new File(f, "pom.xml");
             umvn res = POM_BY_FILE.get(f);
             if (res != null)
                 return res;
@@ -290,7 +293,7 @@ public final class umvn {
         if (possibleMatch == null && relativePathDir != null) {
             String relPathNode = templateFindElement(ref, "relativePath", false);
             if (relPathNode != null)
-                loadPOM(new File(relativePathDir, relPathNode + File.separatorChar + "pom.xml"), true);
+                loadPOM(new File(relativePathDir, relPathNode), true);
         }
         return triple;
     }
@@ -723,40 +726,45 @@ public final class umvn {
     /**
      * Runs javac as configured for this project.
      */
-    private Process runJavac(File dest, File[] s, HashSet<File> classpath, HashSet<File> sourcepath, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
+    public Process runJavac(File dest, File[] s, HashSet<File> classpath, HashSet<File> sourcepath, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        LinkedList<String> command = new LinkedList<>();
-        command.add(getPropertyFull("maven.compiler.executable"));
-        command.add("-d");
-        command.add(dest.toString());
-        command.add("-implicit:none");
+        File responseFile = File.createTempFile("javac", ".rsp");
+        PrintStream ps = new PrintStream(responseFile, "UTF-8");
+        ps.println("-d");
+        ps.println(dest.toString());
+        ps.println("-implicit:none");
         // build classpath/sourcepath
         if (!sourcepath.isEmpty()) {
-            command.add("-sourcepath");
-            command.add(assembleClasspath(sourcepath));
+            ps.println("-sourcepath");
+            ps.println(assembleClasspath(sourcepath));
         }
         if (!classpath.isEmpty()) {
-            command.add("-classpath");
-            command.add(assembleClasspath(classpath));
+            ps.println("-classpath");
+            ps.println(assembleClasspath(classpath));
         }
         // continue
-        command.add("-encoding");
-        command.add(getPropertyFull("project.build.sourceEncoding", "UTF-8"));
+        ps.println("-encoding");
+        ps.println(getPropertyFull("project.build.sourceEncoding", "UTF-8"));
         String sourceVer = getPropertyFull("maven.compiler.source", null);
         if (sourceVer != null) {
-            command.add("-source");
-            command.add(sourceVer);
+            ps.println("-source");
+            ps.println(sourceVer);
         }
         String targetVer = getPropertyFull("maven.compiler.target", null);
         if (targetVer != null) {
-            command.add("-target");
-            command.add(targetVer);
+            ps.println("-target");
+            ps.println(targetVer);
         }
         for (File f : s)
-            command.add(f.toString());
+            ps.println(f.toString());
+        ps.close();
+        responseFile.deleteOnExit();
+        LinkedList<String> command = new LinkedList<>();
+        command.add(getPropertyFull("maven.compiler.executable"));
+        command.add("@" + responseFile.getAbsolutePath());
         pb.command(command);
         return startProcess(pb, queue, onEnd);
     }
@@ -784,7 +792,7 @@ public final class umvn {
     /**
      * Runs java as configured for testing this project.
      */
-    private Process runJava(Collection<String> args, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
+    public Process runJava(Collection<String> args, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.directory(sourceDir);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
@@ -1198,6 +1206,8 @@ public final class umvn {
         String goal = null;
         LinkedList<String> extraArgs = new LinkedList<>();
 
+        File rootPOMFile = new File("pom.xml");
+
         for (int argIndex = 0; argIndex < args.length; argIndex++) {
             String s = args[argIndex];
             if (s.startsWith("-")) {
@@ -1216,6 +1226,17 @@ public final class umvn {
                     if (info.length() == 0)
                         info = args[++argIndex];
                     JAVAC_PROCESSES.set(Integer.parseInt(info));
+                } else if (s.equals("--threads")) {
+                    String info = args[++argIndex];
+                    JAVAC_PROCESSES.set(Integer.parseInt(info));
+                } else if (s.startsWith("-f")) {
+                    String info = s.substring(2);
+                    if (info.length() == 0)
+                        info = args[++argIndex];
+                    rootPOMFile = new File(info);
+                } else if (s.equals("--file")) {
+                    String info = args[++argIndex];
+                    rootPOMFile = new File(info);
                 } else if (s.equals("--version") || s.equals("-v")) {
                     System.out.println(doVersionInfo());
                     System.out.println("");
@@ -1269,56 +1290,64 @@ public final class umvn {
         // goal
 
         if (goal.equals("clean")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doClean(buildAggregate);
             doFinalStatusOK(buildAggregate.size() + " projects cleaned.");
         } else if (goal.equals("compile")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doClean(buildAggregate);
             doGather(buildAggregate, true, false, false, false);
             doCompile(buildAggregate, false);
             doFinalStatusOK(buildAggregate.size() + " projects compiled.");
         } else if (goal.equals("test-compile")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doClean(buildAggregate);
             doGather(buildAggregate, true, false, true, false);
             doCompile(buildAggregate, true);
             doFinalStatusOK(buildAggregate.size() + " projects compiled with tests.");
         } else if (goal.equals("test")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doClean(buildAggregate);
             doGather(buildAggregate, true, false, true, true);
             doCompile(buildAggregate, true);
             doTest(buildAggregate);
             doFinalStatusOK(buildAggregate.size() + " projects tested.");
         } else if (goal.equals("test-only")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doGather(buildAggregate, false, false, false, true);
             doTest(buildAggregate);
             doFinalStatusOK(buildAggregate.size() + " projects tested.");
         } else if (goal.equals("package")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doClean(buildAggregate);
             doGather(buildAggregate, true, true, false, false);
             doCompile(buildAggregate, false);
             doPackageAndInstall(buildAggregate, true, false);
             doFinalStatusOK(buildAggregate.size() + " projects packaged.");
         } else if (goal.equals("package-only")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doGather(buildAggregate, false, true, false, false);
             doPackageAndInstall(buildAggregate, true, false);
             doFinalStatusOK(buildAggregate.size() + " projects packaged.");
         } else if (goal.equals("install")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doClean(buildAggregate);
             doGather(buildAggregate, true, true, false, false);
             doCompile(buildAggregate, false);
             doPackageAndInstall(buildAggregate, true, true);
             doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("install-only")) {
-            HashSet<umvn> buildAggregate = doAggregate();
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
             doGather(buildAggregate, false, true, false, false);
             doPackageAndInstall(buildAggregate, false, true);
+            doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
+        } else if (goal.equals("test-install")) {
+            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
+            doClean(buildAggregate);
+            doGather(buildAggregate, true, true, true, true);
+            doCompile(buildAggregate, true);
+            doTest(buildAggregate);
+            doPackageAndInstall(buildAggregate, true, true);
             doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
             String prop = System.getProperty("artifact");
@@ -1361,13 +1390,13 @@ public final class umvn {
             }
             doFinalStatusOK("Installed.");
         } else if (goal.equals("umvn-test-classpath")) {
-            umvn rootPom = doSinglePOM();
+            umvn rootPom = loadPOM(rootPOMFile, true);
             HashSet<umvn> onePom = new HashSet<umvn>();
             onePom.add(rootPom);
             doGather(onePom, false, false, false, true);
             System.out.println(rootPom.getTestRuntimeClasspath());
         } else if (goal.equals("umvn-run")) {
-            umvn rootPom = doSinglePOM();
+            umvn rootPom = loadPOM(rootPOMFile, true);
             HashSet<umvn> onePom = new HashSet<umvn>();
             onePom.add(rootPom);
             doGather(onePom, false, false, false, true);
@@ -1420,6 +1449,8 @@ public final class umvn {
         System.out.println(" * `install[-only]`\\");
         System.out.println("   Cleans, compiles, packages, and installs all target projects to the local Maven repo.\\");
         System.out.println("   `-only` suffix skips clean/compile/package.");
+        System.out.println(" * `test-install`\\");
+        System.out.println("   Cleans, compiles, tests, packages, and installs all target projects to the local Maven repo.");
         System.out.println(" * `dependency:get -Dartifact=<...>`\\");
         System.out.println("   Downloads a specific artifact to the local Maven repo.");
         System.out.println(" * `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
@@ -1437,10 +1468,12 @@ public final class umvn {
         System.out.println("");
         System.out.println("## Options");
         System.out.println("");
-        System.out.println(" * `-D<key>=<value>`\\");
+        System.out.println(" * `-D <key>=<value>`\\");
         System.out.println("   Sets a Java System Property. These are inherited into the POM property space.");
-        System.out.println(" * `-T<num>`\\");
+        System.out.println(" * `-T <num>` / `--threads <num>`\\");
         System.out.println("   Sets the maximum number of `javac` processes to run at any given time.");
+        System.out.println(" * `-f <pom>` / `--file <pom>`\\");
+        System.out.println("   Sets the root POM file.");
         System.out.println(" * `--version` / `-v`\\");
         System.out.println("   Reports the version + some other info and exits.");
         System.out.println(" * `--help` / `-h`\\");
@@ -1572,12 +1605,8 @@ public final class umvn {
         System.out.println("For more information, please refer to <http://unlicense.org>");
     }
 
-    public static umvn doSinglePOM() {
-        return loadPOM(new File("pom.xml"), true);
-    }
-
-    public static HashSet<umvn> doAggregate() {
-        umvn rootPom = doSinglePOM();
+    public static HashSet<umvn> doAggregate(File f) {
+        umvn rootPom = loadPOM(f, true);
         HashSet<umvn> compileThese = new HashSet<>();
         rootPom.aggregateSet(compileThese);
         return compileThese;
