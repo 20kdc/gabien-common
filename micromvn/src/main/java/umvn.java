@@ -47,8 +47,10 @@ public final class umvn {
 
     // -- switches --
     public static boolean LOG_HEADER_FOOTER = true;
+    public static boolean LOG_DOWNLOAD = true;
     public static boolean LOG_DEBUG = false;
     public static boolean OFFLINE = false;
+
     /**
      * So this works kind of as a semaphore in regards to maximum independent javac processes.
      */
@@ -85,20 +87,49 @@ public final class umvn {
      */
     public final File sourceDir;
 
-    public final String groupId, artifactId, version, triple;
+    public final String groupId, artifactId, version, coordsGA, triple;
 
     public final umvn parent;
 
     public final LinkedList<umvn> modules = new LinkedList<>();
     public final HashMap<String, String> properties = new HashMap<>();
 
-    // Each of these sets can be used by itself (i.e. it is never necessary to OR the sets).
-    public final LinkedList<String> depTriplesTransitiveCompile = new LinkedList<>();
-    public final LinkedList<String> depTriplesTransitivePackaged = new LinkedList<>();
-    public final LinkedList<String> depTriplesTransitiveRuntime = new LinkedList<>();
-    public final LinkedList<String> depTriplesRootCompile = new LinkedList<>();
-    public final LinkedList<String> depTriplesRootPackaged = new LinkedList<>();
-    public final LinkedList<String> depTriplesTest = new LinkedList<>();
+    public static final int DEPSET_ROOT_MAIN_COMPILE = 0;
+    public static final int DEPSET_ROOT_MAIN_PACKAGE = 1;
+    public static final int DEPSET_ROOT_MAIN_RUNTIME = 2;
+    public static final int DEPSET_TDEP_MAIN_COMPILE = 3;
+    public static final int DEPSET_TDEP_MAIN_PACKAGE = 4;
+    public static final int DEPSET_TDEP_MAIN_RUNTIME = 5;
+    // test = (main-compile | main-runtime)
+    public static final int DEPSET_ROOT_TEST = 6;
+    // test-root = (test | scope[test])
+    public static final int DEPSET_TDEP_TEST = 7;
+    public static final int DEPSET_COUNT = 8;
+    public static final int[] DEPSET_TRANSITIVE = {
+            // root-main-compile
+            DEPSET_TDEP_MAIN_COMPILE,
+            // root-main-package
+            DEPSET_TDEP_MAIN_PACKAGE,
+            // root-main-runtime
+            DEPSET_TDEP_MAIN_RUNTIME,
+            // tdep-main-compile
+            DEPSET_TDEP_MAIN_COMPILE,
+            // tdep-main-package
+            DEPSET_TDEP_MAIN_PACKAGE,
+            // tdep-main-runtime
+            DEPSET_TDEP_MAIN_RUNTIME,
+            // test
+            DEPSET_TDEP_TEST,
+            // test-root
+            DEPSET_TDEP_TEST
+    };
+
+    // Each of these sets (HashSet<String>) can be used by itself (i.e. it is never necessary to OR the sets).
+    public final Object[] depSets = new Object[DEPSET_COUNT];
+
+    // Maps a coordsGA to a triple.
+    // This represents the entirety of this package's contribution to version-space.
+    public final HashMap<String, String> coordsGAToTriples = new HashMap<>();
 
     public boolean isPOMPackaged;
 
@@ -128,15 +159,21 @@ public final class umvn {
             String theArtifactId = null;
             String theVersion = null;
             if (elm != null) {
-                theParent = getPOMByTriple(getTriplePOMRef(elm, sourceDir));
+                String parentGA = getGAPOMRef(elm, sourceDir);
+                String parentTriple = coordsGAToTriples.get(parentGA);
+                if (parentTriple == null)
+                    throw new RuntimeException("Parent project " + parentGA + " with no version (can't bootstrap from nothing)");
+                theParent = getPOMByTriple(parentTriple);
                 theGroupId = theParent.groupId;
                 theArtifactId = theParent.artifactId;
                 theVersion = theParent.version;
                 properties.putAll(theParent.properties);
+                coordsGAToTriples.putAll(theParent.coordsGAToTriples);
             }
             groupId = ensureSpecifierHelper(theGroupId, "groupId", projectElement);
             artifactId = ensureSpecifierHelper(theArtifactId, "artifactId", projectElement);
             version = ensureSpecifierHelper(theVersion, "version", projectElement);
+            coordsGA = groupId + ":" + artifactId;
             triple = getTriple(groupId, artifactId, version);
             parent = theParent;
             POM_BY_TRIPLE.put(triple, this);
@@ -171,6 +208,9 @@ public final class umvn {
                     }
                 }
             }
+            // -- depsets --
+            for (int i = 0; i < DEPSET_COUNT; i++)
+                depSets[i] = new HashSet<String>();
             // -- <dependencies> --
             elm = findElement(projectElement, "dependencies", false);
             if (elm != null) {
@@ -185,32 +225,38 @@ public final class umvn {
                         String scope = "compile";
                         if (scopeNode != null)
                             scope = scopeNode.getTextContent();
+                        String dep = getGAPOMRef(n, sourceDir);
                         if (scope.equals("compile")) {
-                            String dep = getTriplePOMRef(n, sourceDir);
-                            depTriplesRootCompile.add(dep);
-                            depTriplesRootPackaged.add(dep);
+                            getDepSet(DEPSET_ROOT_MAIN_COMPILE).add(dep);
+                            getDepSet(DEPSET_ROOT_MAIN_PACKAGE).add(dep);
+                            getDepSet(DEPSET_ROOT_MAIN_RUNTIME).add(dep);
+                            getDepSet(DEPSET_ROOT_TEST).add(dep);
                             if (!optional) {
-                                depTriplesTransitiveCompile.add(dep);
-                                depTriplesTransitivePackaged.add(dep);
-                                depTriplesTransitiveRuntime.add(dep);
+                                getDepSet(DEPSET_TDEP_MAIN_COMPILE).add(dep);
+                                getDepSet(DEPSET_TDEP_MAIN_PACKAGE).add(dep);
+                                getDepSet(DEPSET_TDEP_MAIN_RUNTIME).add(dep);
+                                getDepSet(DEPSET_TDEP_TEST).add(dep);
                             }
-                            depTriplesTest.add(dep);
                         } else if (scope.equals("provided")) {
-                            String dep = getTriplePOMRef(n, sourceDir);
-                            depTriplesRootCompile.add(dep);
-                            depTriplesTest.add(dep);
-                        } else if (scope.equals("runtime")) {
-                            String dep = getTriplePOMRef(n, sourceDir);
-                            depTriplesRootPackaged.add(dep);
+                            getDepSet(DEPSET_ROOT_MAIN_COMPILE).add(dep);
+                            getDepSet(DEPSET_ROOT_MAIN_PACKAGE).add(dep);
+                            getDepSet(DEPSET_ROOT_TEST).add(dep);
                             if (!optional) {
-                                depTriplesTransitiveRuntime.add(dep);
-                                depTriplesTransitivePackaged.add(dep);
+                                getDepSet(DEPSET_TDEP_MAIN_COMPILE).add(dep);
+                                getDepSet(DEPSET_TDEP_MAIN_PACKAGE).add(dep);
+                                getDepSet(DEPSET_TDEP_TEST).add(dep);
                             }
-                            depTriplesTest.add(dep);
+                        } else if (scope.equals("runtime")) {
+                            getDepSet(DEPSET_ROOT_MAIN_PACKAGE).add(dep);
+                            getDepSet(DEPSET_ROOT_MAIN_RUNTIME).add(dep);
+                            getDepSet(DEPSET_ROOT_TEST).add(dep);
+                            if (!optional) {
+                                getDepSet(DEPSET_TDEP_MAIN_PACKAGE).add(dep);
+                                getDepSet(DEPSET_TDEP_MAIN_RUNTIME).add(dep);
+                                getDepSet(DEPSET_TDEP_TEST).add(dep);
+                            }
                         } else if (scope.equals("test")) {
-                            String dep = getTriplePOMRef(n, sourceDir);
-                            // test scope only ever ends up in test
-                            depTriplesTest.add(dep);
+                            getDepSet(DEPSET_ROOT_TEST).add(dep);
                         }
                         // other scopes = not relevant
                     }
@@ -281,21 +327,26 @@ public final class umvn {
     }
 
     /**
-     * Returns a triple.
+     * Returns GA.
      * Enthusiastically loads relative paths to ensure we have them discovered for later.
+     * Also contributes to this project's coordsGAToTriples map (which you should use to get a triple if you need it)
      */
-    public String getTriplePOMRef(Node ref, File relativePathDir) {
+    public String getGAPOMRef(Node ref, File relativePathDir) {
         String theGroupId = templateFindElement(ref, "groupId", true);
         String theArtifactId = templateFindElement(ref, "artifactId", true);
-        String theVersion = templateFindElement(ref, "version", true);
+        String theVersion = templateFindElement(ref, "version", false);
+        String coordsGA = theGroupId + ":" + theArtifactId;
+        if (theVersion == null)
+            return coordsGA;
         String triple = getTriple(theGroupId, theArtifactId, theVersion);
+        coordsGAToTriples.put(coordsGA, triple);
         umvn possibleMatch = POM_BY_TRIPLE.get(triple);
         if (possibleMatch == null && relativePathDir != null) {
             String relPathNode = templateFindElement(ref, "relativePath", false);
             if (relPathNode != null)
                 loadPOM(new File(relativePathDir, relPathNode), true);
         }
-        return triple;
+        return coordsGA;
     }
 
     /**
@@ -387,59 +438,99 @@ public final class umvn {
                 s.aggregateSet(compileThese);
     }
 
-    public static final int PACKAGESET_TRANSITIVE = 0;
-    public static final int PACKAGESET_ROOT = 1;
-    public static final int PACKAGESET_TEST = 2;
-
     /**
-     * All POMs we want in the classpath when compiling this POM.
-     * Won't do anything if this POM is already in the list.
+     * Gets a direct dependency set.
      */
-    public void addCompilePackageSet(HashSet<umvn> compileThese, int set) {
-        if (compileThese.add(this)) {
-            LinkedList<String> depTriples = null;
-            switch (set) {
-            case PACKAGESET_ROOT: depTriples = depTriplesRootCompile; break;
-            case PACKAGESET_TRANSITIVE: depTriples = depTriplesTransitiveCompile; break;
-            case PACKAGESET_TEST: depTriples = depTriplesTest; break;
-            }
-            for (String s : depTriples)
-                getPOMByTriple(s).addCompilePackageSet(compileThese, PACKAGESET_TRANSITIVE);
-        }
+    @SuppressWarnings("unchecked")
+    public HashSet<String> getDepSet(int set) {
+        return (HashSet<String>) depSets[set];
     }
 
     /**
-     * All POMs we want in the classpath when compiling this POM.
-     * Won't do anything if this POM is already in the list.
+     * Returns a fully resolved dependency set from coordGA to POM objects.
+     * You should typically pass DEPSET_ROOT_* here.
      */
-    public void addAssemblyPackageSet(HashSet<umvn> compileThese, int set) {
-        if (compileThese.add(this)) {
-            LinkedList<String> depTriples = null;
-            switch (set) {
-            case PACKAGESET_ROOT: depTriples = depTriplesRootPackaged; break;
-            case PACKAGESET_TRANSITIVE: depTriples = depTriplesTransitivePackaged; break;
-            case PACKAGESET_TEST: depTriples = depTriplesTest; break;
-            }
-            for (String s : depTriples)
-                getPOMByTriple(s).addAssemblyPackageSet(compileThese, PACKAGESET_TRANSITIVE);
-        }
-    }
+    public Map<String, umvn> resolveAllDependencies(int set) {
+        // This algorithm exists because of protobuf and protobuf-parent.
+        // This alerted me to the fact that micromvn didn't actually handle version resolution at all.
+        // In order to fix things and provide the most compatible experience possible,
+        //  this implements a queue-based breadth-first traversal.
+        // However, if a dependency version is not directly specified nearby, it may sometimes be necessary to peek at another project.
+        // That's where deferral comes in.
+        // The algorithm is as follows:
+        // There is an integration queue and the GA pool.
+        // Everything is handled pass-by-pass.
+        // Assuming all POMs are immediately available when they are integrated:
+        //  The integration queue & splitting into passes ensures a breadth-first ordering.
+        //  The GA pool is immediately cleared with each iteration.
+        // Where this isn't possible, whatever can be resolved is and the rest is left for later.
+        // The hope is that a version reference will be discovered in another part of the tree.
+        // If the loop stalls, dependency resolution has failed.
 
-    /**
-     * All POMs we want in the classpath when executing this POM.
-     * Won't do anything if this POM is already in the list.
-     */
-    public void addRuntimePackageSet(HashSet<umvn> compileThese, int set) {
-        if (compileThese.add(this)) {
-            LinkedList<String> depTriples = null;
-            switch (set) {
-            case PACKAGESET_ROOT: depTriples = depTriplesTest; break;
-            case PACKAGESET_TRANSITIVE: depTriples = depTriplesTransitiveRuntime; break;
-            case PACKAGESET_TEST: depTriples = depTriplesTest; break;
+        if (LOG_DEBUG)
+            System.err.println("Resolving dependencies for " + triple + " {");
+
+        // coordsGAToTriples tables are pulled into here.
+        HashMap<String, String> resTableSeen = new HashMap<>();
+        // The umvn objects actually referenced go here.
+        // All objects here must also have entered queue.
+        HashMap<String, umvn> resTableConfirmed = new HashMap<>();
+
+        LinkedList<umvn> intQueue = new LinkedList<>();
+
+        LinkedList<String> gaPool = new LinkedList<>();
+        HashSet<String> enteredGAPool = new HashSet<>();
+
+        intQueue.add(this);
+        resTableConfirmed.put(coordsGA, this);
+
+        while (true) {
+            // Indicates forward progress.
+            boolean activity = false;
+            // integrate versions & pool GAs
+            while (!intQueue.isEmpty()) {
+                umvn queueEntry = intQueue.pop();
+                for (Map.Entry<String, String> entries : queueEntry.coordsGAToTriples.entrySet()) {
+                    if (resTableSeen.putIfAbsent(entries.getKey(), entries.getValue()) == null) {
+                        if (LOG_DEBUG)
+                            System.err.println(" " + entries.getKey() + " = " + entries.getValue());
+                        activity = true;
+                    }
+                    int setAdjusted = queueEntry == this ? set : DEPSET_TRANSITIVE[set];
+                    for (String dep : queueEntry.getDepSet(setAdjusted)) {
+                        if (enteredGAPool.add(dep)) {
+                            gaPool.add(dep);
+                            activity = true;
+                        }
+                    }
+                }
             }
-            for (String s : depTriples)
-                getPOMByTriple(s).addRuntimePackageSet(compileThese, PACKAGESET_TRANSITIVE);
+            // GA pool
+            for (String k : gaPool) {
+                if (resTableConfirmed.containsKey(k))
+                    continue;
+                String triple = resTableSeen.get(k);
+                if (triple == null)
+                    continue;
+                // we have a triple, add it and queue for integration
+                umvn output = getPOMByTriple(triple);
+                intQueue.add(output);
+                resTableConfirmed.put(k, output);
+                activity = true;
+            }
+            activity |= gaPool.removeIf((k) -> resTableConfirmed.containsKey(k));
+            // if both the GA pool and the integration queue are empty, we're done
+            if (gaPool.isEmpty() && intQueue.isEmpty())
+                break;
+            // if there's no activity and we can't leave then we've stalled
+            if (!activity)
+                throw new RuntimeException("could not resolve deps: " + gaPool);
+            if (LOG_DEBUG)
+                System.err.println("---");
         }
+        if (LOG_DEBUG)
+            System.err.println("}");
+        return resTableConfirmed;
     }
 
     // -- Templating --
@@ -583,12 +674,17 @@ public final class umvn {
             return;
 
         String groupName;
-        if (group == SRCGROUP_MAIN)
+        int depSet;
+        if (group == SRCGROUP_MAIN) {
             groupName = "main";
-        else if (group == SRCGROUP_TEST)
+            depSet = DEPSET_ROOT_MAIN_COMPILE;
+        } else if (group == SRCGROUP_TEST) {
             groupName = "test";
-        else
+            depSet = DEPSET_ROOT_TEST;
+        } else {
             groupName = "unk" + group;
+            depSet = DEPSET_ROOT_MAIN_COMPILE;
+        }
 
         File classes = getSourceTargetClassesDir(group);
         File java = getSourceJavaDir(group);
@@ -602,7 +698,7 @@ public final class umvn {
         HashSet<File> sourcepath = new HashSet<>();
         HashSet<umvn> classpathSet = new HashSet<>();
 
-        addCompilePackageSet(classpathSet, (group == SRCGROUP_TEST) ? PACKAGESET_TEST : PACKAGESET_ROOT);
+        classpathSet.addAll(resolveAllDependencies(depSet).values());
         for (umvn classpathEntry : classpathSet) {
             if (classpathEntry.sourceDir != null) {
                 sourcepath.add(classpathEntry.getSourceJavaDir(SRCGROUP_MAIN));
@@ -774,10 +870,8 @@ public final class umvn {
      */
     public String getTestRuntimeClasspath() {
         HashSet<File> classpath = new HashSet<>();
-        HashSet<umvn> classpathSet = new HashSet<>();
 
-        addRuntimePackageSet(classpathSet, PACKAGESET_TEST);
-        for (umvn classpathEntry : classpathSet) {
+        for (umvn classpathEntry : resolveAllDependencies(DEPSET_ROOT_TEST).values()) {
             if (classpathEntry.sourceDir != null) {
                 classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_MAIN));
                 classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_TEST));
@@ -878,7 +972,7 @@ public final class umvn {
             return;
         HashMap<String, Consumer<OutputStream>> zip = new HashMap<>();
         HashSet<umvn> myDeps = new HashSet<umvn>();
-        addAssemblyPackageSet(myDeps, PACKAGESET_ROOT);
+        myDeps.addAll(resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
         myDeps.remove(this);
         for (umvn various : myDeps)
             various.integrateJAR(zip);
@@ -960,6 +1054,8 @@ public final class umvn {
 
     public static boolean download(File target, String urlString) {
         try {
+            if (LOG_DOWNLOAD)
+                System.err.println("download: " + urlString);
             java.net.URL url = new java.net.URL(urlString);
             URLConnection conn = url.openConnection();
             conn.setRequestProperty("User-Agent", "microMVN " + VERSION);
@@ -968,7 +1064,8 @@ public final class umvn {
             Thread.sleep(100);
             return true;
         } catch (Exception ex) {
-            System.err.println("Failed download @ " + urlString + ": " + ex);
+            if (LOG_DOWNLOAD)
+                System.err.println("download failed: " + urlString + " : " + ex);
             return false;
         }
     }
@@ -1247,6 +1344,7 @@ public final class umvn {
                     return;
                 } else if (s.equals("--quiet") || s.equals("-q")) {
                     LOG_HEADER_FOOTER = false;
+                    LOG_DOWNLOAD = false;
                 } else if (s.equals("--debug") || s.equals("-X")) {
                     LOG_DEBUG = true;
                 } else if (s.equals("--offline") || s.equals("-o")) {
@@ -1560,6 +1658,7 @@ public final class umvn {
         System.out.println("");
         System.out.println("## Quirks");
         System.out.println("");
+        System.out.println("* Maven dependency version resolution is messy. I *hope* I've gotten something in place that works now.");
         System.out.println("* The main hazard is a lack of real plugins or compile-time source generation.");
         System.out.println("* `maven-assembly-plugin` is very partially emulated and always runs during package.");
         System.out.println("* Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.");
@@ -1622,13 +1721,13 @@ public final class umvn {
         for (umvn subPom : packages) {
             // System.out.println(subPom.triple);
             if (doCompile)
-                subPom.addCompilePackageSet(allCompile, PACKAGESET_ROOT);
+                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_COMPILE).values());
             if (doPackage)
-                subPom.addAssemblyPackageSet(allPackage, PACKAGESET_ROOT);
+                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
             if (doTestCompile)
-                subPom.addCompilePackageSet(allTestCompile, PACKAGESET_TEST);
+                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
             if (doTestRuntime)
-                subPom.addRuntimePackageSet(allTestRuntime, PACKAGESET_TEST);
+                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
         }
 
         // Join those together...
