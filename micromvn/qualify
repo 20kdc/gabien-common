@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+./build-self
+cp umvn.class ../../c3ds-projects/
+
+pushd ../
+GABIEN_NATIVES_DEV=1 ./ready.sh
+popd
+
+pushd ../../gabien-app-r48
+../gabien-common/micromvn/umvn package
+popd
+
+pushd ../../c3ds-projects/natsue
+./build.sh
+popd
