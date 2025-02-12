@@ -146,10 +146,10 @@ public final class umvn {
             String packaging = templateFindElement(projectElement, "packaging", "jar");
             if (packaging.equals("pom")) {
                 isPOMPackaged = true;
-            } else if (packaging.equals("jar")) {
-                isPOMPackaged = false;
             } else {
-                throw new RuntimeException("Unknown packaging type: " + packaging);
+                // extended packaging types seem to be a Thing ("bundle")
+                // let's assume anything not "pom" is "jar"
+                isPOMPackaged = false;
             }
             // -- <properties> --
             elm = findElement(projectElement, "properties", false);
@@ -1544,7 +1544,8 @@ public final class umvn {
         System.out.println("* `project.parent.groupId/artifactId/version/relativePath`\\");
         System.out.println("  Parent project.");
         System.out.println("* `project.packaging`\\");
-        System.out.println("  Sets the project's packaging type.");
+        System.out.println("  Sets the project's packaging type.\\");
+        System.out.println("  `pom` and `jar` are supported; unknown values resolve to `jar` (for compat. with, say, `bundle`).");
         System.out.println("* `project.properties.*`\\");
         System.out.println("  Properties.");
         System.out.println("* `project.repositories.repository.url`\\");

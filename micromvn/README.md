@@ -121,7 +121,8 @@ These exact POM elements are supported:
 * `project.parent.groupId/artifactId/version/relativePath`\
   Parent project.
 * `project.packaging`\
-  Sets the project's packaging type.
+  Sets the project's packaging type.\
+  `pom` and `jar` are supported; unknown values resolve to `jar` (for compat. with, say, `bundle`).
 * `project.properties.*`\
   Properties.
 * `project.repositories.repository.url`\
