@@ -615,16 +615,7 @@ public final class umvn {
                 throw new RuntimeException("Unclosed template @ " + text);
             String prop = text.substring(idx + 2, idx2);
             String propVal = getPropertyFull(context, prop);
-            if (propVal != null) {
-                res += propVal;
-            } else {
-                // failed to template
-                if (context != null) {
-                    System.err.println("WARN: " + context.sourceDir + " : Property " + prop + " doesn't exist");
-                } else if (LOG_DEBUG) {
-                    System.err.println("WARN: Property " + prop + " doesn't exist");
-                }
-            }
+            res += propVal;
             at = idx2 + 1;
         }
     }
@@ -1110,7 +1101,7 @@ public final class umvn {
     }
 
     public static File getLocalRepo() {
-        return new File(System.getProperty("maven.repo.local"));
+        return new File(getPropertyFull(null, "maven.repo.local"));
     }
 
     public File getLocalRepoArtifact(String suffix) {
@@ -1490,40 +1481,40 @@ public final class umvn {
             doPackageAndInstall(buildAggregate, true, true);
             doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
-            String prop = System.getProperty("artifact");
-            if (prop == null)
+            String prop = getPropertyFull(null, "artifact");
+            if (prop.equals(""))
                 throw new RuntimeException("get requires -Dartifact=...");
             getPOMByTriple(prop).completeDownload();
             doFinalStatusOK("Installed.");
         } else if (goal.equals("install-file")) {
-            String file = System.getProperty("artifact");
-            String pomFile = System.getProperty("pomFile");
-            String groupId = System.getProperty("groupId");
-            String artifactId = System.getProperty("artifactId");
-            String version = System.getProperty("version");
-            String packaging = System.getProperty("packaging");
-            if (file == null)
+            String file = getPropertyFull(null, "artifact");
+            String pomFile = getPropertyFull(null, "pomFile");
+            String groupId = getPropertyFull(null, "groupId");
+            String artifactId = getPropertyFull(null, "artifactId");
+            String version = getPropertyFull(null, "version");
+            String packaging = getPropertyFull(null, "packaging");
+            if (file.equals(""))
                 throw new RuntimeException("install-file requires -Dfile=...");
-            if (pomFile != null) {
+            if (!pomFile.equals("")) {
                 umvn resPom = loadPOM(new File(pomFile), false);
                 groupId = resPom.groupId;
                 artifactId = resPom.artifactId;
                 version = resPom.version;
                 packaging = resPom.isPOMPackaged ? "pom" : "jar";
             }
-            if (groupId == null)
+            if (groupId.equals(""))
                 throw new RuntimeException("install-file requires -DgroupId=... (or -DpomFile=...)");
-            if (artifactId == null)
+            if (artifactId.equals(""))
                 throw new RuntimeException("install-file requires -DartifactId=... (or -DpomFile=...)");
-            if (version == null)
+            if (version.equals(""))
                 throw new RuntimeException("install-file requires -Dversion=... (or -DpomFile=...)");
-            if (packaging == null)
+            if (packaging.equals(""))
                 throw new RuntimeException("install-file requires -Dpackaging=... (or -DpomFile=...)");
             File outPOM = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".pom"));
             File outJAR = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".jar"));
             if (!packaging.equals("pom"))
                 Files.copy(new File(file).toPath(), outJAR.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            if (pomFile != null) {
+            if (!pomFile.equals("")) {
                 Files.copy(new File(pomFile).toPath(), outPOM.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } else {
                 createDummyPOM(groupId, artifactId, version, packaging);
@@ -1542,7 +1533,7 @@ public final class umvn {
             doGather(onePom, false, false, false, true);
             extraArgs.addFirst(rootPom.getTestRuntimeClasspath());
             extraArgs.addFirst("-classpath");
-            extraArgs.addFirst(System.getProperty("micromvn.java"));
+            extraArgs.addFirst(getPropertyFull(null, "micromvn.java"));
 
             ProcessBuilder pb = new ProcessBuilder();
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
@@ -1578,7 +1569,7 @@ public final class umvn {
     }
 
     public static String doVersionInfo() {
-        return "microMVN " + VERSION + " " + URL + "\njava.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " maven.repo.local=" + System.getProperty("maven.repo.local");
+        return "microMVN " + VERSION + " " + URL + "\njava.version=" + getPropertyFull(null, "java.version") + " maven.compiler.executable=" + getPropertyFull(null, "maven.compiler.executable") + " maven.repo.local=" + getPropertyFull(null, "maven.repo.local");
     }
 
     public static void doHelp() {
