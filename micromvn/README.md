@@ -26,6 +26,8 @@ Goals are:
  * `install[-only]`\
    Cleans, compiles, packages, and installs all target projects to the local Maven repo.\
    `-only` suffix skips clean/compile/package.
+ * `test-install`\
+   Cleans, compiles, tests, packages, and installs all target projects to the local Maven repo.
  * `dependency:get -Dartifact=<...>`\
    Downloads a specific artifact to the local Maven repo.
  * `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\
@@ -43,10 +45,12 @@ Goals are:
 
 ## Options
 
- * `-D<key>=<value>`\
+ * `-D <key>=<value>`\
    Sets a Java System Property. These are inherited into the POM property space.
- * `-T<num>`\
+ * `-T <num>` / `--threads <num>`\
    Sets the maximum number of `javac` processes to run at any given time.
+ * `-f <pom>` / `--file <pom>`\
+   Sets the root POM file.
  * `--version` / `-v`\
    Reports the version + some other info and exits.
  * `--help` / `-h`\
