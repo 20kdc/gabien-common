@@ -222,7 +222,7 @@ public final class umvn {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                         if (n instanceof Element && n.getNodeName().equals("module")) {
                             String moduleName = template(n.getTextContent());
-                            modules.add(loadPOM(new File(moduleName + "/pom.xml"), true));
+                            modules.add(loadPOM(new File(sourceDir, moduleName + "/pom.xml"), true));
                         }
                     }
                 }
@@ -264,12 +264,12 @@ public final class umvn {
      * Loads a POM from a file.
      */
     public static umvn loadPOM(File f, boolean isSource) {
-        f = f.getAbsoluteFile();
-        umvn res = POM_BY_FILE.get(f);
-        if (res != null)
-            return res;
         byte[] pomFileBytes;
         try {
+            f = f.getCanonicalFile();
+            umvn res = POM_BY_FILE.get(f);
+            if (res != null)
+                return res;
             pomFileBytes = Files.readAllBytes(f.toPath());
         } catch (IOException e) {
             throw new RuntimeException("Cannot read " + f, e);
@@ -290,7 +290,7 @@ public final class umvn {
         if (possibleMatch == null && relativePathDir != null) {
             String relPathNode = templateFindElement(ref, "relativePath", false);
             if (relPathNode != null)
-                loadPOM(new File(relativePathDir, relPathNode), true);
+                loadPOM(new File(relativePathDir, relPathNode + File.separatorChar + "pom.xml"), true);
         }
         return triple;
     }

@@ -13,29 +13,9 @@ Current list of thirdparty stuff:
 * stb\_vorbis ( https://github.com/nothings/stb/ ) - *modified*, at `thirdparty/stb_vorbis_modified`
 * minimp3 ( https://github.com/lieff/minimp3 ) - *modified*, at `thirdparty/minimp3_modified`
 
-## Build Instructions (Command-Line)
+## Build & Contribution Instructions
 
-Ensure Maven is installed and functional. At the present time, I'm using Apache Maven 3.8.4.
-
-Run `mvn install` from this repository directory.
-
-To avoid running unit tests, run `mvn install -DskipTests`.
-
-All projects will be automatically compiled (and possibly unit-tested).
-
-## Build Instructions (Eclipse IDE)
-
-Ensure Maven support is available. Use `File > Import...`.
-
-Select `Maven > Existing Maven Projects`.
-
-Select this repository directory.
-
-When choosing which sub-projects to import, you may wish to deselect the parent project.
-
-*You may need to get Eclipse to ignore the toolchain plugin.*
-
-Also be sure to import the style file!
+Please see the [build guide.](BUILD.md)
 
 ## History
 
