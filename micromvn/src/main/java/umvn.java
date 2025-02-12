@@ -1417,7 +1417,7 @@ public final class umvn {
     }
 
     public static String doVersionInfo() {
-        return "microMVN " + VERSION + "\njava.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " maven.repo.local=" + System.getProperty("maven.repo.local");
+        return "microMVN " + VERSION + " " + URL + "\njava.version=" + System.getProperty("java.version") + " maven.compiler.executable=" + System.getProperty("maven.compiler.executable") + " maven.repo.local=" + System.getProperty("maven.repo.local");
     }
 
     public static void doHelp() {

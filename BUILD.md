@@ -17,6 +17,8 @@ Predicted things that will break on later JDKs:
 
 For this reason: You are expected to have a Java 8 JDK located at the environment variable `JAVA_1_8_HOME`.
 
+You are also expected to have any JDK >= 8 in PATH; this isn't strict at all, as micromvn is extremely portable.
+
 ### `gabien-natives`
 
 The `gabien-natives` package is complicated to compile. *For that reason,* it is shipped as binary releases on this repository.
