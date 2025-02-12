@@ -137,6 +137,7 @@ These exact POM elements are supported:
 
 ## Quirks
 
+* Maven dependency version resolution is messy. I *hope* I've gotten something in place that works now.
 * The main hazard is a lack of real plugins or compile-time source generation.
 * `maven-assembly-plugin` is very partially emulated and always runs during package.
 * Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.
