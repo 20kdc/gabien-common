@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,6 +49,7 @@ public final class umvn {
     // -- switches --
     public static boolean LOG_HEADER_FOOTER = true;
     public static boolean LOG_DOWNLOAD = true;
+    public static boolean LOG_ACTIVITY = true;
     public static boolean LOG_DEBUG = false;
     public static boolean OFFLINE = false;
 
@@ -55,6 +57,11 @@ public final class umvn {
      * So this works kind of as a semaphore in regards to maximum independent javac processes.
      */
     public static AtomicInteger JAVAC_PROCESSES = new AtomicInteger(Runtime.getRuntime().availableProcessors());
+
+    /**
+     * Command-line properties take precedence over everything else.
+     */
+    public static HashMap<String, String> CMDLINE_PROPS = new HashMap<>();
 
     // -- cache --
     /**
@@ -152,8 +159,17 @@ public final class umvn {
         try {
             Document pomDoc = parseXML(pomFileContent);
             Element projectElement = findElement(pomDoc, "project", true);
-            // -- Parent must happen first so that we resolve related modules early and so we know our triple --
-            Element elm = findElement(projectElement, "parent", false);
+            // -- <properties> (even version can be derived from this & it doesn't template anything, so it must be first) --
+            Element elm = findElement(projectElement, "properties", false);
+            if (elm != null) {
+                for (Node n : nodeChildrenArray(elm.getChildNodes())) {
+                    if (n instanceof Element) {
+                        properties.put(n.getNodeName(), n.getTextContent());
+                    }
+                }
+            }
+            // -- Parent must happen next so that we resolve related modules early and so we know our triple --
+            elm = findElement(projectElement, "parent", false);
             umvn theParent = null;
             String theGroupId = null;
             String theArtifactId = null;
@@ -167,7 +183,8 @@ public final class umvn {
                 theGroupId = theParent.groupId;
                 theArtifactId = theParent.artifactId;
                 theVersion = theParent.version;
-                properties.putAll(theParent.properties);
+                for (Map.Entry<String, String> prop : theParent.properties.entrySet())
+                    properties.putIfAbsent(prop.getKey(), prop.getValue());
                 coordsGAToTriples.putAll(theParent.coordsGAToTriples);
             }
             groupId = ensureSpecifierHelper(theGroupId, "groupId", projectElement);
@@ -187,16 +204,6 @@ public final class umvn {
                 // extended packaging types seem to be a Thing ("bundle")
                 // let's assume anything not "pom" is "jar"
                 isPOMPackaged = false;
-            }
-            // -- <properties> --
-            elm = findElement(projectElement, "properties", false);
-            if (elm != null) {
-                for (Node n : nodeChildrenArray(elm.getChildNodes())) {
-                    if (n instanceof Element) {
-                        // System.out.println(n.getNodeName() + "=" + n.getTextContent());
-                        properties.put(n.getNodeName(), template(n.getTextContent()));
-                    }
-                }
             }
             // -- <repositories> --
             elm = findElement(projectElement, "repositories", false);
@@ -268,7 +275,7 @@ public final class umvn {
                 if (elm != null) {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                         if (n instanceof Element && n.getNodeName().equals("module")) {
-                            String moduleName = template(n.getTextContent());
+                            String moduleName = template(this, n.getTextContent());
                             modules.add(loadPOM(new File(sourceDir, moduleName), true));
                         }
                     }
@@ -293,15 +300,22 @@ public final class umvn {
                     }
                 }
             }
+            // -- warnings --
+            if (sourceDir != null && properties.containsKey("maven.compiler.executable") && !properties.containsKey("maven.compiler.fork")) {
+                System.err.println("WARN: In " + triple + ", maven.compiler.executable specified without maven.compiler.fork!");
+                System.err.println("      This is a footgun and may lead to incompatibility with Apache Maven.");
+                System.err.println("      Apart from this warning, micromvn ignores maven.compiler.fork!");
+                System.err.println("      To silence this warning, specify maven.compiler.fork (recommended: true)");
+            }
         } catch (Exception e) {
             throw new RuntimeException("loading POM " + debugInfo, e);
         }
     }
 
-    private static String ensureSpecifierHelper(String old, String attr, Node base) {
+    private String ensureSpecifierHelper(String old, String attr, Node base) {
         Node theNode = findElement(base, attr, old == null);
         if (theNode != null)
-            return theNode.getTextContent();
+            return template(this, theNode.getTextContent());
         return old;
     }
 
@@ -535,34 +549,57 @@ public final class umvn {
 
     // -- Templating --
 
-    public String getPropertyFull(String basis) {
-        if (basis.equals("project.artifactId"))
-            return artifactId;
-        if (basis.equals("project.groupId"))
-            return groupId;
-        if (basis.equals("project.version"))
-            return version;
-        String pv = null;
-        if (basis.startsWith("env."))
-            pv = System.getenv(basis.substring(4));
-        if (pv == null)
-            pv = properties.get(basis);
-        if (pv == null)
-            pv = System.getProperty(basis);
-        return pv;
-    }
-
-    public String getPropertyFull(String basis, String def) {
-        String pv = getPropertyFull(basis);
-        if (pv == null)
-            pv = System.getProperty(basis, def);
-        return pv;
+    /**
+     * Gets a project/system/etc. property.
+     */
+    public static String getPropertyFull(umvn context, String basis) {
+        /*
+         * The execution order doesn't seem to be properly documented, so here's the gist:
+         *
+         * "-D" properties to Maven take precedence over project properties:
+         *  `mvn clean ; mvn compile -Dmaven.compiler.executable=nope -Dmaven.compiler.fork=true`
+         *  result: expected failure (nope is not a javac)
+         *
+         * Project properties take precedence over java system properties and environment variables:
+         *  `PROPTEST=no mvn clean`
+         *  result: `micromvn (proptest: Proptest ProptestEnv)`
+         *  Proptest comes from a java.version override in the project
+         *  ProptestEnv comes from a env.PROPTEST override in the project
+         *  It seems reasonably clear from Maven's documentation about forced uppercase that Maven patches these into the system props
+         *
+         * Properties from the command-line are eagerly templated and non-existent properties result in the empty string:
+         *  `mvn clean "-DversionProperty2=${versionProperty}XYZ"`
+         *  result: XYZ
+         *  `mvn clean "-DversionProperty2=${example}XYZ" -Dexample=moo`
+         *  result: XYZ
+         *
+         */
+        // hardcoded
+        String pv;
+        if (context != null) {
+            if (basis.equals("project.artifactId"))
+                return context.artifactId;
+            if (basis.equals("project.groupId"))
+                return context.groupId;
+            if (basis.equals("project.version"))
+                return context.version;
+            pv = CMDLINE_PROPS.get(basis);
+            if (pv != null)
+                return pv;
+            pv = context.properties.get(basis);
+            if (pv != null)
+                return template(context, pv);
+        }
+        pv = System.getProperty(basis);
+        if (pv != null)
+            return pv;
+        return "";
     }
 
     /**
      * Templates property references. Needed because of hamcrest.
      */
-    public String template(String text) {
+    public static String template(umvn context, String text) {
         String res = "";
         int at = 0;
         while (true) {
@@ -577,14 +614,16 @@ public final class umvn {
             if (idx2 == -1)
                 throw new RuntimeException("Unclosed template @ " + text);
             String prop = text.substring(idx + 2, idx2);
-            String propVal = getPropertyFull(prop);
+            String propVal = getPropertyFull(context, prop);
             if (propVal != null) {
                 res += propVal;
             } else {
                 // failed to template
-                if (LOG_DEBUG)
-                    System.err.println("Skipping template of property " + prop + "; doesn't exist");
-                res += text.substring(at, idx2 + 1);
+                if (context != null) {
+                    System.err.println("WARN: " + context.sourceDir + " : Property " + prop + " doesn't exist");
+                } else if (LOG_DEBUG) {
+                    System.err.println("WARN: Property " + prop + " doesn't exist");
+                }
             }
             at = idx2 + 1;
         }
@@ -597,7 +636,7 @@ public final class umvn {
         Node n = findElement(pomDoc, string, required);
         if (n == null)
             return null;
-        return template(n.getTextContent());
+        return template(this, n.getTextContent());
     }
 
     /**
@@ -607,7 +646,7 @@ public final class umvn {
         Node n = findElement(pomDoc, string, false);
         if (n == null)
             return def;
-        return template(n.getTextContent());
+        return template(this, n.getTextContent());
     }
 
     // -- XML --
@@ -718,7 +757,7 @@ public final class umvn {
         }
         if (!listForCurrentProcess.isEmpty()) {
             ensureProcessSlotFree(queue);
-            if (LOG_DEBUG)
+            if (LOG_ACTIVITY)
                 System.err.println("[compile start] " + triple + " " + groupName);
             runJavac(classes, listForCurrentProcess.toArray(new File[0]), classpath, sourcepath, queue, (v) -> {
                 if (v != 0)
@@ -726,7 +765,7 @@ public final class umvn {
                 if (LOG_DEBUG)
                     System.err.println("[compile end  ] " + triple + " " + groupName);
             });
-        } else {
+        } else if (LOG_DEBUG) {
             System.err.println("[compile empty] " + triple + " " + groupName);
         }
 
@@ -843,14 +882,14 @@ public final class umvn {
         }
         // continue
         ps.println("-encoding");
-        ps.println(getPropertyFull("project.build.sourceEncoding", "UTF-8"));
-        String sourceVer = getPropertyFull("maven.compiler.source", null);
-        if (sourceVer != null) {
+        ps.println(getPropertyFull(this, "project.build.sourceEncoding"));
+        String sourceVer = getPropertyFull(this, "maven.compiler.source");
+        if (!sourceVer.equals("")) {
             ps.println("-source");
             ps.println(sourceVer);
         }
-        String targetVer = getPropertyFull("maven.compiler.target", null);
-        if (targetVer != null) {
+        String targetVer = getPropertyFull(this, "maven.compiler.target");
+        if (!targetVer.equals("")) {
             ps.println("-target");
             ps.println(targetVer);
         }
@@ -859,7 +898,7 @@ public final class umvn {
         ps.close();
         responseFile.deleteOnExit();
         LinkedList<String> command = new LinkedList<>();
-        command.add(getPropertyFull("maven.compiler.executable"));
+        command.add(getPropertyFull(this, "maven.compiler.executable"));
         command.add("@" + responseFile.getAbsolutePath());
         pb.command(command);
         return startProcess(pb, queue, onEnd);
@@ -893,7 +932,7 @@ public final class umvn {
         pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         LinkedList<String> command = new LinkedList<>();
-        command.add(getPropertyFull("micromvn.java"));
+        command.add(getPropertyFull(this, "micromvn.java"));
 
         String classpath = getTestRuntimeClasspath();
 
@@ -1250,6 +1289,9 @@ public final class umvn {
     // -- Main --
 
     public static void main(String[] args) throws Exception {
+        // patch in environment as if from JSP
+        for (Map.Entry<String, String> env : System.getenv().entrySet())
+            System.setProperty("env." + env.getKey().toUpperCase(Locale.ROOT), env.getValue());
         // autodetect javac
         if (System.getProperty("maven.compiler.executable") == null) {
             String java;
@@ -1257,7 +1299,7 @@ public final class umvn {
             String home = System.getenv("MICROMVN_JAVA_HOME");
             if (home == null)
                 home = System.getenv("JAVA_HOME");
-            String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase().startsWith("windows") ? ".exe" : "";
+            String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
             if (home != null) {
                 if (home.endsWith(File.separator)) {
                     javac = home + "bin" + File.separator + "javac" + possiblyExe;
@@ -1294,12 +1336,14 @@ public final class umvn {
         }
 
         // autodetect local repo
-
         if (System.getProperty("maven.repo.local") == null)
             System.setProperty("maven.repo.local", new File(System.getProperty("user.home"), ".m2/repository").toString());
 
-        // arg parsing & init properties
+        // other defaults
+        if (System.getProperty("project.build.sourceEncoding") == null)
+            System.setProperty("project.build.sourceEncoding", "UTF-8");
 
+        // arg parsing & init properties
         String goal = null;
         LinkedList<String> extraArgs = new LinkedList<>();
 
@@ -1317,7 +1361,7 @@ public final class umvn {
                         throw new RuntimeException("define " + info + " invalid, no =");
                     String k = info.substring(0, infoSplitterIndex);
                     String v = info.substring(infoSplitterIndex + 1);
-                    System.setProperty(k, v);
+                    CMDLINE_PROPS.put(k, template(null, v));
                 } else if (s.startsWith("-T")) {
                     String info = s.substring(2);
                     if (info.length() == 0)
@@ -1337,7 +1381,7 @@ public final class umvn {
                 } else if (s.equals("--version") || s.equals("-v")) {
                     System.out.println(doVersionInfo());
                     System.out.println("");
-                    doCopying();
+                    doCopying((line) -> System.out.println(line));
                     return;
                 } else if (s.equals("--help") || s.equals("-h")) {
                     doHelp();
@@ -1345,6 +1389,7 @@ public final class umvn {
                 } else if (s.equals("--quiet") || s.equals("-q")) {
                     LOG_HEADER_FOOTER = false;
                     LOG_DOWNLOAD = false;
+                    LOG_ACTIVITY = false;
                 } else if (s.equals("--debug") || s.equals("-X")) {
                     LOG_DEBUG = true;
                 } else if (s.equals("--offline") || s.equals("-o")) {
@@ -1375,10 +1420,7 @@ public final class umvn {
 
         // handle properties
 
-        String possibleRepoOverride = System.getProperty("repoUrl");
-        if (possibleRepoOverride == null)
-            possibleRepoOverride = "https://repo1.maven.org/maven2/";
-        installCorrectedRepoUrl(possibleRepoOverride);
+        installCorrectedRepoUrl(CMDLINE_PROPS.getOrDefault("repoUrl", "https://repo1.maven.org/maven2/"));
 
         // version
 
@@ -1509,6 +1551,27 @@ public final class umvn {
 
             pb.command(extraArgs);
             System.exit(pb.start().waitFor());
+        } else if (goal.equals("umvn-make-scripts")) {
+            File unixFile = new File("umvn");
+            File windowsFile = new File("umvn.cmd");
+
+            PrintStream unix = new PrintStream(unixFile, "UTF-8");
+            unix.print("#!/bin/sh\n\n");
+            doCopying((line) -> unix.print(("# " + line).trim() + "\n"));
+            unix.print("\n");
+            unix.print("SCRIPT_PATH=\"`readlink -e $0`\"\n");
+            unix.print("SCRIPT_DIR=\"`dirname \"$SCRIPT_PATH\"`\"\n");
+            unix.print("java -cp \"$SCRIPT_DIR\" umvn \"$@\"\n");
+            unix.close();
+
+            PrintStream windows = new PrintStream(windowsFile, "UTF-8");
+            windows.print("@echo off\r\n\r\n");
+            doCopying((line) -> windows.print(("rem " + line.replace("<", "").replace(">", "")).trim() + "\r\n"));
+            windows.print("\r\n");
+            windows.print("java -cp \"%~dp0\\\" umvn %*\r\n");
+            windows.close();
+
+            unixFile.setExecutable(true);
         } else {
             doFinalStatusError("Unsupported goal/phase: " + goal);
         }
@@ -1563,11 +1626,13 @@ public final class umvn {
         System.out.println("   This goal causes all options after it to be instead passed to `java`.\\");
         System.out.println("   It runs `java`, similarly to how `test` works, setting up the test classpath for you.\\");
         System.out.println("   *It does not automatically run a clean/compile.*");
+        System.out.println(" * `umvn-make-scripts <...>`\\");
+        System.out.println("   Extracts scripts `umvn` and `umvn.class` to run the `umvn.class` file.");
         System.out.println("");
         System.out.println("## Options");
         System.out.println("");
         System.out.println(" * `-D <key>=<value>`\\");
-        System.out.println("   Sets a Java System Property. These are inherited into the POM property space.");
+        System.out.println("   Overrides a POM property. This is absolute and applies globally.");
         System.out.println(" * `-T <num>` / `--threads <num>`\\");
         System.out.println("   Sets the maximum number of `javac` processes to run at any given time.");
         System.out.println(" * `-f <pom>` / `--file <pom>`\\");
@@ -1594,7 +1659,8 @@ public final class umvn {
         System.out.println("## Java System Properties");
         System.out.println("");
         System.out.println("* `user.home`: `.m2` directory is placed here.");
-        System.out.println("* `maven.repo.local`: Maven repository is placed here (defaults to `${user.home}/.m2/repository`)");
+        System.out.println("* `maven.repo.local`: Maven repository is placed here (defaults to `${user.home}/.m2/repository`)\\");
+        System.out.println("  `-D` switches don't override this.");
         System.out.println("* `repoUrl`: Overrides the default remote repository.");
         System.out.println("");
         System.out.println("## Compiler Properties");
@@ -1618,7 +1684,7 @@ public final class umvn {
         System.out.println("");
         System.out.println("The POM support here is pretty bare-bones. Inheritance support in particular is flakey.");
         System.out.println("");
-        System.out.println("POM interpolation is supported, though the inheritance model isn't exact.\\");
+        System.out.println("POM interpolation is supported, though inheritance may be shaky.\\");
         System.out.println("`env.` properties are supported, and the following *specific* `project.` properties:");
         System.out.println("");
         System.out.println("* `project.groupId`");
@@ -1669,40 +1735,41 @@ public final class umvn {
         System.out.println("  `umvn-test-classpath` and `umvn-run` exist as a 'good enough' workaround to attach your own runner.");
         System.out.println("* You don't need to explicitly skip tests. (This is an intentional difference.)");
         System.out.println("* Builds are *always* clean builds.");
+        System.out.println("* Property precedence is hardcoded > command-line > POM > parent POM > env > Java System Properties > defaults. This is an attempt to match Maven behaviour.");
         System.out.println("");
         System.out.println("If any of these things are a problem, you probably should not use microMVN.");
     }
 
-    public static void doCopying() {
-        System.out.println("microMVN - Hyperportable Java 8 build tool");
-        System.out.println("");
-        System.out.println("Written starting in 2025 by:");
-        System.out.println(" 20kdc");
-        System.out.println("");
-        System.out.println("This is free and unencumbered software released into the public domain.");
-        System.out.println("");
-        System.out.println("Anyone is free to copy, modify, publish, use, compile, sell, or");
-        System.out.println("distribute this software, either in source code form or as a compiled");
-        System.out.println("binary, for any purpose, commercial or non-commercial, and by any");
-        System.out.println("means.");
-        System.out.println("");
-        System.out.println("In jurisdictions that recognize copyright laws, the author or authors");
-        System.out.println("of this software dedicate any and all copyright interest in the");
-        System.out.println("software to the public domain. We make this dedication for the benefit");
-        System.out.println("of the public at large and to the detriment of our heirs and");
-        System.out.println("successors. We intend this dedication to be an overt act of");
-        System.out.println("relinquishment in perpetuity of all present and future rights to this");
-        System.out.println("software under copyright law.");
-        System.out.println("");
-        System.out.println("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,");
-        System.out.println("EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF");
-        System.out.println("MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.");
-        System.out.println("IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR");
-        System.out.println("OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,");
-        System.out.println("ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR");
-        System.out.println("OTHER DEALINGS IN THE SOFTWARE.");
-        System.out.println("");
-        System.out.println("For more information, please refer to <http://unlicense.org>");
+    public static void doCopying(Consumer<String> res) {
+        res.accept("microMVN - Hyperportable Java 8 build tool");
+        res.accept("");
+        res.accept("Written starting in 2025 by:");
+        res.accept(" 20kdc");
+        res.accept("");
+        res.accept("This is free and unencumbered software released into the public domain.");
+        res.accept("");
+        res.accept("Anyone is free to copy, modify, publish, use, compile, sell, or");
+        res.accept("distribute this software, either in source code form or as a compiled");
+        res.accept("binary, for any purpose, commercial or non-commercial, and by any");
+        res.accept("means.");
+        res.accept("");
+        res.accept("In jurisdictions that recognize copyright laws, the author or authors");
+        res.accept("of this software dedicate any and all copyright interest in the");
+        res.accept("software to the public domain. We make this dedication for the benefit");
+        res.accept("of the public at large and to the detriment of our heirs and");
+        res.accept("successors. We intend this dedication to be an overt act of");
+        res.accept("relinquishment in perpetuity of all present and future rights to this");
+        res.accept("software under copyright law.");
+        res.accept("");
+        res.accept("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,");
+        res.accept("EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF");
+        res.accept("MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.");
+        res.accept("IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR");
+        res.accept("OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,");
+        res.accept("ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR");
+        res.accept("OTHER DEALINGS IN THE SOFTWARE.");
+        res.accept("");
+        res.accept("For more information, please refer to <http://unlicense.org>");
     }
 
     public static HashSet<umvn> doAggregate(File f) {

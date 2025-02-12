@@ -7,16 +7,21 @@
 	<groupId>t20kdc.hs2</groupId>
 	<artifactId>micromvn</artifactId>
 	<packaging>jar</packaging>
-	<version>0.666-SNAPSHOT</version>
+	<version>${versionProperty2}</version>
 
-	<name>micromvn</name>
+	<name>micromvn (proptest: ${java.version} ${env.PROPTEST})</name>
 	<description>Maven file for Eclipse project for micromvn</description>
 
 	<properties>
+		<versionProperty2>${versionProperty}</versionProperty2>
+		<versionProperty>0.666-SNAPSHOT</versionProperty>
+		<java.version>Proptest</java.version>
+		<env.PROPTEST>ProptestEnv</env.PROPTEST>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.executable>${env.JAVA_1_8_HOME}/bin/javac</maven.compiler.executable>
+		<maven.compiler.fork>true</maven.compiler.fork>
 	</properties>
 
 	<build>

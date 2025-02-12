@@ -42,11 +42,13 @@ Goals are:
    This goal causes all options after it to be instead passed to `java`.\
    It runs `java`, similarly to how `test` works, setting up the test classpath for you.\
    *It does not automatically run a clean/compile.*
+ * `umvn-make-scripts <...>`\
+   Extracts scripts `umvn` and `umvn.class` to run the `umvn.class` file.
 
 ## Options
 
  * `-D <key>=<value>`\
-   Sets a Java System Property. These are inherited into the POM property space.
+   Overrides a POM property. This is absolute and applies globally.
  * `-T <num>` / `--threads <num>`\
    Sets the maximum number of `javac` processes to run at any given time.
  * `-f <pom>` / `--file <pom>`\
@@ -73,7 +75,8 @@ Goals are:
 ## Java System Properties
 
 * `user.home`: `.m2` directory is placed here.
-* `maven.repo.local`: Maven repository is placed here (defaults to `${user.home}/.m2/repository`)
+* `maven.repo.local`: Maven repository is placed here (defaults to `${user.home}/.m2/repository`)\
+  `-D` switches don't override this.
 * `repoUrl`: Overrides the default remote repository.
 
 ## Compiler Properties
@@ -97,7 +100,7 @@ Compiler properties are inherited from Java properties and then overridden by PO
 
 The POM support here is pretty bare-bones. Inheritance support in particular is flakey.
 
-POM interpolation is supported, though the inheritance model isn't exact.\
+POM interpolation is supported, though inheritance may be shaky.\
 `env.` properties are supported, and the following *specific* `project.` properties:
 
 * `project.groupId`
@@ -148,5 +151,6 @@ These exact POM elements are supported:
   `umvn-test-classpath` and `umvn-run` exist as a 'good enough' workaround to attach your own runner.
 * You don't need to explicitly skip tests. (This is an intentional difference.)
 * Builds are *always* clean builds.
+* Property precedence is hardcoded > command-line > POM > parent POM > env > Java System Properties > defaults. This is an attempt to match Maven behaviour.
 
 If any of these things are a problem, you probably should not use microMVN.
