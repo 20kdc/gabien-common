@@ -17,12 +17,18 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -41,7 +47,7 @@ import org.w3c.dom.NodeList;
  * microMVN: "Not quite Maven" in a single class file.
  * Created February 10th, 2025.
  */
-public final class umvn {
+public final class umvn implements Comparable<umvn> {
     // -- how-to-find this --
     public static final String VERSION = "CommitIDHere";
     public static final String URL = "https://github.com/20kdc/gabien-common/tree/master/micromvn";
@@ -62,6 +68,11 @@ public final class umvn {
      * Command-line properties take precedence over everything else.
      */
     public static HashMap<String, String> CMDLINE_PROPS = new HashMap<>();
+
+    /**
+     * Used for maven.build.timestamp!
+     */
+    public static final Date REFERENCE_BUILD_START_DATE = new Date();
 
     // -- cache --
     /**
@@ -98,7 +109,11 @@ public final class umvn {
 
     public final umvn parent;
 
-    public final LinkedList<umvn> modules = new LinkedList<>();
+    /**
+     * Total aggregate module set.
+     */
+    public final LinkedList<umvn> aggregate = new LinkedList<>();
+
     public final HashMap<String, String> properties = new HashMap<>();
 
     public static final int DEPSET_ROOT_MAIN_COMPILE = 0;
@@ -131,7 +146,10 @@ public final class umvn {
             DEPSET_TDEP_TEST
     };
 
-    // Each of these sets (HashSet<String>) can be used by itself (i.e. it is never necessary to OR the sets).
+    /**
+     * Each of these sets (TreeSet\<String\>) can be used by itself (i.e. it is never necessary to OR the sets).
+     * However, these are direct dependencies only. Each value is a coordGA. TreeSet is used for reproducibility.
+     */
     public final Object[] depSets = new Object[DEPSET_COUNT];
 
     // Maps a coordsGA to a triple.
@@ -141,6 +159,21 @@ public final class umvn {
     public boolean isPOMPackaged;
 
     public String mainClass;
+
+    /**
+     * These become "project.*" properties.
+     */
+    public static final String[] BOUND_PROPERTIES = {
+            "groupId",
+            "artifactId",
+            "version",
+            "packaging",
+            "build.sourceEncoding",
+            "build.sourceDirectory",
+            "build.testSourceDirectory",
+            "build.resources.resource.directory",
+            "build.testResources.testResource.directory"
+    };
 
     // -- Loader --
 
@@ -159,52 +192,52 @@ public final class umvn {
         try {
             Document pomDoc = parseXML(pomFileContent);
             Element projectElement = findElement(pomDoc, "project", true);
+            // -- uninheritable defaults --
+            properties.put("project.packaging", "jar");
             // -- <properties> (even version can be derived from this & it doesn't template anything, so it must be first) --
             Element elm = findElement(projectElement, "properties", false);
-            if (elm != null) {
-                for (Node n : nodeChildrenArray(elm.getChildNodes())) {
-                    if (n instanceof Element) {
+            if (elm != null)
+                for (Node n : nodeChildrenArray(elm.getChildNodes()))
+                    if (n instanceof Element)
                         properties.put(n.getNodeName(), n.getTextContent());
-                    }
-                }
-            }
+            // -- POM binding --
+            for (String property : BOUND_PROPERTIES)
+                autoAttachProperty(projectElement, "project", property);
             // -- Parent must happen next so that we resolve related modules early and so we know our triple --
             elm = findElement(projectElement, "parent", false);
             umvn theParent = null;
-            String theGroupId = null;
-            String theArtifactId = null;
-            String theVersion = null;
             if (elm != null) {
                 String parentGA = getGAPOMRef(elm, sourceDir);
                 String parentTriple = coordsGAToTriples.get(parentGA);
                 if (parentTriple == null)
                     throw new RuntimeException("Parent project " + parentGA + " with no version (can't bootstrap from nothing)");
                 theParent = getPOMByTriple(parentTriple);
-                theGroupId = theParent.groupId;
-                theArtifactId = theParent.artifactId;
-                theVersion = theParent.version;
-                for (Map.Entry<String, String> prop : theParent.properties.entrySet())
+                for (Map.Entry<String, String> prop : theParent.properties.entrySet()) {
+                    if (prop.getKey().equals("project.artifactId"))
+                        continue;
                     properties.putIfAbsent(prop.getKey(), prop.getValue());
+                }
                 coordsGAToTriples.putAll(theParent.coordsGAToTriples);
             }
-            groupId = ensureSpecifierHelper(theGroupId, "groupId", projectElement);
-            artifactId = ensureSpecifierHelper(theArtifactId, "artifactId", projectElement);
-            version = ensureSpecifierHelper(theVersion, "version", projectElement);
+            // -- Inheritable defaults --
+            properties.putIfAbsent("project.build.sourceEncoding", "UTF-8");
+            properties.putIfAbsent("project.build.sourceDirectory", "${basedir}/src/main/java");
+            properties.putIfAbsent("project.build.testSourceDirectory", "${basedir}/src/test/java");
+            properties.putIfAbsent("project.build.resources.resource.directory", "${basedir}/src/main/resources");
+            properties.putIfAbsent("project.build.testResources.testResource.directory", "${basedir}/src/test/resources");
+            // -- Triple setup --
+            groupId = getPropertyFull(this, "project.groupId");
+            artifactId = getPropertyFull(this, "project.artifactId");
+            version = getPropertyFull(this, "project.version");
             coordsGA = groupId + ":" + artifactId;
             triple = getTriple(groupId, artifactId, version);
+            if (groupId.isEmpty() || artifactId.isEmpty() || version.isEmpty())
+                throw new RuntimeException("Missing key property: " + triple);
+            isPOMPackaged = getPropertyFull(this, "project.packaging").equals("pom");
             parent = theParent;
             POM_BY_TRIPLE.put(triple, this);
             if (LOG_DEBUG)
-                System.err.println(" = " + getTriple(groupId, artifactId, version));
-            // -- <packaging> --
-            String packaging = templateFindElement(projectElement, "packaging", "jar");
-            if (packaging.equals("pom")) {
-                isPOMPackaged = true;
-            } else {
-                // extended packaging types seem to be a Thing ("bundle")
-                // let's assume anything not "pom" is "jar"
-                isPOMPackaged = false;
-            }
+                System.err.println(" = " + triple);
             // -- <repositories> --
             elm = findElement(projectElement, "repositories", false);
             if (elm != null) {
@@ -217,7 +250,7 @@ public final class umvn {
             }
             // -- depsets --
             for (int i = 0; i < DEPSET_COUNT; i++)
-                depSets[i] = new HashSet<String>();
+                depSets[i] = new TreeSet<String>();
             // -- <dependencies> --
             elm = findElement(projectElement, "dependencies", false);
             if (elm != null) {
@@ -246,11 +279,10 @@ public final class umvn {
                             }
                         } else if (scope.equals("provided")) {
                             getDepSet(DEPSET_ROOT_MAIN_COMPILE).add(dep);
-                            getDepSet(DEPSET_ROOT_MAIN_PACKAGE).add(dep);
+                            // provided is NOT packaged (ref: gabien-android)
                             getDepSet(DEPSET_ROOT_TEST).add(dep);
                             if (!optional) {
                                 getDepSet(DEPSET_TDEP_MAIN_COMPILE).add(dep);
-                                getDepSet(DEPSET_TDEP_MAIN_PACKAGE).add(dep);
                                 getDepSet(DEPSET_TDEP_TEST).add(dep);
                             }
                         } else if (scope.equals("runtime")) {
@@ -264,19 +296,29 @@ public final class umvn {
                             }
                         } else if (scope.equals("test")) {
                             getDepSet(DEPSET_ROOT_TEST).add(dep);
+                        } else if (scope.equals("import")) {
+                            String importTriple = coordsGAToTriples.get(dep);
+                            if (importTriple == null)
+                                throw new RuntimeException("Dep import project " + dep + " with no version");
+                            umvn importPOM = getPOMByTriple(importTriple);
+                            for (int i = 0 ; i < DEPSET_COUNT; i++)
+                                getDepSet(i).addAll(importPOM.getDepSet(i));
                         }
                         // other scopes = not relevant
                     }
                 }
             }
             // -- <modules> --
+            aggregate.add(this);
             if (sourceDir != null) {
                 elm = findElement(projectElement, "modules", false);
                 if (elm != null) {
                     for (Node n : nodeChildrenArray(elm.getChildNodes())) {
                         if (n instanceof Element && n.getNodeName().equals("module")) {
                             String moduleName = template(this, n.getTextContent());
-                            modules.add(loadPOM(new File(sourceDir, moduleName), true));
+                            for (umvn module : loadPOM(new File(sourceDir, moduleName), true).aggregate)
+                                if (!aggregate.contains(module))
+                                    aggregate.add(module);
                         }
                     }
                 }
@@ -312,32 +354,33 @@ public final class umvn {
         }
     }
 
-    private String ensureSpecifierHelper(String old, String attr, Node base) {
-        Node theNode = findElement(base, attr, old == null);
-        if (theNode != null)
-            return template(this, theNode.getTextContent());
-        return old;
-    }
-
-    // -- POM management --
-
     /**
-     * Loads a POM from a file.
+     * Implicitly auto-handles inheritance.
      */
-    public static umvn loadPOM(File f, boolean isSource) {
-        byte[] pomFileBytes;
-        try {
-            f = f.getCanonicalFile();
-            if (f.isDirectory())
-                f = new File(f, "pom.xml");
-            umvn res = POM_BY_FILE.get(f);
-            if (res != null)
-                return res;
-            pomFileBytes = Files.readAllBytes(f.toPath());
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot read " + f, e);
+    public void autoAttachProperty(Node base, String propPrefix, String path) {
+        if (base == null)
+            return;
+        int dot = path.indexOf('.');
+        String component;
+        if (dot == -1) {
+            component = path;
+        } else {
+            component = path.substring(0, dot);
+            path = path.substring(dot + 1);
         }
-        return new umvn(pomFileBytes, f, isSource ? f.getParentFile() : null);
+        String propFull = propPrefix + "." + component;
+        for (Node n : nodeChildrenArray(base.getChildNodes())) {
+            if (n instanceof Element) {
+                if (n.getNodeName().equals(component)) {
+                    // System.err.println("AAP: " + propFull + " matched, dot " + dot + ", = " + n.getTextContent());
+                    if (dot == -1) {
+                        properties.put(propFull, n.getTextContent());
+                    } else {
+                        autoAttachProperty(n, propFull, path);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -364,6 +407,111 @@ public final class umvn {
     }
 
     /**
+     * Finds an element. If it fails, returns the default. Otherwise, templates its text contents.
+     */
+    public String templateFindElement(Node pomDoc, String string, String def) {
+        Node n = findElement(pomDoc, string, false);
+        if (n == null)
+            return def;
+        return template(this, n.getTextContent());
+    }
+
+    public static Document parseXML(byte[] f) {
+        try {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            return dbf.newDocumentBuilder().parse(new ByteArrayInputStream(f));
+        } catch (Exception ex) {
+            throw new RuntimeException("parsing " + f, ex);
+        }
+    }
+
+    public static Node[] nodeChildrenArray(NodeList list) {
+        Node[] nodes = new Node[list.getLength()];
+        for (int i = 0; i < nodes.length; i++)
+            nodes[i] = list.item(i);
+        return nodes;
+    }
+
+    public static Element findElementRecursive(Node pomDoc, String string, boolean required) {
+        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
+            if (n instanceof Element)
+                if (n.getNodeName().equals(string))
+                    return (Element) n;
+            Element result = findElementRecursive(n, string, required);
+            if (result != null)
+                return result;
+        }
+        if (required)
+            throw new RuntimeException("Unable to find element <" + string + ">");
+        return null;
+    }
+
+    /**
+     * Kind of shorthand for template(findElement().getTextContent()) but passes through null.
+     */
+    public String templateFindElement(Node pomDoc, String string, boolean required) {
+        Node n = findElement(pomDoc, string, required);
+        if (n == null)
+            return null;
+        return template(this, n.getTextContent());
+    }
+
+    public static Element findElement(Node pomDoc, String string, boolean required) {
+        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
+            // System.out.println(n);
+            if (n instanceof Element) {
+                if (n.getNodeName().equals(string))
+                    return (Element) n;
+            }
+        }
+        if (required)
+            throw new RuntimeException("Unable to find element <" + string + ">");
+        return null;
+    }
+
+    // -- Sort/Compare --
+
+    @Override
+    public int hashCode() {
+        return triple.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof umvn && triple.equals(((umvn) obj).triple);
+    }
+
+    @Override
+    public int compareTo(umvn o) {
+        return triple.compareTo(o.triple);
+    }
+
+    // -- POM management --
+
+    public static final String SUFFIX_POM = ".pom";
+    public static final String SUFFIX_JAR = ".jar";
+    public static final String SUFFIX_ASM = "-jar-with-dependencies.jar";
+
+    /**
+     * Loads a POM from a file.
+     */
+    public static umvn loadPOM(File f, boolean isSource) {
+        byte[] pomFileBytes;
+        try {
+            f = f.getCanonicalFile();
+            if (f.isDirectory())
+                f = new File(f, "pom.xml");
+            umvn res = POM_BY_FILE.get(f);
+            if (res != null)
+                return res;
+            pomFileBytes = Files.readAllBytes(f.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot read " + f, e);
+        }
+        return new umvn(pomFileBytes, f, isSource ? f.getParentFile() : null);
+    }
+
+    /**
      * Returns the POM from a triple.
      */
     public static umvn getPOMByTriple(String triple) {
@@ -373,7 +521,7 @@ public final class umvn {
         String[] parts = triple.split(":");
         if (parts.length != 3)
             throw new RuntimeException("Invalid triple: " + triple);
-        return loadPOM(getOrDownloadArtifact(parts[0], parts[1], parts[2], ".pom"), false);
+        return loadPOM(getOrDownloadArtifact(parts[0], parts[1], parts[2], SUFFIX_POM), false);
     }
 
     /**
@@ -393,9 +541,9 @@ public final class umvn {
      */
     public File getSourceJavaDir(int group) {
         if (group == SRCGROUP_MAIN)
-            return new File(sourceDir, "src/main/java");
+            return new File(getPropertyFull(this, "project.build.sourceDirectory"));
         if (group == SRCGROUP_TEST)
-            return new File(sourceDir, "src/test/java");
+            return new File(getPropertyFull(this, "project.build.testSourceDirectory"));
         throw new RuntimeException("unknown srcgroup");
     }
 
@@ -404,9 +552,9 @@ public final class umvn {
      */
     public File getSourceResourcesDir(int group) {
         if (group == SRCGROUP_MAIN)
-            return new File(sourceDir, "src/main/resources");
+            return new File(getPropertyFull(this, "project.build.resources.resource.directory"));
         if (group == SRCGROUP_TEST)
-            return new File(sourceDir, "src/test/resources");
+            return new File(getPropertyFull(this, "project.build.testResources.testResource.directory"));
         throw new RuntimeException("unknown srcgroup");
     }
 
@@ -429,35 +577,18 @@ public final class umvn {
     }
 
     /**
-     * If this is a source POM, gets the target JAR file.
+     * If this is a source POM, gets a target artifact.
      */
-    public File getSourceTargetJARFile() {
-        return new File(getSourceTargetDir(), artifactId + "-" + version + ".jar");
-    }
-
-    /**
-     * If this is a source POM, gets the target packaged JAR file.
-     */
-    public File getSourceTargetPackagedJARFile() {
-        return new File(getSourceTargetDir(), artifactId + "-" + version + "-jar-with-dependencies.jar");
-    }
-
-    /**
-     * All POMs we want to compile when compiling this POM.
-     * Won't do anything if this POM is already in the list.
-     */
-    public void aggregateSet(HashSet<umvn> compileThese) {
-        if (compileThese.add(this))
-            for (umvn s : modules)
-                s.aggregateSet(compileThese);
+    public File getSourceTargetArtifact(String suffix) {
+        return new File(getSourceTargetDir(), artifactId + "-" + version + suffix);
     }
 
     /**
      * Gets a direct dependency set.
      */
     @SuppressWarnings("unchecked")
-    public HashSet<String> getDepSet(int set) {
-        return (HashSet<String>) depSets[set];
+    public SortedSet<String> getDepSet(int set) {
+        return (SortedSet<String>) depSets[set];
     }
 
     /**
@@ -488,7 +619,8 @@ public final class umvn {
         HashMap<String, String> resTableSeen = new HashMap<>();
         // The umvn objects actually referenced go here.
         // All objects here must also have entered queue.
-        HashMap<String, umvn> resTableConfirmed = new HashMap<>();
+        // This is a TreeMap for reproducibility.
+        TreeMap<String, umvn> resTableConfirmed = new TreeMap<>();
 
         LinkedList<umvn> intQueue = new LinkedList<>();
 
@@ -554,7 +686,9 @@ public final class umvn {
      */
     public static String getPropertyFull(umvn context, String basis) {
         /*
-         * The execution order doesn't seem to be properly documented, so here's the gist:
+         * https://maven.apache.org/ref/3-LATEST/maven-model-builder/index.html
+         *
+         * Some tests also:
          *
          * "-D" properties to Maven take precedence over project properties:
          *  `mvn clean ; mvn compile -Dmaven.compiler.executable=nope -Dmaven.compiler.fork=true`
@@ -574,15 +708,21 @@ public final class umvn {
          *  result: XYZ
          *
          */
-        // hardcoded
         String pv;
+        if (basis.equals("build.timestamp") || basis.equals("maven.build.timestamp"))
+            return new SimpleDateFormat(getPropertyFull(context, "maven.build.timestamp.format")).format(REFERENCE_BUILD_START_DATE);
         if (context != null) {
-            if (basis.equals("project.artifactId"))
-                return context.artifactId;
-            if (basis.equals("project.groupId"))
-                return context.groupId;
-            if (basis.equals("project.version"))
-                return context.version;
+            // hardcoded
+            if ((basis.equals("project.basedir") || basis.equals("basedir")) && context.sourceDir != null)
+                return context.sourceDir.toString();
+            // POM properties
+            if (basis.startsWith("project.")) {
+                pv = context.properties.get(basis);
+                if (pv != null)
+                    return template(context, pv);
+                return "";
+            }
+            // -D
             pv = CMDLINE_PROPS.get(basis);
             if (pv != null)
                 return pv;
@@ -610,7 +750,7 @@ public final class umvn {
             }
             if (at != idx)
                 res += text.substring(at, idx);
-            int idx2 = text.indexOf("}", idx);
+            int idx2 = text.indexOf('}', idx);
             if (idx2 == -1)
                 throw new RuntimeException("Unclosed template @ " + text);
             String prop = text.substring(idx + 2, idx2);
@@ -618,71 +758,6 @@ public final class umvn {
             res += propVal;
             at = idx2 + 1;
         }
-    }
-
-    /**
-     * Kind of shorthand for template(findElement().getTextContent()) but passes through null.
-     */
-    public String templateFindElement(Node pomDoc, String string, boolean required) {
-        Node n = findElement(pomDoc, string, required);
-        if (n == null)
-            return null;
-        return template(this, n.getTextContent());
-    }
-
-    /**
-     * Finds an element. If it fails, returns the default. Otherwise, templates its text contents.
-     */
-    public String templateFindElement(Node pomDoc, String string, String def) {
-        Node n = findElement(pomDoc, string, false);
-        if (n == null)
-            return def;
-        return template(this, n.getTextContent());
-    }
-
-    // -- XML --
-
-    public static Document parseXML(byte[] f) {
-        try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            return dbf.newDocumentBuilder().parse(new ByteArrayInputStream(f));
-        } catch (Exception ex) {
-            throw new RuntimeException("parsing " + f, ex);
-        }
-    }
-
-    public static Node[] nodeChildrenArray(NodeList list) {
-        Node[] nodes = new Node[list.getLength()];
-        for (int i = 0; i < nodes.length; i++)
-            nodes[i] = list.item(i);
-        return nodes;
-    }
-
-    public static Element findElementRecursive(Node pomDoc, String string, boolean required) {
-        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
-            if (n instanceof Element)
-                if (n.getNodeName().equals(string))
-                    return (Element) n;
-            Element result = findElementRecursive(n, string, required);
-            if (result != null)
-                return result;
-        }
-        if (required)
-            throw new RuntimeException("Unable to find element <" + string + ">");
-        return null;
-    }
-
-    public static Element findElement(Node pomDoc, String string, boolean required) {
-        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
-            // System.out.println(n);
-            if (n instanceof Element) {
-                if (n.getNodeName().equals(string))
-                    return (Element) n;
-            }
-        }
-        if (required)
-            throw new RuntimeException("Unable to find element <" + string + ">");
-        return null;
     }
 
     // -- Build --
@@ -721,19 +796,22 @@ public final class umvn {
         File resources = getSourceResourcesDir(group);
         classes.mkdirs();
         // compile classes
-        HashSet<String> copy = new HashSet<>();
+        TreeSet<String> copy = new TreeSet<>();
         buildListOfRelativePaths(java, "", copy);
 
-        HashSet<File> classpath = new HashSet<>();
-        HashSet<File> sourcepath = new HashSet<>();
-        HashSet<umvn> classpathSet = new HashSet<>();
+        // Must be TreeSet for reproducibility
+        TreeSet<File> classpath = new TreeSet<>();
+        TreeSet<File> sourcepath = new TreeSet<>();
+        TreeSet<umvn> classpathSet = new TreeSet<>();
 
         classpathSet.addAll(resolveAllDependencies(depSet).values());
         for (umvn classpathEntry : classpathSet) {
+            if (classpathEntry.isPOMPackaged)
+                continue;
             if (classpathEntry.sourceDir != null) {
                 sourcepath.add(classpathEntry.getSourceJavaDir(SRCGROUP_MAIN));
             } else {
-                classpath.add(getOrDownloadArtifact(classpathEntry, ".jar"));
+                classpath.add(getOrDownloadArtifact(classpathEntry, SUFFIX_JAR));
             }
         }
 
@@ -787,10 +865,10 @@ public final class umvn {
         File classes = getSourceTargetClassesDir(SRCGROUP_TEST);
 
         // listclasses
-        HashSet<String> copy = new HashSet<>();
+        TreeSet<String> copy = new TreeSet<>();
         buildListOfRelativePaths(classes, "", copy);
 
-        HashSet<String> listForCurrentProcess = new HashSet<>();
+        TreeSet<String> listForCurrentProcess = new TreeSet<>();
         byte[] expected = ("Lorg/junit/Test;").getBytes(StandardCharsets.UTF_8);
         for (String sourceFileName : copy) {
             if (!sourceFileName.endsWith(".class"))
@@ -837,22 +915,33 @@ public final class umvn {
     }
 
     /**
-     * Install this package.
+     * Install this project.
      */
     public void install() throws Exception {
-        File artifactPOM = getLocalRepoArtifact(".pom");
-        artifactPOM.getParentFile().mkdirs();
-        Files.write(artifactPOM.toPath(), pomFileContent);
+        installArtifact(SUFFIX_POM);
         if (!isPOMPackaged) {
-            Files.copy(getSourceTargetJARFile().toPath(), getLocalRepoArtifact(".jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(getSourceTargetPackagedJARFile().toPath(), getLocalRepoArtifact("-jar-with-dependencies.jar").toPath(), StandardCopyOption.REPLACE_EXISTING);
+            installArtifact(SUFFIX_JAR);
+            installArtifact(SUFFIX_ASM);
+        }
+    }
+
+    /**
+     * Installs a specific artifact of this project.
+     */
+    public void installArtifact(String suffix) throws Exception {
+        if (suffix.equals(SUFFIX_POM)) {
+            File artifactPOM = getLocalRepoArtifact(SUFFIX_POM);
+            artifactPOM.getParentFile().mkdirs();
+            Files.write(artifactPOM.toPath(), pomFileContent);
+        } else {
+            Files.copy(getSourceTargetArtifact(suffix).toPath(), getLocalRepoArtifact(suffix).toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
     /**
      * Runs javac as configured for this project.
      */
-    public Process runJavac(File dest, File[] s, HashSet<File> classpath, HashSet<File> sourcepath, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
+    public Process runJavac(File dest, File[] s, Collection<File> classpath, Collection<File> sourcepath, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
         ProcessBuilder pb = new ProcessBuilder();
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
@@ -872,18 +961,14 @@ public final class umvn {
             ps.println(assembleClasspath(classpath));
         }
         // continue
-        ps.println("-encoding");
-        ps.println(getPropertyFull(this, "project.build.sourceEncoding"));
-        String sourceVer = getPropertyFull(this, "maven.compiler.source");
-        if (!sourceVer.equals("")) {
-            ps.println("-source");
-            ps.println(sourceVer);
-        }
-        String targetVer = getPropertyFull(this, "maven.compiler.target");
-        if (!targetVer.equals("")) {
-            ps.println("-target");
-            ps.println(targetVer);
-        }
+        mirrorJavacArg(ps, "-encoding", "project.build.sourceEncoding");
+        mirrorJavacArg(ps, "-source", "maven.compiler.source");
+        mirrorJavacArg(ps, "-target", "maven.compiler.target");
+        mirrorJavacArg(ps, "-release", "maven.compiler.release");
+        mirrorJavacSwitch(ps, null, "-nowarn", "maven.compiler.showWarnings");
+        mirrorJavacSwitch(ps, "-g", "-g:none", "maven.compiler.debug");
+        mirrorJavacSwitch(ps, "-parameters", null, "maven.compiler.parameters");
+        mirrorJavacSwitch(ps, "-verbose", null, "maven.compiler.verbose");
         for (File f : s)
             ps.println(f.toString());
         ps.close();
@@ -895,18 +980,37 @@ public final class umvn {
         return startProcess(pb, queue, onEnd);
     }
 
+    private void mirrorJavacArg(PrintStream ps, String arg, String prop) {
+        String targetVer = getPropertyFull(this, prop);
+        if (!targetVer.isEmpty()) {
+            ps.println(arg);
+            ps.println(targetVer);
+        }
+    }
+
+    private void mirrorJavacSwitch(PrintStream ps, String on, String off, String prop) {
+        String targetVer = getPropertyFull(this, prop);
+        if (targetVer.equals("true") && on != null) {
+            ps.println(on);
+        } else if (off != null) {
+            ps.println(off);
+        }
+    }
+
     /**
      * Gets the test runtime classpath as a string.
      */
     public String getTestRuntimeClasspath() {
-        HashSet<File> classpath = new HashSet<>();
+        TreeSet<File> classpath = new TreeSet<>();
 
         for (umvn classpathEntry : resolveAllDependencies(DEPSET_ROOT_TEST).values()) {
+            if (classpathEntry.isPOMPackaged)
+                continue;
             if (classpathEntry.sourceDir != null) {
                 classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_MAIN));
                 classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_TEST));
             } else {
-                classpath.add(getOrDownloadArtifact(classpathEntry, ".jar"));
+                classpath.add(getOrDownloadArtifact(classpathEntry, SUFFIX_JAR));
             }
         }
 
@@ -956,27 +1060,29 @@ public final class umvn {
     public void packageJAR() {
         if (isPOMPackaged)
             return;
-        HashMap<String, Consumer<OutputStream>> zip = new HashMap<>();
+        TreeMap<String, Consumer<OutputStream>> zip = new TreeMap<>();
         integrateJAR(zip);
-        zipBuild(getSourceTargetJARFile(), zip);
+        zipBuild(getSourceTargetArtifact(SUFFIX_JAR), zip);
     }
 
     /**
      * Creates the base JAR 'in-memory', or integrates the existing base JAR for non-source POMs.
+     * SortedMap for reproducibility.
      */
-    public void integrateJAR(HashMap<String, Consumer<OutputStream>> zip) {
+    public void integrateJAR(SortedMap<String, Consumer<OutputStream>> zip) {
+        if (isPOMPackaged)
+            return;
         if (sourceDir != null) {
             // note that the manifest can (deliberately) be overwritten!
             zip.put("META-INF/MANIFEST.MF", zipMakeFile(createManifest(false)));
             zip.put("META-INF/maven/" + groupId + "/" + artifactId + "/pom.xml", zipMakeFile(pomFileContent));
-            HashSet<String> files = new HashSet<>();
+            zip.put("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties", zipMakeFile("groupId=" + groupId + "\nartifactId=" + artifactId + "\nversion=" + version + "\n"));
+            TreeSet<String> files = new TreeSet<>();
             File classes = getSourceTargetClassesDir(SRCGROUP_MAIN);
             buildListOfRelativePaths(classes, "", files);
             zipIntegrateRelativePaths(zip, "", classes, files);
         } else {
-            if (isPOMPackaged)
-                return;
-            File myJAR = getOrDownloadArtifact(this, ".jar");
+            File myJAR = getOrDownloadArtifact(this, SUFFIX_JAR);
             try {
                 ZipInputStream zis = new ZipInputStream(new FileInputStream(myJAR), StandardCharsets.UTF_8);
                 while (true) {
@@ -1000,8 +1106,8 @@ public final class umvn {
     public void packageJARWithDependencies() {
         if (isPOMPackaged)
             return;
-        HashMap<String, Consumer<OutputStream>> zip = new HashMap<>();
-        HashSet<umvn> myDeps = new HashSet<umvn>();
+        TreeMap<String, Consumer<OutputStream>> zip = new TreeMap<>();
+        TreeSet<umvn> myDeps = new TreeSet<>();
         myDeps.addAll(resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
         myDeps.remove(this);
         for (umvn various : myDeps)
@@ -1010,7 +1116,7 @@ public final class umvn {
         integrateJAR(zip);
         zip.put("META-INF/MANIFEST.MF", zipMakeFile(createManifest(true)));
         // done
-        zipBuild(getSourceTargetPackagedJARFile(), zip);
+        zipBuild(getSourceTargetArtifact(SUFFIX_ASM), zip);
     }
 
     public String createManifest(boolean packaging) {
@@ -1040,7 +1146,7 @@ public final class umvn {
             return;
         if (isPOMPackaged)
             return;
-        getOrDownloadArtifact(this, ".jar");
+        getOrDownloadArtifact(this, SUFFIX_JAR);
     }
 
     /**
@@ -1118,7 +1224,11 @@ public final class umvn {
 
     // -- IO Utilities --
 
-    public static void buildListOfRelativePaths(File currentDir, String currentPrefix, HashSet<String> paths) {
+    /**
+     * Builds a list of relative paths.
+     * For reproducibility, insists upon a SortedSet recipient.
+     */
+    public static void buildListOfRelativePaths(File currentDir, String currentPrefix, SortedSet<String> paths) {
         if (!currentDir.isDirectory())
             return;
         for (File f : currentDir.listFiles()) {
@@ -1147,7 +1257,7 @@ public final class umvn {
         }
     }
 
-    public static void zipIntegrateRelativePaths(HashMap<String, Consumer<OutputStream>> zip, String prefix, File dir, Collection<String> paths) {
+    public static void zipIntegrateRelativePaths(Map<String, Consumer<OutputStream>> zip, String prefix, File dir, Collection<String> paths) {
         for (String p : paths)
             zip.put(prefix + p, zipMakeFileReader(new File(dir, p)));
     }
@@ -1194,7 +1304,7 @@ public final class umvn {
         };
     }
 
-    public static void zipBuild(File outputFile, HashMap<String, Consumer<OutputStream>> files) {
+    public static void zipBuild(File outputFile, TreeMap<String, Consumer<OutputStream>> files) {
         try {
             outputFile.getParentFile().mkdirs();
             ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
@@ -1225,7 +1335,7 @@ public final class umvn {
         sb.append("<packaging>" + packaging + "</packaging>\n");
         sb.append("</project>\n");
         byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-        Files.write(new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".pom")).toPath(), data);
+        Files.write(new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, SUFFIX_POM)).toPath(), data);
     }
 
     // -- Staging --
@@ -1281,8 +1391,11 @@ public final class umvn {
 
     public static void main(String[] args) throws Exception {
         // patch in environment as if from JSP
-        for (Map.Entry<String, String> env : System.getenv().entrySet())
-            System.setProperty("env." + env.getKey().toUpperCase(Locale.ROOT), env.getValue());
+        for (Map.Entry<String, String> env : System.getenv().entrySet()) {
+            String envKey = "env." + env.getKey().toUpperCase(Locale.ROOT);
+            if (System.getProperty(envKey) == null)
+                System.setProperty(envKey, env.getValue());
+        }
         // autodetect javac
         if (System.getProperty("maven.compiler.executable") == null) {
             String java;
@@ -1331,8 +1444,17 @@ public final class umvn {
             System.setProperty("maven.repo.local", new File(System.getProperty("user.home"), ".m2/repository").toString());
 
         // other defaults
-        if (System.getProperty("project.build.sourceEncoding") == null)
-            System.setProperty("project.build.sourceEncoding", "UTF-8");
+        if (System.getProperty("maven.build.timestamp.format") == null)
+            System.setProperty("maven.build.timestamp.format", "yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+        if (System.getProperty("maven.compiler.showWarnings") == null)
+            System.setProperty("maven.compiler.showWarnings", "true");
+        if (System.getProperty("maven.compiler.debug") == null)
+            System.setProperty("maven.compiler.debug", "true");
+        if (System.getProperty("maven.compiler.parameters") == null)
+            System.setProperty("maven.compiler.parameters", "false");
+        if (System.getProperty("maven.compiler.verbose") == null)
+            System.setProperty("maven.compiler.verbose", "false");
 
         // arg parsing & init properties
         String goal = null;
@@ -1374,6 +1496,8 @@ public final class umvn {
                     System.out.println("");
                     doCopying((line) -> System.out.println(line));
                     return;
+                } else if (s.equals("--show-version") || s.equals("-V")) {
+                    System.err.println(doVersionInfo());
                 } else if (s.equals("--help") || s.equals("-h")) {
                     doHelp();
                     return;
@@ -1413,76 +1537,71 @@ public final class umvn {
 
         installCorrectedRepoUrl(CMDLINE_PROPS.getOrDefault("repoUrl", "https://repo1.maven.org/maven2/"));
 
-        // version
-
-        if (LOG_HEADER_FOOTER)
-            System.err.println(doVersionInfo());
-
         // goal
 
         if (goal.equals("clean")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doFinalStatusOK(buildAggregate.size() + " projects cleaned.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects cleaned.");
         } else if (goal.equals("compile")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doGather(buildAggregate, true, false, false, false);
-            doCompile(buildAggregate, false);
-            doFinalStatusOK(buildAggregate.size() + " projects compiled.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doGather(rootPom.aggregate, true, false, false, false);
+            doCompile(rootPom.aggregate, false);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects compiled.");
         } else if (goal.equals("test-compile")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doGather(buildAggregate, true, false, true, false);
-            doCompile(buildAggregate, true);
-            doFinalStatusOK(buildAggregate.size() + " projects compiled with tests.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doGather(rootPom.aggregate, true, false, true, false);
+            doCompile(rootPom.aggregate, true);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects compiled with tests.");
         } else if (goal.equals("test")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doGather(buildAggregate, true, false, true, true);
-            doCompile(buildAggregate, true);
-            doTest(buildAggregate);
-            doFinalStatusOK(buildAggregate.size() + " projects tested.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doGather(rootPom.aggregate, true, false, true, true);
+            doCompile(rootPom.aggregate, true);
+            doTest(rootPom.aggregate);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects tested.");
         } else if (goal.equals("test-only")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doGather(buildAggregate, false, false, false, true);
-            doTest(buildAggregate);
-            doFinalStatusOK(buildAggregate.size() + " projects tested.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doGather(rootPom.aggregate, false, false, false, true);
+            doTest(rootPom.aggregate);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects tested.");
         } else if (goal.equals("package")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doGather(buildAggregate, true, true, false, false);
-            doCompile(buildAggregate, false);
-            doPackageAndInstall(buildAggregate, true, false);
-            doFinalStatusOK(buildAggregate.size() + " projects packaged.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doGather(rootPom.aggregate, true, true, false, false);
+            doCompile(rootPom.aggregate, false);
+            doPackageAndInstall(rootPom.aggregate, true, false);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects packaged.");
         } else if (goal.equals("package-only")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doGather(buildAggregate, false, true, false, false);
-            doPackageAndInstall(buildAggregate, true, false);
-            doFinalStatusOK(buildAggregate.size() + " projects packaged.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doGather(rootPom.aggregate, false, true, false, false);
+            doPackageAndInstall(rootPom.aggregate, true, false);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects packaged.");
         } else if (goal.equals("install")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doGather(buildAggregate, true, true, false, false);
-            doCompile(buildAggregate, false);
-            doPackageAndInstall(buildAggregate, true, true);
-            doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doGather(rootPom.aggregate, true, true, false, false);
+            doCompile(rootPom.aggregate, false);
+            doPackageAndInstall(rootPom.aggregate, true, true);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("install-only")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doGather(buildAggregate, false, true, false, false);
-            doPackageAndInstall(buildAggregate, false, true);
-            doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doGather(rootPom.aggregate, false, true, false, false);
+            doPackageAndInstall(rootPom.aggregate, false, true);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("test-install")) {
-            HashSet<umvn> buildAggregate = doAggregate(rootPOMFile);
-            doClean(buildAggregate);
-            doGather(buildAggregate, true, true, true, true);
-            doCompile(buildAggregate, true);
-            doTest(buildAggregate);
-            doPackageAndInstall(buildAggregate, true, true);
-            doFinalStatusOK(buildAggregate.size() + " projects installed to local repo.");
+            umvn rootPom = loadPOM(rootPOMFile, true);
+            doClean(rootPom.aggregate);
+            doGather(rootPom.aggregate, true, true, true, true);
+            doCompile(rootPom.aggregate, true);
+            doTest(rootPom.aggregate);
+            doPackageAndInstall(rootPom.aggregate, true, true);
+            doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
             String prop = getPropertyFull(null, "artifact");
-            if (prop.equals(""))
+            if (prop.isEmpty())
                 throw new RuntimeException("get requires -Dartifact=...");
             getPOMByTriple(prop).completeDownload();
             doFinalStatusOK("Installed.");
@@ -1493,28 +1612,28 @@ public final class umvn {
             String artifactId = getPropertyFull(null, "artifactId");
             String version = getPropertyFull(null, "version");
             String packaging = getPropertyFull(null, "packaging");
-            if (file.equals(""))
+            if (file.isEmpty())
                 throw new RuntimeException("install-file requires -Dfile=...");
-            if (!pomFile.equals("")) {
+            if (!pomFile.isEmpty()) {
                 umvn resPom = loadPOM(new File(pomFile), false);
                 groupId = resPom.groupId;
                 artifactId = resPom.artifactId;
                 version = resPom.version;
                 packaging = resPom.isPOMPackaged ? "pom" : "jar";
             }
-            if (groupId.equals(""))
+            if (groupId.isEmpty())
                 throw new RuntimeException("install-file requires -DgroupId=... (or -DpomFile=...)");
-            if (artifactId.equals(""))
+            if (artifactId.isEmpty())
                 throw new RuntimeException("install-file requires -DartifactId=... (or -DpomFile=...)");
-            if (version.equals(""))
+            if (version.isEmpty())
                 throw new RuntimeException("install-file requires -Dversion=... (or -DpomFile=...)");
-            if (packaging.equals(""))
+            if (packaging.isEmpty())
                 throw new RuntimeException("install-file requires -Dpackaging=... (or -DpomFile=...)");
-            File outPOM = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".pom"));
-            File outJAR = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, ".jar"));
+            File outPOM = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, SUFFIX_POM));
+            File outJAR = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, SUFFIX_JAR));
             if (!packaging.equals("pom"))
                 Files.copy(new File(file).toPath(), outJAR.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            if (!pomFile.equals("")) {
+            if (!pomFile.isEmpty()) {
                 Files.copy(new File(pomFile).toPath(), outPOM.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } else {
                 createDummyPOM(groupId, artifactId, version, packaging);
@@ -1563,6 +1682,8 @@ public final class umvn {
             windows.close();
 
             unixFile.setExecutable(true);
+
+            doFinalStatusOK("Created scripts.");
         } else {
             doFinalStatusError("Unsupported goal/phase: " + goal);
         }
@@ -1584,68 +1705,70 @@ public final class umvn {
         System.out.println("");
         System.out.println("Goals are:");
         System.out.println("");
-        System.out.println(" * `clean`\\");
-        System.out.println("   Cleans all target projects (deletes target directory).");
-        System.out.println(" * `compile`\\");
-        System.out.println("   Cleans and compiles all target projects.");
-        System.out.println(" * `test-compile`\\");
-        System.out.println("   Cleans and compiles all target projects along with their tests.");
-        System.out.println(" * `test[-only]`\\");
-        System.out.println("   Runs the JUnit 4 console runner, `org.junit.runner.JUnitCore`, on all tests in all target projects.\\");
-        System.out.println("   Tests are assumed to be non-inner classes in the test source tree that appear to refer to `org.junit.Test`.\\");
-        System.out.println("   `-only` suffix skips clean/compile.");
-        System.out.println(" * `package[-only]`\\");
-        System.out.println("   Cleans, compiles, and packages all target projects to JAR files.\\");
-        System.out.println("   This also includes an imitation of maven-assembly-plugin.\\");
-        System.out.println("   `-only` suffix skips clean/compile.");
-        System.out.println(" * `install[-only]`\\");
-        System.out.println("   Cleans, compiles, packages, and installs all target projects to the local Maven repo.\\");
-        System.out.println("   `-only` suffix skips clean/compile/package.");
-        System.out.println(" * `test-install`\\");
-        System.out.println("   Cleans, compiles, tests, packages, and installs all target projects to the local Maven repo.");
-        System.out.println(" * `dependency:get -Dartifact=<...>`\\");
-        System.out.println("   Downloads a specific artifact to the local Maven repo.");
-        System.out.println(" * `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
-        System.out.println("   Installs a JAR to the local Maven repo, creating a dummy POM for it.");
-        System.out.println(" * `install:install-file -Dfile=<...> -DpomFile=<...>`\\");
-        System.out.println("   Installs a JAR to the local Maven repo, importing an existing POM.");
-        System.out.println(" * `help`\\");
-        System.out.println("   Shows this text.");
-        System.out.println(" * `umvn-test-classpath`\\");
-        System.out.println("   Dumps the test classpath to standard output.");
-        System.out.println(" * `umvn-run <...>`\\");
-        System.out.println("   This goal causes all options after it to be instead passed to `java`.\\");
-        System.out.println("   It runs `java`, similarly to how `test` works, setting up the test classpath for you.\\");
-        System.out.println("   *It does not automatically run a clean/compile.*");
-        System.out.println(" * `umvn-make-scripts <...>`\\");
-        System.out.println("   Extracts scripts `umvn` and `umvn.class` to run the `umvn.class` file.");
+        System.out.println("* `clean`\\");
+        System.out.println("  Cleans all target projects (deletes target directory).");
+        System.out.println("* `compile`\\");
+        System.out.println("  Cleans and compiles all target projects.");
+        System.out.println("* `test-compile`\\");
+        System.out.println("  Cleans and compiles all target projects along with their tests.");
+        System.out.println("* `test[-only]`\\");
+        System.out.println("  Runs the JUnit 4 console runner, `org.junit.runner.JUnitCore`, on all tests in all target projects.\\");
+        System.out.println("  Tests are assumed to be non-inner classes in the test source tree that appear to refer to `org.junit.Test`.\\");
+        System.out.println("  `-only` suffix skips clean/compile.");
+        System.out.println("* `package[-only]`\\");
+        System.out.println("  Cleans, compiles, and packages all target projects to JAR files.\\");
+        System.out.println("  This also includes an imitation of maven-assembly-plugin.\\");
+        System.out.println("  `-only` suffix skips clean/compile.");
+        System.out.println("* `install[-only]`\\");
+        System.out.println("  Cleans, compiles, packages, and installs all target projects to the local Maven repo.\\");
+        System.out.println("  `-only` suffix skips clean/compile/package.");
+        System.out.println("* `test-install`\\");
+        System.out.println("  Cleans, compiles, tests, packages, and installs all target projects to the local Maven repo.");
+        System.out.println("* `dependency:get -Dartifact=<...>`\\");
+        System.out.println("  Downloads a specific artifact to the local Maven repo.");
+        System.out.println("* `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
+        System.out.println("  Installs a JAR to the local Maven repo, creating a dummy POM for it.");
+        System.out.println("* `install:install-file -Dfile=<...> -DpomFile=<...>`\\");
+        System.out.println("  Installs a JAR to the local Maven repo, importing an existing POM.");
+        System.out.println("* `help`\\");
+        System.out.println("  Shows this text.");
+        System.out.println("* `umvn-test-classpath`\\");
+        System.out.println("  Dumps the test classpath to standard output.");
+        System.out.println("* `umvn-run <...>`\\");
+        System.out.println("  This goal causes all options after it to be instead passed to `java`.\\");
+        System.out.println("  It runs `java`, similarly to how `test` works, setting up the test classpath for you.\\");
+        System.out.println("  *It does not automatically run a clean/compile.*");
+        System.out.println("* `umvn-make-scripts <...>`\\");
+        System.out.println("  Extracts scripts `umvn` and `umvn.class` to run the `umvn.class` file.");
         System.out.println("");
         System.out.println("## Options");
         System.out.println("");
-        System.out.println(" * `-D <key>=<value>`\\");
-        System.out.println("   Overrides a POM property. This is absolute and applies globally.");
-        System.out.println(" * `-T <num>` / `--threads <num>`\\");
-        System.out.println("   Sets the maximum number of `javac` processes to run at any given time.");
-        System.out.println(" * `-f <pom>` / `--file <pom>`\\");
-        System.out.println("   Sets the root POM file.");
-        System.out.println(" * `--version` / `-v`\\");
-        System.out.println("   Reports the version + some other info and exits.");
-        System.out.println(" * `--help` / `-h`\\");
-        System.out.println("   Shows this help text.");
-        System.out.println(" * `--quiet` / `-q`\\");
-        System.out.println("   Hides the header and footer.");
-        System.out.println(" * `--debug` / `-X`\\");
-        System.out.println("   Makes things loud for debugging.");
-        System.out.println(" * `--offline` / `-o`\\");
-        System.out.println("   Disables touching the network.");
+        System.out.println("* `-D <key>=<value>`\\");
+        System.out.println("  Overrides a POM property. This is absolute and applies globally.");
+        System.out.println("* `-T <num>` / `--threads <num>`\\");
+        System.out.println("  Sets the maximum number of `javac` processes to run at any given time.");
+        System.out.println("* `-f <pom>` / `--file <pom>`\\");
+        System.out.println("  Sets the root POM file.");
+        System.out.println("* `--version` / `-v`\\");
+        System.out.println("  Reports the version + some other info and exits.");
+        System.out.println("* `--show-version` / `-V`\\");
+        System.out.println("  Reports the version + some other info, continues.");
+        System.out.println("* `--help` / `-h`\\");
+        System.out.println("  Shows this help text.");
+        System.out.println("* `--quiet` / `-q`\\");
+        System.out.println("  Hides the header and footer.");
+        System.out.println("* `--debug` / `-X`\\");
+        System.out.println("  Makes things loud for debugging.");
+        System.out.println("* `--offline` / `-o`\\");
+        System.out.println("  Disables touching the network.");
         System.out.println("");
         System.out.println("## Environment Variables");
         System.out.println("");
-        System.out.println(" * `MICROMVN_JAVA_HOME` / `JAVA_HOME`: JDK location for javac.\\");
-        System.out.println("   If both are specified, `MICROMVN_JAVA_HOME` is preferred.\\");
-        System.out.println("   If neither are specified, `java.home` will be used as a base.\\");
-        System.out.println("   The `jre` directory will be stripped.\\");
-        System.out.println("   If a tool cannot be found this way, it will be used from PATH.");
+        System.out.println("* `MICROMVN_JAVA_HOME` / `JAVA_HOME`: JDK location for javac.\\");
+        System.out.println("  If both are specified, `MICROMVN_JAVA_HOME` is preferred.\\");
+        System.out.println("  If neither are specified, `java.home` will be used as a base.\\");
+        System.out.println("  The `jre` directory will be stripped.\\");
+        System.out.println("  If a tool cannot be found this way, it will be used from PATH.");
         System.out.println("");
         System.out.println("## Java System Properties");
         System.out.println("");
@@ -1656,36 +1779,41 @@ public final class umvn {
         System.out.println("");
         System.out.println("## Compiler Properties");
         System.out.println("");
-        System.out.println("Compiler properties are inherited from Java properties and then overridden by POM.");
+        System.out.println("Compiler properties are inherited from Java properties (except `project.*`) and then overridden by POM or command-line.");
         System.out.println("");
-        System.out.println(" * `project.build.sourceEncoding`\\");
-        System.out.println("   Source file encoding (defaults to UTF-8)");
-        System.out.println(" * `maven.compiler.source`\\");
-        System.out.println("   Source version (`javac -source`)");
-        System.out.println(" * `maven.compiler.target`\\");
-        System.out.println("   Target version (`javac -target`)");
-        System.out.println(" * `maven.compiler.executable`\\");
-        System.out.println("   `javac` used for the build.\\");
-        System.out.println("   This completely overrides the javac detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
-        System.out.println(" * `micromvn.java`\\");
-        System.out.println("   `java` used for executing tests/etc.\\");
-        System.out.println("   This completely overrides the java detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
+        System.out.println("* `project.build.sourceEncoding`\\");
+        System.out.println("  Source file encoding (defaults to UTF-8)");
+        System.out.println("* `project.build.sourceDirectory` / `project.build.testSourceDirectory` / `build.resources.resource.directory` / `build.testResources.testResource.directory`\\");
+        System.out.println("  Various source code directories.");
+        System.out.println("* `maven.compiler.source` / `maven.compiler.target` / `maven.compiler.release`\\");
+        System.out.println("  Source/Target/Release versions (`javac` `-source`/`-target`/`-release`)");
+        System.out.println("* `maven.compiler.showWarnings` / `maven.compiler.debug` / `maven.compiler.parameters` / `maven.compiler.verbose`\\");
+        System.out.println("  `javac` `-nowarn` (inverted), `-g`, `-parameters`, `-verbose`.");
+        System.out.println("* `maven.compiler.executable`\\");
+        System.out.println("  `javac` used for the build.\\");
+        System.out.println("  This completely overrides the javac detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
+        System.out.println("* `micromvn.java`\\");
+        System.out.println("  `java` used for executing tests/etc.\\");
+        System.out.println("  This completely overrides the java detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
         System.out.println("");
         System.out.println("## POM Support");
         System.out.println("");
         System.out.println("The POM support here is pretty bare-bones. Inheritance support in particular is flakey.");
         System.out.println("");
         System.out.println("POM interpolation is supported, though inheritance may be shaky.\\");
-        System.out.println("`env.` properties are supported, and the following *specific* `project.` properties:");
+        System.out.println("The supported sources of properties are (in evaluation order):");
         System.out.println("");
-        System.out.println("* `project.groupId`");
-        System.out.println("* `project.artifactId`");
-        System.out.println("* `project.version`");
+        System.out.println("1. `project.*`, `basedir`, or `maven.build.timestamp`\\");
+        System.out.println("   Only `project.basedir` and Compiler ");
+        System.out.println("2. Command-line properties");
+        System.out.println("3. Properties in `<properties>`");
+        System.out.println("4. Java System properties");
+        System.out.println("5. `env.*`");
+        System.out.println("6. Fixed defaults for various properties");
         System.out.println("");
-        System.out.println("Java System Properties are supported (but might have the wrong priority) and `<properties>` is supported.\\");
+        System.out.println("Java System Properties are supported and `<properties>` is supported.\\");
+        System.out.println("");
         System.out.println("No other properties are supported.");
-        System.out.println("");
-        System.out.println("To prevent breakage with non-critical parts of complex POMs, unknown properties aren't interpolated.");
         System.out.println("");
         System.out.println("microMVN makes a distinction between *source POMs* and *repo POMs.*\\");
         System.out.println("Source POMs are the root POM (where it's run) or any POM findable via a `<module>` or `<relativePath>` chain.\\");
@@ -1706,7 +1834,7 @@ public final class umvn {
         System.out.println("* `project.repositories.repository.url`\\");
         System.out.println("  Adds a custom repository.");
         System.out.println("* `project.dependencies.dependency.optional/scope/groupId/artifactId/version/relativePath`\\");
-        System.out.println("  Dependency. `compile`, `provided`, `runtime` and `test` are supported (need to check if this acts correct w/ assembly).\\");
+        System.out.println("  Dependency. `compile`, `provided`, `runtime`, `test` and `import` are supported.\\");
         System.out.println("  As per Maven docs, optional dependencies only 'count' when compiling the project directly depending on them.");
         System.out.println("* `project.modules.module`\\");
         System.out.println("  Adds a module that will be compiled with this project.");
@@ -1726,7 +1854,6 @@ public final class umvn {
         System.out.println("  `umvn-test-classpath` and `umvn-run` exist as a 'good enough' workaround to attach your own runner.");
         System.out.println("* You don't need to explicitly skip tests. (This is an intentional difference.)");
         System.out.println("* Builds are *always* clean builds.");
-        System.out.println("* Property precedence is hardcoded > command-line > POM > parent POM > env > Java System Properties > defaults. This is an attempt to match Maven behaviour.");
         System.out.println("");
         System.out.println("If any of these things are a problem, you probably should not use microMVN.");
     }
@@ -1763,48 +1890,32 @@ public final class umvn {
         res.accept("For more information, please refer to <http://unlicense.org>");
     }
 
-    public static HashSet<umvn> doAggregate(File f) {
-        umvn rootPom = loadPOM(f, true);
-        HashSet<umvn> compileThese = new HashSet<>();
-        rootPom.aggregateSet(compileThese);
-        return compileThese;
-    }
-
-    public static void doGather(HashSet<umvn> packages, boolean doCompile, boolean doPackage, boolean doTestCompile, boolean doTestRuntime) {
+    public static void doGather(Collection<umvn> packages, boolean doCompile, boolean doPackage, boolean doTestCompile, boolean doTestRuntime) {
         // This is used to make sure we have all necessary files for the rest of the build.
-        HashSet<umvn> allCompile = new HashSet<>();
-        HashSet<umvn> allPackage = new HashSet<>();
-        HashSet<umvn> allTestCompile = new HashSet<>();
-        HashSet<umvn> allTestRuntime = new HashSet<>();
+        HashSet<umvn> allGather = new HashSet<>();
         for (umvn subPom : packages) {
             // System.out.println(subPom.triple);
             if (doCompile)
-                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_COMPILE).values());
+                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_COMPILE).values());
             if (doPackage)
-                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
+                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
             if (doTestCompile)
-                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
+                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
             if (doTestRuntime)
-                allCompile.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
+                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
         }
 
         // Join those together...
-        HashSet<umvn> gatherStep = new HashSet<>();
-        gatherStep.addAll(allCompile);
-        gatherStep.addAll(allPackage);
-        gatherStep.addAll(allTestCompile);
-        gatherStep.addAll(allTestRuntime);
-
-        for (umvn u : gatherStep)
+        for (umvn u : allGather)
             u.completeDownload();
     }
 
-    public static void doClean(HashSet<umvn> packages) {
+    public static void doClean(Collection<umvn> packages) {
         for (umvn target : packages)
             target.clean();
     }
 
-    public static void doCompile(HashSet<umvn> packages, boolean tests) throws Exception {
+    public static void doCompile(Collection<umvn> packages, boolean tests) throws Exception {
         AtomicBoolean compileError = new AtomicBoolean(false);
         LinkedList<Runnable> completing = new LinkedList<>();
         for (umvn target : packages) {
@@ -1819,7 +1930,7 @@ public final class umvn {
         }
     }
 
-    public static void doTest(HashSet<umvn> packages) throws Exception {
+    public static void doTest(Collection<umvn> packages) throws Exception {
         AtomicBoolean testError = new AtomicBoolean(false);
         LinkedList<Runnable> completing = new LinkedList<>();
         for (umvn target : packages) {
@@ -1832,7 +1943,7 @@ public final class umvn {
         }
     }
 
-    public static void doPackageAndInstall(HashSet<umvn> packages, boolean doPackage, boolean doInstall) throws Exception {
+    public static void doPackageAndInstall(Collection<umvn> packages, boolean doPackage, boolean doInstall) throws Exception {
         if (doPackage) {
             for (umvn target : packages)
                 target.packageJAR();
