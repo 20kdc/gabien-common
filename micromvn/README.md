@@ -44,6 +44,8 @@ Goals are:
   *It does not automatically run a clean/compile.*
 * `umvn-make-scripts <...>`\
   Extracts scripts `umvn` and `umvn.class` to run the `umvn.class` file.
+* `umvn-new-project`\
+  Creates a new pom.xml file if it does not already exist.
 
 ## Options
 
@@ -90,9 +92,9 @@ Compiler properties are inherited from Java properties (except `project.*`) and 
 * `project.build.sourceDirectory` / `project.build.testSourceDirectory` / `build.resources.resource.directory` / `build.testResources.testResource.directory`\
   Various source code directories.
 * `maven.compiler.source` / `maven.compiler.target` / `maven.compiler.release`\
-  Source/Target/Release versions (`javac` `-source`/`-target`/`-release`)
-* `maven.compiler.showWarnings` / `maven.compiler.debug` / `maven.compiler.parameters` / `maven.compiler.verbose`\
-  `javac` `-nowarn` (inverted), `-g`, `-parameters`, `-verbose`.
+  Source/Target/Release versions (`javac` `-source`/`-target`/`-release`) ; source & target default to 1.8
+* `maven.compiler.showWarnings` / `maven.compiler.debug` / `maven.compiler.parameters` / `maven.compiler.verbose` / `maven.compiler.showDeprecation`\
+  `javac` `-nowarn` (inverted), `-g`, `-parameters`, `-verbose`, `-deprecation`.
 * `maven.compiler.executable`\
   `javac` used for the build.\
   This completely overrides the javac detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.
@@ -142,7 +144,7 @@ These exact POM elements are supported:
   As per Maven docs, optional dependencies only 'count' when compiling the project directly depending on them.
 * `project.modules.module`\
   Adds a module that will be compiled with this project.
-* `project.build.plugins.plugin.(...).manifest.mainClass` (where the plugin's `artifactId` is `maven-assembly-plugin`)\
+* `project.build.plugins.plugin.(...).manifest.mainClass` (where the plugin's `artifactId` is `maven-assembly-plugin` / `maven-jar-plugin`)\
   Project's main class.
 
 ## Quirks

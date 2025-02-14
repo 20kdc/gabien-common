@@ -190,14 +190,15 @@ public final class umvn implements Comparable<umvn> {
         if (LOG_DEBUG)
             System.err.println(debugInfo);
         try {
-            Document pomDoc = parseXML(pomFileContent);
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            Document pomDoc = dbf.newDocumentBuilder().parse(new ByteArrayInputStream(pomFileContent));
             Element projectElement = findElement(pomDoc, "project", true);
             // -- uninheritable defaults --
             properties.put("project.packaging", "jar");
             // -- <properties> (even version can be derived from this & it doesn't template anything, so it must be first) --
             Element elm = findElement(projectElement, "properties", false);
             if (elm != null)
-                for (Node n : nodeChildrenArray(elm.getChildNodes()))
+                for (Node n : nodeListArray(elm.getChildNodes()))
                     if (n instanceof Element)
                         properties.put(n.getNodeName(), n.getTextContent());
             // -- POM binding --
@@ -241,10 +242,11 @@ public final class umvn implements Comparable<umvn> {
             // -- <repositories> --
             elm = findElement(projectElement, "repositories", false);
             if (elm != null) {
-                for (Node n : nodeChildrenArray(elm.getChildNodes())) {
+                for (Node n : nodeListArray(elm.getChildNodes())) {
                     if (n instanceof Element && n.getNodeName().equals("repository")) {
-                        String url = templateFindElement(n, "url", true);
-                        installCorrectedRepoUrl(url);
+                        String url = templateFindElement(n, "url", null);
+                        if (url != null)
+                            installCorrectedRepoUrl(url);
                     }
                 }
             }
@@ -254,7 +256,7 @@ public final class umvn implements Comparable<umvn> {
             // -- <dependencies> --
             elm = findElement(projectElement, "dependencies", false);
             if (elm != null) {
-                for (Node n : nodeChildrenArray(elm.getChildNodes())) {
+                for (Node n : nodeListArray(elm.getChildNodes())) {
                     if (n instanceof Element && n.getNodeName().equals("dependency")) {
                         Node optionalNode = findElement(n, "optional", false);
                         boolean optional = false;
@@ -313,7 +315,7 @@ public final class umvn implements Comparable<umvn> {
             if (sourceDir != null) {
                 elm = findElement(projectElement, "modules", false);
                 if (elm != null) {
-                    for (Node n : nodeChildrenArray(elm.getChildNodes())) {
+                    for (Node n : nodeListArray(elm.getChildNodes())) {
                         if (n instanceof Element && n.getNodeName().equals("module")) {
                             String moduleName = template(this, n.getTextContent());
                             for (umvn module : loadPOM(new File(sourceDir, moduleName), true).aggregate)
@@ -328,12 +330,12 @@ public final class umvn implements Comparable<umvn> {
             if (buildElm != null) {
                 elm = findElement(buildElm, "plugins", false);
                 if (elm != null) {
-                    for (Node plugin : nodeChildrenArray(elm.getChildNodes())) {
+                    for (Node plugin : nodeListArray(elm.getChildNodes())) {
                         if (plugin instanceof Element && plugin.getNodeName().equals("plugin")) {
                             String pluginId = templateFindElement(plugin, "artifactId", "unknown-dont-care");
                             if (LOG_DEBUG)
                                 System.err.println(" plugin: " + pluginId);
-                            if (pluginId.equals("maven-assembly-plugin")) {
+                            if (pluginId.equals("maven-assembly-plugin") || pluginId.equals("maven-jar-plugin")) {
                                 Element a1 = findElementRecursive(plugin, "manifest", false);
                                 if (a1 != null)
                                     this.mainClass = templateFindElement(a1, "mainClass", null);
@@ -345,9 +347,7 @@ public final class umvn implements Comparable<umvn> {
             // -- warnings --
             if (sourceDir != null && properties.containsKey("maven.compiler.executable") && !properties.containsKey("maven.compiler.fork")) {
                 System.err.println("WARN: In " + triple + ", maven.compiler.executable specified without maven.compiler.fork!");
-                System.err.println("      This is a footgun and may lead to incompatibility with Apache Maven.");
-                System.err.println("      Apart from this warning, micromvn ignores maven.compiler.fork!");
-                System.err.println("      To silence this warning, specify maven.compiler.fork (recommended: true)");
+                System.err.println("      This is a footgun and may lead to incompatibility with Apache Maven, as it ignores maven.compiler.executable when maven.compiler.fork is false.");
             }
         } catch (Exception e) {
             throw new RuntimeException("loading POM " + debugInfo, e);
@@ -369,7 +369,7 @@ public final class umvn implements Comparable<umvn> {
             path = path.substring(dot + 1);
         }
         String propFull = propPrefix + "." + component;
-        for (Node n : nodeChildrenArray(base.getChildNodes())) {
+        for (Node n : nodeListArray(base.getChildNodes())) {
             if (n instanceof Element) {
                 if (n.getNodeName().equals(component)) {
                     // System.err.println("AAP: " + propFull + " matched, dot " + dot + ", = " + n.getTextContent());
@@ -389,20 +389,17 @@ public final class umvn implements Comparable<umvn> {
      * Also contributes to this project's coordsGAToTriples map (which you should use to get a triple if you need it)
      */
     public String getGAPOMRef(Node ref, File relativePathDir) {
-        String theGroupId = templateFindElement(ref, "groupId", true);
-        String theArtifactId = templateFindElement(ref, "artifactId", true);
-        String theVersion = templateFindElement(ref, "version", false);
+        String theGroupId = templateFindRequiredElement(ref, "groupId");
+        String theArtifactId = templateFindRequiredElement(ref, "artifactId");
+        String theVersion = templateFindElement(ref, "version", null);
+        String theRelativePath = templateFindElement(ref, "relativePath", null);
         String coordsGA = theGroupId + ":" + theArtifactId;
         if (theVersion == null)
             return coordsGA;
         String triple = getTriple(theGroupId, theArtifactId, theVersion);
         coordsGAToTriples.put(coordsGA, triple);
-        umvn possibleMatch = POM_BY_TRIPLE.get(triple);
-        if (possibleMatch == null && relativePathDir != null) {
-            String relPathNode = templateFindElement(ref, "relativePath", false);
-            if (relPathNode != null)
-                loadPOM(new File(relativePathDir, relPathNode), true);
-        }
+        if ((!POM_BY_TRIPLE.containsKey(triple)) && relativePathDir != null && theRelativePath != null)
+            loadPOM(new File(relativePathDir, theRelativePath), true);
         return coordsGA;
     }
 
@@ -411,21 +408,17 @@ public final class umvn implements Comparable<umvn> {
      */
     public String templateFindElement(Node pomDoc, String string, String def) {
         Node n = findElement(pomDoc, string, false);
-        if (n == null)
-            return def;
-        return template(this, n.getTextContent());
+        return n == null ? def : template(this, n.getTextContent());
     }
 
-    public static Document parseXML(byte[] f) {
-        try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            return dbf.newDocumentBuilder().parse(new ByteArrayInputStream(f));
-        } catch (Exception ex) {
-            throw new RuntimeException("parsing " + f, ex);
-        }
+    /**
+     * templateFindElement but erroring on lack of element.
+     */
+    public String templateFindRequiredElement(Node pomDoc, String string) {
+        return template(this, findElement(pomDoc, string, true).getTextContent());
     }
 
-    public static Node[] nodeChildrenArray(NodeList list) {
+    public static Node[] nodeListArray(NodeList list) {
         Node[] nodes = new Node[list.getLength()];
         for (int i = 0; i < nodes.length; i++)
             nodes[i] = list.item(i);
@@ -433,7 +426,7 @@ public final class umvn implements Comparable<umvn> {
     }
 
     public static Element findElementRecursive(Node pomDoc, String string, boolean required) {
-        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
+        for (Node n : nodeListArray(pomDoc.getChildNodes())) {
             if (n instanceof Element)
                 if (n.getNodeName().equals(string))
                     return (Element) n;
@@ -446,24 +439,11 @@ public final class umvn implements Comparable<umvn> {
         return null;
     }
 
-    /**
-     * Kind of shorthand for template(findElement().getTextContent()) but passes through null.
-     */
-    public String templateFindElement(Node pomDoc, String string, boolean required) {
-        Node n = findElement(pomDoc, string, required);
-        if (n == null)
-            return null;
-        return template(this, n.getTextContent());
-    }
-
     public static Element findElement(Node pomDoc, String string, boolean required) {
-        for (Node n : nodeChildrenArray(pomDoc.getChildNodes())) {
-            // System.out.println(n);
-            if (n instanceof Element) {
+        for (Node n : nodeListArray(pomDoc.getChildNodes()))
+            if (n instanceof Element)
                 if (n.getNodeName().equals(string))
                     return (Element) n;
-            }
-        }
         if (required)
             throw new RuntimeException("Unable to find element <" + string + ">");
         return null;
@@ -706,7 +686,6 @@ public final class umvn implements Comparable<umvn> {
          *  result: XYZ
          *  `mvn clean "-DversionProperty2=${example}XYZ" -Dexample=moo`
          *  result: XYZ
-         *
          */
         String pv;
         if (basis.equals("build.timestamp") || basis.equals("maven.build.timestamp"))
@@ -718,9 +697,7 @@ public final class umvn implements Comparable<umvn> {
             // POM properties
             if (basis.startsWith("project.")) {
                 pv = context.properties.get(basis);
-                if (pv != null)
-                    return template(context, pv);
-                return "";
+                return pv != null ? template(context, pv) : "";
             }
             // -D
             pv = CMDLINE_PROPS.get(basis);
@@ -731,9 +708,7 @@ public final class umvn implements Comparable<umvn> {
                 return template(context, pv);
         }
         pv = System.getProperty(basis);
-        if (pv != null)
-            return pv;
-        return "";
+        return pv != null ? pv : "";
     }
 
     /**
@@ -825,15 +800,14 @@ public final class umvn implements Comparable<umvn> {
             listForCurrentProcess.add(new File(java, sourceFileName));
         }
         if (!listForCurrentProcess.isEmpty()) {
-            ensureProcessSlotFree(queue);
-            if (LOG_ACTIVITY)
-                System.err.println("[compile start] " + triple + " " + groupName);
             runJavac(classes, listForCurrentProcess.toArray(new File[0]), classpath, sourcepath, queue, (v) -> {
                 if (v != 0)
                     errorSignal.set(true);
                 if (LOG_DEBUG)
                     System.err.println("[compile end  ] " + triple + " " + groupName);
             });
+            if (LOG_ACTIVITY)
+                System.err.println("[compile start] " + triple + " " + groupName);
         } else if (LOG_DEBUG) {
             System.err.println("[compile empty] " + triple + " " + groupName);
         }
@@ -899,9 +873,6 @@ public final class umvn implements Comparable<umvn> {
             listForCurrentProcess.add(sourceFileName.substring(0, sourceFileName.indexOf('.')).replace(File.separatorChar, '.'));
         }
         if (!listForCurrentProcess.isEmpty()) {
-            ensureProcessSlotFree(queue);
-            if (LOG_DEBUG)
-                System.err.println("[test start] " + triple);
             LinkedList<String> argsFinal = new LinkedList<>();
             argsFinal.add("org.junit.runner.JUnitCore");
             argsFinal.addAll(listForCurrentProcess);
@@ -911,6 +882,8 @@ public final class umvn implements Comparable<umvn> {
                 if (LOG_DEBUG)
                     System.err.println("[test end  ] " + triple);
             });
+            if (LOG_DEBUG)
+                System.err.println("[test start] " + triple);
         }
     }
 
@@ -929,12 +902,12 @@ public final class umvn implements Comparable<umvn> {
      * Installs a specific artifact of this project.
      */
     public void installArtifact(String suffix) throws Exception {
+        File inLocalRepo = new File(getLocalRepo(), getArtifactPath(suffix));
+        inLocalRepo.getParentFile().mkdirs();
         if (suffix.equals(SUFFIX_POM)) {
-            File artifactPOM = getLocalRepoArtifact(SUFFIX_POM);
-            artifactPOM.getParentFile().mkdirs();
-            Files.write(artifactPOM.toPath(), pomFileContent);
+            Files.write(inLocalRepo.toPath(), pomFileContent);
         } else {
-            Files.copy(getSourceTargetArtifact(suffix).toPath(), getLocalRepoArtifact(suffix).toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(getSourceTargetArtifact(suffix).toPath(), inLocalRepo.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -969,6 +942,7 @@ public final class umvn implements Comparable<umvn> {
         mirrorJavacSwitch(ps, "-g", "-g:none", "maven.compiler.debug");
         mirrorJavacSwitch(ps, "-parameters", null, "maven.compiler.parameters");
         mirrorJavacSwitch(ps, "-verbose", null, "maven.compiler.verbose");
+        mirrorJavacSwitch(ps, "-deprecation", null, "maven.compiler.showDeprecation");
         for (File f : s)
             ps.println(f.toString());
         ps.close();
@@ -1121,6 +1095,15 @@ public final class umvn implements Comparable<umvn> {
 
     public String createManifest(boolean packaging) {
         String manifest = "Manifest-Version: 1.0\r\nCreated-By: microMVN " + VERSION + "\r\n";
+        if (!packaging) {
+            // for thin JARs, create a classpath which includes all 
+            String classPath = "";
+            for (umvn dep : resolveAllDependencies(DEPSET_ROOT_MAIN_RUNTIME).values())
+                if (dep != this)
+                    classPath += " " + dep.artifactId + "-" + dep.version + ".jar";
+            if (!classPath.isEmpty())
+                manifest += "Class-Path:" + classPath + "\r\n";
+        }
         if (mainClass != null)
             manifest += "Main-Class: " + mainClass + "\r\n";
         return manifest;
@@ -1322,20 +1305,56 @@ public final class umvn implements Comparable<umvn> {
     // -- install-file --
 
     /**
-     * Creates a dummy POM file for a file being installed by `install-file`.
+     * Creates a dummy POM file for a file being installed by `install-file`, or for a new project.
      */
-    public static void createDummyPOM(String groupId, String artifactId, String version, String packaging) throws Exception {
+    public static void createDummyPOM(File target, String groupId, String artifactId, String version, String packaging, boolean newProject) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         sb.append("<project xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\" xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
-        sb.append("<modelVersion>4.0.0</modelVersion>\n");
-        sb.append("<groupId>" + groupId + "</groupId>\n");
-        sb.append("<artifactId>" + artifactId + "</artifactId>\n");
-        sb.append("<version>" + version + "</version>\n");
-        sb.append("<packaging>" + packaging + "</packaging>\n");
+        sb.append("\t<modelVersion>4.0.0</modelVersion>\n");
+        sb.append("\t<groupId>" + groupId + "</groupId>\n");
+        sb.append("\t<artifactId>" + artifactId + "</artifactId>\n");
+        sb.append("\t<version>" + version + "</version>\n");
+        sb.append("\t<packaging>" + packaging + "</packaging>\n");
+        if (newProject) {
+            // Provide some semi-opinionated defaults.
+            // This covers what I might use on a day-to-day basis.
+            sb.append("\t<!-- <parent><groupId></groupId><artifactId></artifactId><version></version><scope></scope><relativePath></relativePath></parent> -->\n");
+            sb.append("\t<properties>\n");
+            sb.append("\t\t<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n");
+            sb.append("\t\t<maven.compiler.source>" + getPropertyFull(null, "maven.compiler.source") + "</maven.compiler.source>\n");
+            sb.append("\t\t<maven.compiler.target>" + getPropertyFull(null, "maven.compiler.target") + "</maven.compiler.target>\n");
+            sb.append("\t\t<!-- <maven.compiler.executable>${env.JAVA_1_8_HOME}/bin/javac</maven.compiler.executable> -->\n");
+            sb.append("\t\t<maven.compiler.fork>true</maven.compiler.fork>\n");
+            sb.append("\t</properties>\n");
+            if (packaging.equals("pom")) {
+                sb.append("\t<modules>\n");
+                sb.append("\t\t<!-- <module></module> -->\n");
+                sb.append("\t</modules>\n");
+            } else {
+                sb.append("\t<dependencies>\n");
+                sb.append("\t\t<!-- <dependency><groupId></groupId><artifactId></artifactId><version></version><scope></scope></dependency> -->\n");
+                sb.append("\t</dependencies>\n");
+                sb.append("\t<!-- JAR -->\n");
+                sb.append("\t<build>\n");
+                sb.append("\t\t<plugins>\n");
+                sb.append("\t\t\t<plugin>\n");
+                sb.append("\t\t\t\t<artifactId>maven-assembly-plugin</artifactId>\n");
+                sb.append("\t\t\t\t<executions><execution>\n");
+                sb.append("\t\t\t\t\t<phase>package</phase>\n");
+                sb.append("\t\t\t\t\t<goals><goal>single</goal></goals>\n");
+                sb.append("\t\t\t\t\t<configuration>\n");
+                sb.append("\t\t\t\t\t\t<archive><manifest><mainClass>com.example.Main</mainClass></manifest></archive>\n");
+                sb.append("\t\t\t\t\t\t<descriptorRefs><descriptorRef>jar-with-dependencies</descriptorRef></descriptorRefs>\n");
+                sb.append("\t\t\t\t\t</configuration>\n");
+                sb.append("\t\t\t\t</execution></executions>\n");
+                sb.append("\t\t\t</plugin>\n");
+                sb.append("\t\t</plugins>\n");
+                sb.append("\t</build>\n");
+            }
+        }
         sb.append("</project>\n");
-        byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-        Files.write(new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, SUFFIX_POM)).toPath(), data);
+        Files.write(target.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     // -- Staging --
@@ -1354,26 +1373,13 @@ public final class umvn implements Comparable<umvn> {
     }
 
     /**
-     * Before announcing a process has been started, it is useful to ensure process end announcements have been seen.
-     */
-    public static void ensureProcessSlotFree(LinkedList<Runnable> queue) {
-        while (JAVAC_PROCESSES.get() == 0) {
-            queue.pop().run();
-        }
-    }
-
-    /**
      * Starts a process.
      * Also enqueues a wait (to ensure that there will eventually be a process slot for another javac)
      */
-    public static Process startProcess(ProcessBuilder pb, LinkedList<Runnable> queue, Consumer<Integer> onEnd) {
-        ensureProcessSlotFree(queue);
-        Process process;
-        try {
-            process = pb.start();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+    public static Process startProcess(ProcessBuilder pb, LinkedList<Runnable> queue, Consumer<Integer> onEnd) throws Exception {
+        while (JAVAC_PROCESSES.get() == 0)
+            queue.pop().run();
+        Process process = pb.start();
         JAVAC_PROCESSES.decrementAndGet();
         queue.add(() -> {
             try {
@@ -1391,70 +1397,56 @@ public final class umvn implements Comparable<umvn> {
 
     public static void main(String[] args) throws Exception {
         // patch in environment as if from JSP
-        for (Map.Entry<String, String> env : System.getenv().entrySet()) {
-            String envKey = "env." + env.getKey().toUpperCase(Locale.ROOT);
-            if (System.getProperty(envKey) == null)
-                System.setProperty(envKey, env.getValue());
-        }
+        for (Map.Entry<String, String> env : System.getenv().entrySet())
+            systemSetPropertyDef("env." + env.getKey().toUpperCase(Locale.ROOT), env.getValue());
         // autodetect javac
-        if (System.getProperty("maven.compiler.executable") == null) {
-            String java;
-            String javac;
-            String home = System.getenv("MICROMVN_JAVA_HOME");
-            if (home == null)
-                home = System.getenv("JAVA_HOME");
-            String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
-            if (home != null) {
-                if (home.endsWith(File.separator)) {
-                    javac = home + "bin" + File.separator + "javac" + possiblyExe;
-                    java = home + "bin" + File.separator + "java" + possiblyExe;
-                } else {
-                    javac = home + File.separator + "bin" + File.separator + "javac" + possiblyExe;
-                    java = home + File.separator + "bin" + File.separator + "java" + possiblyExe;
-                }
+        String java;
+        String javac;
+        String home = System.getenv("MICROMVN_JAVA_HOME");
+        if (home == null)
+            home = System.getenv("JAVA_HOME");
+        String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
+        if (home != null) {
+            if (!home.endsWith(File.separator))
+                home += File.separator;
+            javac = home + "bin" + File.separator + "javac" + possiblyExe;
+            java = home + "bin" + File.separator + "java" + possiblyExe;
+        } else {
+            File f = new File(System.getProperty("java.home"));
+            if (f.getName().equals("jre"))
+                f = f.getParentFile();
+            File expectedTool = new File(f, "bin" + File.separator + "javac" + possiblyExe);
+            // validate
+            if (expectedTool.exists()) {
+                javac = expectedTool.toString();
             } else {
-                File f = new File(System.getProperty("java.home"));
-                if (f.getName().equals("jre"))
-                    f = f.getParentFile();
-                File expectedTool = new File(f, "bin" + File.separator + "javac" + possiblyExe);
-                // validate
-                if (expectedTool.exists()) {
-                    javac = expectedTool.toString();
-                } else {
-                    // we could have a problem here. fall back to PATH
-                    javac = "javac";
-                }
-                expectedTool = new File(f, "bin" + File.separator + "java" + possiblyExe);
-                // validate
-                if (expectedTool.exists()) {
-                    java = expectedTool.toString();
-                } else {
-                    // we could have a problem here. fall back to PATH
-                    java = "java";
-                }
+                // we could have a problem here. fall back to PATH
+                javac = "javac";
             }
-            // need to find a better property for this, but what?
-            System.setProperty("micromvn.java", java);
-            // this is expected at least
-            System.setProperty("maven.compiler.executable", javac);
+            expectedTool = new File(f, "bin" + File.separator + "java" + possiblyExe);
+            // validate
+            if (expectedTool.exists()) {
+                java = expectedTool.toString();
+            } else {
+                // we could have a problem here. fall back to PATH
+                java = "java";
+            }
         }
+        // need to find a better property for this, but what?
+        systemSetPropertyDef("micromvn.java", java);
+        systemSetPropertyDef("maven.compiler.executable", javac);
 
-        // autodetect local repo
-        if (System.getProperty("maven.repo.local") == null)
-            System.setProperty("maven.repo.local", new File(System.getProperty("user.home"), ".m2/repository").toString());
-
-        // other defaults
-        if (System.getProperty("maven.build.timestamp.format") == null)
-            System.setProperty("maven.build.timestamp.format", "yyyy-MM-dd'T'HH:mm:ss'Z'");
-
-        if (System.getProperty("maven.compiler.showWarnings") == null)
-            System.setProperty("maven.compiler.showWarnings", "true");
-        if (System.getProperty("maven.compiler.debug") == null)
-            System.setProperty("maven.compiler.debug", "true");
-        if (System.getProperty("maven.compiler.parameters") == null)
-            System.setProperty("maven.compiler.parameters", "false");
-        if (System.getProperty("maven.compiler.verbose") == null)
-            System.setProperty("maven.compiler.verbose", "false");
+        // Default system properties
+        systemSetPropertyDef("maven.repo.local", new File(System.getProperty("user.home"), ".m2/repository").toString());
+        systemSetPropertyDef("maven.build.timestamp.format", "yyyy-MM-dd'T'HH:mm:ss'Z'");
+        // https://maven.apache.org/plugins/maven-compiler-plugin/compile-mojo.html
+        systemSetPropertyDef("maven.compiler.source", "1.8");
+        systemSetPropertyDef("maven.compiler.target", "1.8");
+        systemSetPropertyDef("maven.compiler.showWarnings", "true");
+        systemSetPropertyDef("maven.compiler.debug", "true");
+        systemSetPropertyDef("maven.compiler.parameters", "false");
+        systemSetPropertyDef("maven.compiler.verbose", "false");
+        systemSetPropertyDef("maven.compiler.showDeprecation", "false");
 
         // arg parsing & init properties
         String goal = null;
@@ -1546,55 +1538,55 @@ public final class umvn implements Comparable<umvn> {
         } else if (goal.equals("compile")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             doClean(rootPom.aggregate);
-            doGather(rootPom.aggregate, true, false, false, false);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_COMPILE);
             doCompile(rootPom.aggregate, false);
             doFinalStatusOK(rootPom.aggregate.size() + " projects compiled.");
         } else if (goal.equals("test-compile")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             doClean(rootPom.aggregate);
-            doGather(rootPom.aggregate, true, false, true, false);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_COMPILE, DEPSET_ROOT_TEST);
             doCompile(rootPom.aggregate, true);
             doFinalStatusOK(rootPom.aggregate.size() + " projects compiled with tests.");
         } else if (goal.equals("test")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             doClean(rootPom.aggregate);
-            doGather(rootPom.aggregate, true, false, true, true);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_COMPILE, DEPSET_ROOT_TEST);
             doCompile(rootPom.aggregate, true);
             doTest(rootPom.aggregate);
             doFinalStatusOK(rootPom.aggregate.size() + " projects tested.");
         } else if (goal.equals("test-only")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
-            doGather(rootPom.aggregate, false, false, false, true);
+            doGather(rootPom.aggregate, DEPSET_ROOT_TEST);
             doTest(rootPom.aggregate);
             doFinalStatusOK(rootPom.aggregate.size() + " projects tested.");
         } else if (goal.equals("package")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             doClean(rootPom.aggregate);
-            doGather(rootPom.aggregate, true, true, false, false);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_COMPILE, DEPSET_ROOT_MAIN_PACKAGE);
             doCompile(rootPom.aggregate, false);
             doPackageAndInstall(rootPom.aggregate, true, false);
             doFinalStatusOK(rootPom.aggregate.size() + " projects packaged.");
         } else if (goal.equals("package-only")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
-            doGather(rootPom.aggregate, false, true, false, false);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_PACKAGE);
             doPackageAndInstall(rootPom.aggregate, true, false);
             doFinalStatusOK(rootPom.aggregate.size() + " projects packaged.");
         } else if (goal.equals("install")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             doClean(rootPom.aggregate);
-            doGather(rootPom.aggregate, true, true, false, false);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_COMPILE, DEPSET_ROOT_MAIN_PACKAGE);
             doCompile(rootPom.aggregate, false);
             doPackageAndInstall(rootPom.aggregate, true, true);
             doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("install-only")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
-            doGather(rootPom.aggregate, false, true, false, false);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_PACKAGE);
             doPackageAndInstall(rootPom.aggregate, false, true);
             doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("test-install")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             doClean(rootPom.aggregate);
-            doGather(rootPom.aggregate, true, true, true, true);
+            doGather(rootPom.aggregate, DEPSET_ROOT_MAIN_COMPILE, DEPSET_ROOT_MAIN_PACKAGE, DEPSET_ROOT_TEST);
             doCompile(rootPom.aggregate, true);
             doTest(rootPom.aggregate);
             doPackageAndInstall(rootPom.aggregate, true, true);
@@ -1636,20 +1628,20 @@ public final class umvn implements Comparable<umvn> {
             if (!pomFile.isEmpty()) {
                 Files.copy(new File(pomFile).toPath(), outPOM.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } else {
-                createDummyPOM(groupId, artifactId, version, packaging);
+                createDummyPOM(outPOM, groupId, artifactId, version, packaging, false);
             }
             doFinalStatusOK("Installed.");
         } else if (goal.equals("umvn-test-classpath")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             HashSet<umvn> onePom = new HashSet<umvn>();
             onePom.add(rootPom);
-            doGather(onePom, false, false, false, true);
+            doGather(onePom, DEPSET_ROOT_TEST);
             System.out.println(rootPom.getTestRuntimeClasspath());
         } else if (goal.equals("umvn-run")) {
             umvn rootPom = loadPOM(rootPOMFile, true);
             HashSet<umvn> onePom = new HashSet<umvn>();
             onePom.add(rootPom);
-            doGather(onePom, false, false, false, true);
+            doGather(onePom, DEPSET_ROOT_TEST);
             extraArgs.addFirst(rootPom.getTestRuntimeClasspath());
             extraArgs.addFirst("-classpath");
             extraArgs.addFirst(getPropertyFull(null, "micromvn.java"));
@@ -1684,9 +1676,22 @@ public final class umvn implements Comparable<umvn> {
             unixFile.setExecutable(true);
 
             doFinalStatusOK("Created scripts.");
+        } else if (goal.equals("umvn-new-project")) {
+            File f = new File("pom.xml");
+            if (f.exists())
+                doFinalStatusError("pom.xml already exists.");
+            createDummyPOM(f, "com.example", "new-project", "1.0.0-SNAPSHOT", "jar", true);
+            new File("src/main/java").mkdirs();
+            new File("src/main/resources").mkdirs();
+            doFinalStatusOK("Created new project POM file and source directories.");
         } else {
             doFinalStatusError("Unsupported goal/phase: " + goal);
         }
+    }
+
+    public static void systemSetPropertyDef(String prop, String value) {
+        if (System.getProperty(prop) == null)
+            System.setProperty(prop, value);
     }
 
     public static String doVersionInfo() {
@@ -1740,6 +1745,8 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("  *It does not automatically run a clean/compile.*");
         System.out.println("* `umvn-make-scripts <...>`\\");
         System.out.println("  Extracts scripts `umvn` and `umvn.class` to run the `umvn.class` file.");
+        System.out.println("* `umvn-new-project`\\");
+        System.out.println("  Creates a new pom.xml file if it does not already exist.");
         System.out.println("");
         System.out.println("## Options");
         System.out.println("");
@@ -1786,9 +1793,9 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("* `project.build.sourceDirectory` / `project.build.testSourceDirectory` / `build.resources.resource.directory` / `build.testResources.testResource.directory`\\");
         System.out.println("  Various source code directories.");
         System.out.println("* `maven.compiler.source` / `maven.compiler.target` / `maven.compiler.release`\\");
-        System.out.println("  Source/Target/Release versions (`javac` `-source`/`-target`/`-release`)");
-        System.out.println("* `maven.compiler.showWarnings` / `maven.compiler.debug` / `maven.compiler.parameters` / `maven.compiler.verbose`\\");
-        System.out.println("  `javac` `-nowarn` (inverted), `-g`, `-parameters`, `-verbose`.");
+        System.out.println("  Source/Target/Release versions (`javac` `-source`/`-target`/`-release`) ; source & target default to 1.8");
+        System.out.println("* `maven.compiler.showWarnings` / `maven.compiler.debug` / `maven.compiler.parameters` / `maven.compiler.verbose` / `maven.compiler.showDeprecation`\\");
+        System.out.println("  `javac` `-nowarn` (inverted), `-g`, `-parameters`, `-verbose`, `-deprecation`.");
         System.out.println("* `maven.compiler.executable`\\");
         System.out.println("  `javac` used for the build.\\");
         System.out.println("  This completely overrides the javac detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.");
@@ -1838,7 +1845,7 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("  As per Maven docs, optional dependencies only 'count' when compiling the project directly depending on them.");
         System.out.println("* `project.modules.module`\\");
         System.out.println("  Adds a module that will be compiled with this project.");
-        System.out.println("* `project.build.plugins.plugin.(...).manifest.mainClass` (where the plugin's `artifactId` is `maven-assembly-plugin`)\\");
+        System.out.println("* `project.build.plugins.plugin.(...).manifest.mainClass` (where the plugin's `artifactId` is `maven-assembly-plugin` / `maven-jar-plugin`)\\");
         System.out.println("  Project's main class.");
         System.out.println("");
         System.out.println("## Quirks");
@@ -1890,22 +1897,12 @@ public final class umvn implements Comparable<umvn> {
         res.accept("For more information, please refer to <http://unlicense.org>");
     }
 
-    public static void doGather(Collection<umvn> packages, boolean doCompile, boolean doPackage, boolean doTestCompile, boolean doTestRuntime) {
+    public static void doGather(Collection<umvn> packages, int... depSets) {
         // This is used to make sure we have all necessary files for the rest of the build.
         HashSet<umvn> allGather = new HashSet<>();
-        for (umvn subPom : packages) {
-            // System.out.println(subPom.triple);
-            if (doCompile)
-                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_COMPILE).values());
-            if (doPackage)
-                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
-            if (doTestCompile)
-                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
-            if (doTestRuntime)
-                allGather.addAll(subPom.resolveAllDependencies(DEPSET_ROOT_TEST).values());
-        }
-
-        // Join those together...
+        for (int depSet : depSets)
+            for (umvn subPom : packages)
+                allGather.addAll(subPom.resolveAllDependencies(depSet).values());
         for (umvn u : allGather)
             u.completeDownload();
     }

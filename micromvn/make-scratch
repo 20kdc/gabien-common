@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+# new project test
+
+rm -rf scratch-project
+mkdir -p scratch-project
+pushd scratch-project
+../umvn umvn-new-project
+mkdir -p src/main/java/com/example
+echo "package com.example; class Main { public static void main(String[] args) {} }" > src/main/java/com/example/Main.java
+../umvn package
+java -jar target/new-project-1.0.0-SNAPSHOT-jar-with-dependencies.jar
+mvn package
+java -jar target/new-project-1.0.0-SNAPSHOT-jar-with-dependencies.jar
+popd

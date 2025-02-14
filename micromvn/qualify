@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
+
+# self build
+
 ./build-self
+
+./make-scratch
+
+# external comp.
+
 cp umvn.class ../../c3ds-projects/
 
 pushd ../
@@ -14,4 +22,3 @@ popd
 pushd ../../c3ds-projects/natsue
 ./build.sh
 popd
-
