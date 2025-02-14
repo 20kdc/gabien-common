@@ -3,7 +3,7 @@ set -e
 mkdir -p target/classes
 # need to figure out a better way...
 export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
-"$JAVA_HOME/bin/javac" -source 1.8 -target 1.8 -sourcepath src/main/java -d target/classes src/main/java/umvn.java
+"$JAVA_HOME/bin/javac" -source 1.8 -target 1.8 -sourcepath src -d target/classes src/umvn.java
 "$JAVA_HOME/bin/java" -cp target/classes umvn install -X
 "$JAVA_HOME/bin/java" -jar target/micromvn-0.666-SNAPSHOT-jar-with-dependencies.jar help > README.md
 cp target/classes/umvn.class ./

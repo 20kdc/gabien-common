@@ -25,6 +25,13 @@
 	</properties>
 
 	<build>
+		<!-- Test that these customizations at least somewhat work properly. -->
+		<!-- Also note one of these is relative and one of these is absolute. -->
+		<!-- Maven (and now micromvn) fix these up. -->
+		<sourceDirectory>src</sourceDirectory>
+		<testSourceDirectory>${basedir}/src-test</testSourceDirectory>
+		<resources><resource><directory>${basedir}/res</directory></resource></resources>
+		<testResources><testResource><directory>${basedir}/res-test</directory></testResource></testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

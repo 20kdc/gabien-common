@@ -16,8 +16,9 @@ Goals are:
 * `test-compile`\
   Cleans and compiles all target projects along with their tests.
 * `test[-only]`\
-  Runs the JUnit 4 console runner, `org.junit.runner.JUnitCore`, on all tests in all target projects.\
-  Tests are assumed to be non-inner classes in the test source tree that appear to refer to `org.junit.Test`.\
+  Runs tests in all target projects.\
+  Tests are assumed to be non-inner classes in the test source tree containing the value of `micromvn.testMarker`.\
+  Tests are run in each project using the value of `micromvn.testMainClass` for that project.\
   `-only` suffix skips clean/compile.
 * `package[-only]`\
   Cleans, compiles, and packages all target projects to JAR files.\
@@ -49,7 +50,7 @@ Goals are:
 
 ## Options
 
-* `-D <key>=<value>`\
+* `-D <key>=<value>` / `--define <key>=<value>`\
   Overrides a POM property. This is absolute and applies globally.
 * `-T <num>` / `--threads <num>`\
   Sets the maximum number of `javac` processes to run at any given time.
@@ -101,6 +102,9 @@ Compiler properties are inherited from Java properties (except `project.*`) and 
 * `micromvn.java`\
   `java` used for executing tests/etc.\
   This completely overrides the java detected using `MICROMVN_JAVA_HOME` / `JAVA_HOME` / `java.home`.
+* `micromvn.testMainClass` / `micromvn.testMarker`\
+  These default to `org.junit.runner.JUnitCore` (JUnit 4 console runner) and `Lorg/junit/Test;`. Changing them can be used to adapt micromvn's test logic to another test framework.\
+  If `micromvn.testMarker` is found in a class file in the test classes directory, that file is recognized as a test and is passed as an argument.
 
 ## POM Support
 
@@ -146,6 +150,8 @@ These exact POM elements are supported:
   Adds a module that will be compiled with this project.
 * `project.build.plugins.plugin.(...).manifest.mainClass` (where the plugin's `artifactId` is `maven-assembly-plugin` / `maven-jar-plugin`)\
   Project's main class.
+* `project.build.plugins.plugin.(...).compilerArgs.arg` (where the plugin's `artifactId` is `maven-compiler-plugin`)\
+  Adds an arg to the compiler command-line. Can be useful to toggle lints. Not inherited right now.
 
 ## Quirks
 
@@ -156,9 +162,8 @@ These exact POM elements are supported:
 * All projects have a `jar-with-dependencies` build during the package phase.
 * It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and microMVN will attempt to package it.
 * As far as microMVN is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.
-* Testing only supports JUnit 4 and the way the test code discovers tests is awful.\
-  `umvn-test-classpath` and `umvn-run` exist as a 'good enough' workaround to attach your own runner.
+* Testing is weird. See `micromvn.testMainClass`, `micromvn.testMarker`, `umvn-test-classpath` and `umvn-run`.
 * You don't need to explicitly skip tests. (This is an intentional difference.)
-* Builds are *always* clean builds.
+* Compilation itself is always clean and never incremental.
 
 If any of these things are a problem, you probably should not use microMVN.
