@@ -100,7 +100,7 @@ static void * badgpu_wsiCtxGetProcAddress(BADGPUWSICtx ctx, const char * proc);
 static void * badgpu_wsiCtxGetValue(BADGPUWSICtx ctx, BADGPUWSIQuery query);
 static void badgpu_destroyWsiCtx(BADGPUWSICtx ctx);
 
-static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, int32_t api, BADGPUContextType ctxTypeBG, const char * glLibraryName, BADGPUBool logDetailed, BADGPUBool tryNoWSI) {
+static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, int32_t api, BADGPUContextType ctxTypeBG, const char ** glLocations, const char * glLibraryName, BADGPUBool logDetailed, BADGPUBool tryNoWSI) {
     void * config;
     int32_t attribs[] = {
         EGL_RENDERABLE_TYPE, ctxTypeAttrib,
@@ -166,6 +166,8 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, int32_t ap
         return 0;
     }
     ctx->cfg = config;
+    // Try to load GL library. This is NOT essential as we can probably get the functions from eglGetProcAddress.
+    ctx->glLibrary = badgpu_dlOpen(glLocations, glLibraryName);
     return 1;
 }
 
@@ -250,14 +252,14 @@ BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed
         if (!attemptInitSurfacelessDisplay(ctx, logDetailed))
             return badgpu_newWsiCtxError(error, "Could not create / initialize EGLDisplay" REMINDER_PINCH);
     // alright, EGL initialized... can we use it?
-    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, "BADGPU_GLES1_LIBRARY", logDetailed, 0))
+    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, locationsGLES1, "BADGPU_GLES1_LIBRARY", logDetailed, 0))
         return (BADGPUWSIContext) ctx;
-    if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, "BADGPU_GL_LIBRARY", logDetailed, 0))
+    if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, locationsGL, "BADGPU_GL_LIBRARY", logDetailed, 0))
         return (BADGPUWSIContext) ctx;
     // we're getting a little desperate, disable WSI features
-    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, "BADGPU_GLES1_LIBRARY", logDetailed, 1))
+    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, locationsGLES1, "BADGPU_GLES1_LIBRARY", logDetailed, 1))
         return (BADGPUWSIContext) ctx;
-    if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, "BADGPU_GL_LIBRARY", logDetailed, 1))
+    if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, locationsGL, "BADGPU_GL_LIBRARY", logDetailed, 1))
         return (BADGPUWSIContext) ctx;
     return badgpu_newWsiCtxError(error, "Failed to setup either a GLESv1 config or a desktop GL config." REMINDER_PINCH);
 }
