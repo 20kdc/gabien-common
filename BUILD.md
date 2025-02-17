@@ -15,27 +15,32 @@ Predicted things that will break on later JDKs:
 * Android legacy version APK signing requirements: APKs must be signed using SHA-1 to support older Android versions. Newer versions of `jarsigner` do not like this because it is an outdated algorithm.
 * Outright dropping of `-target 8`: OpenJDK 21 threatens an upcoming lack of support for building Java 8 classfiles.
 
-For this reason: You are expected to have a Java 8 JDK located at the environment variable `JAVA_1_8_HOME`.
-
-You are also expected to have any JDK >= 8 in PATH; this isn't strict at all, as micromvn is extremely portable.
+In the interest of simplifying things, you are expected to have a Java 8 JDK located at the environment variable `JAVA_1_8_HOME`.
 
 ### `gabien-natives`
 
 The `gabien-natives` package is complicated to compile. *For that reason,* it is shipped as binary releases on this repository.
 
+If you _really_ want to compile it anyway, there are instructions in that directory.
+
 After extracting one of these packages, you will find a `sdk-install` script which will install the natives package to your local Maven repository.
 
-### First Compile
+### Shell & First Compile (Unix)
 
-The `umvn` command is a 'Maven-like' Java builder/tester. It's supplied in a manner similar to the Gradle Wrapper.
+The environment activation script has been tested on bash and probably maybe should work on `zsh`.
 
-Running one of these commands from the `gabien-common` will confirm it is installed correctly:
+You can run `. ./bin/activate` (similar to a Python venv) or `. ./bin/activate ./bin/activate` (this can be used on POSIX-compliant shells which do not use zsh's interpretation of `$0`).
 
-* `./umvn test`
-* Windows: `umvn.cmd test`
-* Maven installed: `mvn test`
+This will setup the GaBIEn command-line environment, including putting the `JAVA_1_8_HOME` JDK and the tools in `bin/` into PATH.
 
-Assuming the tests pass, you can then run `umvn install` / `mvn install -DskipTests` and start using GaBIEn like any other Maven-supplied framework.
+You will see `GE ` at your prompt. You can now run `gabien-ready`.
+
+### Shell & First Compile (Windows)
+
+`bin\activate.cmd`, similar to Unixes. Not all the tools are available, but the key ones are:
+
+* `gabien-ready`: Compiles, tests, and installs GaBIEn to Maven.
+* `umvn`: Convenient way to call micromvn.
 
 ## Eclipse IDE
 

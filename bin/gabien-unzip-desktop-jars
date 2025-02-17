@@ -11,12 +11,13 @@ if [ "$#" -ne 1 ]; then
  exit 1
 fi
 
-unzip -o uslx/target/gabien-uslx-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o ../datum/java/target/gabien-datum-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o media/target/gabien-media-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o common/target/gabien-common-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o ui/target/gabien-ui-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o natives-sdk/natives.jar -d "$1" &&
-unzip -o natives-util/target/natives-util-0.666-SNAPSHOT.jar -d "$1" &&
-unzip -o javase/target/gabien-javase-0.666-SNAPSHOT.jar -d "$1"
+set -e
 
+unzip -o "$GABIEN_HOME/"uslx/target/gabien-uslx-0.666-SNAPSHOT.jar -d "$1"
+unzip -o "$GABIEN_HOME/"../datum/java/target/gabien-datum-0.666-SNAPSHOT.jar -d "$1"
+unzip -o "$GABIEN_HOME/"media/target/gabien-media-0.666-SNAPSHOT.jar -d "$1"
+unzip -o "$GABIEN_HOME/"common/target/gabien-common-0.666-SNAPSHOT.jar -d "$1"
+unzip -o "$GABIEN_HOME/"ui/target/gabien-ui-0.666-SNAPSHOT.jar -d "$1"
+unzip -o "$GABIEN_HOME/"natives-sdk/natives.jar -d "$1"
+unzip -o "$GABIEN_HOME/"natives-util/target/natives-util-0.666-SNAPSHOT.jar -d "$1"
+unzip -o "$GABIEN_HOME/"javase/target/gabien-javase-0.666-SNAPSHOT.jar -d "$1"

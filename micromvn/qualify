@@ -11,9 +11,7 @@ set -e
 
 cp umvn.class ../../c3ds-projects/
 
-pushd ../
-GABIEN_NATIVES_DEV=1 ./ready.sh
-popd
+GABIEN_NATIVES_DEV=1 gabien-ready
 
 pushd ../../gabien-app-r48
 ../gabien-common/micromvn/umvn package
@@ -21,4 +19,9 @@ popd
 
 pushd ../../c3ds-projects/natsue
 ./build.sh
+popd
+
+pushd ../natives-util
+# :(
+GABIEN_NATIVES_DEV=1 JAVA_1_8_HOME="C:\Program Files\Eclipse Adoptium\jdk-8.0.442.6-hotspot" wine ../micromvn/umvn.cmd test
 popd

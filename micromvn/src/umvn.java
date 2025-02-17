@@ -802,7 +802,7 @@ public final class umvn implements Comparable<umvn> {
             if (LOG_DEBUG)
                 System.err.println(this + " " + sourceFileName + " is a test");
             // alright, it looks like it
-            listForCurrentProcess.add(sourceFileName.substring(0, sourceFileName.indexOf('.')).replace(File.separatorChar, '.'));
+            listForCurrentProcess.add(sourceFileName.substring(0, sourceFileName.indexOf('.')).replace('/', '.'));
         }
         if (!listForCurrentProcess.isEmpty()) {
             LinkedList<String> argsFinal = new LinkedList<>();
@@ -1112,6 +1112,7 @@ public final class umvn implements Comparable<umvn> {
     /**
      * Builds a list of relative paths.
      * For reproducibility, insists upon a SortedSet recipient.
+     * Also always uses forward slashes (important for ZIP!)
      */
     public static void buildListOfRelativePaths(File currentDir, String currentPrefix, SortedSet<String> paths) {
         if (!currentDir.isDirectory())
