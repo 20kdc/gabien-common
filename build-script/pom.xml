@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<artifactId>gabien-buildscript</artifactId>
+
+	<name>gabien-buildscript</name>
+	<description>Build assistant for GaBIEn-related projects.</description>
+
+	<parent>
+		<groupId>t20kdc.hs2</groupId>
+		<artifactId>gabien-common-parent-project</artifactId>
+		<version>0.666-SNAPSHOT</version>
+		<relativePath>..</relativePath>
+	</parent>
+
+	<dependencies>
+		<dependency>
+			<groupId>t20kdc.hs2</groupId>
+			<artifactId>gabien-uslx</artifactId>
+			<version>0.666-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.android.tools</groupId>
+			<artifactId>r8</artifactId>
+			<!-- Before changing this version, ask yourself if it would break OpenJDK 8 compatibility! -->
+			<version>4.0.63</version>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>google</id>
+			<url>https://maven.google.com/</url>
+		</repository>
+	</repositories>
+</project>
