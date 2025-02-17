@@ -14,4 +14,4 @@ echo Please set it using, for example: setx JAVA_1_8_HOME=C:\Program Files\Eclip
 :has_jdk8
 
 set JAVA_HOME=%JAVA_1_8_HOME%
-set PATH=%JAVA_HOME%\bin;%GABIEN_HOME%\bin;%PATH%
+set PATH=%GABIEN_HOME%\bin;%PATH%

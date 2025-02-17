@@ -5,34 +5,37 @@
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
 # Activates GaBIEn environment.
-# Optionally accepts a path to itself (for POSIX compat.)
-# Otherwise will assume bash or zsh
+# Assumes bash or zsh :(
+# Importantly, we can't link Java into the environment because we need to be able to access later Java for D8.
+# This means we'll have to rely on maven.compiler.executable to modulate the build. Oh well.
 
 # attempt to find home
 if [ "$GABIEN_HOME" = "" ]; then
- if [ -e "$1" ]; then
-  export GABIEN_ACTIVATOR_SCRIPT="`readlink -e "$1"`"
- elif [ -e "$BASH_SOURCE" ]; then
+ if [ "$BASH_SOURCE" != "" ]; then
   # if we're being invoked by bash, use BASH_SOURCE
   export GABIEN_ACTIVATOR_SCRIPT="`readlink -e "$BASH_SOURCE"`"
  else
   # alright, bet on zsh then
   export GABIEN_ACTIVATOR_SCRIPT="`readlink -e "$0"`"
  fi
+ if [ "`basename "$GABIEN_ACTIVATOR_SCRIPT"`" != "activate" ]; then
+  echo "gabien-activate: your shell is not compatible! must be bash or zsh"
+ fi
  GABIEN_HOME_RELPATH="`dirname "$GABIEN_ACTIVATOR_SCRIPT"`/.."
  export GABIEN_HOME="`readlink -e "$GABIEN_HOME_RELPATH"`"
 fi
 
+# do hook
 if [ "$GABIEN_SHELL_COMMON_DID_JHOOK" = "" ]; then
 
  if [ ! -e "$JAVA_1_8_HOME" ]; then
-  echo "JAVA_1_8_HOME (OpenJDK 8) not set or doesn't exist."
+  echo "gabien-activate: JAVA_1_8_HOME (OpenJDK 8) not set or doesn't exist."
   echo "Value: $JAVA_1_8_HOME"
   echo "Example: /usr/lib/jvm/java-8-openjdk-amd64"
  fi
 
  export JAVA_HOME="$JAVA_1_8_HOME"
- export PATH="$JAVA_1_8_HOME/bin:$GABIEN_HOME/bin:$PATH"
+ export PATH="$GABIEN_HOME/bin:$PATH"
  export GABIEN_SHELL_COMMON_DID_JHOOK=1
 
  export PS1="GE ${PS1:-}"

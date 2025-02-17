@@ -84,3 +84,5 @@ export ANDROID_BT=~/Android/Sdk/build-tools/34.0.0
 export ANDROID_JAR_AAPT=~/Android/Sdk/platforms/android-25/android.jar
 export ANDROID_JAR_D8=~/Android/Sdk/platforms/android-7/android.jar
 ```
+
+_A **really big** problem is that D8 needs a later version of Java than Java 8._ It's for this reason that the original Java tools remain in PATH.

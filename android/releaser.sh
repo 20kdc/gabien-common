@@ -51,15 +51,15 @@ mkdir -p staging staging2 || exit
 # Extract JAR contents to staging directory
 unzip -q -o $5 -d staging || exit
 # Merge in everything, run d8
-$ANDROID_BT/d8 --release --lib $ANDROID_JAR_D8 --output staging2 `find staging | grep '\.class$'` || exit
-$ANDROID_BT/aapt p -f -I $ANDROID_JAR_AAPT -M AndroidManifest.xml -S res -A staging/assets -F result.apk || exit
+"$ANDROID_BT/d8" --release --lib $ANDROID_JAR_D8 --output staging2 `find staging | grep '\.class$'` || exit
+"$ANDROID_BT/aapt" p -f -I $ANDROID_JAR_AAPT -M AndroidManifest.xml -S res -A staging/assets -F result.apk || exit
 cd staging2 || exit
-$ANDROID_BT/aapt a ../result.apk classes.dex || exit
+"$ANDROID_BT/aapt" a ../result.apk classes.dex || exit
 # Obviously, I'll move this stuff into a config file or something if I ever release to the real Play Store - and will change my keystore
 # For making debug keys that'll probably live longer than me:
 # keytool -genkeypair -keyalg RSA -validity 36500
 # Need to override jarsigner breaking things for no reason
 export JAVA_TOOL_OPTIONS="-Djava.security.properties=../java.security"
 stripzip ../result.apk 1> /dev/null 2> /dev/null
-jarsigner -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey || exit
+"$JAVA_1_8_HOME/bin/jarsigner" -sigalg SHA1withRSA -digestalg SHA1 -storepass "android" -sigFile CERT ../result.apk mykey || exit
 echo "Okay"
