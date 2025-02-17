@@ -10,7 +10,7 @@ package gabien.builder.builtin;
 import java.io.InputStream;
 
 import gabien.builder.api.Commands;
-import gabien.builder.api.MavenRepository;
+import gabien.builder.api.NativesInstallTester;
 import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.ToolModule;
 import gabien.builder.api.ToolRegistry;
@@ -66,10 +66,7 @@ public class Index implements ToolModule {
                 throw new RuntimeException(ex);
             }
         });
-        set.with("gabien-natives is installed", () -> {
-            if (!MavenRepository.getJARFile("t20kdc.hs2", "gabien-natives", "0.666-SNAPSHOT").exists())
-                throw new RuntimeException("Natives are not present");
-        });
+        set.with("gabien-natives is installed and correct", NativesInstallTester.PREREQUISITE);
         registry.register(set);
     }
 }

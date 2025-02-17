@@ -58,7 +58,7 @@ public class ParamSet {
                     diag.error("Unknown arg " + arg + ".");
                 }
             } else {
-                if (paramsSpecified.add(p))
+                if (!paramsSpecified.add(p))
                     if (!p.isMultiple)
                         diag.warn(p.niceName + " specified multiple times.");
                 if (p instanceof Switch) {
