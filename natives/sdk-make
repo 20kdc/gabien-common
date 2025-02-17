@@ -87,17 +87,19 @@ for x in `ls $LIBUNA` ; do
 done
 
 # Fake Maven metadata
-mkdir -p src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives || exit
-cp pom.xml src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives/pom.xml || exit
+mkdir -p src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives
+cp pom.xml src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives/pom.xml
 
 # "Compile" the "JAR"
 # Someone's going to probably have to ask why I did this at some point. TLDR: This process scrubs any Maven metadata and zip metadata.
 # I had hoped for hash-reproducability but it seems to be pretty difficult/impossible.
-"$ZIG" build-exe ktsz.zig || exit
-rm -f natives.jar || exit
-cd src/main/resources || exit
-../../../ktsz `find * -type f | LC_ALL=C sort -u` > ../../../natives.jar || exit
+"$ZIG" build-exe ktsz.zig
+rm -f natives.jar
+cd src/main/resources
+../../../ktsz `find * -type f | LC_ALL=C sort -u` > ../../../natives.jar
 cd ../../.. || exit
+
+cp ../micromvn/umvn.class ./
 
 # Install
 ./sdk-install

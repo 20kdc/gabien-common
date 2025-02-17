@@ -4,6 +4,8 @@
 # To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
 # A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
 
+set -e
+
 if [ "$#" -ne 1 ]; then
  echo "sdk-rel RELEASE_ID"
  exit 1
@@ -13,21 +15,21 @@ echo "-- GaBIEn Natives Release Build --"
 
 export UNA_BUILD_ID="$1"
 
-./sdk-make || exit
+./sdk-make
 
-rm -rf ../natives-sdk ../natives-sdk.zip || exit
-mkdir -p ../natives-sdk || exit
+rm -rf ../natives-sdk ../natives-sdk.zip
+mkdir -p ../natives-sdk
 # script that installs the build to the local Maven repo
-cp sdk-install ../natives-sdk/ || exit
-cp sdk-install.cmd ../natives-sdk/ || exit
-cp natives.jar ../natives-sdk/natives.jar || exit
-cp ../COPYING.txt ../natives-sdk/gabien-COPYING.txt || exit
-cp ../CREDITS.txt ../natives-sdk/gabien-CREDITS.txt || exit
-cp ../thirdparty/stb_vorbis_modified/COPYING.txt ../natives-sdk/stb_vorbis_modified-COPYING.txt || exit
-cp ../thirdparty/stb_vorbis_modified/README.md ../natives-sdk/stb_vorbis_modified-README.md || exit
-cp ../thirdparty/minimp3_modified/LICENSE ../natives-sdk/minimp3_modified-LICENSE || exit
-cp ../thirdparty/minimp3_modified/README.md ../natives-sdk/minimp3_modified-README.md || exit
-cp README.md ../natives-sdk/ || exit
-cd ../natives-sdk || exit
-../natives/ktsz * > ../natives-sdk.zip || exit
-
+cp sdk-install ../natives-sdk/
+cp sdk-install.cmd ../natives-sdk/
+cp umvn.class ../natives-sdk/
+cp natives.jar ../natives-sdk/natives.jar
+cp ../COPYING.txt ../natives-sdk/gabien-COPYING.txt
+cp ../CREDITS.txt ../natives-sdk/gabien-CREDITS.txt
+cp ../thirdparty/stb_vorbis_modified/COPYING.txt ../natives-sdk/stb_vorbis_modified-COPYING.txt
+cp ../thirdparty/stb_vorbis_modified/README.md ../natives-sdk/stb_vorbis_modified-README.md
+cp ../thirdparty/minimp3_modified/LICENSE ../natives-sdk/minimp3_modified-LICENSE
+cp ../thirdparty/minimp3_modified/README.md ../natives-sdk/minimp3_modified-README.md
+cp README.md ../natives-sdk/
+cd ../natives-sdk
+../natives/ktsz * > ../natives-sdk.zip

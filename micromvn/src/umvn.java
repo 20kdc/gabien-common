@@ -1495,7 +1495,7 @@ public final class umvn implements Comparable<umvn> {
             pomByCoordinates(parts[0], parts[1], parts[2], true).completeDownload();
             doFinalStatusOK("Installed.");
         } else if (goal.equals("install-file")) {
-            String file = getPropertyFull(null, "artifact");
+            String file = getPropertyFull(null, "file");
             String pomFile = getPropertyFull(null, "pomFile");
             String groupId = getPropertyFull(null, "groupId");
             String artifactId = getPropertyFull(null, "artifactId");
