@@ -15,4 +15,9 @@ public interface ToolRegistry {
      * Registers a tool class.
      */
     <T extends Tool> void register(Class<T> tool);
+
+    /**
+     * Registers a prerequisite set.
+     */
+    void register(PrerequisiteSet set);
 }

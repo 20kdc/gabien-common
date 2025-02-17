@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 
-import gabien.builder.api.Diagnostics;
+import gabien.builder.api.ToolEnvironment;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolParam;
 
@@ -31,7 +31,7 @@ public class HelpTool extends Tool {
     }
 
     @Override
-    public void run(Diagnostics diag) {
+    public void run(ToolEnvironment diag) {
         if (toolName != null) {
             if (!TOOLS.containsKey(toolName)) {
                 diag.error(toolName + " does not exist.");

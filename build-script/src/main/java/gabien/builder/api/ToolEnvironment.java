@@ -11,7 +11,7 @@ package gabien.builder.api;
  * Diagnostics logger.
  * Created 17th February, 2025.
  */
-public interface Diagnostics {
+public interface ToolEnvironment {
     /**
      * Logs information.
      */

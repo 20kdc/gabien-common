@@ -20,5 +20,5 @@ public abstract class Tool extends ParamSet {
         description = d;
     }
 
-    public abstract void run(Diagnostics diag);
+    public abstract void run(ToolEnvironment env);
 }

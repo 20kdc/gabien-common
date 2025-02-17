@@ -10,10 +10,12 @@ package gabien.builder;
 import java.util.HashMap;
 import java.util.TreeSet;
 
-import gabien.builder.api.Diagnostics;
+import gabien.builder.api.ToolEnvironment;
+import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolModule;
 import gabien.builder.api.ToolRegistry;
+import gabien.builder.builtin.CheckTool;
 import gabien.builder.builtin.HelpTool;
 
 /**
@@ -41,7 +43,7 @@ public class Main {
             tool = args[0];
         for (String s : names)
             HelpTool.TOOLS.put(s, instances.get(s));
-        DiagnosticsImpl diag = new DiagnosticsImpl();
+        ToolEnvironmentImpl diag = new ToolEnvironmentImpl();
         Tool t = instances.get(tool);
         if (t == null) {
             diag.error("No such tool '" + tool + "'. Try 'help'.");
@@ -83,9 +85,14 @@ public class Main {
                 throw new RuntimeException(ex);
             }
         }
+
+        @Override
+        public void register(PrerequisiteSet set) {
+            CheckTool.ALL_SETS.add(set);
+        }
     }
 
-    private static class DiagnosticsImpl implements Diagnostics {
+    private static class ToolEnvironmentImpl implements ToolEnvironment {
         public volatile boolean error = false;
 
         @Override
@@ -105,7 +112,7 @@ public class Main {
 
         @Override
         public void error(String text) {
-            System.err.println("[ERR] " + text);
+            System.err.println("[ERR!] " + text);
             error = true;
         }
     }
