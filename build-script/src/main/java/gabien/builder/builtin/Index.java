@@ -29,6 +29,7 @@ public class Index implements ToolModule {
         registry.register(HelpTool.class);
         registry.register(CheckTool.class);
         registry.register(D8Tool.class);
+        registry.register(ReadyTool.class);
         
         PrerequisiteSet set = new PrerequisiteSet("Core");
         set.with("JAVA_1_8_HOME present", () -> {

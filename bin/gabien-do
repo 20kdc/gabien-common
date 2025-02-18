@@ -7,5 +7,6 @@
 # micromvn proxy script
 
 set -e
+java -cp "$GABIEN_HOME/micromvn" umvn -f "$GABIEN_HOME/build-script" install
 java -cp "$GABIEN_HOME/micromvn" umvn -f build-script compile
 exec java -cp "$GABIEN_HOME/micromvn" umvn -f build-script umvn-run gabien.builder.Main "$@"

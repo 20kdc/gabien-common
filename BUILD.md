@@ -31,13 +31,13 @@ You can run `. ./bin/activate` (similar to a Python venv) or `. ./bin/activate`
 
 This will setup the GaBIEn command-line environment, including putting the `JAVA_1_8_HOME` JDK and the tools in `bin/` into PATH.
 
-You will see `GE ` at your prompt. You can now run `gabien-ready`.
+You will see `GE ` at your prompt. You can now run `gabien-do ready`.
 
 ### Shell & First Compile (Windows)
 
 `bin\activate` (or `call bin\activate` from scripts), similar to Unixes.
 
-You can then run `gabien-ready` (or `call gabien-ready` from scripts).
+You can then run `gabien-do ready` (or `call gabien-do ready` from scripts).
 
 ## Eclipse IDE
 

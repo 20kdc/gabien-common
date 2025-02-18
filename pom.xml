@@ -27,7 +27,6 @@
 		<!-- natives not included, install via natives-sdk release -->
 		<module>natives-util</module>
 		<!-- tools, native examples not included; it adds build time to application projects -->
-		<module>build-script</module>
 	</modules>
 
 	<repositories>

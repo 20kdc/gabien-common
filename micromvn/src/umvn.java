@@ -1305,11 +1305,11 @@ public final class umvn implements Comparable<umvn> {
         // autodetect javac
         String java;
         String javac;
-        String home = System.getenv("MICROMVN_JAVA_HOME");
-        if (home == null)
-            home = System.getenv("JAVA_HOME");
+        String home = System.getProperty("env.MICROMVN_JAVA_HOME", "");
+        if (home.equals(""))
+            home = System.getProperty("env.JAVA_HOME", "");
         String possiblyExe = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
-        if (home != null) {
+        if (!home.equals("")) {
             if (!home.endsWith(File.separator))
                 home += File.separator;
             javac = home + "bin" + File.separator + "javac" + possiblyExe;
