@@ -15,12 +15,12 @@ public class MajorRoutines {
 
     public static void ready(ToolEnvironment diag) {
         diag.info("Readying engine...");
-        Commands.run(diag, System.getenv("GABIEN_HOME"), Commands.UMVN_COMMAND, "test", "-q");
+        Commands.run(diag, Commands.GABIEN_HOME, Commands.UMVN_COMMAND, "test", "-q");
         if (diag.hasAnyErrorOccurred())
             return;
-        Commands.run(diag, System.getenv("GABIEN_HOME"), Commands.UMVN_COMMAND, "package-only", "-q");
+        Commands.run(diag, Commands.GABIEN_HOME, Commands.UMVN_COMMAND, "package-only", "-q");
         if (diag.hasAnyErrorOccurred())
             return;
-        Commands.run(diag, System.getenv("GABIEN_HOME"), Commands.UMVN_COMMAND, "install-only", "-q");
+        Commands.run(diag, Commands.GABIEN_HOME, Commands.UMVN_COMMAND, "install-only", "-q");
     }
 }

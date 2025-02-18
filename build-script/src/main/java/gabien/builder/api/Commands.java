@@ -15,6 +15,7 @@ import java.util.Map;
  * Created 17th February 2025.
  */
 public final class Commands {
+    public static final File GABIEN_HOME = new File(System.getenv("GABIEN_HOME"));
     public static final String EXE_SUFFIX;
     public static final String JAVA_COMMAND;
     public static final String JAVAC_COMMAND;
@@ -79,9 +80,10 @@ public final class Commands {
     /**
      * Runs a command. Exceptions are converted to ToolEnvironment errors.
      */
-    public static void run(ToolEnvironment env, String pwd, String... args) {
+    public static void run(ToolEnvironment env, File pwd, String... args) {
         try {
             ProcessBuilder pb = new ProcessBuilder(args);
+            pb.directory(pwd);
             pb.inheritIO();
             Process px = pb.start();
             if (px.waitFor() != 0)
