@@ -19,8 +19,21 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target(FIELD)
 public @interface ToolParam {
+    /**
+     * Name. Can be empty, in which case this is a "content arg" (arg not associated with an option).
+     * Otherwise should be prefixed with --
+     */
     public String name();
+    /**
+     * Value meaning, displayed in help. Usually surrounded with lt/gt.
+     */
     public String valueMeaning();
+    /**
+     * Description.
+     */
     public String desc();
+    /**
+     * If this parameter is optional or not.
+     */
     public boolean optional();
 }

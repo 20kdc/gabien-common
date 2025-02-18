@@ -60,4 +60,6 @@ Sometimes there's a method to the definition order. (Sometimes there isn't, but 
 * android: Android backend & Java 8 polyfill.
 * javase: JavaSE (AWT) backend.
 * tools: Tools for debugging gabien and messing around with stuff.
-
+* micromvn: Embedded-in-repository Maven replacement. Inner tool used for build. You can think of this as somewhat like `cargo`.
+* build-script: Build script tool; the body of `gabien-do`.
+* bin: The GaBIEn Environment used for running builds/etc. As work continues this will eventually become only three tools: `activate`, `umvn`, `gabien-do`.

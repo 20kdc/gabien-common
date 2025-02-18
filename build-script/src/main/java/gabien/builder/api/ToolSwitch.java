@@ -19,6 +19,12 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target(FIELD)
 public @interface ToolSwitch {
+    /**
+     * Name. Should be prefixed with --
+     */
     public String name();
+    /**
+     * Description for help.
+     */
     public String desc();
 }
