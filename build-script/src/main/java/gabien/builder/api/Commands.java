@@ -93,4 +93,19 @@ public final class Commands {
             ex.printStackTrace();
         }
     }
+
+    /**
+     * Runs a command. Failure is ignored.
+     */
+    public static void runOptional(ToolEnvironment env, File pwd, String... args) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(args);
+            pb.directory(pwd);
+            pb.inheritIO();
+            Process px = pb.start();
+            px.waitFor();
+        } catch (Exception ex) {
+            env.warn("Could not run optional command: " + ex);
+        }
+    }
 }

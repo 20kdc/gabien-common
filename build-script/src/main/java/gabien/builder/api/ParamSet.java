@@ -88,7 +88,7 @@ public class ParamSet {
         for (Param p : params) {
             if (!p.isOptional) {
                 if (!paramsSpecified.contains(p)) {
-                    diag.error("Parameter " + p + " not specified.");
+                    diag.error("Parameter " + p.niceName + " not specified.");
                     ok = false;
                 }
             }

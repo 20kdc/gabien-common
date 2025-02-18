@@ -1852,8 +1852,6 @@ public final class umvn implements Comparable<umvn> {
         if (doInstall)
             for (umvn target : packages)
                 target.install();
-        if (LOG_HEADER_FOOTER)
-            System.err.println(packages.size() + " units processed.");
     }
 
     public static void doFinalStatusError(String err) {
