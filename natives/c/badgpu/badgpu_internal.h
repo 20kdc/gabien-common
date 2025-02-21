@@ -305,12 +305,12 @@ static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMat
 }
 
 
-// Instance w/ Software TnL (not yet implemented, but...)
+// Instance w/ Software TnL
 
 static inline BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, BADGPURasterizerVertex b, float v) {
     BADGPURasterizerVertex res = {
         .p = badgpu_vecLerp(a.p, b.p, v),
-        .c = badgpu_vecLerp(a.p, b.p, v),
+        .c = badgpu_vecLerp(a.c, b.c, v),
         .u = badgpu_lerp(a.u, b.u, v),
         .v = badgpu_lerp(a.v, b.v, v)
     };
@@ -362,6 +362,12 @@ BADGPUBool badgpu_swtnl_drawGeom(
 void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, float plSize);
 void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize);
 void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c);
+
+// clipper
+
+void badgpu_swclip_drawPoint(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, float plSize);
+void badgpu_swclip_drawLine(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize);
+void badgpu_swclip_drawTriangle(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c);
 
 #endif
 

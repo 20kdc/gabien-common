@@ -8,6 +8,7 @@
 #ifndef BADGPU_SW_H_
 #define BADGPU_SW_H_
 
+#include "badgpu.h"
 #include "badgpu_internal.h"
 
 typedef struct {
@@ -87,7 +88,16 @@ static inline uint32_t sessionFlagsToARGBMask(uint32_t sFlags) {
 typedef float (*badgpu_blendop_t)(float, float);
 typedef float (*badgpu_blendweight_t)(float, float, float, float);
 
-typedef struct {
+struct badgpu_swrop;
+
+// typedef BADGPUBool (*badgpu_rop_dsf_t)(const struct badgpu_swrop * opts, badgpu_ds_t * dstDS);
+typedef void (*badgpu_rop_txf_t)(const struct badgpu_swrop * opts, uint32_t * dstRGB, float sR, float sG, float sB, float sA);
+
+typedef struct badgpu_swrop {
+    // Core Impl.
+    badgpu_rop_txf_t txFunc;
+    // Flags & Such
+    uint32_t flags;
     uint32_t sFlags;
     uint32_t rgbaMaskInv;
     // Blend Program
@@ -97,8 +107,6 @@ typedef struct {
     badgpu_blendop_t eqAbe;
 } badgpu_swrop_t;
 
-void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t sFlags, uint32_t blendProgram);
-
-void badgpu_rop(uint32_t * dstRGB, badgpu_ds_t * dstDS, float sR, float sG, float sB, float sA, const badgpu_swrop_t * opts);
+void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t flags, uint32_t sFlags, uint32_t blendProgram);
 
 #endif

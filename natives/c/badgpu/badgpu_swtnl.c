@@ -69,7 +69,6 @@ void badgpu_swtnl_transform(
 }
 
 BADGPUBool badgpu_swtnl_drawGeom(
-    // assumed to be BADGPUInstanceSWTNL
     struct BADGPUInstancePriv * bi,
     BADGPU_SESSIONFLAGS,
     uint32_t flags,

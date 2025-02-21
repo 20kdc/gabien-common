@@ -99,7 +99,48 @@ static badgpu_blendweight_t convertBlendWeight(BADGPUBlendWeight w, int isA) {
     return ropBWOne;
 }
 
-void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t sFlags, uint32_t blendProgram) {
+static void badgpu_rop_txfBlend(const badgpu_swrop_t * opts, uint32_t * dstRGB, float sR, float sG, float sB, float sA) {
+    uint32_t pixDst = *dstRGB;
+    uint32_t orin = 0;
+    float dA = u8tof8(pixDst >> 24);
+    if (opts->sFlags & BADGPUSessionFlags_MaskR) {
+        float dR = u8tof8(pixDst >> 16);
+        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sR, dR, sA, dA) * sR, opts->eqRGBbwD(sR, dR, sA, dA) * dR)) << 16;
+    }
+    if (opts->sFlags & BADGPUSessionFlags_MaskG) {
+        float dG = u8tof8(pixDst >> 8);
+        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sG, dG, sA, dA) * sG, opts->eqRGBbwD(sG, dG, sA, dA) * dG)) << 8;
+    }
+    if (opts->sFlags & BADGPUSessionFlags_MaskB) {
+        float dB = u8tof8(pixDst);
+        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sB, dB, sA, dA) * sB, opts->eqRGBbwD(sB, dB, sA, dA) * dB));
+    }
+    if (opts->sFlags & BADGPUSessionFlags_MaskA)
+        orin |= f8tou8(opts->eqAbe(opts->eqAbwS(sA, dA, sA, dA) * sA, opts->eqAbwD(sA, dA, sA, dA) * dA)) << 24;
+    pixDst &= opts->rgbaMaskInv;
+    pixDst |= orin;
+    *dstRGB = pixDst;
+}
+
+static void badgpu_rop_txfNoBlend(const badgpu_swrop_t * opts, uint32_t * dstRGB, float sR, float sG, float sB, float sA) {
+    uint32_t pixDst = *dstRGB;
+    uint32_t orin = 0;
+    if (opts->sFlags & BADGPUSessionFlags_MaskR)
+        orin |= f8tou8(sR) << 16;
+    if (opts->sFlags & BADGPUSessionFlags_MaskG)
+        orin |= f8tou8(sG) << 8;
+    if (opts->sFlags & BADGPUSessionFlags_MaskB)
+        orin |= f8tou8(sB);
+    if (opts->sFlags & BADGPUSessionFlags_MaskA)
+        orin |= f8tou8(sA) << 24;
+    pixDst &= opts->rgbaMaskInv;
+    pixDst |= orin;
+    *dstRGB = pixDst;
+}
+
+void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t flags, uint32_t sFlags, uint32_t blendProgram) {
+    opts->txFunc = flags & BADGPUDrawFlags_Blend ? badgpu_rop_txfBlend : badgpu_rop_txfNoBlend;
+    opts->flags = flags;
     opts->sFlags = sFlags;
     opts->rgbaMaskInv = ~sessionFlagsToARGBMask(sFlags);
     opts->eqRGBbwS = convertBlendWeight(BADGPU_BP_RGBS(blendProgram), 0);
@@ -108,32 +149,4 @@ void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t sFlags, uint32_t blendP
     opts->eqAbwD = convertBlendWeight(BADGPU_BP_AD(blendProgram), 1);
     opts->eqRGBbe = convertBlendOp(BADGPU_BP_RGBE(blendProgram));
     opts->eqAbe = convertBlendOp(BADGPU_BP_AE(blendProgram));
-}
-
-void badgpu_rop(uint32_t * dstRGB, badgpu_ds_t * dstDS, float sR, float sG, float sB, float sA, const badgpu_swrop_t * opts) {
-    if (dstDS) {
-        // NYI
-    }
-    if (dstRGB) {
-        uint32_t pixDst = *dstRGB;
-        uint32_t orin = 0;
-        float dA = u8tof8(pixDst >> 24);
-        if (opts->sFlags & BADGPUSessionFlags_MaskR) {
-            float dR = u8tof8(pixDst >> 16);
-            orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sR, dR, sA, dA) * sR, opts->eqRGBbwD(sR, dR, sA, dA) * dR)) << 16;
-        }
-        if (opts->sFlags & BADGPUSessionFlags_MaskG) {
-            float dG = u8tof8(pixDst >> 8);
-            orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sG, dG, sA, dA) * sG, opts->eqRGBbwD(sG, dG, sA, dA) * dG)) << 8;
-        }
-        if (opts->sFlags & BADGPUSessionFlags_MaskB) {
-            float dB = u8tof8(pixDst);
-            orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sB, dB, sA, dA) * sB, opts->eqRGBbwD(sB, dB, sA, dA) * dB));
-        }
-        if (opts->sFlags & BADGPUSessionFlags_MaskA)
-            orin |= f8tou8(opts->eqAbe(opts->eqAbwS(sA, dA, sA, dA) * sA, opts->eqAbwD(sA, dA, sA, dA) * dA)) << 24;
-        pixDst &= opts->rgbaMaskInv;
-        pixDst |= orin;
-        *dstRGB = pixDst;
-    }
 }
