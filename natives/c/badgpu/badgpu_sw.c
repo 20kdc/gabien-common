@@ -271,7 +271,7 @@ static clipconclusion_t bswClipper(const BADGPUVector * a, const BADGPUVector * 
 }
 
 static void bswDrawPoint(
-    struct BADGPUInstanceSWTNL * instance,
+    struct BADGPUInstancePriv * instance,
     const BADGPURasterizerContext * ctx,
     BADGPURasterizerVertex a,
     float plSize
@@ -289,7 +289,7 @@ static void bswDrawPoint(
 }
 
 static void bswDrawLineClipper(
-    struct BADGPUInstanceSWTNL * instance,
+    struct BADGPUInstancePriv * instance,
     const BADGPURasterizerContext * ctx,
     BADGPURasterizerVertex a,
     BADGPURasterizerVertex b,
@@ -319,7 +319,7 @@ static void bswDrawLineClipper(
 }
 
 static void bswDrawLine(
-    struct BADGPUInstanceSWTNL * instance,
+    struct BADGPUInstancePriv * instance,
     const BADGPURasterizerContext * ctx,
     BADGPURasterizerVertex a,
     BADGPURasterizerVertex b,
@@ -338,7 +338,7 @@ static void bswDrawLine(
 }
 
 static void bswDrawTriangleClipper(
-    struct BADGPUInstanceSWTNL * instance,
+    struct BADGPUInstancePriv * instance,
     const BADGPURasterizerContext * ctx,
     BADGPURasterizerVertex a,
     BADGPURasterizerVertex b,
@@ -407,7 +407,7 @@ static void bswDrawTriangleClipper(
 }
 
 static void bswDrawTriangle(
-    struct BADGPUInstanceSWTNL * instance,
+    struct BADGPUInstancePriv * instance,
     const BADGPURasterizerContext * ctx,
     BADGPURasterizerVertex a,
     BADGPURasterizerVertex b,
@@ -428,29 +428,29 @@ static void bswDrawTriangle(
 // -- the instance --
 
 BADGPUInstance badgpu_newSoftwareInstance(BADGPUNewInstanceFlags flags, const char ** error) {
-    BADGPUInstanceSWTNL * bi = malloc(sizeof(BADGPUInstanceSWTNL));
+    BADGPUInstancePriv * bi = malloc(sizeof(BADGPUInstancePriv));
     if (!bi) {
         if (error)
             *error = "Failed to allocate BADGPUInstance.";
         return NULL;
     }
-    memset(bi, 0, sizeof(BADGPUInstanceSWTNL));
-    bi->base.backendCheck = (flags & BADGPUNewInstanceFlags_BackendCheck) != 0;
-    bi->base.backendCheckAggressive = (flags & BADGPUNewInstanceFlags_BackendCheckAggressive) != 0;
-    bi->base.canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
-    bi->base.isBound = 1;
+    memset(bi, 0, sizeof(BADGPUInstancePriv));
+    bi->backendCheck = (flags & BADGPUNewInstanceFlags_BackendCheck) != 0;
+    bi->backendCheckAggressive = (flags & BADGPUNewInstanceFlags_BackendCheckAggressive) != 0;
+    bi->canPrintf = (flags & BADGPUNewInstanceFlags_CanPrintf) != 0;
+    bi->isBound = 1;
     badgpu_initObj((BADGPUObject) bi, destroySWInstance);
     // vtbl
-    bi->base.getMetaInfo = bswGetMetaInfo;
-    bi->base.texLoadFormat = BADGPUTextureLoadFormat_ARGBI32;
-    bi->base.newTexture = bswNewTexture;
-    bi->base.newDSBuffer = bswNewDSBuffer;
-    bi->base.generateMipmap = bswGenerateMipmap;
-    bi->base.readPixelsARGBI32 = bswReadPixelsARGBI32;
-    bi->base.drawClear = bswDrawClear;
-    bi->base.drawGeom = badgpu_swtnl_drawGeom;
-    bi->drawPoint = bswDrawPoint;
-    bi->drawLine = bswDrawLine;
-    bi->drawTriangle = bswDrawTriangle;
+    bi->getMetaInfo = bswGetMetaInfo;
+    bi->texLoadFormat = BADGPUTextureLoadFormat_ARGBI32;
+    bi->newTexture = bswNewTexture;
+    bi->newDSBuffer = bswNewDSBuffer;
+    bi->generateMipmap = bswGenerateMipmap;
+    bi->readPixelsARGBI32 = bswReadPixelsARGBI32;
+    bi->drawClear = bswDrawClear;
+    bi->drawGeomBackend = bi->drawGeomFrontend = badgpu_swtnl_drawGeom;
+    bi->drawPointBackend = bi->drawPointFrontend = bswDrawPoint;
+    bi->drawLineBackend = bi->drawLineFrontend = bswDrawLine;
+    bi->drawTriangleBackend = bi->drawTriangleFrontend = bswDrawTriangle;
     return (BADGPUInstance) bi;
 }

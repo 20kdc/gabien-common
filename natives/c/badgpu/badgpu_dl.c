@@ -6,6 +6,7 @@
  */
 
 #include "badgpu_internal.h"
+#include <string.h>
 
 static BADGPUDynLib dlOpen1(const char * loc) {
 #ifdef WIN32
@@ -63,3 +64,9 @@ void badgpu_dlClose(BADGPUDynLib lib) {
 #endif
 }
 
+BADGPUBool badgpu_getEnvFlag(const char * flag) {
+    const char * res = getenv(flag);
+    if (!res)
+        return 0;
+    return !strcmp(res, "1") ? 1 : 0;
+}

@@ -75,6 +75,8 @@ void * badgpu_dlSym2(BADGPUDynLib lib, const char * sym1, const char * sym2);
 void * badgpu_dlSym4(BADGPUDynLib lib, const char * sym1, const char * sym2, const char * sym3, const char * sym4);
 void badgpu_dlClose(BADGPUDynLib lib);
 
+BADGPUBool badgpu_getEnvFlag(const char * flag);
+
 // WSI
 
 // Creates a new WSICtx.
@@ -115,6 +117,89 @@ uint32_t badgpu_findVertexCount(uint32_t iStart, uint32_t iCount, const uint16_t
 
 // Instance Base
 
+typedef struct BADGPURasterizerContext {
+    BADGPUTexture sTexture;
+    BADGPUDSBuffer sDSBuffer;
+    uint32_t sFlags;
+    // Scissor
+    int32_t sScX, sScY, sScWidth, sScHeight;
+    uint32_t flags;
+    // Viewport
+    int32_t vX, vY, vW, vH;
+    // Fragment Shader
+    BADGPUTexture texture;
+    const float * clipPlane;
+    BADGPUCompare atFunc;
+    float atRef;
+    // Stencil Test
+    BADGPUCompare stFunc;
+    uint8_t stRef, stMask;
+    BADGPUStencilOp stSF, stDF, stDP;
+    // Depth Test / DepthRange / PolygonOffset
+    BADGPUCompare dtFunc;
+    float depthN, depthF, poFactor, poUnits;
+    // Blending
+    uint32_t blendProgram;
+} BADGPURasterizerContext;
+
+typedef struct BADGPURasterizerVertex {
+    // Position in clip coordinates (ES11p27)
+    BADGPUVector p;
+    // Colour.
+    BADGPUVector c;
+    // Texture coordinate.
+    float u, v;
+} BADGPURasterizerVertex;
+
+struct BADGPUInstancePriv;
+
+typedef BADGPUBool (*badgpu_drawGeom_t)(
+    struct BADGPUInstancePriv *,
+    BADGPU_SESSIONFLAGS,
+    uint32_t flags,
+    // Vertex Loader
+    int32_t vPosD, const float * vPos,
+    const float * vCol,
+    int32_t vTCD, const float * vTC,
+    BADGPUPrimitiveType pType, float plSize,
+    uint32_t iStart, uint32_t iCount, const uint16_t * indices,
+    // Vertex Shader
+    const BADGPUMatrix * mvMatrix,
+    // Viewport
+    int32_t vX, int32_t vY, int32_t vW, int32_t vH,
+    // Fragment Shader
+    BADGPUTexture texture, const BADGPUMatrix * matrixT,
+    const float * clipPlane, BADGPUCompare atFunc, float atRef,
+    // Stencil Test
+    BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
+    BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
+    // Depth Test / DepthRange / PolygonOffset
+    BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
+    // Blending
+    uint32_t blendProgram
+);
+
+typedef void (*badgpu_drawPoint_t)(
+    struct BADGPUInstancePriv *,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    float plSize
+);
+typedef void (*badgpu_drawLine_t)(
+    struct BADGPUInstancePriv *,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    BADGPURasterizerVertex b,
+    float plSize
+);
+typedef void (*badgpu_drawTriangle_t)(
+    struct BADGPUInstancePriv *,
+    const BADGPURasterizerContext * ctx,
+    BADGPURasterizerVertex a,
+    BADGPURasterizerVertex b,
+    BADGPURasterizerVertex c
+);
+
 typedef struct BADGPUInstancePriv {
     struct BADGPUObject obj;
     int isBound;
@@ -143,31 +228,18 @@ typedef struct BADGPUInstancePriv {
         BADGPU_SESSIONFLAGS,
         float cR, float cG, float cB, float cA, float depth, uint8_t stencil
     );
-    BADGPUBool (*drawGeom)(
-        struct BADGPUInstancePriv *,
-        BADGPU_SESSIONFLAGS,
-        uint32_t flags,
-        // Vertex Loader
-        int32_t vPosD, const float * vPos,
-        const float * vCol,
-        int32_t vTCD, const float * vTC,
-        BADGPUPrimitiveType pType, float plSize,
-        uint32_t iStart, uint32_t iCount, const uint16_t * indices,
-        // Vertex Shader
-        const BADGPUMatrix * mvMatrix,
-        // Viewport
-        int32_t vX, int32_t vY, int32_t vW, int32_t vH,
-        // Fragment Shader
-        BADGPUTexture texture, const BADGPUMatrix * matrixT,
-        const float * clipPlane, BADGPUCompare atFunc, float atRef,
-        // Stencil Test
-        BADGPUCompare stFunc, uint8_t stRef, uint8_t stMask,
-        BADGPUStencilOp stSF, BADGPUStencilOp stDF, BADGPUStencilOp stDP,
-        // Depth Test / DepthRange / PolygonOffset
-        BADGPUCompare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
-        // Blending
-        uint32_t blendProgram
-    );
+    // Ok, so some explanation of what's going on here:
+    // We need to be able to test SW components (doesn't work) in the HW backend (known-good).
+    // SW and HW use different pipeline orientations, and doing this testing flips the orientation on its head.
+    // SW: drawGeomFrontend (VS/PA) -> drawPLTFrontend (clipper) -> drawPLTBackend (rasterizer).
+    // HW: drawGeomFrontend.
+    // HW w/ SWTnL: drawGeomFrontend -> drawPLTFrontend -> drawGeomBackend.
+    // HW w/ SWTnL & SWClip: drawGeomFrontend -> drawPLTFrontend -> drawPLTBackend -> drawGeomBackend.
+    badgpu_drawGeom_t drawGeomFrontend, drawGeomBackend;
+    // If the true backend has no implementation it should use badgpu_swtnl_harness*.
+    badgpu_drawPoint_t drawPointFrontend, drawPointBackend;
+    badgpu_drawLine_t drawLineFrontend, drawLineBackend;
+    badgpu_drawTriangle_t drawTriangleFrontend, drawTriangleBackend;
 } BADGPUInstancePriv;
 #define BG_INSTANCE(x) ((BADGPUInstancePriv *) (x))
 
@@ -235,40 +307,6 @@ static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMat
 
 // Instance w/ Software TnL (not yet implemented, but...)
 
-typedef struct BADGPURasterizerContext {
-    BADGPUTexture sTexture;
-    BADGPUDSBuffer sDSBuffer;
-    uint32_t sFlags;
-    // Scissor
-    int32_t sScX, sScY, sScWidth, sScHeight;
-    uint32_t flags;
-    // Viewport
-    int32_t vX, vY, vW, vH;
-    // Fragment Shader
-    BADGPUTexture texture;
-    const float * clipPlane;
-    BADGPUCompare atFunc;
-    float atRef;
-    // Stencil Test
-    BADGPUCompare stFunc;
-    uint8_t stRef, stMask;
-    BADGPUStencilOp stSF, stDF, stDP;
-    // Depth Test / DepthRange / PolygonOffset
-    BADGPUCompare dtFunc;
-    float depthN, depthF, poFactor, poUnits;
-    // Blending
-    uint32_t blendProgram;
-} BADGPURasterizerContext;
-
-typedef struct BADGPURasterizerVertex {
-    // Position in clip coordinates (ES11p27)
-    BADGPUVector p;
-    // Colour.
-    BADGPUVector c;
-    // Texture coordinate.
-    float u, v;
-} BADGPURasterizerVertex;
-
 static inline BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, BADGPURasterizerVertex b, float v) {
     BADGPURasterizerVertex res = {
         .p = badgpu_vecLerp(a.p, b.p, v),
@@ -278,35 +316,6 @@ static inline BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, B
     };
     return res;
 }
-
-/**
- * For 'primitive-at-a-time' backends.
- */
-typedef struct BADGPUInstanceSWTNL {
-    BADGPUInstancePriv base;
-
-    void (*drawPoint)(
-        struct BADGPUInstanceSWTNL *,
-        const BADGPURasterizerContext * ctx,
-        BADGPURasterizerVertex a,
-        float plSize
-    );
-    void (*drawLine)(
-        struct BADGPUInstanceSWTNL *,
-        const BADGPURasterizerContext * ctx,
-        BADGPURasterizerVertex a,
-        BADGPURasterizerVertex b,
-        float plSize
-    );
-    void (*drawTriangle)(
-        struct BADGPUInstanceSWTNL *,
-        const BADGPURasterizerContext * ctx,
-        BADGPURasterizerVertex a,
-        BADGPURasterizerVertex b,
-        BADGPURasterizerVertex c
-    );
-} BADGPUInstanceSWTNL;
-#define BG_INSTANCE_SWTNL(x) ((BADGPUInstanceSWTNL *) (x))
 
 void badgpu_swtnl_transform(
     uint32_t flags,
@@ -323,7 +332,6 @@ void badgpu_swtnl_transform(
 );
 
 BADGPUBool badgpu_swtnl_drawGeom(
-    // assumed to be BADGPUInstanceSWTNL
     struct BADGPUInstancePriv *,
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
@@ -348,6 +356,12 @@ BADGPUBool badgpu_swtnl_drawGeom(
     // Blending
     uint32_t blendProgram
 );
+
+// emulation harness
+
+void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, float plSize);
+void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize);
+void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c);
 
 #endif
 

@@ -301,7 +301,7 @@ BADGPU_EXPORT BADGPUBool badgpuDrawGeom(
     if ((vTCD < 2) || (vTCD > 4))
         return badgpuErr(bi, "badgpuDrawGeom: vTCD out of range");
 
-    return bi->drawGeom(bi, BADGPU_SESSIONFLAGS_PASSTHROUGH,
+    return bi->drawGeomFrontend(bi, BADGPU_SESSIONFLAGS_PASSTHROUGH,
         flags,
         vPosD, vPos,
         vCol,

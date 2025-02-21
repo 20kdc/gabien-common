@@ -27,9 +27,12 @@ void badgpu_swtnl_transform(
     BADGPURasterizerVertex * out
 ) {
     size_t vtxIdx = indices ? indices[iStart] : iStart;
-    vtxIdx *= vPosD;
     size_t tIdx = (flags & BADGPUDrawFlags_FreezeTC) ? 0 : vtxIdx;
     size_t cIdx = (flags & BADGPUDrawFlags_FreezeColour) ? 0 : vtxIdx;
+
+    vtxIdx *= vPosD;
+    tIdx *= vTCD;
+    cIdx *= 4;
 
     BADGPUVector posi = { vPos[vtxIdx], vPos[vtxIdx + 1], 0, 1 };
     if (vPosD >= 3)
@@ -67,7 +70,7 @@ void badgpu_swtnl_transform(
 
 BADGPUBool badgpu_swtnl_drawGeom(
     // assumed to be BADGPUInstanceSWTNL
-    struct BADGPUInstancePriv * instance,
+    struct BADGPUInstancePriv * bi,
     BADGPU_SESSIONFLAGS,
     uint32_t flags,
     // Vertex Loader
@@ -91,7 +94,6 @@ BADGPUBool badgpu_swtnl_drawGeom(
     // Blending
     uint32_t blendProgram
 ) {
-    BADGPUInstanceSWTNL * bi = BG_INSTANCE_SWTNL(instance);
     BADGPURasterizerContext rc = {
         sTexture, sDSBuffer, sFlags,
         sScX, sScY, sScWidth, sScHeight,
@@ -115,7 +117,7 @@ BADGPUBool badgpu_swtnl_drawGeom(
             iCount--;
             iStart++;
             if (!rr)
-                bi->drawTriangle(bi, &rc, vtx[0], vtx[1], vtx[2]);
+                bi->drawTriangleFrontend(bi, &rc, vtx[0], vtx[1], vtx[2]);
         }
         return 1;
     } else if (pType == BADGPUPrimitiveType_Lines) {
@@ -127,7 +129,7 @@ BADGPUBool badgpu_swtnl_drawGeom(
             iCount--;
             iStart++;
             if (!rr)
-                bi->drawLine(bi, &rc, vtx[0], vtx[1], plSize);
+                bi->drawLineFrontend(bi, &rc, vtx[0], vtx[1], plSize);
         }
         return 1;
     } else if (pType == BADGPUPrimitiveType_Points) {
@@ -136,9 +138,61 @@ BADGPUBool badgpu_swtnl_drawGeom(
             badgpu_swtnl_transform(flags, vPosD, vPos, vCol, vTCD, vTC, iStart, indices, mvMatrix, matrixT, &vtx);
             iCount--;
             iStart++;
-            bi->drawPoint(bi, &rc, vtx, plSize);
+            bi->drawPointFrontend(bi, &rc, vtx, plSize);
         }
         return 1;
     }
     return 0;
+}
+
+// SWTNL test harness
+
+#define HARNESS_FWD ctx->sTexture, ctx->sDSBuffer, ctx->sFlags, ctx->sScX, ctx->sScY, ctx->sScWidth, ctx->sScHeight, ctx->flags
+#define HARNESS_FWD2 ctx->vX, ctx->vY, ctx->vW, ctx->vH, ctx->texture, NULL, ctx->clipPlane, ctx->atFunc, ctx->atRef, ctx->stFunc, ctx->stRef, ctx->stMask, ctx->stSF, ctx->stDF, ctx->stDP, ctx->dtFunc, ctx->depthN, ctx->depthF, ctx->poFactor, ctx->poUnits, ctx->blendProgram
+#define HARNESS_FWD_ALL(primType, plSize, vCount) bi->drawGeomBackend(bi, HARNESS_FWD, 4, (float *) pos, (float *) col, 2, uvs, primType, plSize, 0, vCount, NULL, NULL, HARNESS_FWD2);
+
+void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, float plSize) {
+    BADGPUVector pos[1] = {
+        a.p
+    };
+    BADGPUVector col[1] = {
+        a.c
+    };
+    float uvs[2] = {
+        a.u, a.v
+    };
+    HARNESS_FWD_ALL(BADGPUPrimitiveType_Points, plSize, 1);
+}
+
+void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize) {
+    BADGPUVector pos[2] = {
+        a.p
+    };
+    BADGPUVector col[2] = {
+        a.c
+    };
+    float uvs[4] = {
+        a.u, a.v,
+        b.u, b.v
+    };
+    HARNESS_FWD_ALL(BADGPUPrimitiveType_Lines, plSize, 2);
+}
+
+void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c) {
+    BADGPUVector pos[3] = {
+        a.p,
+        b.p,
+        c.p
+    };
+    BADGPUVector col[3] = {
+        a.c,
+        b.c,
+        c.c
+    };
+    float uvs[6] = {
+        a.u, a.v,
+        b.u, b.v,
+        c.u, c.v
+    };
+    HARNESS_FWD_ALL(BADGPUPrimitiveType_Triangles, 1.0f, 3);
 }
