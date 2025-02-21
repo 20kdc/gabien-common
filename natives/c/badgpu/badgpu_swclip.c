@@ -105,7 +105,11 @@ void badgpu_swclip_drawPoint(struct BADGPUInstancePriv * bi, const BADGPURasteri
     bi->drawPointBackend(bi, ctx, a, plSize);
 }
 
+// Clipper currently seems to find a lot of edge cases where it crashes. probably needs a rewrite
+#define DISABLE_CLIPPER
+
 static void bswDrawLineClipper(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize, int planeIndex) {
+#ifndef DISABLE_CLIPPER
     while (planeIndex < PLANE_COUNT) {
         clipconclusion_t clip = bswClipper(&a.p, &b.p, ctx, planeIndex);
         planeIndex++;
@@ -120,6 +124,7 @@ static void bswDrawLineClipper(struct BADGPUInstancePriv * bi, const BADGPURaste
             return;
         }
     }
+#endif
     bi->drawLineBackend(bi, ctx, a, b, plSize);
 }
 
@@ -128,6 +133,7 @@ void badgpu_swclip_drawLine(struct BADGPUInstancePriv * bi, const BADGPURasteriz
 }
 
 static void bswDrawTriangleClipper(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c, int planeIndex) {
+#ifndef DISABLE_CLIPPER
     while (planeIndex < PLANE_COUNT) {
         clipconclusion_t clipAB = bswClipper(&a.p, &b.p, ctx, planeIndex);
         clipconclusion_t clipBC = bswClipper(&b.p, &c.p, ctx, planeIndex);
@@ -156,6 +162,7 @@ static void bswDrawTriangleClipper(struct BADGPUInstancePriv * bi, const BADGPUR
         }
         planeIndex++;
     }
+#endif
     bi->drawTriangleBackend(bi, ctx, a, b, c);
 }
 
