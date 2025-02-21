@@ -46,6 +46,7 @@ static inline int printf(const char * fmt, ...) {
     return res;
 }
 #endif
+int strcmp(const char * a, const char * b);
 char * strstr(const char * h, const char * n);
 #else
 #include <stdio.h>

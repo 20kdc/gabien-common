@@ -6,7 +6,6 @@
  */
 
 #include "badgpu_internal.h"
-#include <string.h>
 
 static BADGPUDynLib dlOpen1(const char * loc) {
 #ifdef WIN32
