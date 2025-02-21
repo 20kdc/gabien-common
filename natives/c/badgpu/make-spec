@@ -1,0 +1,4 @@
+#!/bin/sh
+lua specify.lua < badgpu.h > badgpu.md &&
+pandoc badgpu.md -o badgpu.html &&
+pandoc badgpu.md -o badgpu.pdf
