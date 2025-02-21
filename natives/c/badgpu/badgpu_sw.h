@@ -70,6 +70,16 @@ static inline uint32_t f8topixel(float r, float g, float b, float a) {
     res |= f8tou8(a) << 24;
     return res;
 }
+static inline BADGPUVector pixel2vec(uint32_t pixel) {
+    BADGPUVector vec = {
+        .x = u8tof8(pixel >> 16),
+        .y = u8tof8(pixel >> 8),
+        .z = u8tof8(pixel >> 0),
+        .w = u8tof8(pixel >> 24)
+    };
+    return vec;
+}
+
 static inline uint32_t sessionFlagsToARGBMask(uint32_t sFlags) {
     uint32_t mask = 0;
     if (sFlags & BADGPUSessionFlags_MaskR)

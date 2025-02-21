@@ -70,6 +70,18 @@ static BADGPUTexture bswNewTexture(struct BADGPUInstancePriv * instance, int16_t
     return (BADGPUTexture) tex;
 }
 
+static BADGPUVector bswSampleTexture(const BADGPUTextureSW * tex, int flags, float u, float v) {
+    u *= tex->w;
+    v *= tex->h;
+    u = flags & BADGPUDrawFlags_WrapS ? fmodf(u, 1) : (u < 0 ? 0 : (u > 1 ? 1 : u));
+    v = flags & BADGPUDrawFlags_WrapT ? fmodf(v, 1) : (v < 0 ? 0 : (v > 1 ? 1 : v));
+    int ui = (int) floorf(u);
+    int vi = (int) floorf(v);
+    ui = ui < 0 ? 0 : (ui >= tex->w ? tex->w - 1 : ui);
+    vi = vi < 0 ? 0 : (vi >= tex->h ? tex->h - 1 : vi);
+    return pixel2vec(tex->data[ui + (vi * tex->w)]);
+}
+
 static BADGPUDSBuffer bswNewDSBuffer(struct BADGPUInstancePriv * instance, int16_t width, int16_t height) {
     size_t datasize = ((size_t) width) * ((size_t) height) * sizeof(badgpu_ds_t);
     BADGPUDSBufferSW * tex = malloc(sizeof(BADGPUDSBufferSW) + datasize);
@@ -134,7 +146,7 @@ static BADGPUBool bswVSize(BADGPU_SESSIONFLAGS, int * w, int * h, badgpu_rect_t 
     region->r = *w;
     region->d = *h;
     if (sFlags & BADGPUSessionFlags_Scissor)
-        badgpu_rectClip(region, badgpu_rect(sScX, sScY, sScWidth, sScHeight));
+        badgpu_rectClip(region, badgpu_rect(sScX, sScY, sScX + sScWidth, sScY + sScHeight));
     return 1;
 }
 
@@ -265,12 +277,16 @@ static void bswDrawTriangle(
 
     int x, y;
 
+    BADGPUVector pixel = a.c;
+    if (ctx->texture)
+        pixel = badgpu_vectorByVector(bswSampleTexture(BG_TEXTURE_SW(ctx->texture), ctx->flags, a.u, a.v), pixel);
+
     for (y = region.u; y < region.d; y++) {
         for (x = region.l; x < region.r; x++) {
             size_t p = x + (y * vpW);
             uint32_t * rgb = ctx->sTexture ? (BG_TEXTURE_SW(ctx->sTexture)->data + p) : NULL;
             if (rgb)
-                rop.txFunc(&rop, rgb, a.c.x, a.c.y, a.c.z, a.c.w);
+                rop.txFunc(&rop, rgb, pixel.x, pixel.y, pixel.z, pixel.w);
         }
     }
     return;

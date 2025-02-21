@@ -48,8 +48,11 @@ static inline int printf(const char * fmt, ...) {
 #endif
 int strcmp(const char * a, const char * b);
 char * strstr(const char * h, const char * n);
+float fmodf(float, float);
+float floorf(float);
 #else
 #include <stdio.h>
+#include <math.h>
 #endif
 
 // Separate declaration of these so they don't end up in API.
@@ -305,6 +308,15 @@ static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMat
     return out;
 }
 
+static inline BADGPUVector badgpu_vectorByVector(BADGPUVector v, BADGPUVector v2) {
+    BADGPUVector out = {
+        v.x * v2.x,
+        v.y * v2.y,
+        v.z * v2.z,
+        v.w * v2.w
+    };
+    return out;
+}
 
 // Instance w/ Software TnL
 
