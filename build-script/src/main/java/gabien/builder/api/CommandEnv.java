@@ -16,15 +16,21 @@ import java.util.Map;
  * Created 17th February 2025, reworked 26th February 2025.
  */
 public final class CommandEnv implements Diagnostics {
+    /**
+     * This requires all sorts of stupid workarounds.
+     */
+    public static final boolean IS_WINDOWS = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows");
+    public static final String EXE_SUFFIX = IS_WINDOWS ? ".exe" : "";
+    public static final String CMD_SUFFIX = IS_WINDOWS ? ".cmd" : "";
     public static final File GABIEN_HOME = new File(System.getenv("GABIEN_HOME"));
-    public static final String EXE_SUFFIX;
+    /**
+     * This can be breaky on the Wine testbed if directly invoked, so invoke it via the fixed path instead.
+     */
+    public static final String UMVN_COMMAND = new File(GABIEN_HOME, "/micromvn/umvn" + CMD_SUFFIX).toString();
     public static final String JAVA_COMMAND;
     public static final String JAVAC_COMMAND;
-    public static final String UMVN_COMMAND = "umvn";
 
     static {
-        EXE_SUFFIX = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
-
         Map<String, String> env = System.getenv();
 
         // so this uses some special rules, preferring JAVA_1_8_HOME for javac but other stuff for java

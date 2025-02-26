@@ -2,6 +2,8 @@
 
 Ok, so, I'm not going to lie: the GaBIEn build process is the way it is because Gradle kept breaking compatibility and ran into problems with JDK switching and generally made my ability to work on my projects as a developer impossible. As a result, I have instead created a spaghetti mess which **can always be made to work,** but **is not always pleasant to work with.**
 
+I've at least started to 'comb the hair' of it, though!
+
 I hope you understand. Let's push on. - 20kdc
 
 ## Setup
@@ -11,9 +13,9 @@ I hope you understand. Let's push on. - 20kdc
 Here's the short summary:
 
 * GaBIEn is intended to be developed and built using OpenJDK 8. **You are expected to have a Java 8 JDK located at the environment variable `JAVA_1_8_HOME`.**
-* Due to issues with the Android Build Tools, **a later OpenJDK (any that Android D8 can run with) needs to be in PATH for Android builds to succeed.**
+* Due to issues with the Android Build Tools, **a later OpenJDK (any that Android D8 can run with) needs to be in PATH for Android builds to succeed. Plus there are a bunch of environment variables needed for that.**
 * **gabien-natives needs to be installed (see next section).**
-* **`bash` is required.** _This is because implementing portable environment activation on other shells is much harder than it should be._
+* **On Unices, `bash` or `zsh` are required.** (`bash` is used-in-production but `zsh` was tested at time of writing.) _This is because implementing portable environment activation on other shells is much harder than it should be._
 
 ### `gabien-natives`
 
@@ -25,19 +27,21 @@ After extracting one of these packages, you will find a `sdk-install` script whi
 
 ### Shell & First Compile (Unix)
 
-The environment activation script has been tested on bash and probably maybe should work on `zsh`.
+The environment activation script is generally used on bash and at time of writing works on `zsh`.
 
-You can run `. ./bin/activate` (similar to a Python venv) or `. ./bin/activate`
+You can run `. ./bin/activate` (similar to a Python venv)
 
 This will setup the GaBIEn command-line environment, including putting the `JAVA_1_8_HOME` JDK and the tools in `bin/` into PATH.
 
 You will see `GE ` at your prompt. You can now run `gabien-do ready`.
 
+You can also use `gabien-do check` to check for common installation issues.
+
 ### Shell & First Compile (Windows)
 
 `bin\activate` (or `call bin\activate` from scripts), similar to Unixes.
 
-You can then run `gabien-do ready` (or `call gabien-do ready` from scripts).
+You can then run `gabien-do ready` (or `call gabien-do ready` from scripts), and also `gabien-do check` as usual.
 
 ## Eclipse IDE
 

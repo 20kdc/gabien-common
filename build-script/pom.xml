@@ -4,17 +4,22 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<groupId>t20kdc.hs2</groupId>
 	<artifactId>gabien-buildscript</artifactId>
+	<version>0.666-SNAPSHOT</version> <!-- NEVER CHANGE THIS. This entire set of libraries is unstable and SHOULD NOT be system-packed. -->
 
 	<name>gabien-buildscript</name>
 	<description>Build assistant for GaBIEn-related projects.</description>
 
-	<parent>
-		<groupId>t20kdc.hs2</groupId>
-		<artifactId>gabien-common-parent-project</artifactId>
-		<version>0.666-SNAPSHOT</version>
-		<relativePath>..</relativePath>
-	</parent>
+	<!-- So a fun bootstrap paradox found during Wine testing : We can't rely on the parent project being installed! ...this might be a umvn bug? This is too weird for me to be sure. -->
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.executable>${env.JAVA_1_8_HOME}/bin/javac</maven.compiler.executable>
+		<maven.compiler.fork>true</maven.compiler.fork>
+	</properties>
 
 	<dependencies>
 		<dependency>

@@ -6,6 +6,11 @@
  */
 package gabien.builder.api;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+
 /**
  * Created February 18th, 2025.
  */
@@ -19,5 +24,27 @@ public class MajorRoutines {
         inHome.run(CommandEnv.UMVN_COMMAND, "test", "-q");
         inHome.run(CommandEnv.UMVN_COMMAND, "package-only", "-q");
         inHome.run(CommandEnv.UMVN_COMMAND, "install-only", "-q");
+    }
+
+    /**
+     * Be CAREFUL with this! (copied from umvn)
+     */
+    public static void recursivelyDelete(File sourceTargetDir) {
+        try {
+            sourceTargetDir = sourceTargetDir.getCanonicalFile();
+            if (sourceTargetDir.getParentFile() == null)
+                throw new RuntimeException("The requested operation would destroy an entire drive, which is generally considered a bad move.");
+            Path p = sourceTargetDir.toPath();
+            if (Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)) {
+                for (File sub : sourceTargetDir.listFiles()) {
+                    if (!sub.getCanonicalFile().getParentFile().equals(sourceTargetDir))
+                        throw new RuntimeException("Will not recursively delete, weird structure");
+                    recursivelyDelete(sub);
+                }
+            }
+            sourceTargetDir.delete();
+        } catch (Exception ex) {
+            throw new RuntimeException("during recursive delete @ " + sourceTargetDir);
+        }
     }
 }

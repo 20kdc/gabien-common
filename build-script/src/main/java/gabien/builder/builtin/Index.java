@@ -7,6 +7,7 @@
 
 package gabien.builder.builtin;
 
+import java.io.File;
 import java.io.InputStream;
 
 import gabien.builder.api.CommandEnv;
@@ -32,10 +33,10 @@ public class Index implements ToolModule {
         registry.register(ReadyTool.class);
         
         PrerequisiteSet set = new PrerequisiteSet("Core");
-        set.with("JAVA_1_8_HOME present", () -> {
-            if (System.getenv("JAVA_1_8_HOME") == null)
-                throw new RuntimeException("JAVA_1_8_HOME not set.");
-        });
+        // this probably can't fail as the buildscript is built with this toolchain :(
+        set.with("JAVA_1_8_HOME present", PrerequisiteSet.envPrerequisite("JAVA_1_8_HOME", (val) -> {
+            return new File(val + "/bin/javac" + CommandEnv.EXE_SUFFIX).exists();
+        }, "C:\\Program Files\\ExampleVendor\\jdk1.8", "/usr/lib/jvm/java-8-openjdk-amd64"));
         set.with("java present", () -> {
             try {
                 ProcessBuilder pb = new ProcessBuilder(CommandEnv.JAVA_COMMAND, "-version");
@@ -68,6 +69,15 @@ public class Index implements ToolModule {
             }
         });
         set.with("gabien-natives is installed and correct", NativesInstallTester.PREREQUISITE);
+        set.with("ANDROID_JAR_D8 present", PrerequisiteSet.envPrerequisite("ANDROID_JAR_D8", (val) -> {
+            return new File(val).exists();
+        }, "C:\\Android\\Sdk\\platforms\\android-7\\android.jar", "~/Android/Sdk/platforms/android-7/android.jar"));
+        set.with("ANDROID_JAR_AAPT present", PrerequisiteSet.envPrerequisite("ANDROID_JAR_AAPT", (val) -> {
+            return new File(val).exists();
+        }, "C:\\Android\\Sdk\\platforms\\android-25\\android.jar", "~/Android/Sdk/platforms/android-25/android.jar"));
+        set.with("ANDROID_BT present", PrerequisiteSet.envPrerequisite("ANDROID_BT", (val) -> {
+            return new File(val).isDirectory();
+        }, "C:\\Android\\Sdk\\build-tools\\34.0.0", "~/Android/Sdk/build-tools/34.0.0"));
         registry.register(set);
     }
 }

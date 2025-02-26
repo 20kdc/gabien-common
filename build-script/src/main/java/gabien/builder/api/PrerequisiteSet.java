@@ -8,6 +8,7 @@
 package gabien.builder.api;
 
 import java.util.LinkedList;
+import java.util.function.Predicate;
 
 /**
  * Defines a prerequisite set to check for.
@@ -33,5 +34,16 @@ public final class PrerequisiteSet {
             this.name = name;
             this.check = r;
         }
+    }
+
+    public static Runnable envPrerequisite(String env, Predicate<String> checkValue, String exampleValueW, String exampleValueU) {
+        String msgDetail = "On Windows, use `setx " + env + "=" + exampleValueW + "`. On other platforms, add a line such as `export " + env + "=\"" + exampleValueU + "\"` to ~/.profile";
+        return () -> {
+            String eval = System.getenv(env);
+            if (eval == null || eval.isEmpty())
+                throw new RuntimeException(env + " not set. " + msgDetail);
+            if (!checkValue.test(eval))
+                throw new RuntimeException(env + " set (to \"" + eval + "\"), but looks incorrect. " + msgDetail);
+        };
     }
 }

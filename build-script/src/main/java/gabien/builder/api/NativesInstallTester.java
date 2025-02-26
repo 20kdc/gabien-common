@@ -42,8 +42,11 @@ public class NativesInstallTester {
         File nativesUtilJAR = MavenRepository.getJARFile("t20kdc.hs2", "gabien-natives-util", "0.666-SNAPSHOT");
         if (!nativesUtilJAR.exists())
             throw new RuntimeException("Natives util JAR is expected to exist");
+        File uslxJAR = MavenRepository.getJARFile("t20kdc.hs2", "gabien-uslx", "0.666-SNAPSHOT");
+        if (!uslxJAR.exists())
+            throw new RuntimeException("USLX JAR is expected to exist");
         try {
-            URLClassLoader loader = new URLClassLoader(new URL[] {nativesJAR.toURI().toURL(), nativesUtilJAR.toURI().toURL()}, ClassLoader.getSystemClassLoader());
+            URLClassLoader loader = new URLClassLoader(new URL[] {nativesJAR.toURI().toURL(), nativesUtilJAR.toURI().toURL(), uslxJAR.toURI().toURL()}, ClassLoader.getSystemClassLoader());
             Class<?> loaderClass = loader.loadClass("gabien.natives.Loader");
             loaderClass.getMethod("defaultLoader", Function.class, Function.class).invoke(null, (Function<String, InputStream>) (a) -> {
                 try {
