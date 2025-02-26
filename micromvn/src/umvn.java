@@ -227,14 +227,14 @@ public final class umvn implements Comparable<umvn> {
             properties.putIfAbsent("project.build.resources.resource.directory", "${basedir}/src/main/resources");
             properties.putIfAbsent("project.build.testResources.testResource.directory", "${basedir}/src/test/resources");
             // -- Triple setup --
-            groupId = getPropertyFull(this, "project.groupId");
-            artifactId = getPropertyFull(this, "project.artifactId");
-            version = getPropertyFull(this, "project.version");
+            groupId = getPropertyFull(this, "project.groupId", debugInfo + ": ");
+            artifactId = getPropertyFull(this, "project.artifactId", debugInfo + ": ");
+            version = getPropertyFull(this, "project.version", debugInfo + ": ");
             coordsGA = groupId + ":" + artifactId;
             triple = getTriple(groupId, artifactId, version);
             if (groupId.isEmpty() || artifactId.isEmpty() || version.isEmpty())
                 throw new RuntimeException("Missing key property: " + triple);
-            isPOMPackaged = getPropertyFull(this, "project.packaging").equals("pom");
+            isPOMPackaged = getPropertyFull(this, "project.packaging", debugInfo + ": ").equals("pom");
             POM_BY_TRIPLE.put(triple, this);
             if (LOG_DEBUG)
                 System.err.println(" = " + triple);
@@ -308,7 +308,7 @@ public final class umvn implements Comparable<umvn> {
             elm = findElement(projectElement, "modules", false);
             if (sourceDir != null && elm != null)
                 for (Node n : nodeListArray(elm.getElementsByTagName("module")))
-                    for (umvn module : loadPOM(new File(sourceDir, template(this, n.getTextContent())), true).aggregate)
+                    for (umvn module : loadPOM(new File(sourceDir, template(this, n.getTextContent(), null)), true).aggregate)
                         if (!aggregate.contains(module))
                             aggregate.add(module);
             // -- <build> --
@@ -329,7 +329,7 @@ public final class umvn implements Comparable<umvn> {
                                 Element ca = findElementRecursive(plugin, "compilerArgs", false);
                                 if (ca != null)
                                     for (Node c2 : nodeListArray(ca.getElementsByTagName("arg")))
-                                        compilerArgs.add(template(this, c2.getTextContent()));
+                                        compilerArgs.add(template(this, c2.getTextContent(), null));
                             }
                         }
                     }
@@ -401,14 +401,14 @@ public final class umvn implements Comparable<umvn> {
      */
     public String templateFindElement(Node pomDoc, String string, String def) {
         Node n = findElement(pomDoc, string, false);
-        return n == null ? def : template(this, n.getTextContent());
+        return n == null ? def : template(this, n.getTextContent(), null);
     }
 
     /**
      * templateFindElement but erroring on lack of element.
      */
     public String templateFindRequiredElement(Node pomDoc, String string) {
-        return template(this, findElement(pomDoc, string, true).getTextContent());
+        return template(this, findElement(pomDoc, string, true).getTextContent(), null);
     }
 
     public static Node[] nodeListArray(NodeList list) {
@@ -626,7 +626,14 @@ public final class umvn implements Comparable<umvn> {
     /**
      * Gets a project/system/etc. property.
      */
-    public static String getPropertyFull(umvn context, String basis) {
+    public static String getPropertyFullWarn(umvn context, String basis) {
+        return getPropertyFull(context, basis, (context != null ? context + ": " : "(null): "));
+    }
+
+    /**
+     * Gets a project/system/etc. property.
+     */
+    public static String getPropertyFull(umvn context, String basis, String warnContext) {
         /*
          * https://maven.apache.org/ref/3-LATEST/maven-model-builder/index.html
          *
@@ -651,7 +658,7 @@ public final class umvn implements Comparable<umvn> {
          */
         String pv;
         if (basis.equals("build.timestamp") || basis.equals("maven.build.timestamp"))
-            return new SimpleDateFormat(getPropertyFull(context, "maven.build.timestamp.format")).format(REFERENCE_BUILD_START_DATE);
+            return new SimpleDateFormat(getPropertyFull(context, "maven.build.timestamp.format", warnContext)).format(REFERENCE_BUILD_START_DATE);
         if (context != null) {
             // hardcoded
             if ((basis.equals("project.basedir") || basis.equals("basedir")) && context.sourceDir != null)
@@ -659,7 +666,7 @@ public final class umvn implements Comparable<umvn> {
             // POM properties
             if (basis.startsWith("project.")) {
                 pv = context.properties.get(basis);
-                return pv != null ? template(context, pv) : "";
+                return pv != null ? template(context, pv, warnContext != null ? (warnContext + basis + ": ") : null) : "";
             }
         }
         // -D
@@ -668,15 +675,18 @@ public final class umvn implements Comparable<umvn> {
             return pv;
         pv = context != null ? context.properties.get(basis) : null;
         if (pv != null)
-            return template(context, pv);
+            return template(context, pv, warnContext != null ? (warnContext + basis + ": ") : null);
         pv = System.getProperty(basis);
+        if (pv == null && warnContext != null) {
+            System.err.println("WARN: " + warnContext + "Property '" + basis + "' missing.");
+        }
         return pv != null ? pv : "";
     }
 
     /**
      * Templates property references. Needed because of hamcrest.
      */
-    public static String template(umvn context, String text) {
+    public static String template(umvn context, String text, String warnContext) {
         StringBuilder res = new StringBuilder();
         int at = 0;
         while (true) {
@@ -688,7 +698,8 @@ public final class umvn implements Comparable<umvn> {
             int idx2 = text.indexOf('}', idx);
             if (idx2 == -1)
                 throw new RuntimeException("Unclosed template @ " + text);
-            res.append(getPropertyFull(context, text.substring(idx + 2, idx2)));
+            String prop = text.substring(idx + 2, idx2);
+            res.append(getPropertyFull(context, prop, warnContext != null ? (warnContext + "${" + prop + "}: ") : null));
             at = idx2 + 1;
         }
     }
@@ -705,8 +716,8 @@ public final class umvn implements Comparable<umvn> {
             return;
 
         File classes = getSourceTargetClassesDir(group);
-        File java = getSourceRelativeOrAbsolutePath(getPropertyFull(this, SRCGROUP_PROP_JAVA[group]));
-        File resources = getSourceRelativeOrAbsolutePath(getPropertyFull(this, SRCGROUP_PROP_RES[group]));
+        File java = getSourceRelativeOrAbsolutePath(getPropertyFullWarn(this, SRCGROUP_PROP_JAVA[group]));
+        File resources = getSourceRelativeOrAbsolutePath(getPropertyFullWarn(this, SRCGROUP_PROP_RES[group]));
         classes.mkdirs();
         // compile classes
         TreeSet<String> copy = new TreeSet<>();
@@ -720,7 +731,7 @@ public final class umvn implements Comparable<umvn> {
             if (classpathEntry.isPOMPackaged)
                 continue;
             if (classpathEntry.sourceDir != null) {
-                sourcepath.add(classpathEntry.getSourceRelativeOrAbsolutePath(getPropertyFull(classpathEntry, SRCGROUP_PROP_JAVA[SRCGROUP_MAIN])));
+                sourcepath.add(classpathEntry.getSourceRelativeOrAbsolutePath(getPropertyFullWarn(classpathEntry, SRCGROUP_PROP_JAVA[SRCGROUP_MAIN])));
             } else {
                 classpath.add(getOrDownloadArtifact(classpathEntry, SUFFIX_JAR));
             }
@@ -780,7 +791,7 @@ public final class umvn implements Comparable<umvn> {
         buildListOfRelativePaths(classes, "", copy);
 
         TreeSet<String> listForCurrentProcess = new TreeSet<>();
-        byte[] expected = getPropertyFull(this, "micromvn.testMarker").getBytes(StandardCharsets.UTF_8);
+        byte[] expected = getPropertyFullWarn(this, "micromvn.testMarker").getBytes(StandardCharsets.UTF_8);
         byte[] buffer = new byte[expected.length];
         for (String sourceFileName : copy) {
             if (sourceFileName.contains("$") || !sourceFileName.endsWith(".class"))
@@ -806,7 +817,7 @@ public final class umvn implements Comparable<umvn> {
         }
         if (!listForCurrentProcess.isEmpty()) {
             LinkedList<String> argsFinal = new LinkedList<>();
-            argsFinal.add(getPropertyFull(this, "micromvn.testMainClass"));
+            argsFinal.add(getPropertyFullWarn(this, "micromvn.testMainClass"));
             argsFinal.addAll(listForCurrentProcess);
             runJava(argsFinal, queue, (v) -> {
                 errorSignal.compareAndSet(false, v != 0);
@@ -878,12 +889,12 @@ public final class umvn implements Comparable<umvn> {
             args.forEach(ps::println);
         }
         responseFile.deleteOnExit();
-        pb.command(getPropertyFull(this, "maven.compiler.executable"), "@" + responseFile.getAbsolutePath());
+        pb.command(getPropertyFullWarn(this, "maven.compiler.executable"), "@" + responseFile.getAbsolutePath());
         return startProcess(pb, queue, onEnd);
     }
 
     private void mirrorJavacArg(LinkedList<String> ps, String arg, String prop) {
-        String targetVer = getPropertyFull(this, prop);
+        String targetVer = getPropertyFull(this, prop, null);
         if (!targetVer.isEmpty()) {
             ps.add(arg);
             ps.add(targetVer);
@@ -891,7 +902,7 @@ public final class umvn implements Comparable<umvn> {
     }
 
     private void mirrorJavacSwitch(LinkedList<String> ps, String on, String off, String prop) {
-        String selection = getPropertyFull(this, prop).equals("true") ? on : off;
+        String selection = getPropertyFull(this, prop, null).equals("true") ? on : off;
         if (selection != null)
             ps.add(selection);
     }
@@ -922,7 +933,7 @@ public final class umvn implements Comparable<umvn> {
         pb.directory(sourceDir);
         pb.inheritIO();
         LinkedList<String> command = new LinkedList<>();
-        command.add(getPropertyFull(this, "micromvn.java"));
+        command.add(getPropertyFullWarn(this, "micromvn.java"));
         String classpath = getTestRuntimeClasspath();
         if (!classpath.isEmpty()) {
             command.add("-classpath");
@@ -1100,7 +1111,7 @@ public final class umvn implements Comparable<umvn> {
     }
 
     public static File getLocalRepo() {
-        return new File(getPropertyFull(null, "maven.repo.local"));
+        return new File(getPropertyFullWarn(null, "maven.repo.local"));
     }
 
     public static String getArtifactPath(String groupId, String artifactId, String version, String suffix) {
@@ -1227,8 +1238,8 @@ public final class umvn implements Comparable<umvn> {
             sb.append("\t<!-- <parent><groupId></groupId><artifactId></artifactId><version></version><scope></scope><relativePath></relativePath></parent> -->\n");
             sb.append("\t<properties>\n");
             sb.append("\t\t<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n");
-            sb.append("\t\t<maven.compiler.source>" + getPropertyFull(null, "maven.compiler.source") + "</maven.compiler.source>\n");
-            sb.append("\t\t<maven.compiler.target>" + getPropertyFull(null, "maven.compiler.target") + "</maven.compiler.target>\n");
+            sb.append("\t\t<maven.compiler.source>" + getPropertyFullWarn(null, "maven.compiler.source") + "</maven.compiler.source>\n");
+            sb.append("\t\t<maven.compiler.target>" + getPropertyFullWarn(null, "maven.compiler.target") + "</maven.compiler.target>\n");
             sb.append("\t\t<!-- <maven.compiler.executable>${env.JAVA_1_8_HOME}/bin/javac</maven.compiler.executable> -->\n");
             sb.append("\t\t<maven.compiler.fork>true</maven.compiler.fork>\n");
             sb.append("\t</properties>\n");
@@ -1372,7 +1383,7 @@ public final class umvn implements Comparable<umvn> {
                     if (infoSplitterIndex == -1) {
                         CMDLINE_PROPS.put(info, "true"); // mvn -Djava.version -v
                     } else {
-                        CMDLINE_PROPS.put(info.substring(0, infoSplitterIndex), template(null, info.substring(infoSplitterIndex + 1)));
+                        CMDLINE_PROPS.put(info.substring(0, infoSplitterIndex), template(null, info.substring(infoSplitterIndex + 1), "cmdline: "));
                     }
                 } else if (s.equals("-T") || s.equals("--threads")) {
                     JAVAC_PROCESSES.set(Integer.parseInt(args[++argIndex]));
@@ -1487,7 +1498,7 @@ public final class umvn implements Comparable<umvn> {
             doPackageAndInstall(rootPom.aggregate, true, true);
             doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
-            String prop = getPropertyFull(null, "artifact");
+            String prop = getPropertyFullWarn(null, "artifact");
             if (prop.isEmpty())
                 throw new RuntimeException("get requires -Dartifact=...");
             String[] parts = prop.split(":");
@@ -1496,12 +1507,12 @@ public final class umvn implements Comparable<umvn> {
             pomByCoordinates(parts[0], parts[1], parts[2], true).completeDownload();
             doFinalStatusOK("Installed.");
         } else if (goal.equals("install-file")) {
-            String file = getPropertyFull(null, "file");
-            String pomFile = getPropertyFull(null, "pomFile");
-            String groupId = getPropertyFull(null, "groupId");
-            String artifactId = getPropertyFull(null, "artifactId");
-            String version = getPropertyFull(null, "version");
-            String packaging = getPropertyFull(null, "packaging");
+            String file = getPropertyFullWarn(null, "file");
+            String pomFile = getPropertyFullWarn(null, "pomFile");
+            String groupId = getPropertyFullWarn(null, "groupId");
+            String artifactId = getPropertyFullWarn(null, "artifactId");
+            String version = getPropertyFullWarn(null, "version");
+            String packaging = getPropertyFullWarn(null, "packaging");
             if (file.isEmpty())
                 throw new RuntimeException("install-file requires -Dfile=...");
             if (!pomFile.isEmpty()) {
@@ -1542,7 +1553,7 @@ public final class umvn implements Comparable<umvn> {
             doGather(onePom, DEPSET_ROOT_TEST);
             extraArgs.addFirst(rootPom.getTestRuntimeClasspath());
             extraArgs.addFirst("-classpath");
-            extraArgs.addFirst(getPropertyFull(null, "micromvn.java"));
+            extraArgs.addFirst(getPropertyFullWarn(null, "micromvn.java"));
 
             ProcessBuilder pb = new ProcessBuilder();
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
@@ -1593,7 +1604,7 @@ public final class umvn implements Comparable<umvn> {
     }
 
     public static String doVersionInfo() {
-        return "microMVN " + VERSION + " " + URL + "\njava.version=" + getPropertyFull(null, "java.version") + " maven.compiler.executable=" + getPropertyFull(null, "maven.compiler.executable") + " maven.repo.local=" + getPropertyFull(null, "maven.repo.local");
+        return "microMVN " + VERSION + " " + URL + "\njava.version=" + getPropertyFullWarn(null, "java.version") + " maven.compiler.executable=" + getPropertyFullWarn(null, "maven.compiler.executable") + " maven.repo.local=" + getPropertyFullWarn(null, "maven.repo.local");
     }
 
     public static void doHelp() {
