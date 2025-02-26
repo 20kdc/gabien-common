@@ -14,15 +14,10 @@ public class MajorRoutines {
     }
 
     public static void ready(CommandEnv diag) {
-        CommandEnv inHome = diag.clone();
-        inHome.pwd = CommandEnv.GABIEN_HOME;
-        diag.toolEnv.info("Readying engine...");
+        CommandEnv inHome = diag.cd(CommandEnv.GABIEN_HOME);
+        inHome.info("Readying engine...");
         inHome.run(CommandEnv.UMVN_COMMAND, "test", "-q");
-        if (diag.toolEnv.hasAnyErrorOccurred())
-            return;
         inHome.run(CommandEnv.UMVN_COMMAND, "package-only", "-q");
-        if (diag.toolEnv.hasAnyErrorOccurred())
-            return;
         inHome.run(CommandEnv.UMVN_COMMAND, "install-only", "-q");
     }
 }

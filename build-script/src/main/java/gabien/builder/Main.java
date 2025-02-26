@@ -7,10 +7,13 @@
 
 package gabien.builder;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.TreeSet;
 
-import gabien.builder.api.ToolEnvironment;
+import gabien.builder.api.AlreadyReportedRuntimeException;
+import gabien.builder.api.CommandEnv;
+import gabien.builder.api.Diagnostics;
 import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolModule;
@@ -43,7 +46,7 @@ public class Main {
             tool = args[0];
         for (String s : names)
             HelpTool.TOOLS.put(s, instances.get(s));
-        ToolEnvironmentImpl diag = new ToolEnvironmentImpl();
+        DiagnosticsImpl diag = new DiagnosticsImpl();
         Tool t = instances.get(tool);
         if (t == null) {
             diag.error("No such tool '" + tool + "'. Try 'help'.");
@@ -51,7 +54,9 @@ public class Main {
             try {
                 t.parseArgs(args, 1, args.length - 1, diag);
                 if (!diag.hasAnyErrorOccurred())
-                    t.run(diag);
+                    t.run(new CommandEnv(diag, new File("."), new HashMap<String, String>()));
+            } catch (AlreadyReportedRuntimeException ex) {
+                System.exit(1);
             } catch (Exception ex) {
                 ex.printStackTrace();
                 System.exit(1);
@@ -92,7 +97,7 @@ public class Main {
         }
     }
 
-    private static class ToolEnvironmentImpl implements ToolEnvironment {
+    private static class DiagnosticsImpl implements Diagnostics {
         public volatile boolean error = false;
 
         @Override

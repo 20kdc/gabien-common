@@ -9,7 +9,7 @@ package gabien.builder.builtin;
 
 import java.util.LinkedList;
 
-import gabien.builder.api.ToolEnvironment;
+import gabien.builder.api.CommandEnv;
 import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolSwitch;
@@ -29,7 +29,7 @@ public class CheckTool extends Tool {
     }
 
     @Override
-    public void run(ToolEnvironment diag) {
+    public void run(CommandEnv diag) {
         for (PrerequisiteSet set : ALL_SETS) {
             diag.info(set.description + ":");
             for (PrerequisiteSet.Prerequisite pq : set.prerequisites) {

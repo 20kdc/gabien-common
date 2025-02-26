@@ -20,5 +20,5 @@ public abstract class Tool extends ParamSet {
         description = d;
     }
 
-    public abstract void run(ToolEnvironment env) throws Exception;
+    public abstract void run(CommandEnv env) throws Exception;
 }

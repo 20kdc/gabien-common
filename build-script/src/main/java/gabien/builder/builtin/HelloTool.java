@@ -7,7 +7,7 @@
 
 package gabien.builder.builtin;
 
-import gabien.builder.api.ToolEnvironment;
+import gabien.builder.api.CommandEnv;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolParam;
 
@@ -24,7 +24,7 @@ public class HelloTool extends Tool {
     }
 
     @Override
-    public void run(ToolEnvironment diag) {
+    public void run(CommandEnv diag) {
         diag.info(message);
     }
 }

@@ -24,7 +24,7 @@ public class ParamSet {
     /**
      * Parses args. Returns true if parse went OK.
      */
-    public final boolean parseArgs(String[] args, int offset, int length, ToolEnvironment diag) {
+    public final boolean parseArgs(String[] args, int offset, int length, Diagnostics diag) {
         HashSet<Param> params = new HashSet<>();
         HashSet<Param> paramsSpecified = new HashSet<>();
         TreeMap<String, Param> paramsMap = new TreeMap<>();

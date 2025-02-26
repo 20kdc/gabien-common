@@ -9,7 +9,7 @@ package gabien.builder.builtin;
 
 import com.android.tools.r8.D8;
 
-import gabien.builder.api.ToolEnvironment;
+import gabien.builder.api.CommandEnv;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolParam;
 
@@ -26,7 +26,7 @@ public class D8Tool extends Tool {
     }
 
     @Override
-    public void run(ToolEnvironment diag) {
+    public void run(CommandEnv diag) {
         D8.main(args);
         System.exit(0);
     }

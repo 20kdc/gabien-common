@@ -13,29 +13,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Created 17th February 2025.
+ * Created 17th February 2025, reworked 26th February 2025.
  */
-public final class CommandEnv {
+public final class CommandEnv implements Diagnostics {
     public static final File GABIEN_HOME = new File(System.getenv("GABIEN_HOME"));
     public static final String EXE_SUFFIX;
     public static final String JAVA_COMMAND;
     public static final String JAVAC_COMMAND;
     public static final String UMVN_COMMAND = "umvn";
-
-    /**
-     * Current working directory.
-     */
-    public File pwd = new File(".");
-
-    /**
-     * Tool environment.
-     */
-    public final ToolEnvironment toolEnv;
-
-    /**
-     * Environment overrides.
-     */
-    public final Map<String, String> envOverrides = new HashMap<>();
 
     static {
         EXE_SUFFIX = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
@@ -91,18 +76,27 @@ public final class CommandEnv {
     }
 
     /**
-     * Creates a root command environment from a tool environment.
+     * Current working directory.
      */
-    public CommandEnv(ToolEnvironment env) {
-        toolEnv = env;
-    }
+    public final File pwd;
 
-    @Override
-    public CommandEnv clone() {
-        CommandEnv ce = new CommandEnv(toolEnv);
-        ce.pwd = pwd;
-        ce.envOverrides.putAll(envOverrides);
-        return ce;
+    /**
+     * Environment overrides.
+     */
+    private final Map<String, String> envOverrides;
+
+    /**
+     * True diagnostics implementation.
+     */
+    private final Diagnostics trueDiagImpl;
+
+    /**
+     * Please don't call this outside of gabien.builder.Main
+     */
+    public CommandEnv(Diagnostics diag, File pwd, Map<String, String> envOverrides) {
+        this.trueDiagImpl = diag;
+        this.pwd = pwd;
+        this.envOverrides = envOverrides;
     }
 
     /**
@@ -116,26 +110,26 @@ public final class CommandEnv {
             pb.inheritIO();
             Process px = pb.start();
             if (px.waitFor() != 0)
-                toolEnv.error("Subprocess returned error code");
+                error("Subprocess returned error code");
         } catch (Exception ex) {
-            toolEnv.error("Error: " + ex);
-            ex.printStackTrace();
+            trueDiagImpl.reportAndThrowARRE("Running command", ex);
         }
     }
 
     /**
-     * Runs a command. Failure is ignored.
+     * Runs a command. Failure is mostly ignored, though exceptions are warned about.
      */
-    public void runOptional(String... args) {
+    public boolean runOptional(String... args) {
         try {
             ProcessBuilder pb = new ProcessBuilder(args);
             pb.directory(pwd);
             pb.environment().putAll(envOverrides);
             pb.inheritIO();
             Process px = pb.start();
-            px.waitFor();
+            return px.waitFor() == 0;
         } catch (Exception ex) {
-            toolEnv.warn("Could not run optional command: " + ex);
+            warn("Could not run optional command: " + ex);
+            return false;
         }
     }
 
@@ -151,8 +145,40 @@ public final class CommandEnv {
      * Creates a clone with the given current directory.
      */
     public CommandEnv cd(File f) {
-        CommandEnv ce = clone();
-        ce.pwd = f;
-        return ce;
+        return new CommandEnv(trueDiagImpl, f, envOverrides);
+    }
+
+    /**
+     * Creates a clone with the given env override.
+     */
+    public CommandEnv env(String key, String value) {
+        HashMap<String, String> mod = new HashMap<>(envOverrides);
+        mod.put(key, value);
+        return new CommandEnv(trueDiagImpl, pwd, mod);
+    }
+
+    @Override
+    public void error(String text) {
+        trueDiagImpl.error(text);
+    }
+
+    @Override
+    public boolean hasAnyErrorOccurred() {
+        return trueDiagImpl.hasAnyErrorOccurred();
+    }
+
+    @Override
+    public void info(String text) {
+        trueDiagImpl.info(text);
+    }
+
+    @Override
+    public void warn(String text) {
+        trueDiagImpl.warn(text);
+    }
+
+    @Override
+    public CommandEnv warningScope() {
+        return new CommandEnv(trueDiagImpl.warningScope(), pwd, envOverrides);
     }
 }
