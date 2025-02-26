@@ -9,7 +9,7 @@ package gabien.builder.builtin;
 
 import java.io.InputStream;
 
-import gabien.builder.api.Commands;
+import gabien.builder.api.CommandEnv;
 import gabien.builder.api.NativesInstallTester;
 import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.ToolModule;
@@ -38,7 +38,7 @@ public class Index implements ToolModule {
         });
         set.with("java present", () -> {
             try {
-                ProcessBuilder pb = new ProcessBuilder(Commands.JAVA_COMMAND, "-version");
+                ProcessBuilder pb = new ProcessBuilder(CommandEnv.JAVA_COMMAND, "-version");
                 Process px = pb.start();
                 if (px.waitFor() != 0)
                     throw new RuntimeException("java returned an error");
@@ -48,7 +48,7 @@ public class Index implements ToolModule {
         });
         set.with("javac looks right", () -> {
             try {
-                ProcessBuilder pb = new ProcessBuilder(Commands.JAVAC_COMMAND, "-version");
+                ProcessBuilder pb = new ProcessBuilder(CommandEnv.JAVAC_COMMAND, "-version");
                 Process px = pb.start();
                 String version = "";
                 try (InputStream inp = px.getErrorStream()) {

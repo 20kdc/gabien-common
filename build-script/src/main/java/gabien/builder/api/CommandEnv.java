@@ -8,18 +8,34 @@
 package gabien.builder.api;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created 17th February 2025.
  */
-public final class Commands {
+public final class CommandEnv {
     public static final File GABIEN_HOME = new File(System.getenv("GABIEN_HOME"));
     public static final String EXE_SUFFIX;
     public static final String JAVA_COMMAND;
     public static final String JAVAC_COMMAND;
     public static final String UMVN_COMMAND = "umvn";
+
+    /**
+     * Current working directory.
+     */
+    public File pwd = new File(".");
+
+    /**
+     * Tool environment.
+     */
+    public final ToolEnvironment toolEnv;
+
+    /**
+     * Environment overrides.
+     */
+    public final Map<String, String> envOverrides = new HashMap<>();
 
     static {
         EXE_SUFFIX = System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT).startsWith("windows") ? ".exe" : "";
@@ -74,22 +90,35 @@ public final class Commands {
         }
     }
 
-    private Commands() {
+    /**
+     * Creates a root command environment from a tool environment.
+     */
+    public CommandEnv(ToolEnvironment env) {
+        toolEnv = env;
+    }
+
+    @Override
+    public CommandEnv clone() {
+        CommandEnv ce = new CommandEnv(toolEnv);
+        ce.pwd = pwd;
+        ce.envOverrides.putAll(envOverrides);
+        return ce;
     }
 
     /**
      * Runs a command. Exceptions are converted to ToolEnvironment errors.
      */
-    public static void run(ToolEnvironment env, File pwd, String... args) {
+    public void run(String... args) {
         try {
             ProcessBuilder pb = new ProcessBuilder(args);
             pb.directory(pwd);
+            pb.environment().putAll(envOverrides);
             pb.inheritIO();
             Process px = pb.start();
             if (px.waitFor() != 0)
-                env.error("Subprocess returned error code");
+                toolEnv.error("Subprocess returned error code");
         } catch (Exception ex) {
-            env.error("Error: " + ex);
+            toolEnv.error("Error: " + ex);
             ex.printStackTrace();
         }
     }
@@ -97,15 +126,33 @@ public final class Commands {
     /**
      * Runs a command. Failure is ignored.
      */
-    public static void runOptional(ToolEnvironment env, File pwd, String... args) {
+    public void runOptional(String... args) {
         try {
             ProcessBuilder pb = new ProcessBuilder(args);
             pb.directory(pwd);
+            pb.environment().putAll(envOverrides);
             pb.inheritIO();
             Process px = pb.start();
             px.waitFor();
         } catch (Exception ex) {
-            env.warn("Could not run optional command: " + ex);
+            toolEnv.warn("Could not run optional command: " + ex);
         }
+    }
+
+    /**
+     * CDs via a relative path.
+     * Does NOT work with absolute paths! Use the other version for that.
+     */
+    public CommandEnv cd(String string) {
+        return cd(new File(pwd, string));
+    }
+
+    /**
+     * Creates a clone with the given current directory.
+     */
+    public CommandEnv cd(File f) {
+        CommandEnv ce = clone();
+        ce.pwd = f;
+        return ce;
     }
 }

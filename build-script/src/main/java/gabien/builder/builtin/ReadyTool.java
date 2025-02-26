@@ -8,6 +8,7 @@
 package gabien.builder.builtin;
 
 import gabien.builder.api.ToolEnvironment;
+import gabien.builder.api.CommandEnv;
 import gabien.builder.api.MajorRoutines;
 import gabien.builder.api.Tool;
 
@@ -22,6 +23,6 @@ public class ReadyTool extends Tool {
 
     @Override
     public void run(ToolEnvironment diag) {
-        MajorRoutines.ready(diag);
+        MajorRoutines.ready(new CommandEnv(diag));
     }
 }
