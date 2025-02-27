@@ -65,9 +65,13 @@ public interface Diagnostics {
         };
     }
 
-    default void reportAndThrowARRE(String msg, Exception ex) {
+    default void report(String msg, Exception ex) {
         error(msg + ": " + ex);
         ex.printStackTrace();
+    }
+
+    default void reportAndThrowARRE(String msg, Exception ex) {
+        report(msg, ex);
         throw new AlreadyReportedRuntimeException();
     }
 }

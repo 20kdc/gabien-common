@@ -8,6 +8,8 @@ package gabien.builder.api;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -19,6 +21,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -38,7 +41,7 @@ public class MajorRoutines {
         inHome.run(CommandEnv.UMVN_COMMAND, "install-only", "-q");
     }
 
-    public static void androidBuild(CommandEnv env, String name, String pkg, String vName, int vCode, File appJar, File icon, String[] permissions) throws Exception {
+    public static void androidBuild(CommandEnv env, String name, String pkg, String vName, int vCode, File appJar, File icon, String[] permissions, File apk) throws Exception {
         env = env.cd(new File(CommandEnv.GABIEN_HOME, "android"));
         Files.copy(icon.toPath(), new File(CommandEnv.GABIEN_HOME, "android/res/drawable/icon.png").toPath(), StandardCopyOption.REPLACE_EXISTING);
         try (PrintStream ps = new PrintStream(new File(CommandEnv.GABIEN_HOME, "android/AndroidManifest.xml"), "UTF-8")) {
@@ -76,18 +79,20 @@ public class MajorRoutines {
         recursivelyDelete(staging2);
         staging.mkdirs();
         staging2.mkdirs();
+        TreeMap<String, byte[]> jarContents = new TreeMap<>();
+        integrateZip(jarContents, new FileInputStream(appJar));
         // Extract JAR contents to staging directory
-        env.run("unzip", "-q", "-o", appJar.getAbsolutePath(), "-d", "staging");
+        extractZip(staging, jarContents);
         // Merge in everything, run d8
         env.cd(CommandEnv.GABIEN_HOME).run(CommandEnv.INCEPT_COMMAND, "d8", "--release", "--lib", System.getenv("ANDROID_JAR_D8"), "--output", staging2.getAbsolutePath(), appJar.getAbsolutePath());
-        env.run(CommandEnv.AAPT_COMMAND, "p", "-f", "-I", System.getenv("ANDROID_JAR_AAPT"), "-M", "AndroidManifest.xml", "-S", "res", "-A", "staging/assets", "-F", "result.apk");
-        env.cd(staging2).run(CommandEnv.AAPT_COMMAND, "a", "../result.apk", "classes.dex");
+        env.run(CommandEnv.AAPT_COMMAND, "p", "-f", "-I", System.getenv("ANDROID_JAR_AAPT"), "-M", "AndroidManifest.xml", "-S", "res", "-A", "staging/assets", "-F", apk.getAbsolutePath());
+        env.cd(staging2).run(CommandEnv.AAPT_COMMAND, "a", apk.getAbsolutePath(), "classes.dex");
         // Obviously, I'll move this stuff into a config file or something if I ever release to the real Play Store - and will change my keystore
         // For making debug keys that'll probably live longer than me:
         // keytool -genkeypair -keyalg RSA -validity 36500
         // Need to override jarsigner breaking things for no reason
         env = env.env("JAVA_TOOL_OPTIONS", "-Djava.security.properties=../java.security");
-        env.run(CommandEnv.JARSIGNER_COMMAND, "-sigalg", "SHA1withRSA", "-digestalg", "SHA1", "-storepass", "android", "-sigFile", "CERT", "result.apk", "mykey");
+        env.run(CommandEnv.JARSIGNER_COMMAND, "-sigalg", "SHA1withRSA", "-digestalg", "SHA1", "-storepass", "android", "-sigFile", "CERT", apk.getAbsolutePath(), "mykey");
     }
 
     /**
@@ -161,6 +166,18 @@ public class MajorRoutines {
             zis.closeEntry();
         }
         zis.close();
+    }
+
+    /**
+     * Extracts a ZIP into a directory.
+     */
+    public static void extractZip(File base, SortedMap<String, byte[]> data) throws IOException {
+        base.mkdirs();
+        for (Map.Entry<String, byte[]> s : data.entrySet()) {
+            File f = new File(base, s.getKey());
+            f.getParentFile().mkdirs();
+            Files.write(f.toPath(), s.getValue());
+        }
     }
 
     /**
