@@ -28,6 +28,12 @@
 			<!-- Before changing this version, ask yourself if it would break OpenJDK 8 compatibility! -->
 			<version>4.0.63</version>
 		</dependency>
+		<dependency>
+			<groupId>com.android.tools.build</groupId>
+			<artifactId>aaptcompiler</artifactId>
+			<!-- Before changing this version, ask yourself if it would break OpenJDK 8 compatibility! -->
+			<version>4.2.2</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>
