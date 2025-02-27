@@ -29,11 +29,16 @@ public final class CommandEnv implements Diagnostics {
     public static final String UMVN_COMMAND = new File(GABIEN_HOME, "/micromvn/umvn" + CMD_SUFFIX).toString();
     public static final String JAVA_COMMAND;
     public static final String JAVAC_COMMAND;
+    public static final String JARSIGNER_COMMAND;
+    // Used to fork the JVM.
+    public static final String INCEPT_COMMAND = "gabien-incept" + CMD_SUFFIX;
+    // This is TEMPORARY and BAD.
+    public static final String AAPT_COMMAND = System.getenv("ANDROID_BT") != null ? (System.getenv("ANDROID_BT") + "/aapt") : "aapt";
 
     static {
         Map<String, String> env = System.getenv();
 
-        // so this uses some special rules, preferring JAVA_1_8_HOME for javac but other stuff for java
+        // so this uses some special rules, preferring JAVA_1_8_HOME for javac/jarsigner but other stuff for java
         // the basic assumption is that later Java will remain runtime-compatible but will lose compilation support
         String javaHome = env.getOrDefault("MICROMVN_JAVA_HOME", "");
         String javacHome = env.getOrDefault("JAVA_1_8_HOME", "");
@@ -66,6 +71,7 @@ public final class CommandEnv implements Diagnostics {
             if (!javacHome.endsWith(File.separator))
                 javacHome += File.separator;
             JAVAC_COMMAND = javacHome + "bin" + File.separator + "javac" + EXE_SUFFIX;
+            JARSIGNER_COMMAND = javacHome + "bin" + File.separator + "jarsigner" + EXE_SUFFIX;
         } else {
             File f = new File(System.getProperty("java.home"));
             if (f.getName().equals("jre"))
@@ -74,9 +80,11 @@ public final class CommandEnv implements Diagnostics {
             // validate
             if (expectedTool.exists()) {
                 JAVAC_COMMAND = expectedTool.toString();
+                JARSIGNER_COMMAND = new File(f, "bin" + File.separator + "jarsigner" + EXE_SUFFIX).toString();
             } else {
                 // we could have a problem here. fall back to PATH
                 JAVAC_COMMAND = "javac";
+                JARSIGNER_COMMAND = "jarsigner";
             }
         }
     }

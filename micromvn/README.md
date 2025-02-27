@@ -65,7 +65,7 @@ Goals are:
 * `--quiet` / `-q`\
   Hides the header and footer.
 * `--debug` / `-X`\
-  Makes things loud for debugging.
+  Makes things loud for debugging. javac response files are not cleaned up.
 * `--offline` / `-o`\
   Disables touching the network.
 
@@ -76,6 +76,8 @@ Goals are:
   If neither are specified, `java.home` will be used as a base.\
   The `jre` directory will be stripped.\
   If a tool cannot be found this way, it will be used from PATH.
+* `MICROMVN_DEBUG` is another way to set `--debug`.
+* `MICROMVN_OFFLINE` is another way to set `--offline`.
 
 ## Java System Properties
 

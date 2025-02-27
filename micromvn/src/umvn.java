@@ -59,8 +59,8 @@ public final class umvn implements Comparable<umvn> {
     public static boolean LOG_HEADER_FOOTER = true;
     public static boolean LOG_DOWNLOAD = true;
     public static boolean LOG_ACTIVITY = true;
-    public static boolean LOG_DEBUG = false;
-    public static boolean OFFLINE = false;
+    public static boolean LOG_DEBUG = (System.getenv("MICROMVN_DEBUG") != null) && System.getenv("MICROMVN_DEBUG").equals("1");
+    public static boolean OFFLINE = (System.getenv("MICROMVN_OFFLINE") != null) && System.getenv("MICROMVN_OFFLINE").equals("1");
 
     /**
      * So this works kind of as a semaphore in regards to maximum independent javac processes.
@@ -888,8 +888,13 @@ public final class umvn implements Comparable<umvn> {
         try (PrintStream ps = new PrintStream(responseFile, "UTF-8")) {
             args.forEach(ps::println);
         }
-        responseFile.deleteOnExit();
-        pb.command(getPropertyFullWarn(this, "maven.compiler.executable"), "@" + responseFile.getAbsolutePath());
+        String theJavac = getPropertyFullWarn(this, "maven.compiler.executable");
+        if (!LOG_DEBUG) {
+            responseFile.deleteOnExit();
+        } else {
+            System.err.println("[DBG] javac: " + theJavac + " @" + responseFile);
+        }
+        pb.command(theJavac, "@" + responseFile.getAbsolutePath());
         return startProcess(pb, queue, onEnd);
     }
 
@@ -1021,11 +1026,18 @@ public final class umvn implements Comparable<umvn> {
         if (!packaging) {
             // for thin JARs, create a classpath which includes all 
             String classPath = "";
-            for (umvn dep : resolveAllDependencies(DEPSET_ROOT_MAIN_RUNTIME).values())
-                if (dep != this)
-                    classPath += " " + dep.artifactId + "-" + dep.version + ".jar";
+            for (umvn dep : resolveAllDependencies(DEPSET_ROOT_MAIN_RUNTIME).values()) {
+                if (dep != this) {
+                    String line = " " + dep.artifactId + "-" + dep.version + ".jar\r\n";
+                    if (line.getBytes(StandardCharsets.UTF_8).length <= 72) {
+                        classPath += line;
+                    } else {
+                        System.err.println("[WARN] Truncated " + dep.artifactId + " from JAR classpath as it would exceed line limit (making the JAR entirely unparsable)");
+                    }
+                }
+            }
             if (!classPath.isEmpty())
-                manifest += "Class-Path:" + classPath + "\r\n";
+                manifest += "Class-Path: \r\n" + classPath;
         }
         if (mainClass != null)
             manifest += "Main-Class: " + mainClass + "\r\n";
@@ -1537,7 +1549,7 @@ public final class umvn implements Comparable<umvn> {
                 if (!file.isEmpty()) {
                     Files.copy(new File(file).toPath(), outJAR.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 } else if (!url.isEmpty()) {
-                    if (!download(outJAR, url))
+                    if (OFFLINE || !download(outJAR, url))
                         throw new RuntimeException("download failed");
                 } else {
                     throw new RuntimeException("install-file requires -Dfile=... or -Durl=... when not POM");
@@ -1684,7 +1696,7 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("* `--quiet` / `-q`\\");
         System.out.println("  Hides the header and footer.");
         System.out.println("* `--debug` / `-X`\\");
-        System.out.println("  Makes things loud for debugging.");
+        System.out.println("  Makes things loud for debugging. javac response files are not cleaned up.");
         System.out.println("* `--offline` / `-o`\\");
         System.out.println("  Disables touching the network.");
         System.out.println("");
@@ -1695,6 +1707,8 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("  If neither are specified, `java.home` will be used as a base.\\");
         System.out.println("  The `jre` directory will be stripped.\\");
         System.out.println("  If a tool cannot be found this way, it will be used from PATH.");
+        System.out.println("* `MICROMVN_DEBUG` is another way to set `--debug`.");
+        System.out.println("* `MICROMVN_OFFLINE` is another way to set `--offline`.");
         System.out.println("");
         System.out.println("## Java System Properties");
         System.out.println("");

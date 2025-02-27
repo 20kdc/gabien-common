@@ -28,8 +28,11 @@ The "GaBIEn virtual environment" is really a pair of tools that get stapled into
 
 * `umvn`: micromvn.
 * `gabien-do`: Much more difficult to explain.
+* `gabien-incept`: `gabien-do` without the compilation.
 
 The main thing about `gabien-do` is that it uses `umvn` to first recompile and install the `gabien-buildscript` project, followed by recompiling the repository's `build-script` package and executing it. When run in the `gabien-common` repository, this results in a double recompile, but that's okay.
+
+`gabien-incept` is used when `gabien-do` wants to fork a JVM.
 
 `gabien-buildscript` contains the actual CLI frontend of `gabien-do`, along with common classes and utilities expected to be used by buildscripts.
 
