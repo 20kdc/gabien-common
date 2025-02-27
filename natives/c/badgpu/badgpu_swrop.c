@@ -6,62 +6,63 @@
  */
 
 #include "badgpu.h"
+#include "badgpu_internal.h"
 #include "badgpu_sw.h"
 
-static float ropEqAdd(float a, float b) {
+static float BADGPU_CONSTFN ropEqAdd(float a, float b) {
     return a + b;
 }
 
-static float ropEqSub(float a, float b) {
+static float BADGPU_CONSTFN ropEqSub(float a, float b) {
     return a - b;
 }
 
-static float ropEqSubRev(float a, float b) {
+static float BADGPU_CONSTFN ropEqSubRev(float a, float b) {
     return b - a;
 }
 
-static float ropBWZero(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWZero(float s, float d, float sA, float dA) {
     return 0;
 }
 
-static float ropBWOne(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWOne(float s, float d, float sA, float dA) {
     return 1;
 }
 
-static float ropBWSrcAlphaSaturate(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWSrcAlphaSaturate(float s, float d, float sA, float dA) {
     float invdA = 1 - dA;
     return invdA < sA ? invdA : sA;
 }
 
-static float ropBWDst(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWDst(float s, float d, float sA, float dA) {
     return d;
 }
 
-static float ropBWInvertDst(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWInvertDst(float s, float d, float sA, float dA) {
     return 1 - d;
 }
 
-static float ropBWDstA(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWDstA(float s, float d, float sA, float dA) {
     return dA;
 }
 
-static float ropBWInvertDstA(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWInvertDstA(float s, float d, float sA, float dA) {
     return 1 - dA;
 }
 
-static float ropBWSrc(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWSrc(float s, float d, float sA, float dA) {
     return s;
 }
 
-static float ropBWInvertSrc(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWInvertSrc(float s, float d, float sA, float dA) {
     return 1 - s;
 }
 
-static float ropBWSrcA(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWSrcA(float s, float d, float sA, float dA) {
     return sA;
 }
 
-static float ropBWInvertSrcA(float s, float d, float sA, float dA) {
+static float BADGPU_CONSTFN ropBWInvertSrcA(float s, float d, float sA, float dA) {
     return 1 - sA;
 }
 
@@ -99,66 +100,46 @@ static badgpu_blendweight_t convertBlendWeight(BADGPUBlendWeight w, int isA) {
     return ropBWOne;
 }
 
-static void badgpu_rop_txfBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, float sR, float sG, float sB, float sA) {
+static void badgpu_rop_txfBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, BADGPUSIMDVec4 sRGBA) {
     uint32_t pixDst = *dstRGB;
     uint32_t orin = 0;
     float dA = u8tof8(pixDst >> 24);
     if (opts->sFlags & BADGPUSessionFlags_MaskR) {
         float dR = u8tof8(pixDst >> 16);
-        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sR, dR, sA, dA) * sR, opts->eqRGBbwD(sR, dR, sA, dA) * dR)) << 16;
+        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sRGBA.x, dR, sRGBA.w, dA) * sRGBA.x, opts->eqRGBbwD(sRGBA.x, dR, sRGBA.w, dA) * dR)) << 16;
     }
     if (opts->sFlags & BADGPUSessionFlags_MaskG) {
         float dG = u8tof8(pixDst >> 8);
-        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sG, dG, sA, dA) * sG, opts->eqRGBbwD(sG, dG, sA, dA) * dG)) << 8;
+        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sRGBA.y, dG, sRGBA.w, dA) * sRGBA.y, opts->eqRGBbwD(sRGBA.y, dG, sRGBA.w, dA) * dG)) << 8;
     }
     if (opts->sFlags & BADGPUSessionFlags_MaskB) {
         float dB = u8tof8(pixDst);
-        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sB, dB, sA, dA) * sB, opts->eqRGBbwD(sB, dB, sA, dA) * dB));
+        orin |= f8tou8(opts->eqRGBbe(opts->eqRGBbwS(sRGBA.z, dB, sRGBA.w, dA) * sRGBA.z, opts->eqRGBbwD(sRGBA.z, dB, sRGBA.w, dA) * dB));
     }
     if (opts->sFlags & BADGPUSessionFlags_MaskA)
-        orin |= f8tou8(opts->eqAbe(opts->eqAbwS(sA, dA, sA, dA) * sA, opts->eqAbwD(sA, dA, sA, dA) * dA)) << 24;
+        orin |= f8tou8(opts->eqAbe(opts->eqAbwS(sRGBA.w, dA, sRGBA.w, dA) * sRGBA.w, opts->eqAbwD(sRGBA.w, dA, sRGBA.w, dA) * dA)) << 24;
     pixDst &= opts->rgbaMaskInv;
     pixDst |= orin;
     *dstRGB = pixDst;
 }
 
-static void badgpu_rop_txfNormalBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, float sR, float sG, float sB, float sA) {
+static void badgpu_rop_txfNormalBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, BADGPUSIMDVec4 sRGBA) {
     // One, InvertSrcA, Add
     uint32_t pixDst = *dstRGB;
-    uint32_t orin = 0;
-    float invSA = 1 - sA;
-    if (opts->sFlags & BADGPUSessionFlags_MaskR) {
-        float dR = u8tof8(pixDst >> 16);
-        orin |= f8tou8(sR + (dR * invSA)) << 16;
-    }
-    if (opts->sFlags & BADGPUSessionFlags_MaskG) {
-        float dG = u8tof8(pixDst >> 8);
-        orin |= f8tou8(sG + (dG * invSA)) << 8;
-    }
-    if (opts->sFlags & BADGPUSessionFlags_MaskB) {
-        float dB = u8tof8(pixDst);
-        orin |= f8tou8(sB + (dB * invSA));
-    }
-    if (opts->sFlags & BADGPUSessionFlags_MaskA) {
-        float dA = u8tof8(pixDst >> 24);
-        orin |= f8tou8(sA + (dA * invSA)) << 24;
-    }
+    BADGPUSIMDVec4 vDst = badgpu_sw_p2v4(pixDst);
+    float invSA = 1 - sRGBA.w;
+    vDst.v4 = (vDst.v4 * badgpu_vec4_1c(invSA).v4) + sRGBA.v4;
+    uint32_t orin = badgpu_sw_v42p(vDst);
+    orin &= opts->rgbaMask;
     pixDst &= opts->rgbaMaskInv;
     pixDst |= orin;
     *dstRGB = pixDst;
 }
 
-static void badgpu_rop_txfNoBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, float sR, float sG, float sB, float sA) {
+static void badgpu_rop_txfNoBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, BADGPUSIMDVec4 sRGBA) {
     uint32_t pixDst = *dstRGB;
-    uint32_t orin = 0;
-    if (opts->sFlags & BADGPUSessionFlags_MaskR)
-        orin |= f8tou8(sR) << 16;
-    if (opts->sFlags & BADGPUSessionFlags_MaskG)
-        orin |= f8tou8(sG) << 8;
-    if (opts->sFlags & BADGPUSessionFlags_MaskB)
-        orin |= f8tou8(sB);
-    if (opts->sFlags & BADGPUSessionFlags_MaskA)
-        orin |= f8tou8(sA) << 24;
+    uint32_t orin = badgpu_sw_v42p(sRGBA);
+    orin &= opts->rgbaMask;
     pixDst &= opts->rgbaMaskInv;
     pixDst |= orin;
     *dstRGB = pixDst;
@@ -168,7 +149,8 @@ void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t flags, uint32_t sFlags,
     opts->txFunc = flags & BADGPUDrawFlags_Blend ? badgpu_rop_txfBlend : badgpu_rop_txfNoBlend;
     opts->flags = flags;
     opts->sFlags = sFlags;
-    opts->rgbaMaskInv = ~sessionFlagsToARGBMask(sFlags);
+    opts->rgbaMask = sessionFlagsToARGBMask(sFlags);
+    opts->rgbaMaskInv = ~opts->rgbaMask;
     opts->eqRGBbwS = convertBlendWeight(BADGPU_BP_RGBS(blendProgram), 0);
     opts->eqRGBbwD = convertBlendWeight(BADGPU_BP_RGBD(blendProgram), 0);
     opts->eqAbwS = convertBlendWeight(BADGPU_BP_AS(blendProgram), 1);

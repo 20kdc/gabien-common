@@ -71,14 +71,14 @@ static BADGPUTexture bswNewTexture(struct BADGPUInstancePriv * instance, int16_t
 }
 
 // Samples texture. U/V have already been multiplied into texture space.
-static BADGPUVector bswSampleTexture(const BADGPUTextureSW * tex, int flags, float u, float v) {
+BADGPU_INLINE BADGPUSIMDVec4 bswSampleTexture(const BADGPUTextureSW * tex, int flags, float u, float v) {
     u = flags & BADGPUDrawFlags_WrapS ? fmodf(u, 1) : (u < 0 ? 0 : (u > 1 ? 1 : u));
     v = flags & BADGPUDrawFlags_WrapT ? fmodf(v, 1) : (v < 0 ? 0 : (v > 1 ? 1 : v));
     int ui = (int) floorf(u);
     int vi = (int) floorf(v);
     ui = ui < 0 ? 0 : (ui >= tex->w ? tex->w - 1 : ui);
     vi = vi < 0 ? 0 : (vi >= tex->h ? tex->h - 1 : vi);
-    return pixel2vec(tex->data[ui + (vi * tex->w)]);
+    return badgpu_sw_p2v4(tex->data[ui + (vi * tex->w)]);
 }
 
 static BADGPUDSBuffer bswNewDSBuffer(struct BADGPUInstancePriv * instance, int16_t width, int16_t height) {
@@ -154,7 +154,7 @@ static BADGPUBool bswDrawClear(
     BADGPU_SESSIONFLAGS,
     float cR, float cG, float cB, float cA, float depth, uint8_t stencil
 ) {
-    uint32_t pixel = f8topixel(cR, cG, cB, cA);
+    uint32_t pixel = badgpu_sw_v42p(badgpu_vec4(cR, cG, cB, cA));
     badgpu_ds_t ds = { depth, stencil };
 
     int vpW, vpH;
@@ -299,7 +299,7 @@ static void bswDrawTriangle(
 
     int x, y;
 
-    BADGPUVector pixel = a.c;
+    BADGPUSIMDVec4 pixel = a.c;
     if (ctx->texture)
         pixel = badgpu_vectorByVector(bswSampleTexture(BG_TEXTURE_SW(ctx->texture), ctx->flags, a.u, a.v), pixel);
 
@@ -308,7 +308,7 @@ static void bswDrawTriangle(
             size_t p = x + (y * vpW);
             uint32_t * rgb = ctx->sTexture ? (BG_TEXTURE_SW(ctx->sTexture)->data + p) : NULL;
             if (rgb)
-                rop.txFunc(&rop, rgb, pixel.x, pixel.y, pixel.z, pixel.w);
+                rop.txFunc(&rop, rgb, pixel);
         }
     }
     return;

@@ -25,12 +25,12 @@ typedef struct {
 
 // core maths
 
-static inline badgpu_rect_t badgpu_rect(int l, int u, int r, int d) {
+BADGPU_INLINE badgpu_rect_t badgpu_rect(int l, int u, int r, int d) {
     badgpu_rect_t res = {l, u, r, d};
     return res;
 }
 
-static inline void badgpu_rectClip(badgpu_rect_t * a, badgpu_rect_t b) {
+BADGPU_INLINE void badgpu_rectClip(badgpu_rect_t * a, badgpu_rect_t b) {
     if (a->l < b.l)
         a->l = b.l;
     if (a->u < b.u)
@@ -41,7 +41,7 @@ static inline void badgpu_rectClip(badgpu_rect_t * a, badgpu_rect_t b) {
         a->d = b.d;
 }
 
-static inline void badgpu_rectInclude(badgpu_rect_t * a, badgpu_rect_t b) {
+BADGPU_INLINE void badgpu_rectInclude(badgpu_rect_t * a, badgpu_rect_t b) {
     if (a->l > b.l)
         a->l = b.l;
     if (a->u > b.u)
@@ -52,7 +52,7 @@ static inline void badgpu_rectInclude(badgpu_rect_t * a, badgpu_rect_t b) {
         a->d = b.d;
 }
 
-static inline uint8_t f8tou8(float c) {
+BADGPU_INLINE uint8_t f8tou8(float c) {
     int r = (int) ((c * 255) + 0.5);
     if (r < 0)
         return 0;
@@ -60,27 +60,28 @@ static inline uint8_t f8tou8(float c) {
         return 255;
     return r;
 }
-static inline float u8tof8(uint8_t c) {
+BADGPU_INLINE float u8tof8(uint8_t c) {
     return c / 255.0f;
 }
-static inline uint32_t f8topixel(float r, float g, float b, float a) {
-    uint32_t res = f8tou8(b);
-    res |= f8tou8(g) << 8;
-    res |= f8tou8(r) << 16;
-    res |= f8tou8(a) << 24;
+BADGPU_INLINE uint32_t badgpu_sw_v42p(BADGPUSIMDVec4 a) {
+    uint32_t res = f8tou8(a.b);
+    res |= f8tou8(a.g) << 8;
+    res |= f8tou8(a.r) << 16;
+    res |= f8tou8(a.a) << 24;
     return res;
 }
-static inline BADGPUVector pixel2vec(uint32_t pixel) {
-    BADGPUVector vec = {
-        .x = u8tof8(pixel >> 16),
-        .y = u8tof8(pixel >> 8),
-        .z = u8tof8(pixel >> 0),
-        .w = u8tof8(pixel >> 24)
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_sw_p2v4(uint32_t pixel) {
+    BADGPUSIMDVec4 vec = {
+        .x = (float) ((pixel >> 16) & 0xFF),
+        .y = (float) ((pixel >> 8) & 0xFF),
+        .z = (float) ((pixel >> 0) & 0xFF),
+        .w = (float) ((pixel >> 24) & 0xFF)
     };
+    vec.v4 /= badgpu_vec4_1c(255.0f).v4;
     return vec;
 }
 
-static inline uint32_t sessionFlagsToARGBMask(uint32_t sFlags) {
+BADGPU_INLINE uint32_t sessionFlagsToARGBMask(uint32_t sFlags) {
     uint32_t mask = 0;
     if (sFlags & BADGPUSessionFlags_MaskR)
         mask |= 0x00FF0000;
@@ -95,13 +96,13 @@ static inline uint32_t sessionFlagsToARGBMask(uint32_t sFlags) {
 
 // ROP
 
-typedef float (*badgpu_blendop_t)(float, float);
-typedef float (*badgpu_blendweight_t)(float, float, float, float);
+typedef float (*badgpu_blendop_t)(float, float) BADGPU_CONSTFN;
+typedef float (*badgpu_blendweight_t)(float, float, float, float) BADGPU_CONSTFN;
 
 struct badgpu_swrop;
 
 // typedef BADGPUBool (*badgpu_rop_dsf_t)(const struct badgpu_swrop * opts, badgpu_ds_t * dstDS);
-typedef void (*badgpu_rop_txf_t)(const struct badgpu_swrop * opts, uint32_t * dstRGB, float sR, float sG, float sB, float sA);
+typedef void (*badgpu_rop_txf_t)(const struct badgpu_swrop * opts, uint32_t * dstRGB, BADGPUSIMDVec4 sRGBA);
 
 typedef struct badgpu_swrop {
     // Core Impl.
@@ -109,6 +110,7 @@ typedef struct badgpu_swrop {
     // Flags & Such
     uint32_t flags;
     uint32_t sFlags;
+    uint32_t rgbaMask;
     uint32_t rgbaMaskInv;
     // Blend Program
     badgpu_blendweight_t eqRGBbwS, eqRGBbwD;

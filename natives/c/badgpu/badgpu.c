@@ -240,7 +240,7 @@ BADGPU_EXPORT BADGPUBool badgpuReadPixels(BADGPUTexture texture,
 
 // Drawing Commands
 
-static inline BADGPUInstancePriv * dcFindInstance(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer) {
+BADGPU_INLINE BADGPUInstancePriv * dcFindInstance(BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(sTexture);
     BADGPUDSBufferPriv * sDS = BG_DSBUFFER(sDSBuffer);
     BADGPUInstancePriv * bi = NULL;

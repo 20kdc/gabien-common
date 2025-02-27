@@ -55,7 +55,7 @@ done
 # Windows with style
 doMinGWW64Build() {
  echo $1 mingw-w64
- $2-gcc -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
+ $2-gcc -Wno-psabi -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
  $2-strip $LIBUNA/natives.$1
 }
 doMinGWW64Build x86-windows-gnu i686-w64-mingw32
@@ -68,7 +68,7 @@ echo $1 zig
 }
 doAndroidBuildGCC() {
  echo $1 gcc
- $2 -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM
+ $2 -Wno-psabi -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM
 }
 # this PARTICULAR ONE crashes Zig's clang for some reason
 doAndroidBuildGCC arm-linux-android $NDK_ARM_GCC $NDK_PLATFORM9/arch-arm

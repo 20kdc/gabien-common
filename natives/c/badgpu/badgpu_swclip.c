@@ -23,7 +23,7 @@ typedef struct {
 
 // Find the intersection of two slopes.
 // For slope1Offset == 0 && slope2Offset == 0 the answer is always 0.
-static inline float slopeIntersection(float slope1Offset, float slope, float slope2Offset, float slope2) {
+BADGPU_INLINE float slopeIntersection(float slope1Offset, float slope, float slope2Offset, float slope2) {
     // the difference from slope to slope2 increases at this rate
     float diffRate = slope2 - slope;
     return (slope2Offset - slope1Offset) / -diffRate;

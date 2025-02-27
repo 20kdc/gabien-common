@@ -30,7 +30,7 @@ typedef struct BADGPUDSBufferGL {
 
 // Instance Creation
 
-static inline BADGPUInstanceGL * badgpuGLBChk(BADGPUInstance bi, const char * location) {
+BADGPU_INLINE BADGPUInstanceGL * badgpuGLBChk(BADGPUInstance bi, const char * location) {
     return BG_INSTANCE_GL(badgpuBChk(bi, location));
 }
 
@@ -57,7 +57,7 @@ static BADGPUBool badgpuChkInnards(BADGPUInstanceGL * bi, const char * location)
     return ok;
 }
 
-static inline BADGPUBool badgpuChk(BADGPUInstanceGL * bi, const char * location, BADGPUBool failureIsAggressive) {
+BADGPU_INLINE BADGPUBool badgpuChk(BADGPUInstanceGL * bi, const char * location, BADGPUBool failureIsAggressive) {
     if (bi->base.backendCheck)
         return badgpuChkInnards(bi, location) || (failureIsAggressive && !bi->base.backendCheckAggressive);
     return 1;
@@ -91,7 +91,7 @@ static void bglFinishInstance(BADGPUInstancePriv * bi) {
 
 // FBM
 
-static inline BADGPUBool fbSetup(struct BADGPUInstanceGL * bi, BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer) {
+BADGPU_INLINE BADGPUBool fbSetup(struct BADGPUInstanceGL * bi, BADGPUTexture sTexture, BADGPUDSBuffer sDSBuffer) {
     BADGPUTexturePriv * sTex = BG_TEXTURE(sTexture);
     BADGPUDSBufferGL * sDS = BG_DSBUFFER_GL(sDSBuffer);
     bi->gl.BindFramebuffer(GL_FRAMEBUFFER, bi->fbo);
@@ -228,7 +228,7 @@ static BADGPUBool bglReadPixelsRGBA8888(void * texture,
 
 // Drawing Commands
 
-static inline BADGPUBool drawingCmdSetup(
+BADGPU_INLINE BADGPUBool drawingCmdSetup(
     BADGPUInstanceGL * bi,
     BADGPU_SESSIONFLAGS
 ) {

@@ -23,14 +23,14 @@ static const uint32_t ENDIAN_DETECTOR = 1;
 // -- converter core --
 
 #define BADGPU_TCE_HEAD(fType, tType) \
-static inline void c ## fType ## _ ## tType (const BADGPU_TCE_pixel_ ## fType * __restrict__ fD, BADGPU_TCE_pixel_ ## tType * __restrict__ tD, size_t pixels) { \
+BADGPU_INLINE void c ## fType ## _ ## tType (const BADGPU_TCE_pixel_ ## fType * __restrict__ fD, BADGPU_TCE_pixel_ ## tType * __restrict__ tD, size_t pixels) { \
     while (pixels--) {
 #define BADGPU_TCE_TAIL \
     } \
 }
 
 #define BADGPU_TCE_MEMC(fType, size) \
-static inline void c ## fType ## _ ## fType(const void * fD, void * tD, size_t pixels) { \
+BADGPU_INLINE void c ## fType ## _ ## fType(const void * fD, void * tD, size_t pixels) { \
     memcpy(tD, fD, pixels * size); \
 }
 

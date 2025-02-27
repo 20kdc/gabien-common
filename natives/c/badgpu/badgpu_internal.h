@@ -16,6 +16,8 @@
 
 #include "badgpu.h"
 
+#define BADGPU_INLINE static inline __attribute__((always_inline))
+#define BADGPU_CONSTFN __attribute__((const))
 // WSI stuff
 
 #ifdef WIN32
@@ -38,6 +40,7 @@ int printf(const char * fmt, ...);
 #else
 #include <stdarg.h>
 int __android_log_vprint(int prio, const char * tag, const char * fmt, va_list ap);
+// static inline here is used over BADGPU_INLINE because the Android GCC can't inline this function... and is loud about it
 static inline int printf(const char * fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
@@ -102,7 +105,7 @@ struct BADGPUObject {
     void (*destroy)(BADGPUObject);
 };
 
-static inline void badgpu_initObj(BADGPUObject obj, void (*destroy)(BADGPUObject)) {
+BADGPU_INLINE void badgpu_initObj(BADGPUObject obj, void (*destroy)(BADGPUObject)) {
     obj->refs = 1;
     obj->destroy = destroy;
 }
@@ -146,11 +149,46 @@ typedef struct BADGPURasterizerContext {
     uint32_t blendProgram;
 } BADGPURasterizerContext;
 
+#pragma pack(push, 16)
+// SIMD vector.
+typedef struct BADGPUSIMDVec4 {
+    union {
+        struct {
+            float x, y, z, w;
+        };
+        struct {
+            float r, g, b, a;
+        };
+        float __attribute__ ((vector_size (16))) v4;
+    };
+} BADGPUSIMDVec4;
+#pragma pack(pop)
+
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_vec4(float x, float y, float z, float w) {
+    BADGPUSIMDVec4 v4 = {
+        .x = x,
+        .y = y,
+        .z = z,
+        .w = w
+    };
+    return v4;
+}
+
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_vec4_1c(float x) {
+    BADGPUSIMDVec4 v4 = {
+        .x = x,
+        .y = x,
+        .z = x,
+        .w = x
+    };
+    return v4;
+}
+
 typedef struct BADGPURasterizerVertex {
     // Position in clip coordinates (ES11p27)
-    BADGPUVector p;
+    BADGPUSIMDVec4 p;
     // Colour.
-    BADGPUVector c;
+    BADGPUSIMDVec4 c;
     // Texture coordinate.
     float u, v;
 } BADGPURasterizerVertex;
@@ -262,7 +300,7 @@ typedef struct BADGPUDSBufferPriv {
 } BADGPUDSBufferPriv;
 #define BG_DSBUFFER(x) ((BADGPUDSBufferPriv *) (x))
 
-static inline BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * location) {
+BADGPU_INLINE BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * location) {
     BADGPUInstancePriv * bi = BG_INSTANCE(instance);
     if (bi->canPrintf)
         printf("BADGPU: %s\n", location);
@@ -270,7 +308,7 @@ static inline BADGPUBool badgpuErr(BADGPUInstancePriv * instance, const char * l
 }
 
 // Checks that the instance is bound.
-static inline BADGPUInstancePriv * badgpuBChk(BADGPUInstance bi, const char * location) {
+BADGPU_INLINE BADGPUInstancePriv * badgpuBChk(BADGPUInstance bi, const char * location) {
     BADGPUInstancePriv * bip = BG_INSTANCE(bi);
     if (!bip)
         return 0;
@@ -284,12 +322,17 @@ static inline BADGPUInstancePriv * badgpuBChk(BADGPUInstance bi, const char * lo
 
 // Vector maths
 
-static inline float badgpu_lerp(float a, float b, float v) {
+BADGPU_INLINE float badgpu_lerp(float a, float b, float v) {
     return (a * (1 - v)) + (b * v);
 }
 
-static inline BADGPUVector badgpu_vecLerp(BADGPUVector a, BADGPUVector b, float v) {
-    BADGPUVector res = {
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_alignVector(BADGPUVector v) {
+    BADGPUSIMDVec4 res = {v.x, v.y, v.z, v.w};
+    return res;
+}
+
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_vecLerp(BADGPUSIMDVec4 a, BADGPUSIMDVec4 b, float v) {
+    BADGPUSIMDVec4 res = {
         badgpu_lerp(a.x, b.x, v),
         badgpu_lerp(a.y, b.y, v),
         badgpu_lerp(a.z, b.z, v),
@@ -298,8 +341,8 @@ static inline BADGPUVector badgpu_vecLerp(BADGPUVector a, BADGPUVector b, float 
     return res;
 }
 
-static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMatrix * matrix) {
-    BADGPUVector out = {
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_vectorByMatrix(BADGPUSIMDVec4 v, const BADGPUMatrix * matrix) {
+    BADGPUSIMDVec4 out = {
         (matrix->x.x * v.x) + (matrix->y.x * v.y) + (matrix->z.x * v.z) + (matrix->w.x * v.w),
         (matrix->x.y * v.x) + (matrix->y.y * v.y) + (matrix->z.y * v.z) + (matrix->w.y * v.w),
         (matrix->x.z * v.x) + (matrix->y.z * v.y) + (matrix->z.z * v.z) + (matrix->w.z * v.w),
@@ -308,19 +351,16 @@ static inline BADGPUVector badgpu_vectorByMatrix(BADGPUVector v, const BADGPUMat
     return out;
 }
 
-static inline BADGPUVector badgpu_vectorByVector(BADGPUVector v, BADGPUVector v2) {
-    BADGPUVector out = {
-        v.x * v2.x,
-        v.y * v2.y,
-        v.z * v2.z,
-        v.w * v2.w
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_vectorByVector(BADGPUSIMDVec4 v, BADGPUSIMDVec4 v2) {
+    BADGPUSIMDVec4 out = {
+        .v4 = v.v4 * v2.v4
     };
     return out;
 }
 
 // Instance w/ Software TnL
 
-static inline BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, BADGPURasterizerVertex b, float v) {
+BADGPU_INLINE BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, BADGPURasterizerVertex b, float v) {
     BADGPURasterizerVertex res = {
         .p = badgpu_vecLerp(a.p, b.p, v),
         .c = badgpu_vecLerp(a.c, b.c, v),
@@ -329,20 +369,6 @@ static inline BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, B
     };
     return res;
 }
-
-void badgpu_swtnl_transform(
-    uint32_t flags,
-    // Vertex Loader
-    int32_t vPosD, const float * vPos,
-    const float * vCol,
-    int32_t vTCD, const float * vTC,
-    uint32_t iStart, const uint16_t * indices,
-    // Vertex Shader
-    const BADGPUMatrix * mvMatrix,
-    // Fragment Shader
-    const BADGPUMatrix * matrixT,
-    BADGPURasterizerVertex * out
-);
 
 BADGPUBool badgpu_swtnl_drawGeom(
     struct BADGPUInstancePriv *,

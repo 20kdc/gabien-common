@@ -13,7 +13,7 @@
 #include "badgpu.h"
 #include "badgpu_internal.h"
 
-void badgpu_swtnl_transform(
+BADGPU_INLINE void badgpu_swtnl_transform(
     uint32_t flags,
     // Vertex Loader
     int32_t vPosD, const float * vPos,
@@ -34,13 +34,13 @@ void badgpu_swtnl_transform(
     tIdx *= vTCD;
     cIdx *= 4;
 
-    BADGPUVector posi = { vPos[vtxIdx], vPos[vtxIdx + 1], 0, 1 };
+    BADGPUSIMDVec4 posi = { vPos[vtxIdx], vPos[vtxIdx + 1], 0, 1 };
     if (vPosD >= 3)
         posi.z = vPos[vtxIdx + 2];
     if (vPosD >= 4)
         posi.w = vPos[vtxIdx + 3];
 
-    BADGPUVector tci = { 0, 0, 0, 1 };
+    BADGPUSIMDVec4 tci = { 0, 0, 0, 1 };
     if (vTC) {
         tci.x = vTC[tIdx];
         tci.y = vTC[tIdx + 1];
@@ -51,7 +51,7 @@ void badgpu_swtnl_transform(
     }
 
     out->p = mvMatrix ? badgpu_vectorByMatrix(posi, mvMatrix) : posi;
-    BADGPUVector tco = matrixT ? badgpu_vectorByMatrix(tci, matrixT) : tci;
+    BADGPUSIMDVec4 tco = matrixT ? badgpu_vectorByMatrix(tci, matrixT) : tci;
     out->u = tco.x;
     out->v = tco.y;
 
@@ -151,10 +151,10 @@ BADGPUBool badgpu_swtnl_drawGeom(
 #define HARNESS_FWD_ALL(primType, plSize, vCount) bi->drawGeomBackend(bi, HARNESS_FWD, 4, (float *) pos, (float *) col, 2, uvs, primType, plSize, 0, vCount, NULL, NULL, HARNESS_FWD2);
 
 void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, float plSize) {
-    BADGPUVector pos[1] = {
+    BADGPUSIMDVec4 pos[1] = {
         a.p
     };
-    BADGPUVector col[1] = {
+    BADGPUSIMDVec4 col[1] = {
         a.c
     };
     float uvs[2] = {
@@ -164,10 +164,10 @@ void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv * bi, const BADGPUR
 }
 
 void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize) {
-    BADGPUVector pos[2] = {
+    BADGPUSIMDVec4 pos[2] = {
         a.p
     };
-    BADGPUVector col[2] = {
+    BADGPUSIMDVec4 col[2] = {
         a.c
     };
     float uvs[4] = {
@@ -178,12 +178,12 @@ void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv * bi, const BADGPURa
 }
 
 void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c) {
-    BADGPUVector pos[3] = {
+    BADGPUSIMDVec4 pos[3] = {
         a.p,
         b.p,
         c.p
     };
-    BADGPUVector col[3] = {
+    BADGPUSIMDVec4 col[3] = {
         a.c,
         b.c,
         c.c
