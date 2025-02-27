@@ -99,7 +99,7 @@ static badgpu_blendweight_t convertBlendWeight(BADGPUBlendWeight w, int isA) {
     return ropBWOne;
 }
 
-static void badgpu_rop_txfBlend(const badgpu_swrop_t * opts, uint32_t * dstRGB, float sR, float sG, float sB, float sA) {
+static void badgpu_rop_txfBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, float sR, float sG, float sB, float sA) {
     uint32_t pixDst = *dstRGB;
     uint32_t orin = 0;
     float dA = u8tof8(pixDst >> 24);
@@ -122,7 +122,33 @@ static void badgpu_rop_txfBlend(const badgpu_swrop_t * opts, uint32_t * dstRGB, 
     *dstRGB = pixDst;
 }
 
-static void badgpu_rop_txfNoBlend(const badgpu_swrop_t * opts, uint32_t * dstRGB, float sR, float sG, float sB, float sA) {
+static void badgpu_rop_txfNormalBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, float sR, float sG, float sB, float sA) {
+    // One, InvertSrcA, Add
+    uint32_t pixDst = *dstRGB;
+    uint32_t orin = 0;
+    float invSA = 1 - sA;
+    if (opts->sFlags & BADGPUSessionFlags_MaskR) {
+        float dR = u8tof8(pixDst >> 16);
+        orin |= f8tou8(sR + (dR * invSA)) << 16;
+    }
+    if (opts->sFlags & BADGPUSessionFlags_MaskG) {
+        float dG = u8tof8(pixDst >> 8);
+        orin |= f8tou8(sG + (dG * invSA)) << 8;
+    }
+    if (opts->sFlags & BADGPUSessionFlags_MaskB) {
+        float dB = u8tof8(pixDst);
+        orin |= f8tou8(sB + (dB * invSA));
+    }
+    if (opts->sFlags & BADGPUSessionFlags_MaskA) {
+        float dA = u8tof8(pixDst >> 24);
+        orin |= f8tou8(sA + (dA * invSA)) << 24;
+    }
+    pixDst &= opts->rgbaMaskInv;
+    pixDst |= orin;
+    *dstRGB = pixDst;
+}
+
+static void badgpu_rop_txfNoBlend(const badgpu_swrop_t * __restrict__ opts, uint32_t * __restrict__ dstRGB, float sR, float sG, float sB, float sA) {
     uint32_t pixDst = *dstRGB;
     uint32_t orin = 0;
     if (opts->sFlags & BADGPUSessionFlags_MaskR)
@@ -149,4 +175,10 @@ void badgpu_ropConfigure(badgpu_swrop_t * opts, uint32_t flags, uint32_t sFlags,
     opts->eqAbwD = convertBlendWeight(BADGPU_BP_AD(blendProgram), 1);
     opts->eqRGBbe = convertBlendOp(BADGPU_BP_RGBE(blendProgram));
     opts->eqAbe = convertBlendOp(BADGPU_BP_AE(blendProgram));
+    if (flags & BADGPUDrawFlags_Blend) {
+        // hardcoded blending programs
+        if (opts->eqRGBbwS == ropBWOne && opts->eqRGBbwD == ropBWInvertSrcA && opts->eqRGBbe == ropEqAdd && opts->eqAbwS == ropBWOne && opts->eqAbwD == ropBWInvertSrcA && opts->eqAbe == ropEqAdd) {
+            opts->txFunc = badgpu_rop_txfNormalBlend;
+        }
+    }
 }
