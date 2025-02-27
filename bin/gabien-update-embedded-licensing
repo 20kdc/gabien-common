@@ -8,9 +8,8 @@
 
 set -e
 
-cp COPYING.txt "$GABIEN_HOME/"uslx/src/main/resources/assets/gabien/licensing/common/COPYING.txt
-cp thirdparty/stb_vorbis_modified/COPYING.txt "$GABIEN_HOME/"natives-util/src/main/resources/assets/gabien/licensing/stb_vorbis/COPYING.txt
-cp thirdparty/stb_vorbis_modified/CREDITS.txt "$GABIEN_HOME/"natives-util/src/main/resources/assets/gabien/licensing/stb_vorbis/CREDITS.txt
-cp thirdparty/minimp3_modified/LICENSE "$GABIEN_HOME/"natives-util/src/main/resources/assets/gabien/licensing/minimp3/LICENSE
-cp CREDITS.txt "$GABIEN_HOME/"uslx/src/main/resources/assets/gabien/licensing/common/CREDITS.txt
+cd "$GABIEN_HOME"
 
+# Keep in sync with natives/sdk-make as appropriate!
+cp "$GABIEN_HOME/"COPYING.txt "$GABIEN_HOME/"uslx/src/main/resources/assets/gabien/licensing/common/COPYING.txt
+cp "$GABIEN_HOME/"CREDITS.txt "$GABIEN_HOME/"uslx/src/main/resources/assets/gabien/licensing/common/CREDITS.txt

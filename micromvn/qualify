@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# activate!
+. ../bin/activate
+
 # self build
 
 ./build-self
@@ -11,7 +14,9 @@ set -e
 
 cp umvn.class ../../c3ds-projects/
 
-GABIEN_NATIVES_DEV=1 gabien-ready
+pushd ..
+GABIEN_NATIVES_DEV=1 gabien-do ready
+popd
 
 pushd ../../gabien-app-r48
 ../gabien-common/micromvn/umvn package
@@ -23,5 +28,5 @@ popd
 
 pushd ../natives-util
 # :(
-GABIEN_NATIVES_DEV=1 JAVA_1_8_HOME="C:\Program Files\Eclipse Adoptium\jdk-8.0.442.6-hotspot" wine ../micromvn/umvn.cmd test
+GABIEN_NATIVES_DEV=1 JAVA_1_8_HOME="$JAVA_1_8_HOME_W" wine ../micromvn/umvn.cmd test
 popd

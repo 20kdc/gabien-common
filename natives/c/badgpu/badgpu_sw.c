@@ -70,9 +70,8 @@ static BADGPUTexture bswNewTexture(struct BADGPUInstancePriv * instance, int16_t
     return (BADGPUTexture) tex;
 }
 
+// Samples texture. U/V have already been multiplied into texture space.
 static BADGPUVector bswSampleTexture(const BADGPUTextureSW * tex, int flags, float u, float v) {
-    u *= tex->w;
-    v *= tex->h;
     u = flags & BADGPUDrawFlags_WrapS ? fmodf(u, 1) : (u < 0 ? 0 : (u > 1 ? 1 : u));
     v = flags & BADGPUDrawFlags_WrapT ? fmodf(v, 1) : (v < 0 ? 0 : (v > 1 ? 1 : v));
     int ui = (int) floorf(u);
@@ -206,6 +205,12 @@ static void bswDrawPoint(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->flags, ctx->sFlags, ctx->blendProgram);
+    // fix UVs into pixel space
+    if (ctx->texture) {
+        a.u = a.u * BG_TEXTURE_SW(ctx->texture)->w;
+        a.v = a.v * BG_TEXTURE_SW(ctx->texture)->h;
+    }
+
     // would be nice if there was something actually here
     return;
 }
@@ -225,6 +230,14 @@ static void bswDrawLine(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->flags, ctx->sFlags, ctx->blendProgram);
+    // fix UVs into pixel space
+    if (ctx->texture) {
+        a.u = a.u * BG_TEXTURE_SW(ctx->texture)->w;
+        a.v = a.v * BG_TEXTURE_SW(ctx->texture)->h;
+        b.u = b.u * BG_TEXTURE_SW(ctx->texture)->w;
+        b.v = b.v * BG_TEXTURE_SW(ctx->texture)->h;
+    }
+
     return;
 }
 
@@ -244,6 +257,15 @@ static void bswDrawTriangle(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->flags, ctx->sFlags, ctx->blendProgram);
+    // fix UVs into pixel space
+    if (ctx->texture) {
+        a.u = a.u * BG_TEXTURE_SW(ctx->texture)->w;
+        a.v = a.v * BG_TEXTURE_SW(ctx->texture)->h;
+        b.u = b.u * BG_TEXTURE_SW(ctx->texture)->w;
+        b.v = b.v * BG_TEXTURE_SW(ctx->texture)->h;
+        c.u = c.u * BG_TEXTURE_SW(ctx->texture)->w;
+        c.v = c.v * BG_TEXTURE_SW(ctx->texture)->h;
+    }
 
     // to window coordinates
 

@@ -1498,7 +1498,7 @@ public final class umvn implements Comparable<umvn> {
             doPackageAndInstall(rootPom.aggregate, true, true);
             doFinalStatusOK(rootPom.aggregate.size() + " projects installed to local repo.");
         } else if (goal.equals("get")) {
-            String prop = getPropertyFullWarn(null, "artifact");
+            String prop = getPropertyFull(null, "artifact", null);
             if (prop.isEmpty())
                 throw new RuntimeException("get requires -Dartifact=...");
             String[] parts = prop.split(":");
@@ -1507,14 +1507,13 @@ public final class umvn implements Comparable<umvn> {
             pomByCoordinates(parts[0], parts[1], parts[2], true).completeDownload();
             doFinalStatusOK("Installed.");
         } else if (goal.equals("install-file")) {
-            String file = getPropertyFullWarn(null, "file");
-            String pomFile = getPropertyFullWarn(null, "pomFile");
-            String groupId = getPropertyFullWarn(null, "groupId");
-            String artifactId = getPropertyFullWarn(null, "artifactId");
-            String version = getPropertyFullWarn(null, "version");
-            String packaging = getPropertyFullWarn(null, "packaging");
-            if (file.isEmpty())
-                throw new RuntimeException("install-file requires -Dfile=...");
+            String file = getPropertyFull(null, "file", null);
+            String url = getPropertyFull(null, "url", null);
+            String pomFile = getPropertyFull(null, "pomFile", null);
+            String groupId = getPropertyFull(null, "groupId", null);
+            String artifactId = getPropertyFull(null, "artifactId", null);
+            String version = getPropertyFull(null, "version", null);
+            String packaging = getPropertyFull(null, "packaging", null);
             if (!pomFile.isEmpty()) {
                 umvn resPom = loadPOM(new File(pomFile), false);
                 groupId = resPom.groupId;
@@ -1532,8 +1531,18 @@ public final class umvn implements Comparable<umvn> {
                 throw new RuntimeException("install-file requires -Dpackaging=... (or -DpomFile=...)");
             File outPOM = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, SUFFIX_POM));
             File outJAR = new File(getLocalRepo(), getArtifactPath(groupId, artifactId, version, SUFFIX_JAR));
-            if (!packaging.equals("pom"))
-                Files.copy(new File(file).toPath(), outJAR.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            // no matter what, we need this to continue
+            outPOM.getParentFile().mkdirs();
+            if (!packaging.equals("pom")) {
+                if (!file.isEmpty()) {
+                    Files.copy(new File(file).toPath(), outJAR.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } else if (!url.isEmpty()) {
+                    if (!download(outJAR, url))
+                        throw new RuntimeException("download failed");
+                } else {
+                    throw new RuntimeException("install-file requires -Dfile=... or -Durl=... when not POM");
+                }
+            }
             if (!pomFile.isEmpty()) {
                 Files.copy(new File(pomFile).toPath(), outPOM.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } else {
@@ -1641,10 +1650,10 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("  Cleans, compiles, tests, packages, and installs all target projects to the local Maven repo.");
         System.out.println("* `dependency:get -Dartifact=<...>`\\");
         System.out.println("  Downloads a specific artifact to the local Maven repo.");
-        System.out.println("* `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
-        System.out.println("  Installs a JAR to the local Maven repo, creating a dummy POM for it.");
-        System.out.println("* `install:install-file -Dfile=<...> -DpomFile=<...>`\\");
-        System.out.println("  Installs a JAR to the local Maven repo, importing an existing POM.");
+        System.out.println("* `install:install-file -Dfile=<...>/-Durl=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\\");
+        System.out.println("  Installs a JAR to the local Maven repo, creating a dummy POM for it. The JAR may be downloaded.");
+        System.out.println("* `install:install-file -Dfile=<...>/-Durl=<...> -DpomFile=<...>`\\");
+        System.out.println("  Installs a JAR to the local Maven repo, importing an existing POM. The JAR may be downloaded.");
         System.out.println("* `help`\\");
         System.out.println("  Shows this text.");
         System.out.println("* `umvn-test-classpath`\\");

@@ -20,6 +20,8 @@ import java.util.function.Function;
 public class NativesInstallTester {
     // This line is changed after each release.
     public static final String AUTHORITATIVE_VERSION = "musical-sparrow";
+    public static final String AUTHORITATIVE_URL = "jar:https://github.com/20kdc/gabien-common/releases/download/natives." + AUTHORITATIVE_VERSION + "/natives-sdk.zip!/natives.jar";
+    // ./umvn install-file '-Durl=jar:https://github.com/20kdc/gabien-common/releases/download/natives.musical-sparrow/natives-sdk.zip!/natives.jar' -DgroupId=t20kdc.scratchpad -DartifactId=exampleNativesDL -Dversion=8.6 -Dpackaging=jar
 
     public static final Runnable PREREQUISITE = () -> {
         // THIS IS THE ONLY PLACE WHERE THIS ENVIRONMENT VARIABLE MAY BE USED.

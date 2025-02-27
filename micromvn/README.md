@@ -31,10 +31,10 @@ Goals are:
   Cleans, compiles, tests, packages, and installs all target projects to the local Maven repo.
 * `dependency:get -Dartifact=<...>`\
   Downloads a specific artifact to the local Maven repo.
-* `install:install-file -Dfile=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\
-  Installs a JAR to the local Maven repo, creating a dummy POM for it.
-* `install:install-file -Dfile=<...> -DpomFile=<...>`\
-  Installs a JAR to the local Maven repo, importing an existing POM.
+* `install:install-file -Dfile=<...>/-Durl=<...> -DgroupId=<...> -DartifactId=<...> -Dversion=<...> -Dpackaging=<...>`\
+  Installs a JAR to the local Maven repo, creating a dummy POM for it. The JAR may be downloaded.
+* `install:install-file -Dfile=<...>/-Durl=<...> -DpomFile=<...>`\
+  Installs a JAR to the local Maven repo, importing an existing POM. The JAR may be downloaded.
 * `help`\
   Shows this text.
 * `umvn-test-classpath`\

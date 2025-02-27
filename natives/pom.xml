@@ -4,23 +4,28 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<!-- Beware! umvn will *OVERRIDE* this POM as far as the .m2 cache is concerned! This prevents a lot of nastiness but is also obviously pretty evil; we don't have deps, though, so it's okay? -->
+
+	<groupId>t20kdc.hs2</groupId>
 	<artifactId>gabien-natives</artifactId>
+	<version>0.666-SNAPSHOT</version>
 
 	<name>gabien-natives</name>
 	<description>Natives and only natives. DO NOT SYSTEM-PACKAGE - ALWAYS INCLUDE IN APPLICATION JAR.</description>
-
-	<!-- This pom.xml is for the sake of IDEs and embedding into the JAR. Maven is not actually used for compilation. -->
-	<!-- This might actually become close to the first *stable* library in the system... we'll see. -->
 
 	<!--
 		We couldn't care less about the actual Java version because there are no classes in this library.
 		But Eclipse will generate a warning about the Java version for the zero Java classes being compiled.
 	-->
-	<parent>
-		<groupId>t20kdc.hs2</groupId>
-		<artifactId>gabien-common-parent-project</artifactId>
-		<version>0.666-SNAPSHOT</version>
-		<relativePath>..</relativePath>
-	</parent>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.executable>${env.JAVA_1_8_HOME}/bin/javac</maven.compiler.executable>
+		<maven.compiler.fork>true</maven.compiler.fork>
+	</properties>
+
+	<!-- This pom.xml is for the sake of IDEs and embedding into the JAR. Maven is not actually used for compilation. -->
+	<!-- This might actually become close to the first *stable* library in the system... we'll see. (Update from the future: Datum ended up first on that front.) -->
 </project>
 

@@ -18,7 +18,7 @@ else
  echo "const char una_version[] = \"$UNA_BUILD_ID\";" > c/version.c
 fi
 
-COMMONFLAGS="-Wno-attributes -O4 -shared"
+COMMONFLAGS="-Wno-attributes -Ofast -shared"
 TARGETS="x86-linux-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
 TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
@@ -90,19 +90,24 @@ done
 mkdir -p src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives
 cp pom.xml src/main/resources/META-INF/maven/t20kdc.hs2/gabien-natives/pom.xml
 
-# "Compile" the "JAR"
-# Someone's going to probably have to ask why I did this at some point. TLDR: This process scrubs any Maven metadata and zip metadata.
-# I had hoped for hash-reproducability but it seems to be pretty difficult/impossible.
-"$ZIG" build-exe ktsz.zig
-rm -f natives.jar
-cd src/main/resources
-../../../ktsz `find * -type f | LC_ALL=C sort -u` > ../../../natives.jar
-cd ../../.. || exit
+# Licensing files ; these are stored in the JAR so that they are always shipped even when umvn pulls the JAR out of the natives-sdk release (a gloriously evil technique engineered by our most cackly witch)
+mkdir -p src/main/resources/assets/gabien/licensing/stb_vorbis
+mkdir -p src/main/resources/assets/gabien/licensing/minimp3
+mkdir -p src/main/resources/assets/gabien/licensing/common
+cp ../thirdparty/stb_vorbis_modified/COPYING.txt src/main/resources/assets/gabien/licensing/stb_vorbis/COPYING.txt
+cp ../thirdparty/stb_vorbis_modified/CREDITS.txt src/main/resources/assets/gabien/licensing/stb_vorbis/CREDITS.txt
+cp ../thirdparty/minimp3_modified/LICENSE src/main/resources/assets/gabien/licensing/minimp3/LICENSE
+cp ../COPYING.txt src/main/resources/assets/gabien/licensing/common/COPYING.txt
+cp ../CREDITS.txt src/main/resources/assets/gabien/licensing/common/CREDITS.txt
 
+# Update umvn
 cp ../micromvn/umvn.class ./
 
-# Install
-./sdk-install
+# Create natives.jar
+rm -f natives.jar
+java umvn install -q
+cp target/gabien-natives-0.666-SNAPSHOT.jar natives.jar
+
 
 echo
 echo "Build ID: $UNA_BUILD_ID"
