@@ -28,6 +28,12 @@
 			<!-- Before changing this version, ask yourself if it would break OpenJDK 8 compatibility! -->
 			<version>4.0.63</version>
 		</dependency>
+		<dependency>
+			<groupId>io.github.reandroid</groupId>
+			<artifactId>ARSCLib</artifactId>
+			<!-- This library probably won't be an issue for J8 because it targets Android as well. -->
+			<version>1.3.5</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>

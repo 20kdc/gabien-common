@@ -72,12 +72,6 @@ public class Index implements ToolModule {
         set.with("ANDROID_JAR_D8 present", PrerequisiteSet.envPrerequisite("ANDROID_JAR_D8", (val) -> {
             return new File(val).exists();
         }, "C:\\Android\\Sdk\\platforms\\android-7\\android.jar", "~/Android/Sdk/platforms/android-7/android.jar"));
-        set.with("ANDROID_JAR_AAPT present", PrerequisiteSet.envPrerequisite("ANDROID_JAR_AAPT", (val) -> {
-            return new File(val).exists();
-        }, "C:\\Android\\Sdk\\platforms\\android-25\\android.jar", "~/Android/Sdk/platforms/android-25/android.jar"));
-        set.with("ANDROID_BT present", PrerequisiteSet.envPrerequisite("ANDROID_BT", (val) -> {
-            return new File(val).isDirectory();
-        }, "C:\\Android\\Sdk\\build-tools\\34.0.0", "~/Android/Sdk/build-tools/34.0.0"));
         registry.register(set);
     }
 }

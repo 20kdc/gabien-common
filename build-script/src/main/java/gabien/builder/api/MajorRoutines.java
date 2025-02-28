@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -24,6 +23,12 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+
+import com.reandroid.arsc.chunk.PackageBlock;
+import com.reandroid.arsc.chunk.TableBlock;
+import com.reandroid.arsc.chunk.xml.AndroidManifestBlock;
+import com.reandroid.arsc.chunk.xml.ResXmlElement;
+import com.reandroid.arsc.value.Entry;
 
 /**
  * Created February 18th, 2025.
@@ -40,52 +45,65 @@ public class MajorRoutines {
         inHome.run(CommandEnv.UMVN_COMMAND, "install-only", "-q");
     }
 
+    private static final String NAME_installLocation = "installLocation";
+    private static final int ID_installLocation = 0x010102b7;
+    private static final String NAME_hardwareAccelerated = "hardwareAccelerated";
+    private static final int ID_hardwareAccelerated = 0x010102d3;
+    private static final String NAME_theme = "theme";
+    private static final int ID_theme = 0x01010000;
+    private static final int RES_ThemeLight = 0x0103000c;
+
     public static void androidBuild(CommandEnv env, String name, String pkg, String vName, int vCode, File appJar, File icon, String[] permissions, File apk) throws Exception {
         env = env.cd(new File(CommandEnv.GABIEN_HOME, "android"));
         Files.copy(icon.toPath(), new File(CommandEnv.GABIEN_HOME, "android/res/drawable/icon.png").toPath(), StandardCopyOption.REPLACE_EXISTING);
-        try (PrintStream ps = new PrintStream(new File(CommandEnv.GABIEN_HOME, "android/AndroidManifest.xml"), "UTF-8")) {
-            ps.print("<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"" + pkg + "\"\n");
-            ps.print(" android:installLocation=\"auto\"\n");
-            ps.print(" android:versionCode=\"" + vCode + "\"\n");
-            ps.print(" android:versionName=\"" + vName + "\">\n");
-            ps.print(" <uses-sdk android:minSdkVersion=\"7\" android:targetSdkVersion=\"23\" />\n");
-            for (String p : permissions)
-                ps.print(" <uses-permission android:name=\"" + p + "\"/>");
-            ps.print(" <application\n");
-            ps.print("  android:hardwareAccelerated=\"true\"\n");
-            // sadly, android:debuggable slows things down.
-            // you have to go to JNI Tips, where it will happily THEN tell you that enabling this activates CheckJNI.
-            // this note courtesy of past-me
-            //ps.print("  android:debuggable=\"true\"\n");
-            ps.print("  android:icon=\"@drawable/icon\"\n");
-            ps.print("  android:label=\"@string/app_name\"\n");
-            ps.print("  android:theme=\"@style/AppTheme\">\n");
-            ps.print("  <activity android:name=\"gabien.MainActivity\" android:immersive=\"true\">\n");
-            ps.print("   <intent-filter>\n");
-            ps.print("    <action android:name=\"android.intent.action.MAIN\"/>\n");
-            ps.print("    <category android:name=\"android.intent.category.LAUNCHER\"/>\n");
-            ps.print("   </intent-filter>\n");
-            ps.print("  </activity>\n");
-            ps.print(" </application>\n");
-            ps.print("</manifest>\n");
-        }
-        try (PrintStream ps = new PrintStream(new File(CommandEnv.GABIEN_HOME, "android/res/values/strings.xml"), "UTF-8")) {
-            ps.print("<resources><string name=\"app_name\">" + name + "</string></resources>\n");
-        }
-        File staging = new File(CommandEnv.GABIEN_HOME, "android/staging").getAbsoluteFile();
+
+        // For debugging:
+        //  aapt d xmltree workspace.apk AndroidManifest.xml
+        //  aapt d resources workspace.apk resources.arsc
+        // -- build resources --
+        TableBlock tableBlock = new TableBlock();
+        PackageBlock packageBlock = tableBlock.getOrCreatePackage(0x7f, pkg);
+        Entry iconEntry = packageBlock.getOrCreate("", "drawable", "icon");
+        // -- build manifest --
+        // Dear goodness this is so simple and easy to use THANK YOU
+        AndroidManifestBlock manifestBlock = new AndroidManifestBlock();
+        manifestBlock.getOrCreateElement("manifest").getOrCreateAndroidAttribute(NAME_installLocation, ID_installLocation).setValueAsDecimal(0);
+        manifestBlock.setPackageName(pkg);
+        manifestBlock.setVersionCode(vCode);
+        manifestBlock.setVersionName(vName);
+        manifestBlock.setMinSdkVersion(7);
+        manifestBlock.setTargetSdkVersion(23);
+        for (String p : permissions)
+            manifestBlock.addUsesPermission(p);
+        manifestBlock.setApplicationLabel(name);
+        manifestBlock.getApplicationElement().getOrCreateAndroidAttribute(NAME_hardwareAccelerated, ID_hardwareAccelerated).setValueAsBoolean(true);
+        // sadly, android:debuggable slows things down.
+        // you have to go to JNI Tips, where it will happily THEN tell you that enabling this activates CheckJNI.
+        // this note courtesy of past-me
+        manifestBlock.setIconResourceId(iconEntry.getResourceId());
+        // 0x0103000c: Theme_Light
+        manifestBlock.getApplicationElement().getOrCreateAndroidAttribute(NAME_theme, ID_theme).setValueAsResourceId(RES_ThemeLight);
+        ResXmlElement mainActivity = manifestBlock.getOrCreateMainActivity("gabien.MainActivity");
+        mainActivity.getOrCreateAndroidAttribute("immersive", 0x010102c0).setValueAsBoolean(true);
+        // -- done, refresh (autocorrects stuff) --
+        packageBlock.refreshFull();
+        // might be a bug? tableBlock refresh doesn't actually refresh packages
+        tableBlock.refreshFull();
+        manifestBlock.refreshFull();
+        // -- the rest --
+
         File staging2 = new File(CommandEnv.GABIEN_HOME, "android/staging2").getAbsoluteFile();
-        recursivelyDelete(staging);
         recursivelyDelete(staging2);
-        staging.mkdirs();
         staging2.mkdirs();
         TreeMap<String, byte[]> jarContents = new TreeMap<>();
         integrateZip(jarContents, new FileInputStream(appJar));
-        // Extract JAR contents to staging directory
-        extractZip(staging, jarContents);
+        jarContents.put("res/drawable/icon.png", Files.readAllBytes(icon.toPath()));
         // Merge in everything, run d8
         env.cd(CommandEnv.GABIEN_HOME).run(CommandEnv.INCEPT_COMMAND, "d8", "--release", "--lib", System.getenv("ANDROID_JAR_D8"), "--output", staging2.getAbsolutePath(), appJar.getAbsolutePath());
-        env.run(CommandEnv.AAPT_COMMAND, "p", "-f", "-I", System.getenv("ANDROID_JAR_AAPT"), "-M", "AndroidManifest.xml", "-S", "res", "-A", "staging/assets", "-F", apk.getAbsolutePath());
-        env.cd(staging2).run(CommandEnv.AAPT_COMMAND, "a", apk.getAbsolutePath(), "classes.dex");
+        jarContents.put("classes.dex", Files.readAllBytes(new File(staging2, "classes.dex").toPath()));
+        jarContents.put("resources.arsc", tableBlock.getBytes());
+        jarContents.put("AndroidManifest.xml", manifestBlock.getBytes());
+        Files.write(apk.toPath(), makeZip(jarContents));
         // Obviously, I'll move this stuff into a config file or something if I ever release to the real Play Store - and will change my keystore
         // For making debug keys that'll probably live longer than me:
         // keytool -genkeypair -keyalg RSA -validity 36500

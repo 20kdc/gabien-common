@@ -1,10 +1,10 @@
 # Build Guide
 
-Ok, so, I'm not going to lie: the GaBIEn build process is the way it is because Gradle kept breaking compatibility and ran into problems with JDK switching and generally made my ability to work on my projects as a developer impossible. As a result, I have instead created a spaghetti mess which **can always be made to work,** but **is not always pleasant to work with.**
+Ok, so, I'm not going to lie: _The GaBIEn build process is the way it is because every tool I used ran into compatibility issues with every other tool, so I decided to secede from most of the greater Java ecosystem._
 
-I've at least started to 'comb the hair' of it, though!
+The journey, and impetus, to get here involved a lot of pain that I hope you as a (new contributor / historian from the year 2125 / etc.) will never have to face. 
 
-I hope you understand. Let's push on. - 20kdc
+Unfortunately, that means you have to deal with this custom build system. \- 20kdc
 
 ## Setup
 
@@ -13,9 +13,9 @@ I hope you understand. Let's push on. - 20kdc
 Here's the short summary:
 
 * GaBIEn is intended to be developed and built using OpenJDK 8. **You are expected to have a Java 8 JDK located at the environment variable `JAVA_1_8_HOME`.**
-* Due to issues with the Android Build Tools, **a later OpenJDK (any that Android D8 can run with) needs to be in PATH for Android builds to succeed. Plus there are a bunch of environment variables needed for that.**
+* For Android builds, the environment variable `ANDROID_JAR_D8` needs to point at a `platforms/android-7/android.jar` file.
 * **gabien-natives needs to be installed (see next section).**
-* **On Unices, `bash` or `zsh` are required.** (`bash` is used-in-production but `zsh` was tested at time of writing.) _This is because implementing portable environment activation on other shells is much harder than it should be._
+* **On Unices, `bash` or `zsh` are required.** (`bash` is used-in-production but `zsh` was tested with the activation script at time of writing.) _This is because implementing portable environment activation on other shells is much harder than it should be._
 
 ### `gabien-natives`
 
@@ -72,18 +72,14 @@ Use default annotations is on (provided by USLX) and inherit null annotations is
 
 ## Android
 
-Android is awkward. Officially, there are two methods of performing an Android build: The Gradle way and the manual way.
+Android is awkward. According to Android developer documentation, there are two methods of performing an Android build: The Gradle way and the manual way.
 
-Since Gradle regularly breaks compatibility with each release and because JDK versioning makes holding to an old release untenable, I chose shell scripts.
+I have an axe to grind with Gradle
 
-These shell scripts... have not been converted for Windows. Personally, I'm hoping to replace them with Java sometime in the next 2 years (so she writes at the start of 2025...)
+**Thanks to <https://github.com/REAndroid/ARSCLib>, I have now _almost_ completely removed any need to install the Android SDK from this repository.**
 
-In any case, here's how you might set the important environment variables.
+In any case, here's how you might set `ANDROID_JAR_D8`:
 
 ```
-export ANDROID_BT=~/Android/Sdk/build-tools/34.0.0
-export ANDROID_JAR_AAPT=~/Android/Sdk/platforms/android-25/android.jar
 export ANDROID_JAR_D8=~/Android/Sdk/platforms/android-7/android.jar
 ```
-
-_A **really big** problem is that D8 needs a later version of Java than Java 8._ It's for this reason that the original Java tools remain in PATH when the environment is activated.

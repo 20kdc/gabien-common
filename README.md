@@ -10,8 +10,14 @@ However, their individual licenses will still be respected and reproduced.
 
 Current list of thirdparty stuff:
 
-* stb\_vorbis ( https://github.com/nothings/stb/ ) - *modified*, at `thirdparty/stb_vorbis_modified`
-* minimp3 ( https://github.com/lieff/minimp3 ) - *modified*, at `thirdparty/minimp3_modified`
+* stb\_vorbis ( <https://github.com/nothings/stb/> ) - *modified*, at `thirdparty/stb_vorbis_modified`
+* minimp3 ( <https://github.com/lieff/minimp3> ) - *modified*, at `thirdparty/minimp3_modified`
+
+Current list of thirdparty stuff not included in this repository and only used during build:
+
+* Java 8-compatible JDK (of whichever vendor)
+* ARSCLib ( <https://github.com/REAndroid/ARSCLib> ), downloaded from Maven Central.
+* Android D8, downloaded from Google's Maven repository.
 
 ## Build & Contribution Instructions
 
