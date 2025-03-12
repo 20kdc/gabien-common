@@ -16,9 +16,9 @@ public class Constants {
     public static final String NATIVES_VERSION = "musical-sparrow";
     public static final String NATIVES_URL = "jar:https://github.com/20kdc/gabien-common/releases/download/natives." + NATIVES_VERSION + "/natives-sdk.zip!/natives.jar";
     // ./umvn install-file '-Durl=jar:https://github.com/20kdc/gabien-common/releases/download/natives.musical-sparrow/natives-sdk.zip!/natives.jar' -DgroupId=t20kdc.scratchpad -DartifactId=exampleNativesDL -Dversion=8.6 -Dpackaging=jar
-    public static final String ANDROID_PLATFORM_URL = "https://chromium.googlesource.com/android_tools/+/e429db7f48cd615b0b408cda259ffbc17d3945bb/sdk/platforms/android-24/android.jar";
-    public static final String ANDROID_PLATFORM_VERSION = "25.0";
-    public static final String ANDROID_PLATFORM_LICENSE = "https://chromium.googlesource.com/android_tools/+/e429db7f48cd615b0b408cda259ffbc17d3945bb/LICENSE";
+    public static final String ANDROID_PLATFORM_URL = "https://github.com/Sable/android-platforms/raw/df22ea560a601037654042633e15e1b2bc9c3c6e/android-7/android.jar";
+    public static final String ANDROID_PLATFORM_VERSION = "7.0";
+    public static final String ANDROID_PLATFORM_LICENSE = "https://github.com/Sable/android-platforms/tree/master (AOSP???)";
 
     public static final MavenCoordinates COORDS_NATIVES = new MavenCoordinates("t20kdc.hs2", "gabien-natives", "0.666-SNAPSHOT");
     public static final MavenCoordinates COORDS_NATIVES_UTIL = new MavenCoordinates("t20kdc.hs2", "gabien-natives-util", "0.666-SNAPSHOT");
