@@ -46,7 +46,13 @@ After extracting one of these packages, you will find a `sdk-install` script whi
 
 #### `android-platform`
 
-The `android-platform` package provides an Android platform JAR to D8. While D8 is installed via Maven, isn't.
+The `android-platform` package provides an Android platform JAR to D8.
+
+While D8 is installed via Maven, there isn't a D8-compatible Android platform JAR on Maven that I am aware of; when I tried, I got diagnostics about missing classes in `java.lang` and so forth.
+
+For that reason, an `android-platform` must be downloaded.
+
+It is installed into the Maven repository, as that's an extremely convenient place to put it.
 
 ### Shell & First Compile (Windows)
 
