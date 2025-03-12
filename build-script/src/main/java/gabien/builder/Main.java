@@ -14,12 +14,14 @@ import java.util.TreeSet;
 import gabien.builder.api.AlreadyReportedRuntimeException;
 import gabien.builder.api.CommandEnv;
 import gabien.builder.api.Diagnostics;
+import gabien.builder.api.ExternalJAR;
 import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.Tool;
 import gabien.builder.api.ToolModule;
 import gabien.builder.api.ToolRegistry;
 import gabien.builder.builtin.CheckTool;
 import gabien.builder.builtin.HelpTool;
+import gabien.builder.builtin.InstallExternalTool;
 
 /**
  * Entrypoint for gabien-do. Do not touch from the buildscripts themselves. Please.
@@ -69,11 +71,13 @@ public class Main {
         private final HashMap<String, Tool> referenceInstances;
         private final TreeSet<String> toolNames;
         private final String namespace;
+        private final PrerequisiteSet external = new PrerequisiteSet("External Dependencies (gabien-do install)");
 
         public ToolRegistryImpl(String namespace, HashMap<String, Tool> referenceInstances, TreeSet<String> toolNames) {
             this.namespace = namespace;
             this.referenceInstances = referenceInstances;
             this.toolNames = toolNames;
+            CheckTool.ALL_SETS.add(external);
         }
 
         @Override
@@ -94,6 +98,12 @@ public class Main {
         @Override
         public void register(PrerequisiteSet set) {
             CheckTool.ALL_SETS.add(set);
+        }
+
+        @Override
+        public void register(ExternalJAR extern) {
+            InstallExternalTool.EXTERNAL.put(extern.id, extern);
+            external.with(extern.id, extern.prerequisite);
         }
     }
 

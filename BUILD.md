@@ -13,17 +13,8 @@ Unfortunately, that means you have to deal with this custom build system. \- 20k
 Here's the short summary:
 
 * GaBIEn is intended to be developed and built using OpenJDK 8. **You are expected to have a Java 8 JDK located at the environment variable `JAVA_1_8_HOME`.**
-* For Android builds, the environment variable `ANDROID_JAR_D8` needs to point at a `platforms/android-7/android.jar` file.
-* **gabien-natives needs to be installed (see next section).**
+* There are two external JARs that need to be installed explicitly. There's a command for this.
 * **On Unices, `bash` or `zsh` are required.** (`bash` is used-in-production but `zsh` was tested with the activation script at time of writing.) _This is because implementing portable environment activation on other shells is much harder than it should be._
-
-### `gabien-natives`
-
-The `gabien-natives` package is complicated to compile. *For that reason,* it is shipped as binary releases on this repository.
-
-If you _really_ want to compile it anyway, there are instructions in that directory. **Understand: You should not just jump straight into compiling gabien-natives unless you have a _really_ good reason.**
-
-After extracting one of these packages, you will find a `sdk-install` script which will install the natives package to your local Maven repository.
 
 ### Shell & First Compile (Unix)
 
@@ -33,9 +24,29 @@ You can run `. ./bin/activate` (similar to a Python venv)
 
 This will setup the GaBIEn command-line environment, including putting the `JAVA_1_8_HOME` JDK and the tools in `bin/` into PATH.
 
-You will see `GE ` at your prompt. You can now run `gabien-do ready`.
+You will see `GE ` at your prompt.
+
+You can now run `gabien-do install` to install the two external JARs. If you are not targetting Android, it is possible to skip installing the Android platform JAR.
+
+You can now run `gabien-do ready`.
 
 You can also use `gabien-do check` to check for common installation issues.
+
+### About `gabien-do install`
+
+This command is required to install two packages.
+
+#### `natives` (aka gabien-natives)
+
+The `gabien-natives` package is complicated to compile. *For that reason,* it is shipped as binary releases on this repository.
+
+If you _really_ want to compile it anyway, there are instructions in that directory. **Understand: You should not just jump straight into compiling gabien-natives unless you have a _really_ good reason.**
+
+After extracting one of these packages, you will find a `sdk-install` script which will install the natives package to your local Maven repository.
+
+#### `android-platform`
+
+The `android-platform` package provides an Android platform JAR to D8. While D8 is installed via Maven, isn't.
 
 ### Shell & First Compile (Windows)
 

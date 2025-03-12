@@ -32,8 +32,6 @@ public final class CommandEnv implements Diagnostics {
     public static final String JARSIGNER_COMMAND;
     // Used to fork the JVM.
     public static final String INCEPT_COMMAND = "gabien-incept" + CMD_SUFFIX;
-    // This is TEMPORARY and BAD.
-    public static final String AAPT_COMMAND = System.getenv("ANDROID_BT") != null ? (System.getenv("ANDROID_BT") + "/aapt") : "aapt";
 
     static {
         Map<String, String> env = System.getenv();

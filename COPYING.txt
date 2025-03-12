@@ -1,6 +1,6 @@
 Almost all of gabien-common is under the Unlicense.
 
-However, third-party code and binary releases containing said code may contain other licenses.
+However, third-party code in this repository and binary releases containing said code may contain other licenses.
 While these licenses will be public domain as per the policy for inclusion of code in gabien-common, not all of them will be the Unlicense.
 
 These licenses are provided with the respective code in the thirdparty directory.

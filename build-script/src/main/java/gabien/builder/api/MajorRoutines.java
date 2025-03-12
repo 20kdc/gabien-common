@@ -99,7 +99,7 @@ public class MajorRoutines {
         integrateZip(jarContents, new FileInputStream(appJar));
         jarContents.put("res/drawable/icon.png", Files.readAllBytes(icon.toPath()));
         // Merge in everything, run d8
-        env.cd(CommandEnv.GABIEN_HOME).run(CommandEnv.INCEPT_COMMAND, "d8", "--release", "--lib", System.getenv("ANDROID_JAR_D8"), "--output", staging2.getAbsolutePath(), appJar.getAbsolutePath());
+        env.cd(CommandEnv.GABIEN_HOME).run(CommandEnv.INCEPT_COMMAND, "d8", "--release", "--lib", MavenRepository.getJARFile(Constants.COORDS_ANDROID_PLATFORM).getAbsolutePath(), "--output", staging2.getAbsolutePath(), appJar.getAbsolutePath());
         jarContents.put("classes.dex", Files.readAllBytes(new File(staging2, "classes.dex").toPath()));
         jarContents.put("resources.arsc", tableBlock.getBytes());
         jarContents.put("AndroidManifest.xml", manifestBlock.getBytes());

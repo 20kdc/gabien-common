@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.InputStream;
 
 import gabien.builder.api.CommandEnv;
+import gabien.builder.api.Constants;
+import gabien.builder.api.ExternalJAR;
 import gabien.builder.api.NativesInstallTester;
 import gabien.builder.api.PrerequisiteSet;
 import gabien.builder.api.ToolModule;
@@ -31,7 +33,10 @@ public class Index implements ToolModule {
         registry.register(CheckTool.class);
         registry.register(D8Tool.class);
         registry.register(ReadyTool.class);
-        
+        registry.register(InstallExternalTool.class);
+        registry.register(new ExternalJAR("natives", Constants.COORDS_NATIVES, Constants.NATIVES_URL, null));
+        registry.register(new ExternalJAR("android-platform", Constants.COORDS_ANDROID_PLATFORM, Constants.ANDROID_PLATFORM_URL, Constants.ANDROID_PLATFORM_LICENSE));
+
         PrerequisiteSet set = new PrerequisiteSet("Core");
         // this probably can't fail as the buildscript is built with this toolchain :(
         set.with("JAVA_1_8_HOME present", PrerequisiteSet.envPrerequisite("JAVA_1_8_HOME", (val) -> {
@@ -69,9 +74,6 @@ public class Index implements ToolModule {
             }
         });
         set.with("gabien-natives is installed and correct", NativesInstallTester.PREREQUISITE);
-        set.with("ANDROID_JAR_D8 present", PrerequisiteSet.envPrerequisite("ANDROID_JAR_D8", (val) -> {
-            return new File(val).exists();
-        }, "C:\\Android\\Sdk\\platforms\\android-7\\android.jar", "~/Android/Sdk/platforms/android-7/android.jar"));
         registry.register(set);
     }
 }

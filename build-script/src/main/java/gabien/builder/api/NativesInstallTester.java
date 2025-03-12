@@ -18,19 +18,14 @@ import java.util.function.Function;
  * Created 17th February 2025
  */
 public class NativesInstallTester {
-    // This line is changed after each release.
-    public static final String AUTHORITATIVE_VERSION = "musical-sparrow";
-    public static final String AUTHORITATIVE_URL = "jar:https://github.com/20kdc/gabien-common/releases/download/natives." + AUTHORITATIVE_VERSION + "/natives-sdk.zip!/natives.jar";
-    // ./umvn install-file '-Durl=jar:https://github.com/20kdc/gabien-common/releases/download/natives.musical-sparrow/natives-sdk.zip!/natives.jar' -DgroupId=t20kdc.scratchpad -DartifactId=exampleNativesDL -Dversion=8.6 -Dpackaging=jar
-
     public static final Runnable PREREQUISITE = () -> {
         // THIS IS THE ONLY PLACE WHERE THIS ENVIRONMENT VARIABLE MAY BE USED.
         // It acts as a - disablable - safety guard with no other side effects.
         String dev = System.getenv("GABIEN_NATIVES_DEV");
         boolean isDev = (dev != null) && dev.equals("1");
         String res = getNativesVersion();
-        if (!(isDev || res.equals(AUTHORITATIVE_VERSION)))
-            throw new RuntimeException("'" + AUTHORITATIVE_VERSION + "' (correct) != '" + res + "' (installed). Must be in dev-mode (export GABIEN_NATIVES_DEV=1) OR must be the last released gabien-natives version. This procedure is to prevent accidentally releasing an unreproducible binary.");
+        if (!(isDev || res.equals(Constants.NATIVES_VERSION)))
+            throw new RuntimeException("'" + Constants.NATIVES_VERSION + "' (correct) != '" + res + "' (installed). Must be in dev-mode (export GABIEN_NATIVES_DEV=1) OR must be the last released gabien-natives version. This procedure is to prevent accidentally releasing an unreproducible binary.\nYou may need to run 'gabien-do install natives' to force an update.");
     };
 
     /**
@@ -38,13 +33,13 @@ public class NativesInstallTester {
      */
     @SuppressWarnings({ "resource" })
     public static String getNativesVersion() {
-        File nativesJAR = MavenRepository.getJARFile("t20kdc.hs2", "gabien-natives", "0.666-SNAPSHOT");
+        File nativesJAR = MavenRepository.getJARFile(Constants.COORDS_NATIVES);
         if (!nativesJAR.exists())
             throw new RuntimeException("Natives JAR is expected to exist");
-        File nativesUtilJAR = MavenRepository.getJARFile("t20kdc.hs2", "gabien-natives-util", "0.666-SNAPSHOT");
+        File nativesUtilJAR = MavenRepository.getJARFile(Constants.COORDS_NATIVES_UTIL);
         if (!nativesUtilJAR.exists())
             throw new RuntimeException("Natives util JAR is expected to exist");
-        File uslxJAR = MavenRepository.getJARFile("t20kdc.hs2", "gabien-uslx", "0.666-SNAPSHOT");
+        File uslxJAR = MavenRepository.getJARFile(Constants.COORDS_USLX);
         if (!uslxJAR.exists())
             throw new RuntimeException("USLX JAR is expected to exist");
         try {

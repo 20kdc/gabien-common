@@ -18,6 +18,9 @@ Current list of thirdparty stuff not included in this repository and only used d
 * Java 8-compatible JDK (of whichever vendor)
 * ARSCLib ( <https://github.com/REAndroid/ARSCLib> ), downloaded from Maven Central.
 * Android D8, downloaded from Google's Maven repository.
+* Android platform 25 JAR, downloaded from the HTTPS interface of the Chromium Git repository.
+* `com.google.android:android:4.1.1.4` & dependencies, downloaded from Maven Central.
+	* There's a complicated reason why this is separate from the other JAR. Compilation of the engine uses this, more reliable-to-access JAR, but D8 doesn't like it. Not all contributors will be running Android builds, so the only reasonable choice is to use this JAR most of the time and then switch to the Android platform 25 JAR when running D8.
 
 ## Build & Contribution Instructions
 

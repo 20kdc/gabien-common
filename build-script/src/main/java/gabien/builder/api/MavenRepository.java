@@ -24,7 +24,7 @@ public final class MavenRepository {
     private MavenRepository() {
     }
 
-    public static File getJARFile(String groupId, String artifactId, String version) {
-        return new File(REPOSITORY, groupId.replace('.', '/') + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + ".jar");
+    public static File getJARFile(MavenCoordinates coords) {
+        return new File(REPOSITORY, coords.groupId.replace('.', '/') + "/" + coords.artifactId + "/" + coords.version + "/" + coords.artifactId + "-" + coords.version + ".jar");
     }
 }

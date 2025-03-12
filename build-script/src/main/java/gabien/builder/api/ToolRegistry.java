@@ -20,4 +20,9 @@ public interface ToolRegistry {
      * Registers a prerequisite set.
      */
     void register(PrerequisiteSet set);
+
+    /**
+     * Registers an external dependency
+     */
+    void register(ExternalJAR extern);
 }

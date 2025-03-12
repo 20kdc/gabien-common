@@ -4,24 +4,22 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-
-package gabien.builder.builtin;
-
-import gabien.builder.api.CommandEnv;
-import gabien.builder.api.MajorRoutines;
-import gabien.builder.api.Tool;
+package gabien.builder.api;
 
 /**
- * Readies the engine.
- * Created 18th February, 2025.
+ * Created March 12th, 2025
  */
-public class ReadyTool extends Tool {
-    public ReadyTool() {
-        super("ready", "Rebuilds and tests the GaBIEn libraries.");
+public final class MavenCoordinates {
+    public String groupId, artifactId, version;
+
+    public MavenCoordinates(String groupId, String artifactId, String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
     }
 
     @Override
-    public void run(CommandEnv diag) {
-        MajorRoutines.ready(diag);
+    public String toString() {
+        return groupId + ":" + artifactId + ":" + version;
     }
 }
