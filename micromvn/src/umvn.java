@@ -1041,6 +1041,11 @@ public final class umvn implements Comparable<umvn> {
         }
         if (mainClass != null)
             manifest += "Main-Class: " + mainClass + "\r\n";
+        // JEP 472 implies an intention break compatibility on future JDKs.
+        // Frankly, this is an awful decision.
+        // It will lead to pointless and unnecessary breakage for older applications which have not been recompiled.
+        // In the interest of umvn's commitment to being sensible by default, enable the off-switch for this stupid, irresponsible decision.
+        manifest += "Enable-Native-Access: ALL-UNNAMED\r\n";
         return manifest;
     }
 
