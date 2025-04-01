@@ -60,10 +60,12 @@ public class MajorRoutines {
         // For debugging:
         //  aapt d xmltree workspace.apk AndroidManifest.xml
         //  aapt d resources workspace.apk resources.arsc
+        //  gabien-do dump-arsc resources.arsc
         // -- build resources --
         TableBlock tableBlock = new TableBlock();
         PackageBlock packageBlock = tableBlock.getOrCreatePackage(0x7f, pkg);
         Entry iconEntry = packageBlock.getOrCreate("", "drawable", "icon");
+        iconEntry.setValueAsString("res/drawable/icon.png");
         // -- build manifest --
         // Dear goodness this is so simple and easy to use THANK YOU
         AndroidManifestBlock manifestBlock = new AndroidManifestBlock();

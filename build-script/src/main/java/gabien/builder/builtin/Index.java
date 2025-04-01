@@ -30,6 +30,7 @@ public class Index implements ToolModule {
     public void register(ToolRegistry registry) {
         registry.register(HelloTool.class);
         registry.register(HelpTool.class);
+        registry.register(DumpArscTool.class);
         registry.register(CheckTool.class);
         registry.register(D8Tool.class);
         registry.register(ReadyTool.class);
