@@ -32,4 +32,4 @@ cp ../thirdparty/minimp3_modified/LICENSE ../natives-sdk/minimp3_modified-LICENS
 cp ../thirdparty/minimp3_modified/README.md ../natives-sdk/minimp3_modified-README.md
 cp README.md ../natives-sdk/
 cd ../natives-sdk
-../natives/ktsz * > ../natives-sdk.zip
+zip -r ../natives-sdk.zip *
