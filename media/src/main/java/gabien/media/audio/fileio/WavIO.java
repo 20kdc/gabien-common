@@ -36,7 +36,7 @@ public class WavIO {
         return readWAVInterior(ris, close ? fis : null);
     }
     @SuppressWarnings("resource")
-	public static AudioIOSource readWAVInterior(@NonNull final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
+    public static AudioIOSource readWAVInterior(@NonNull final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
         AudioIOCRFmt fmt = null;
         while (ris.available() > 0) {
             RIFFInputStream chk = new RIFFInputStream(ris);
