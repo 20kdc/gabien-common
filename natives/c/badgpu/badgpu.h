@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.3.2`
+ * Version: `1.3.3`
  *
  * ## Formatting Policy
  *
@@ -1193,7 +1193,11 @@ typedef enum BADGPUBlendWeight {
  *
  * `clipPlane` specifies a clip plane, or can be `NULL` to disable it. \
  * Clip planes are in the space after transformation by the matrix, but before
- *  the perspective divide, also known as clip space.
+ *  the perspective divide, also known as clip space. \
+ * (**WARNING:** The clip plane has been hard to test and work on in practice \
+ * due to a conflict between what makes sense for BadGPU and what OpenGL \
+ * wants to do. For this reason, it is not recommended that current \
+ * applications use clip planes.)
  *
  * `atFunc` and `atRef` specify the alpha test.
  *
