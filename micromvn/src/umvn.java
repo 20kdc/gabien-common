@@ -48,6 +48,16 @@ import org.w3c.dom.NodeList;
 
 /**
  * microMVN: "Not quite Maven" in a single class file.
+ *
+ * Internal glossary:
+ *  Triple: "groupId:artifactId:version" ; represents a POM file coordinate.
+ *   (see: https://maven.apache.org/repositories/artifacts.html 'The pom.xml file itself...')
+ *  coordsGA: "groupId:artifactId" ; Used by version selection.
+ *  coordsGAC: "groupId:artifactId:classifier" ; May be added when classifier support is added
+ *   (see: https://repo1.maven.org/maven2/org/lwjgl/lwjgl/lwjgl/2.9.3/lwjgl-2.9.3.pom )
+ *   GAC support will be somewhat hacky.
+ *   microMVN does not build these and is philosophically against them, but we need them for dep. support
+ *
  * Created February 10th, 2025.
  */
 public final class umvn implements Comparable<umvn> {
