@@ -14,17 +14,25 @@ set -e
 
 cp umvn.class ../../c3ds-projects/
 
+echo "-- gabien-do ready --"
+
 pushd ..
 GABIEN_NATIVES_DEV=1 gabien-do ready
 popd
+
+echo "-- r48 smoke test --"
 
 pushd ../../gabien-app-r48
 ../gabien-common/micromvn/umvn package
 popd
 
+echo "-- natsue --"
+
 pushd ../../c3ds-projects/natsue
 ./build.sh
 popd
+
+echo "-- gabien natives --"
 
 pushd ../natives-util
 # :(

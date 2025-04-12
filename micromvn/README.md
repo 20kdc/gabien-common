@@ -163,7 +163,8 @@ These exact POM elements are supported:
 * Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.
 * All projects have a `jar-with-dependencies` build during the package phase.
 * It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and microMVN will attempt to package it.
-* As far as microMVN is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.
+* As far as microMVN is concerned, the version/baseVersion distinction doesn't exist.
+* For packages being built from source, classifiers don't exist, but they do exist for imported packages (so LWJGL natives work).
 * Testing is weird. See `micromvn.testMainClass`, `micromvn.testMarker`, `umvn-test-classpath` and `umvn-run`.
 * You don't need to explicitly skip tests. (This is an intentional difference.)
 * Compilation itself is always clean and never incremental.

@@ -53,10 +53,11 @@ import org.w3c.dom.NodeList;
  *  Triple: "groupId:artifactId:version" ; represents a POM file coordinate.
  *   (see: https://maven.apache.org/repositories/artifacts.html 'The pom.xml file itself...')
  *  coordsGA: "groupId:artifactId" ; Used by version selection.
- *  coordsGAC: "groupId:artifactId:classifier" ; May be added when classifier support is added
+ *  coordsGAX: "groupId:artifactId:suffix" ; This is important to support dependencies with classifiers.
  *   (see: https://repo1.maven.org/maven2/org/lwjgl/lwjgl/lwjgl/2.9.3/lwjgl-2.9.3.pom )
- *   GAC support will be somewhat hacky.
- *   microMVN does not build these and is philosophically against them, but we need them for dep. support
+ *   Suffix essentially merges classifier & extension. 
+ *   GAX support is somewhat hacky.
+ *   microMVN does not build these and is philosophically against them, but some deps want them.
  *
  * Created February 10th, 2025.
  */
@@ -220,7 +221,7 @@ public final class umvn implements Comparable<umvn> {
             // -- Parent must happen next so that we resolve related modules early and so we know our triple --
             elm = findElement(projectElement, "parent", false);
             if (elm != null) {
-                String parentGA = getGAPOMRef(elm, sourceDir);
+                String parentGA = coordsGAXToCoordsGA(getGAXPOMRef(elm, sourceDir));
                 Supplier<umvn> parentResolver = coordsGAResolvers.get(parentGA);
                 if (parentResolver == null)
                     throw new RuntimeException("Parent project " + parentGA + " with no version (can't bootstrap from nothing)");
@@ -269,7 +270,7 @@ public final class umvn implements Comparable<umvn> {
                     if (n instanceof Element && n.getNodeName().equals("dependency")) {
                         boolean optional = templateFindElement(n, "optional", "false").equals("true");
                         String scope = templateFindElement(n, "scope", "compile");
-                        String dep = getGAPOMRef(n, sourceDir);
+                        String dep = getGAXPOMRef(n, sourceDir);
                         if (scope.equals("compile")) {
                             depSets[DEPSET_ROOT_MAIN_COMPILE].add(dep);
                             depSets[DEPSET_ROOT_MAIN_PACKAGE].add(dep);
@@ -301,9 +302,10 @@ public final class umvn implements Comparable<umvn> {
                         } else if (scope.equals("test")) {
                             depSets[DEPSET_ROOT_TEST].add(dep);
                         } else if (scope.equals("import")) {
-                            Supplier<umvn> importResolver = coordsGAResolvers.get(dep);
+                            String depGA = coordsGAXToCoordsGA(dep);
+                            Supplier<umvn> importResolver = coordsGAResolvers.get(depGA);
                             if (importResolver == null)
-                                throw new RuntimeException("Dep import project " + dep + " with no version");
+                                throw new RuntimeException("Dep import project " + depGA + " with no version");
                             umvn importPOM = importResolver.get();
                             for (int i = 0 ; i < DEPSET_COUNT; i++)
                                 depSets[i].addAll(importPOM.depSets[i]);
@@ -387,23 +389,25 @@ public final class umvn implements Comparable<umvn> {
     }
 
     /**
-     * Returns GA.
+     * Returns GAX.
      * Enthusiastically loads relative paths to ensure we have them discovered for later.
      * Also contributes to this project's coordsGAToTriples map (which you should use to get a triple if you need it)
      */
-    public String getGAPOMRef(Node ref, File relativePathDir) {
+    public String getGAXPOMRef(Node ref, File relativePathDir) {
         String theGroupId = templateFindRequiredElement(ref, "groupId");
         String theArtifactId = templateFindRequiredElement(ref, "artifactId");
         String theVersion = templateFindElement(ref, "version", null);
         String theRelativePath = templateFindElement(ref, "relativePath", null);
         String coordsGA = theGroupId + ":" + theArtifactId;
+        String theClassifier = templateFindElement(ref, "classifier", "");
+        String coordsGAX = coordsGA + ":" + (theClassifier.isEmpty() ? ".jar" : "-" + theClassifier + ".jar");
         if (theVersion == null || theVersion.equals("LATEST") || theVersion.equals("RELEASE"))
-            return coordsGA;
+            return coordsGAX;
         String theVersionFixed = theVersion.replace("[", "").replace("]", "").replace("(", "").replace(")", "").split(",")[0];
         coordsGAResolvers.put(coordsGA, () -> pomByCoordinates(theGroupId, theArtifactId, theVersionFixed, true));
         if ((pomByCoordinates(theGroupId, theArtifactId, theVersionFixed, false) == null) && relativePathDir != null && theRelativePath != null)
             loadPOM(new File(relativePathDir, theRelativePath), true);
-        return coordsGA;
+        return coordsGAX;
     }
 
     /**
@@ -516,6 +520,33 @@ public final class umvn implements Comparable<umvn> {
         return groupId + ":" + artifactId + ":" + version;
     }
 
+    /**
+     * Converts coordsGAX to coordsGA by stripping off the suffix.
+     */
+    public static String coordsGAXToCoordsGA(String s) {
+        String[] split = s.split(":");
+        if (split.length != 3)
+            throw new RuntimeException("coordsGAX must be 3 elements long");
+        return split[0] + ":" + split[1];
+    }
+
+    /**
+     * Converts coordsGAX to suffix.
+     */
+    public static String coordsGAXToSuffix(String s) {
+        String[] split = s.split(":");
+        if (split.length != 3)
+            throw new RuntimeException("coordsGAX must be 3 elements long");
+        return split[2];
+    }
+
+    /**
+     * Converts coordsGA to coordsGAX by adding a suffix.
+     */
+    public static String coordsGAToCoordsGAX(String coordsGA, String suffix) {
+        return coordsGA + ":" + suffix;
+    }
+
     // -- Classpath/Compile Management --
 
     public static final int SRCGROUP_MAIN = 0;
@@ -548,7 +579,7 @@ public final class umvn implements Comparable<umvn> {
     }
 
     /**
-     * Returns a fully resolved dependency set from coordGA to POM objects.
+     * Returns a fully resolved dependency set from coordsGAX to POM objects.
      * You should typically pass DEPSET_ROOT_* here.
      */
     public Map<String, umvn> resolveAllDependencies(int set) {
@@ -573,10 +604,13 @@ public final class umvn implements Comparable<umvn> {
 
         // coordsGAResolvers tables are pulled into here.
         HashMap<String, Supplier<umvn>> resTableSeen = new HashMap<>();
+        // maps coordGA to umvn
         // The umvn objects actually referenced go here.
         // All objects here must also have entered queue.
         // This is a TreeMap for reproducibility.
         TreeMap<String, umvn> resTableConfirmed = new TreeMap<>();
+        // Total set of requested suffixes.
+        TreeSet<String> suffixRequests = new TreeSet<>();
 
         LinkedList<umvn> intQueue = new LinkedList<>();
 
@@ -585,6 +619,7 @@ public final class umvn implements Comparable<umvn> {
 
         intQueue.add(this);
         resTableConfirmed.put(coordsGA, this);
+        suffixRequests.add(coordsGAToCoordsGAX(coordsGA, SUFFIX_JAR));
 
         while (true) {
             // Indicates forward progress.
@@ -595,8 +630,10 @@ public final class umvn implements Comparable<umvn> {
                 activity |= foldMaps(resTableSeen, queueEntry.coordsGAResolvers, (k) -> true);
                 int setAdjusted = queueEntry == this ? set : DEPSET_TRANSITIVE[set];
                 for (String dep : queueEntry.depSets[setAdjusted]) {
-                    if (enteredGAPool.add(dep)) {
-                        gaPool.add(dep);
+                    String depGA = coordsGAXToCoordsGA(dep);
+                    suffixRequests.add(dep);
+                    if (enteredGAPool.add(depGA)) {
+                        gaPool.add(depGA);
                         activity = true;
                     }
                 }
@@ -628,7 +665,15 @@ public final class umvn implements Comparable<umvn> {
         }
         if (LOG_DEBUG)
             System.err.println("}");
-        return resTableConfirmed;
+
+        // Same as resTableConfirmed but with GAX coords.
+        TreeMap<String, umvn> finalTableConfirmed = new TreeMap<>();
+        for (String s : suffixRequests) {
+            String coordsGA = coordsGAXToCoordsGA(s);
+            umvn res = resTableConfirmed.get(coordsGA);
+            finalTableConfirmed.put(s, res);
+        }
+        return finalTableConfirmed;
     }
 
     // -- Templating --
@@ -737,13 +782,15 @@ public final class umvn implements Comparable<umvn> {
         TreeSet<File> classpath = new TreeSet<>();
         TreeSet<File> sourcepath = new TreeSet<>();
 
-        for (umvn classpathEntry : resolveAllDependencies(SRCGROUP_COMPILE_DEPSETS[group]).values()) {
-            if (classpathEntry.isPOMPackaged)
+        for (Map.Entry<String, umvn> classpathEntry : resolveAllDependencies(SRCGROUP_COMPILE_DEPSETS[group]).entrySet()) {
+            String depSuffix = coordsGAXToSuffix(classpathEntry.getKey());
+            umvn dep = classpathEntry.getValue();
+            if (dep.shouldExclude(depSuffix))
                 continue;
-            if (classpathEntry.sourceDir != null) {
-                sourcepath.add(classpathEntry.getSourceRelativeOrAbsolutePath(getPropertyFullWarn(classpathEntry, SRCGROUP_PROP_JAVA[SRCGROUP_MAIN])));
+            if (dep.sourceDir != null) {
+                sourcepath.add(dep.getSourceRelativeOrAbsolutePath(getPropertyFullWarn(dep, SRCGROUP_PROP_JAVA[SRCGROUP_MAIN])));
             } else {
-                classpath.add(getOrDownloadArtifact(classpathEntry, SUFFIX_JAR));
+                classpath.add(getOrDownloadArtifact(dep, depSuffix));
             }
         }
 
@@ -927,14 +974,16 @@ public final class umvn implements Comparable<umvn> {
      */
     public String getTestRuntimeClasspath() {
         TreeSet<File> classpath = new TreeSet<>();
-        for (umvn classpathEntry : resolveAllDependencies(DEPSET_ROOT_TEST).values()) {
-            if (classpathEntry.isPOMPackaged)
+        for (Map.Entry<String, umvn> classpathEntry : resolveAllDependencies(DEPSET_ROOT_TEST).entrySet()) {
+            String depSuffix = coordsGAXToSuffix(classpathEntry.getKey());
+            umvn dep = classpathEntry.getValue();
+            if (dep.shouldExclude(depSuffix))
                 continue;
-            if (classpathEntry.sourceDir != null) {
-                classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_MAIN));
-                classpath.add(classpathEntry.getSourceTargetClassesDir(SRCGROUP_TEST));
+            if (dep.sourceDir != null) {
+                classpath.add(dep.getSourceTargetClassesDir(SRCGROUP_MAIN));
+                classpath.add(dep.getSourceTargetClassesDir(SRCGROUP_TEST));
             } else {
-                classpath.add(getOrDownloadArtifact(classpathEntry, SUFFIX_JAR));
+                classpath.add(getOrDownloadArtifact(dep, depSuffix));
             }
         }
         return assembleClasspath(classpath);
@@ -973,7 +1022,7 @@ public final class umvn implements Comparable<umvn> {
         if (isPOMPackaged)
             return;
         TreeMap<String, Consumer<OutputStream>> zip = new TreeMap<>();
-        integrateJAR(zip);
+        integrateJAR(zip, SUFFIX_JAR);
         zipBuild(getSourceTargetArtifact(SUFFIX_JAR), zip);
     }
 
@@ -981,8 +1030,8 @@ public final class umvn implements Comparable<umvn> {
      * Creates the base JAR 'in-memory', or integrates the existing base JAR for non-source POMs.
      * SortedMap for reproducibility.
      */
-    public void integrateJAR(SortedMap<String, Consumer<OutputStream>> zip) {
-        if (isPOMPackaged)
+    public void integrateJAR(SortedMap<String, Consumer<OutputStream>> zip, String suffix) {
+        if (shouldExclude(suffix))
             return;
         if (sourceDir != null) {
             // note that the manifest can (deliberately) be overwritten!
@@ -994,7 +1043,7 @@ public final class umvn implements Comparable<umvn> {
             buildListOfRelativePaths(classes, "", files);
             zipIntegrateRelativePaths(zip, "", classes, files);
         } else {
-            File myJAR = getOrDownloadArtifact(this, SUFFIX_JAR);
+            File myJAR = getOrDownloadArtifact(this, suffix);
             try {
                 ZipInputStream zis = new ZipInputStream(new FileInputStream(myJAR), StandardCharsets.UTF_8);
                 while (true) {
@@ -1019,13 +1068,15 @@ public final class umvn implements Comparable<umvn> {
         if (isPOMPackaged)
             return;
         TreeMap<String, Consumer<OutputStream>> zip = new TreeMap<>();
-        TreeSet<umvn> myDeps = new TreeSet<>();
-        myDeps.addAll(resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).values());
-        myDeps.remove(this);
-        for (umvn various : myDeps)
-            various.integrateJAR(zip);
+        for (Map.Entry<String, umvn> classpathEntry : resolveAllDependencies(DEPSET_ROOT_MAIN_PACKAGE).entrySet()) {
+            String depSuffix = coordsGAXToSuffix(classpathEntry.getKey());
+            umvn dep = classpathEntry.getValue();
+            if (dep == this)
+                continue;
+            dep.integrateJAR(zip, depSuffix);
+        }
         // re-add self to ensure last
-        integrateJAR(zip);
+        integrateJAR(zip, SUFFIX_JAR);
         zip.put("META-INF/MANIFEST.MF", zipMakeFile(createManifest(true)));
         // done
         zipBuild(getSourceTargetArtifact(SUFFIX_ASM), zip);
@@ -1036,14 +1087,18 @@ public final class umvn implements Comparable<umvn> {
         if (!packaging) {
             // for thin JARs, create a classpath which includes all 
             String classPath = "";
-            for (umvn dep : resolveAllDependencies(DEPSET_ROOT_MAIN_RUNTIME).values()) {
-                if (dep != this) {
-                    String line = " " + dep.artifactId + "-" + dep.version + ".jar\r\n";
-                    if (line.getBytes(StandardCharsets.UTF_8).length <= 72) {
-                        classPath += line;
-                    } else {
-                        System.err.println("[WARN] Truncated " + dep.artifactId + " from JAR classpath as it would exceed line limit (making the JAR entirely unparsable)");
-                    }
+            for (Map.Entry<String, umvn> classpathEntry : resolveAllDependencies(DEPSET_ROOT_MAIN_RUNTIME).entrySet()) {
+                String depSuffix = coordsGAXToSuffix(classpathEntry.getKey());
+                umvn dep = classpathEntry.getValue();
+                if (dep == this)
+                    continue;
+                // isPOMPackaged check skipped
+                // it is probably at worst harmless and at best may catch an edge case somewhere
+                String line = " " + dep.artifactId + "-" + dep.version + depSuffix + "\r\n";
+                if (line.getBytes(StandardCharsets.UTF_8).length <= 72) {
+                    classPath += line;
+                } else {
+                    System.err.println("[WARN] Truncated " + dep.artifactId + " from JAR classpath as it would exceed line limit (making the JAR entirely unparsable)");
                 }
             }
             if (!classPath.isEmpty())
@@ -1072,12 +1127,19 @@ public final class umvn implements Comparable<umvn> {
     }
 
     /**
+     * Indicates if this artifact is excluded (due to being a POM artifact).
+     */
+    public boolean shouldExclude(String suffix) {
+        return isPOMPackaged && suffix.equals(SUFFIX_JAR);
+    }
+
+    /**
      * Downloads this POM & JAR/etc.
      */
-    public void completeDownload() {
-        if (isPOMPackaged || sourceDir != null)
+    public void completeDownload(String suffix) {
+        if (shouldExclude(suffix) || sourceDir != null)
             return;
-        getOrDownloadArtifact(this, SUFFIX_JAR);
+        getOrDownloadArtifact(this, suffix);
     }
 
     /**
@@ -1529,9 +1591,12 @@ public final class umvn implements Comparable<umvn> {
             if (prop.isEmpty())
                 throw new RuntimeException("get requires -Dartifact=...");
             String[] parts = prop.split(":");
-            if (parts.length != 3)
+            String suffix = SUFFIX_JAR;
+            if (parts.length != 3 && parts.length != 4)
                 throw new RuntimeException("Invalid triple: " + prop);
-            pomByCoordinates(parts[0], parts[1], parts[2], true).completeDownload();
+            if (parts.length == 4)
+                suffix = parts[3];
+            pomByCoordinates(parts[0], parts[1], parts[2], true).completeDownload(suffix);
             doFinalStatusOK("Installed.");
         } else if (goal.equals("install-file")) {
             String file = getPropertyFull(null, "file", null);
@@ -1809,7 +1874,8 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("* Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.");
         System.out.println("* All projects have a `jar-with-dependencies` build during the package phase.");
         System.out.println("* It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and microMVN will attempt to package it.");
-        System.out.println("* As far as microMVN is concerned, classifiers and the version/baseVersion distinction don't exist. A package is either POM-only or single-JAR.");
+        System.out.println("* As far as microMVN is concerned, the version/baseVersion distinction doesn't exist.");
+        System.out.println("* For packages being built from source, classifiers don't exist, but they do exist for imported packages (so LWJGL natives work).");
         System.out.println("* Testing is weird. See `micromvn.testMainClass`, `micromvn.testMarker`, `umvn-test-classpath` and `umvn-run`.");
         System.out.println("* You don't need to explicitly skip tests. (This is an intentional difference.)");
         System.out.println("* Compilation itself is always clean and never incremental.");
@@ -1851,12 +1917,15 @@ public final class umvn implements Comparable<umvn> {
 
     public static void doGather(Collection<umvn> packages, int... depSets) {
         // This is used to make sure we have all necessary files for the rest of the build.
-        HashSet<umvn> allGather = new HashSet<>();
-        for (int depSet : depSets)
-            for (umvn subPom : packages)
-                allGather.addAll(subPom.resolveAllDependencies(depSet).values());
-        for (umvn u : allGather)
-            u.completeDownload();
+        for (int depSet : depSets) {
+            for (umvn subPom : packages) {
+                for (Map.Entry<String, umvn> classpathEntry : subPom.resolveAllDependencies(depSet).entrySet()) {
+                    String depSuffix = coordsGAXToSuffix(classpathEntry.getKey());
+                    umvn dep = classpathEntry.getValue();
+                    dep.completeDownload(depSuffix);
+                }
+            }
+        }
     }
 
     public static void doClean(Collection<umvn> packages) {
