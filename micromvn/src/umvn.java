@@ -482,6 +482,7 @@ public final class umvn implements Comparable<umvn> {
 
     public static final String SUFFIX_POM = ".pom";
     public static final String SUFFIX_JAR = ".jar";
+    public static final String SUFFIX_SOURCES = "-sources.jar";
     public static final String SUFFIX_ASM = "-jar-with-dependencies.jar";
 
     /**
@@ -557,7 +558,11 @@ public final class umvn implements Comparable<umvn> {
     public static final String[] SRCGROUP_PROP_RES = {"project.build.resources.resource.directory", "project.build.testResources.testResource.directory"};
     public static final String[] SRCGROUP_CLASSDIR = {"classes", "test-classes"};
 
-    public File getSourceRelativeOrAbsolutePath(String path) {
+    /**
+     * Retrieves and translates a source path property (a value from SRCGROUP_PROP_...)
+     */
+    public File getSourcePathProp(String prop) {
+        String path = getPropertyFullWarn(this, prop);
         File f = new File(path);
         if (f.isAbsolute())
             return f;
@@ -771,8 +776,8 @@ public final class umvn implements Comparable<umvn> {
             return;
 
         File classes = getSourceTargetClassesDir(group);
-        File java = getSourceRelativeOrAbsolutePath(getPropertyFullWarn(this, SRCGROUP_PROP_JAVA[group]));
-        File resources = getSourceRelativeOrAbsolutePath(getPropertyFullWarn(this, SRCGROUP_PROP_RES[group]));
+        File java = getSourcePathProp(SRCGROUP_PROP_JAVA[group]);
+        File resources = getSourcePathProp(SRCGROUP_PROP_RES[group]);
         classes.mkdirs();
         // compile classes
         TreeSet<String> copy = new TreeSet<>();
@@ -788,7 +793,7 @@ public final class umvn implements Comparable<umvn> {
             if (dep.shouldExclude(depSuffix))
                 continue;
             if (dep.sourceDir != null) {
-                sourcepath.add(dep.getSourceRelativeOrAbsolutePath(getPropertyFullWarn(dep, SRCGROUP_PROP_JAVA[SRCGROUP_MAIN])));
+                sourcepath.add(dep.getSourcePathProp(SRCGROUP_PROP_JAVA[SRCGROUP_MAIN]));
             } else {
                 classpath.add(getOrDownloadArtifact(dep, depSuffix));
             }
@@ -893,6 +898,7 @@ public final class umvn implements Comparable<umvn> {
         installArtifact(SUFFIX_POM);
         if (!isPOMPackaged) {
             installArtifact(SUFFIX_JAR);
+            installArtifact(SUFFIX_SOURCES);
             installArtifact(SUFFIX_ASM);
         }
     }
@@ -1024,6 +1030,10 @@ public final class umvn implements Comparable<umvn> {
         TreeMap<String, Consumer<OutputStream>> zip = new TreeMap<>();
         integrateJAR(zip, SUFFIX_JAR);
         zipBuild(getSourceTargetArtifact(SUFFIX_JAR), zip);
+        // Source JARs can be really useful for debugging, so build them
+        zip.clear();
+        integrateJAR(zip, SUFFIX_SOURCES);
+        zipBuild(getSourceTargetArtifact(SUFFIX_SOURCES), zip);
     }
 
     /**
@@ -1039,9 +1049,19 @@ public final class umvn implements Comparable<umvn> {
             zip.put("META-INF/maven/" + groupId + "/" + artifactId + "/pom.xml", zipMakeFile(pomFileContent));
             zip.put("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties", zipMakeFile("groupId=" + groupId + "\nartifactId=" + artifactId + "\nversion=" + version + "\n"));
             TreeSet<String> files = new TreeSet<>();
-            File classes = getSourceTargetClassesDir(SRCGROUP_MAIN);
-            buildListOfRelativePaths(classes, "", files);
-            zipIntegrateRelativePaths(zip, "", classes, files);
+            if (suffix.equals(SUFFIX_SOURCES)) {
+                File classes = getSourcePathProp(SRCGROUP_PROP_JAVA[SRCGROUP_MAIN]);
+                buildListOfRelativePaths(classes, "", files);
+                zipIntegrateRelativePaths(zip, "", classes, files);
+                files.clear();
+                classes = getSourcePathProp(SRCGROUP_PROP_RES[SRCGROUP_MAIN]);
+                buildListOfRelativePaths(classes, "", files);
+                zipIntegrateRelativePaths(zip, "", classes, files);
+            } else {
+                File classes = getSourceTargetClassesDir(SRCGROUP_MAIN);
+                buildListOfRelativePaths(classes, "", files);
+                zipIntegrateRelativePaths(zip, "", classes, files);
+            }
         } else {
             File myJAR = getOrDownloadArtifact(this, suffix);
             try {
@@ -1872,7 +1892,7 @@ public final class umvn implements Comparable<umvn> {
         System.out.println("* The main hazard is a lack of real plugins or compile-time source generation.");
         System.out.println("* `maven-assembly-plugin` is very partially emulated and always runs during package.");
         System.out.println("* Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.");
-        System.out.println("* All projects have a `jar-with-dependencies` build during the package phase.");
+        System.out.println("* All projects build `-jar-with-dependencies.jar` and `-sources.jar` during the package phase.");
         System.out.println("* It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and microMVN will attempt to package it.");
         System.out.println("* As far as microMVN is concerned, the version/baseVersion distinction doesn't exist.");
         System.out.println("* For packages being built from source, classifiers don't exist, but they do exist for imported packages (so LWJGL natives work).");

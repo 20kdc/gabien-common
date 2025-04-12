@@ -161,7 +161,7 @@ These exact POM elements are supported:
 * The main hazard is a lack of real plugins or compile-time source generation.
 * `maven-assembly-plugin` is very partially emulated and always runs during package.
 * Manifest embedding support is weird. Single-JAR builds prioritize user-supplied manifests, while assembly builds always use a supplied manifest.
-* All projects have a `jar-with-dependencies` build during the package phase.
+* All projects build `-jar-with-dependencies.jar` and `-sources.jar` during the package phase.
 * It is a known quirk/?feature? that it is possible to cause a POM to be referenced, but not built, and microMVN will attempt to package it.
 * As far as microMVN is concerned, the version/baseVersion distinction doesn't exist.
 * For packages being built from source, classifiers don't exist, but they do exist for imported packages (so LWJGL natives work).
