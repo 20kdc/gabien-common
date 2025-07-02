@@ -11,7 +11,7 @@ package gabienapp.newsynth;
  * Synth waveform impl.
  * Created 2nd July, 2025
  */
-public class NSWaveform implements IEditableCurveWaveform {
+public class NSLoopedWaveform implements IEditableCurveWaveform {
     public float[] pointData = new float[] {
         0, 0.5f,
         0.5f, 0.25f

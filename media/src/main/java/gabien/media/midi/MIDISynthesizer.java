@@ -17,6 +17,8 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
     public final double sampleTime;
     public float globalVolume = DEFAULT_GLOBAL_VOLUME;
 
+    public int channelEnableSwitches = 0xF;
+
     private final Palette pal;
     private final MIDIChannel[] midiChannels = new MIDIChannel[16];
 
@@ -46,7 +48,12 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         if (si >= 0x80 && si <= 0x8F && length >= 2) {
             midiChannels[mch].noteOff(data[offset] & 0x7F, data[offset + 1] & 0x7F);
         } else if (si >= 0x90 && si <= 0x9F && length >= 2) {
-            midiChannels[mch].noteOn(data[offset] & 0x7F, data[offset + 1] & 0x7F);
+            if ((channelEnableSwitches & (1 << mch)) == 0) {
+                // channel disabled; perform note off but don't perform note on
+                midiChannels[mch].noteOff(data[offset] & 0x7F, 127);
+            } else {
+                midiChannels[mch].noteOn(data[offset] & 0x7F, data[offset + 1] & 0x7F);
+            }
         } else if (si >= 0xB0 && si <= 0xBF && length >= 2) {
             // Control Change
             int cc = data[offset] & 0x7F;
@@ -157,16 +164,29 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
 
         public void noteOn(int note, int velocity) {
             if (noteChannels[note] != null)
-                noteChannels[note].noteOff(velocity);
+                noteChannels[note].noteOff(127);
+
             Channel target = pal.create(MIDISynthesizer.this, bank, program, note, velocity);
             if (target == null)
                 return;
+
+            // age (for deletion)
             target.age = channelAgeCounter++;
-            target.velocityVol = velocity / 127f;
+
+            // calculate volumes
+            float velocityVol = (velocity / 127f) * volume;
+            // boost energy for heavy pans
+            float cPanL = 1.0f - pan;
+            float cPanR = pan;
+            float panCMul = (float) (1.0f / Math.sqrt((cPanL * cPanL) + (cPanR * cPanR)));
+            target.extLVol = velocityVol * panCMul;
+            target.extRVol = velocityVol * panCMul;
+
             target.savedNote = note;
             target.sampleRate = sampleRate;
             target.sampleSeconds = sampleTime;
             target.setPitchBend(savedPitchBend);
+            target.update(0);
             noteChannels[note] = target;
             // attach to any spare channel
             for (int i = 0; i < synthChannels.length; i++) {
@@ -206,16 +226,9 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         }
 
         public void render(float[] buffer, int offset, int frames) {
-            float adjVolume = globalVolume * volume;
-            // boost energy for heavy pans
-            float cPanL = 1.0f - pan;
-            float cPanR = pan;
-            float panCMul = (float) (1.0f / Math.sqrt((cPanL * cPanL) + (cPanR * cPanR)));
-            cPanL *= adjVolume * panCMul;
-            cPanR *= adjVolume * panCMul;
             for (Channel c : synthChannels)
                 if (c != null)
-                    c.render(buffer, offset, frames, cPanL, cPanR);
+                    c.render(buffer, offset, frames, c.extLVol * globalVolume, c.extRVol * globalVolume);
         }
 
         public void update(double time) {
@@ -243,18 +256,13 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         private boolean noteOn = true;
         private int savedNote, sampleRate;
         private double frequency, cycleSeconds, halfCycleSeconds, sampleSeconds;
-        private float velocityVol;
+        // Saved for use by synthesizer
+        private float extLVol;
+        private float extRVol;
         // Used to determine which channel to delete if we exceed polyphony.
         private int age;
 
         public Channel() {
-        }
-
-        /**
-         * Get volume as calculated from velocity.
-         */
-        public final float getVelocityVol() {
-            return velocityVol;
         }
 
         /**

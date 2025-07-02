@@ -23,19 +23,9 @@ public class NSChannel extends MIDISynthesizer.Channel {
     public float volume;
 
     /**
-     * Volume at last stage (while it lerps)
-     */
-    public float volumeAtLastStage;
-
-    /**
-     * Volume at next stage
-     */
-    public float volumeAtNextStage;
-
-    /**
      * Time in this stage
      */
-    public double timeInStage;
+    public double timeInStage, renderTimeInStage;
 
     /**
      * Time in this stage when it ends
@@ -48,37 +38,16 @@ public class NSChannel extends MIDISynthesizer.Channel {
     public float pitchMulState;
 
     /**
-     * Progress in the pitch bend
-     */
-    public double pitchMulProgress;
-
-    /**
-     * 0 = a
-     * 1 = d
-     * 2 = s
-     * 3 = r
+     * 0 = strike
+     * 1 = s
+     * 2 = r
      */
     public int stage;
 
     /**
-     * Attack: How much time it takes to get to nominal volume.
+     * Strike: Attack/decay
      */
-    public final float attack;
-
-    /**
-     * Decay: How much time it takes to get to sustain volume.
-     */
-    public final float decay;
-
-    /**
-     * Sustain: The volume at which we hold after decay.
-     */
-    public final float sustain;
-
-    /**
-     * Limit on sustain
-     */
-    public final float maxSustainTime;
+    public final float strike;
 
     /**
      * Release: How much time it takes to kill the note.
@@ -86,70 +55,45 @@ public class NSChannel extends MIDISynthesizer.Channel {
     public final float release;
 
     /**
-     * Waveform
+     * Waveform, envelope (left/right quarters unused to make curve editing nicer), pitch envelope
      */
-    public final float[] waveform;
-
-    /**
-     * Pitch controls
-     */
-    public final float pitchMulFrom, pitchMulTo, pitchMulTime;
+    public final float[] waveform, envelope, pitchEnv;
 
     /**
      * Pitch multiplier becomes an absolute frequency
      */
     public final boolean pitchLock;
 
-    public NSChannel(float attack, float decay, float sustain, float release, float[] wf, float gvm, float pitchMulFrom, float pitchMulTo, float pitchMulTime) {
-        this(attack, decay, sustain, release, wf, gvm, pitchMulFrom, pitchMulTo, pitchMulTime, false, Float.MAX_VALUE);
-    }
-    public NSChannel(float attack, float decay, float sustain, float release, float[] wf, float gvm, float pitchMulFrom, float pitchMulTo, float pitchMulTime, boolean pitchLock, float maxSustainTime) {
-        this.stageEndTime = this.attack = attack;
-        this.volumeAtNextStage = gvm;
-        this.decay = decay;
-        this.sustain = sustain * gvm;
+    public final boolean skipSustainStage;
+
+    public NSChannel(float strike, float release, NSPatch patch, boolean pitchLock, boolean skipSustainStage) {
+        this.stageEndTime = this.strike = strike;
+        this.skipSustainStage = skipSustainStage;
         this.release = release;
-        this.waveform = wf;
-        this.pitchMulState = this.pitchMulFrom = pitchMulFrom;
-        this.pitchMulTo = pitchMulTo;
-        this.pitchMulTime = pitchMulTime;
+        this.waveform = patch.getMainWaveform();
+        this.envelope = patch.getEnvWaveform();
+        this.pitchEnv = patch.getPitchEnvWaveform();
+        this.pitchMulState = 0;
         this.pitchLock = pitchLock;
-        this.maxSustainTime = maxSustainTime;
         update(0);
     }
 
     @Override
     public void noteOffInner(int velocity) {
-        if (maxSustainTime != Float.MAX_VALUE)
-            return;
-        // if a note is turned off during attack, don't cut it
-        if (stage == 0)
-            volume = sustain;
-        stage = 3;
-        volumeAtLastStage = volume;
-        volumeAtNextStage = 0;
-        timeInStage = 0;
-        stageEndTime = release;
+        // do nothing, we don't use the notification to track note release
     }
 
     @Override
     public void render(float[] buffer, int offset, int frames, float leftVol, float rightVol) {
-        float gVol = volume * getVelocityVol();
         double sampleSeconds = getSampleSeconds();
         double effectiveCycleSeconds = (pitchLock ? 1.0d : getCycleSeconds()) / pitchMulState;
         double sampleAdv = sampleSeconds / effectiveCycleSeconds;
-        leftVol *= gVol;
-        rightVol *= gVol;
+        leftVol *= volume;
+        rightVol *= volume;
         while (frames > 0) {
             internalCounter = (internalCounter + sampleAdv) % 1;
-            int idx = (int) (internalCounter * waveform.length);
-            // just in case
-            if (idx < 0)
-                idx = 0;
-            if (idx >= waveform.length)
-                idx = waveform.length - 1;
-            // get value
-            float wf = waveform[idx];
+            float idx = (float) (internalCounter * waveform.length);
+            float wf = MathsX.linearSample1d(idx, waveform, true);
             buffer[offset++] += wf * leftVol;
             buffer[offset++] += wf * rightVol;
             frames--;
@@ -159,36 +103,45 @@ public class NSChannel extends MIDISynthesizer.Channel {
     @Override
     public boolean update(double time) {
         timeInStage += time;
-        pitchMulProgress += time / pitchMulTime;
-        if (pitchMulProgress > 1.0d)
-            pitchMulProgress = 1.0d;
+        // advance from sustain to release
+        if (stage == 1 && !isNoteOn())
+            timeInStage = stageEndTime;
         while (timeInStage >= stageEndTime) {
             timeInStage -= stageEndTime;
-            volumeAtLastStage = volumeAtNextStage;
             if (stage == 0) {
-                // attack -> decay
-                stage = 1;
-                stageEndTime = decay;
-                volumeAtNextStage = sustain;
+                // just finished attack/decay; we hold in sustain
+                if (skipSustainStage) {
+                    // or not
+                    stage = 2;
+                    stageEndTime = release;
+                } else {
+                    stage = 1;
+                    // or until note off releases us
+                    stageEndTime = Float.MAX_VALUE;
+                }
             } else if (stage == 1) {
-                // decay -> sustain
+                // sustain -> release
                 stage = 2;
-                volume = sustain;
-                volumeAtLastStage = sustain;
-                volumeAtNextStage = sustain;
-                stageEndTime = maxSustainTime;
-            } else if (stage == 2) {
-                stage = 3;
                 stageEndTime = release;
-                volumeAtNextStage = 0;
-            } else if (stage >= 3) {
+            } else if (stage >= 2) {
                 // release: nope
-                stageEndTime = -1;
+                stageEndTime = Float.MIN_VALUE;
                 return true;
             }
         }
-        volume = MathsX.lerpUnclamped(volumeAtLastStage, volumeAtNextStage, (float) (timeInStage / stageEndTime));
-        pitchMulState = MathsX.lerpUnclamped(pitchMulFrom, pitchMulTo, (float) pitchMulProgress);
+        int envQuarter = envelope.length / 4;
+        float volPtr = MathsX.lerpUnclamped(0, envQuarter, MathsX.clamp((float) (timeInStage / stageEndTime), 0, 1));
+        if (stage == 0) {
+            volPtr += envQuarter;
+        } else if (stage == 1) {
+            // sustaining, so hold at a particular point
+            volPtr = envelope.length / 2;
+        } else if (stage == 2) {
+            // releasing
+            volPtr += envelope.length / 2;
+        }
+        volume = MathsX.linearSample1d(volPtr, envelope, false);
+        pitchMulState = 0.5f + MathsX.linearSample1d(volPtr, pitchEnv, false);
         return false;
     }
 

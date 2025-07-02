@@ -27,7 +27,7 @@ public class UINewSynthEditor extends UIProxy {
             public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
                 if (bank >= 128)
                     return null;
-                return new NSChannel(0.01f, 0.01f, 0.5f, 0.01f, patch.getMainWaveform(), 1f, 1, 1, 1, false, 1);
+                return new NSChannel(0.5f, 0.5f, patch, false, false);
             }
         }));
     });

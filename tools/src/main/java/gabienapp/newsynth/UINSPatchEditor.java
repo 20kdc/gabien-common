@@ -7,14 +7,35 @@
 package gabienapp.newsynth;
 
 import gabien.ui.UIElement.UIProxy;
+import gabien.ui.elements.UILabel;
+import gabien.ui.elements.UITextBox;
+import gabien.ui.layouts.UIScrollLayout;
+import gabien.ui.layouts.UISplitterLayout;
 
 /**
  * Created 2nd July, 2025
  */
 public class UINSPatchEditor extends UIProxy {
     public UINSPatchEditor(NSPatch patch) {
-        UINSWaveformEditor waveform = new UINSWaveformEditor(800, 600, patch.mainWaveform);
+        UILabel patchNameLabel = new UILabel("Name: ", 24);
+        UITextBox patchName = new UITextBox("", 24);
+        UISplitterLayout patchNameAndLabel = new UISplitterLayout(patchNameLabel, patchName, false, 0);
+        patchName.setText(patch.identifier);
+        patchName.onEdit = () -> patch.identifier = patchName.getText();
+
+        UINSWaveformEditor waveform = new UINSWaveformEditor(400, 200, patch.mainWaveform);
         waveform.onWaveformChange = () -> patch.markCachesDirty();
-        proxySetElement(waveform, false);
+
+        UINSWaveformEditor envelope = new UINSWaveformEditor(400, 200, patch.volumeWaveform);
+        envelope.normalized = false;
+        envelope.onWaveformChange = () -> patch.markCachesDirty();
+
+        UINSWaveformEditor pitch = new UINSWaveformEditor(400, 200, patch.pitchEnvWaveform);
+        pitch.normalized = false;
+        pitch.onWaveformChange = () -> patch.markCachesDirty();
+
+        UIScrollLayout waveColumn = new UIScrollLayout(true, 24, new UILabel("WAVE", 16), waveform, new UILabel("ENVELOPE", 16), envelope, new UILabel("PITCH-ENV", 16), pitch);
+        UIScrollLayout checkColumn = new UIScrollLayout(true, 24, new UILabel("CHECK", 16), new UILabel("temp", 16));
+        proxySetElement(new UISplitterLayout(patchNameAndLabel, new UISplitterLayout(waveColumn, checkColumn, false, 1), true, 0), true);
     }
 }

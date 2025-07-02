@@ -31,6 +31,24 @@ public final class MathsX {
         return from + ((to - from) * mix);
     }
 
+    /**
+     * Samples a linear float array.
+     * Note that coordinate normalization is not included.
+    */
+    public static float linearSample1d(float frame, float[] buffer, boolean loop) {
+        int frame1 = (int) Math.floor(frame);
+        float frac = (float) (frame - frame1);
+        int frame2 = frame1 + 1;
+        if (loop) {
+            frame1 = seqModulo(frame1, buffer.length);
+            frame2 = seqModulo(frame2, buffer.length);
+        } else {
+            frame1 = clamp(frame1, 0, buffer.length - 1);
+            frame2 = clamp(frame2, 0, buffer.length - 1);
+        }
+        return lerpUnclamped(buffer[frame1], buffer[frame2], frac);
+    }
+
     // Clamps
 
     /**

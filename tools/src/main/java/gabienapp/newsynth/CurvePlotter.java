@@ -19,7 +19,7 @@ public class CurvePlotter {
     /**
      * Resolves the waveform.
      */
-    public static void resolve(ICurveWaveform wave, float[] data, boolean normalized) {
+    public static void resolve(ICurveWaveform wave, float[] data, NormalizationMode normalized) {
         // Use -2 as a marker value to indicate missing data.
         Arrays.fill(data, -2f);
         int pointCount = wave.pointCount();
@@ -44,20 +44,36 @@ public class CurvePlotter {
         }
         float lastRealValue = 0;
         float total = 0.0f;
+        float min = Float.MAX_VALUE;
+        float max = Float.MIN_VALUE;
         for (int j = 0; j < data.length; j++) {
-            if (data[j] == -2f) {
-                data[j] = lastRealValue;
+            float val = data[j];
+            if (val == -2f) {
+                val = lastRealValue;
             } else {
                 lastRealValue = data[j];
             }
-            total += data[j];
-        }
-        if (normalized) {
-            total /= data.length;
-            for (int j = 0; j < data.length; j++) {
-                data[j] -= total;
+            data[j] = val;
+            if (normalized != NormalizationMode.None) {
+                total += val;
+                min = Math.min(val, min);
+                max = Math.max(val, max);
             }
         }
+        if (normalized != NormalizationMode.None) {
+            total /= data.length;
+            float subtract = (normalized == NormalizationMode.RecentreDC) ? total : ((max + min) / 2);
+            float vol = Math.max(0.01f, max - min) / 2;
+            for (int j = 0; j < data.length; j++) {
+                data[j] = (data[j] - subtract) / vol;
+            }
+        }
+    }
+
+    public enum NormalizationMode {
+        None,
+        RecentreDC,
+        RecentreMinmax
     }
 
     /**

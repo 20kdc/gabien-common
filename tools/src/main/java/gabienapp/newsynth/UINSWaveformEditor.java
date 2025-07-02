@@ -19,6 +19,7 @@ import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
 import gabien.wsi.IPointer.PointerType;
+import gabienapp.newsynth.CurvePlotter.NormalizationMode;
 
 /**
  * Created 2nd July, 2025
@@ -27,8 +28,8 @@ public final class UINSWaveformEditor extends UIElement {
     private IEditableCurveWaveform sw;
     int selectedPoint = 0;
     float[] resolveBuffer = new float[0];
-    static final float SAFETY_EPSILON = 0.01f;
     public @NonNull Runnable onWaveformChange = () -> {};
+    public boolean normalized = true;
 
     public UINSWaveformEditor(int width, int height, IEditableCurveWaveform sw) {
         super(width, height);
@@ -85,9 +86,10 @@ public final class UINSWaveformEditor extends UIElement {
             if (resolveBuffer.length != mySize.width)
                 resolveBuffer = new float[mySize.width];
             /* ok now the code is just bad. but that's okay */
-            CurvePlotter.resolve(sw, resolveBuffer, false);
+            CurvePlotter.resolve(sw, resolveBuffer, normalized ? NormalizationMode.RecentreMinmax : NormalizationMode.None);
             for (int i = 0; i < mySize.width; i++) {
-                int y = (int) (mySize.height - (resolveBuffer[i] * mySize.height));
+                float v = normalized ? ((resolveBuffer[i] + 1.0f) / 2.0f) : resolveBuffer[i];
+                int y = (int) (mySize.height - (v * mySize.height));
                 igd.clearRect(0, 255, 0, i, y, 1, 1);
             }
             int pointCount = sw.pointCount();
@@ -133,11 +135,9 @@ public final class UINSWaveformEditor extends UIElement {
                         return;
                     float intendedX = backTranslateX(translateX(ofx) + (state.getX() - ox));
                     float intendedY = backTranslateY(translateY(ofy) + (state.getY() - oy));
-                    intendedX = Math.max(intendedX, sw.pointX(targetPoint - 1) + SAFETY_EPSILON);
-                    intendedX = Math.min(intendedX, sw.pointX(targetPoint + 1) - SAFETY_EPSILON);
                     intendedX = Math.max(intendedX, 0);
                     intendedX = Math.min(intendedX, 1);
-                    intendedY = Math.max(intendedY, -1);
+                    intendedY = Math.max(intendedY, 0);
                     intendedY = Math.min(intendedY, 1);
                     sw.movePoint(targetPoint, intendedX, intendedY);
                     onWaveformChange.run();

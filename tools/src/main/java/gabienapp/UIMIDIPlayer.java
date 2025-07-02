@@ -21,9 +21,11 @@ import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDISynthesizer;
 import gabien.media.midi.MIDITimer;
 import gabien.media.midi.MIDITracker;
+import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.elements.UIScrollbar;
 import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UIScrollLayout;
 import gabien.ui.layouts.UISplitterLayout;
 import gabien.wsi.IPeripherals;
 
@@ -32,7 +34,7 @@ import gabien.wsi.IPeripherals;
  * Created 15th February, 2024.
  */
 public class UIMIDIPlayer extends UIProxy {
-    public final UITextButton open = new UITextButton("open", 16, () -> {
+    public final UITextButton open = new UITextButton("open", 32, () -> {
         GaBIEn.startFileBrowser("Input MIDI", false, "", (str) -> {
             if (str != null) {
                 try {
@@ -45,12 +47,13 @@ public class UIMIDIPlayer extends UIProxy {
             }
         });
     });
-    public final UITextButton play = new UITextButton("play", 16, () -> {}).togglable(false);
+    public final UITextButton play = new UITextButton("play", 32, () -> {}).togglable(false);
     public final UIScrollbar scrollbar;
     public final UIScrollbar volume;
     public double synthViewOfSeekPoint;
     public AtomicReference<Double> uiSeekRequest = new AtomicReference<Double>();
     private final MIDISynthesizer.Palette palette;
+    private final UITextButton[] channels = new UITextButton[16];
 
     public UIMIDIPlayer(MIDISynthesizer.Palette palette) {
         this.palette = palette;
@@ -66,7 +69,13 @@ public class UIMIDIPlayer extends UIProxy {
         };
         volume = new UIScrollbar(false, 16);
         volume.scrollPoint = MIDISynthesizer.DEFAULT_GLOBAL_VOLUME;
-        proxySetElement(new UISplitterLayout(new UISplitterLayout(open, play, false, 0), new UISplitterLayout(scrollbar, volume, true, 0.5d), false, 0), true);
+        UIElement mainControls = new UISplitterLayout(new UISplitterLayout(open, play, false, 0), new UISplitterLayout(scrollbar, volume, true, 0.5d), false, 0);
+
+        for (int i = 0; i < 16; i++)
+            channels[i] = new UITextButton(Integer.toHexString(i).toUpperCase(), 32, () -> {}).togglable(true);
+        UIScrollLayout channelsSc = new UIScrollLayout(false, 16, channels);
+
+        proxySetElement(new UISplitterLayout(mainControls, channelsSc, true, 0), true);
     }
 
     @Override
@@ -96,6 +105,10 @@ public class UIMIDIPlayer extends UIProxy {
         }
         @Override
         public void pullData(@NonNull short[] interleaved, int ofs, int frames) {
+            synth.channelEnableSwitches = 0;
+            for (int i = 0; i < 16; i++)
+                if (channels[i].state)
+                    synth.channelEnableSwitches |= 1 << i;
             // System.out.println("Oooo");
             Double seekRequest = uiSeekRequest.getAndSet(null);
             if (seekRequest != null) {

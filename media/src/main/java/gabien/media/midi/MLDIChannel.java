@@ -135,12 +135,11 @@ public class MLDIChannel extends MIDISynthesizer.Channel {
 
     @Override
     public void render(float[] buffer, int offset, int frames, float leftVol, float rightVol) {
-        float gVol = volume * getVelocityVol();
         double sampleSeconds = getSampleSeconds();
         double effectiveCycleSeconds = (pitchLock ? 1.0d : getCycleSeconds()) / pitchMulState;
         double sampleAdv = sampleSeconds / effectiveCycleSeconds;
-        leftVol *= gVol;
-        rightVol *= gVol;
+        leftVol *= volume;
+        rightVol *= volume;
         while (frames > 0) {
             internalCounter = (internalCounter + sampleAdv) % 1;
             float waveform;
@@ -183,7 +182,7 @@ public class MLDIChannel extends MIDISynthesizer.Channel {
                 volumeAtNextStage = 0;
             } else if (stage >= 3) {
                 // release: nope
-                stageEndTime = -1;
+                stageEndTime = Float.MIN_VALUE;
                 return true;
             }
         }

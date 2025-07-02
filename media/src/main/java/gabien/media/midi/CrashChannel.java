@@ -34,7 +34,7 @@ public class CrashChannel extends MIDISynthesizer.Channel {
 
     @Override
     public void render(float[] buffer, int offset, int frames, float leftVol, float rightVol) {
-        double v2 = volume * volume * volumeMul * getVelocityVol();
+        double v2 = volume * volume * volumeMul;
         leftVol *= v2;
         rightVol *= v2;
         while (frames > 0) {
