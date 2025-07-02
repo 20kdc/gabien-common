@@ -35,6 +35,7 @@ import gabien.atlas.SimpleAtlasBuilder;
 import gabien.media.audio.AudioIOFormat;
 import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
 import gabien.media.audio.fileio.WavIO;
+import gabien.media.midi.DefaultMIDIPalette;
 import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDITracker;
 import gabien.media.riff.RIFFNode;
@@ -121,7 +122,7 @@ public class UIMainMenu extends UIProxy {
             });
         }));
         ve.add(new UITextButton("MIDI Testing Range", 16, () -> {
-            UIMIDIPlayer player = new UIMIDIPlayer();
+            UIMIDIPlayer player = new UIMIDIPlayer(DefaultMIDIPalette.INSTANCE);
             ui.accept(player);
         }));
         ve.add(new UITextButton("MIDI Instrument Checker", 16, () -> {
@@ -131,7 +132,7 @@ public class UIMainMenu extends UIProxy {
             ui.accept(new UIScrollLayout(true, 16, check));
         }));
         ve.add(new UITextButton("NewSynth Test", 16, () -> {
-            ui.accept(new UINewSynthEditor());
+            ui.accept(new UINewSynthEditor(this));
         }));
         ve.add(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));

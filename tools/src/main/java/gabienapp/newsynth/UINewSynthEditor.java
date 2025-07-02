@@ -6,14 +6,33 @@
  */
 package gabienapp.newsynth;
 
+import gabien.media.midi.MIDISynthesizer;
+import gabien.media.midi.MIDISynthesizer.Channel;
+import gabien.media.midi.MIDISynthesizer.Palette;
 import gabien.ui.UIElement.UIProxy;
+import gabien.ui.elements.UITextButton;
+import gabien.ui.layouts.UISplitterLayout;
+import gabienapp.UIMIDIPlayer;
+import gabienapp.UIMainMenu;
 
 /**
  * Created 2nd July, 2025
  */
 public class UINewSynthEditor extends UIProxy {
-    public UINewSynthEditor() {
-        NSWaveform sw = new NSWaveform();
-        proxySetElement(new UINSWaveformEditor(800, 600, sw), false);
+    private UIMainMenu menu = null;
+    private NSPatch patch = new NSPatch();
+    private UITextButton openMidi = new UITextButton("open MIDI player", 16, () -> {
+        menu.ui.accept(new UIMIDIPlayer(new Palette() {
+            @Override
+            public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
+                if (bank >= 128)
+                    return null;
+                return new NSChannel(0.01f, 0.01f, 0.5f, 0.01f, patch.getMainWaveform(), 1f, 1, 1, 1, false, 1);
+            }
+        }));
+    });
+    public UINewSynthEditor(UIMainMenu menu) {
+        this.menu = menu;
+        proxySetElement(new UISplitterLayout(openMidi, new UINSPatchEditor(patch), true, 0), true);
     }
 }

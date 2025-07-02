@@ -7,6 +7,8 @@
 
 package gabienapp.newsynth;
 
+import org.eclipse.jdt.annotation.NonNull;
+
 import gabien.render.IGrDriver;
 import gabien.ui.IPointerReceiver;
 import gabien.ui.UIElement;
@@ -26,6 +28,7 @@ public final class UINSWaveformEditor extends UIElement {
     int selectedPoint = 0;
     float[] resolveBuffer = new float[0];
     static final float SAFETY_EPSILON = 0.01f;
+    public @NonNull Runnable onWaveformChange = () -> {};
 
     public UINSWaveformEditor(int width, int height, IEditableCurveWaveform sw) {
         super(width, height);
@@ -55,11 +58,14 @@ public final class UINSWaveformEditor extends UIElement {
         if (peripherals instanceof IDesktopPeripherals) {
             boolean insert = ((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_INSERT);
             boolean delete = ((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_DELETE);
-            if (insert)
+            if (insert) {
                 selectedPoint = sw.addPoint(selectedPoint);
+                onWaveformChange.run();
+            }
             if (delete) {
                 sw.rmPoint(selectedPoint);
                 prevPoint();
+                onWaveformChange.run();
             }
         }
     }
@@ -70,7 +76,6 @@ public final class UINSWaveformEditor extends UIElement {
         if (layer == UILayer.Content) {
             Size mySize = getSize();
             igd.clearRect(0, 0, 0, 0, 0, mySize.width, mySize.height);
-            int midpoint = mySize.height / 2;
             igd.clearRect(0, 128, 0, 0, mySize.height / 4, mySize.width, 1);
             igd.clearRect(0, 128, 0, 0, (mySize.height / 2) + (mySize.height / 4), mySize.width, 1);
             igd.clearRect(0, 128, 0, 0, mySize.height / 2, mySize.width, 1);
@@ -79,10 +84,10 @@ public final class UINSWaveformEditor extends UIElement {
             igd.clearRect(0, 128, 0, mySize.width / 2, 0, 1, mySize.height);
             if (resolveBuffer.length != mySize.width)
                 resolveBuffer = new float[mySize.width];
-            /* we're expecting to potentially re-resolve this across all channels rather often */
-            sw.resolve(resolveBuffer);
+            /* ok now the code is just bad. but that's okay */
+            CurvePlotter.resolve(sw, resolveBuffer, false);
             for (int i = 0; i < mySize.width; i++) {
-                int y = (int) (midpoint - (resolveBuffer[i] * midpoint));
+                int y = (int) (mySize.height - (resolveBuffer[i] * mySize.height));
                 igd.clearRect(0, 255, 0, i, y, 1, 1);
             }
             int pointCount = sw.pointCount();
@@ -135,6 +140,7 @@ public final class UINSWaveformEditor extends UIElement {
                     intendedY = Math.max(intendedY, -1);
                     intendedY = Math.min(intendedY, 1);
                     sw.movePoint(targetPoint, intendedX, intendedY);
+                    onWaveformChange.run();
                 }
                 
                 @Override
@@ -155,12 +161,12 @@ public final class UINSWaveformEditor extends UIElement {
     }
 
     private int translateY(float y) {
-        int midpoint = getSize().height / 2;
-        return (int) (midpoint - (y * midpoint));
+        int h = getSize().height;
+        return (int) (h - (y * h));
     }
 
     private float backTranslateY(int y) {
-        int midpoint = getSize().height / 2;
-        return (y - midpoint) / (float) -midpoint;
+        int h = getSize().height;
+        return (y - h) / (float) -h;
     }
 }

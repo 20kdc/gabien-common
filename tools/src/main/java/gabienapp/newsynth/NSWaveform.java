@@ -12,15 +12,10 @@ package gabienapp.newsynth;
  * Created 2nd July, 2025
  */
 public class NSWaveform implements IEditableCurveWaveform {
-    public float[] pointData = new float[4];
-
-    public NSWaveform() {
-        int p = 0;
-        for (int i = 0; i < 2; i++) {
-            pointData[p++] = i / 2f;
-            pointData[p++] = ((i & 1) == 0) ? 0.5f : -0.5f;
-        }
-    }
+    public float[] pointData = new float[] {
+        0, 0.5f,
+        0.5f, 0.25f
+    };
 
     @Override
     public int pointCount() {

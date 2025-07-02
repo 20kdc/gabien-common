@@ -12,7 +12,30 @@ package gabienapp.newsynth;
  * Created 2nd July, 2025
  */
 public class NSPatch {
-    public NSWaveform volumeWaveform;
-    public int attackMs;
-    public int decayMs;
+    private static int CACHED_WAVEFORM_LEN = 512;
+
+    public String identifier = "";
+    public final NSWaveform volumeWaveform = new NSWaveform();
+    public final NSWaveform mainWaveform = new NSWaveform();
+    public int attackMs = 1000;
+    public int decayMs = 1000;
+
+    private final float[] mainWaveformCache = new float[CACHED_WAVEFORM_LEN];
+    private volatile boolean cacheDirty = true;
+
+    public float[] getMainWaveform() {
+        if (cacheDirty)
+            regenCaches();
+        return mainWaveformCache;
+    }
+
+    public synchronized void markCachesDirty() {
+        cacheDirty = true;
+    }
+
+    public synchronized void regenCaches() {
+        // make sure only one thread is writing here at a time
+        cacheDirty = false;
+        CurvePlotter.resolve(mainWaveform, mainWaveformCache, true);
+    }
 }

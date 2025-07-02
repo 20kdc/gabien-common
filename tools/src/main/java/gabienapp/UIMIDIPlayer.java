@@ -17,7 +17,6 @@ import gabien.GaBIEn;
 import gabien.audio.IRawAudioDriver.IRawAudioSource;
 import gabien.media.audio.AudioIOFormat;
 import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
-import gabien.media.midi.DefaultMIDIPalette;
 import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDISynthesizer;
 import gabien.media.midi.MIDITimer;
@@ -51,8 +50,10 @@ public class UIMIDIPlayer extends UIProxy {
     public final UIScrollbar volume;
     public double synthViewOfSeekPoint;
     public AtomicReference<Double> uiSeekRequest = new AtomicReference<Double>();
+    private final MIDISynthesizer.Palette palette;
 
-    public UIMIDIPlayer() {
+    public UIMIDIPlayer(MIDISynthesizer.Palette palette) {
+        this.palette = palette;
         scrollbar = new UIScrollbar(false, 16) {
             double myViewOfMyValue = 0;
             @Override
@@ -76,7 +77,7 @@ public class UIMIDIPlayer extends UIProxy {
     private class TheThingThatDoesTheStuff implements IRawAudioSource {
         final MIDISequence sequence;
         final MIDISequence.TimingInformation seqTiming;
-        MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, ReadAnySupportedAudioSource.MIDI_POLYPHONY);
+        MIDISynthesizer synth = new MIDISynthesizer(22050, palette, ReadAnySupportedAudioSource.MIDI_POLYPHONY);
         MIDITracker tracker;
         MIDITimer timer;
         float[] data = new float[256];
