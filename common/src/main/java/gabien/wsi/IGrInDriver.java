@@ -119,8 +119,11 @@ public interface IGrInDriver {
     int VK_RIGHT = 90;
     int VK_DOWN = 91;
     int VK_INSERT = 92;
+    int VK_DELETE = 93;
 
-    int KEYS = 93;
+    // So apparently past me synced this all up to GrInDriver public int[] keymap.
+    // This is a mess...
+    int KEYS = 94;
 
     // -- Window management functions --
 

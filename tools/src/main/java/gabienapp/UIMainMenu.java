@@ -16,6 +16,7 @@ import gabien.uslx.append.EmptyLambdas;
 import gabien.uslx.append.Rect;
 import gabien.uslx.io.HexByteEncoding;
 import gabien.wsi.IPeripherals;
+import gabienapp.newsynth.UINewSynthEditor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -128,6 +129,9 @@ public class UIMainMenu extends UIProxy {
             for (int i = 0; i < 128; i++)
                 check[i] = new UIMIDIInstrumentChecker(i);
             ui.accept(new UIScrollLayout(true, 16, check));
+        }));
+        ve.add(new UITextButton("NewSynth Test", 16, () -> {
+            ui.accept(new UINewSynthEditor());
         }));
         ve.add(new UITextButton("Start RIFF Editor", 16, () -> {
             ui.accept(new UIRIFFEditor(this));
