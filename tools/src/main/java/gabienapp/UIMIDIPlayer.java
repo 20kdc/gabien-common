@@ -35,20 +35,24 @@ import gabien.wsi.IPeripherals;
  * Created 15th February, 2024.
  */
 public class UIMIDIPlayer extends UIProxy {
+    private TheThingThatDoesTheStuff audioSource;
     public final UITextButton open = new UITextButton("open", 32, () -> {
         GaBIEn.startFileBrowser("Input MIDI", false, "", (str) -> {
             if (str != null) {
                 try {
                     InputStream inp = GaBIEn.getInFile(str);
                     MIDISequence mf = MIDISequence.from(inp)[0];
-                    GaBIEn.getRawAudio().setRawAudioSource(new TheThingThatDoesTheStuff(mf));
+                    GaBIEn.getRawAudio().setRawAudioSource(audioSource = new TheThingThatDoesTheStuff(mf));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
     });
-    public final UITextButton play = new UITextButton("play", 32, () -> {}).togglable(false);
+    public final UITextButton play = new UITextButton("play", 32, () -> {
+        if (audioSource != null)
+            GaBIEn.getRawAudio().setRawAudioSource(audioSource);
+    }).togglable(false);
     public final UIScrollbar scrollbar;
     public final UIScrollbar volume;
     public double synthViewOfSeekPoint;

@@ -44,37 +44,23 @@ public class NSChannel extends MIDISynthesizer.Channel {
      */
     public int stage;
 
-    /**
-     * Strike: Attack/decay
-     */
-    public final float strike;
+    public final NSPatch patch;
 
-    /**
-     * Release: How much time it takes to kill the note.
-     */
-    public final float release;
+    public final float octaveShiftMultiplier;
 
     /**
      * Waveform, envelope (left/right quarters unused to make curve editing nicer), pitch envelope
      */
     public final float[] waveform, envelope, pitchEnv;
 
-    /**
-     * Pitch multiplier becomes an absolute frequency
-     */
-    public final boolean pitchLock;
-
-    public final boolean skipSustainStage;
-
     public NSChannel(NSPatch patch) {
-        this.stageEndTime = this.strike = patch.strikeMs / 1000f;
-        this.skipSustainStage = !patch.sustainEnabled;
-        this.release = patch.releaseMs / 1000f;
+        this.stageEndTime = patch.strikeMs / 1000f;
+        this.octaveShiftMultiplier = (float) Math.pow(2, patch.octaveShift);
+        this.patch = patch;
         this.waveform = patch.getMainWaveform();
         this.envelope = patch.getEnvWaveform();
         this.pitchEnv = patch.getPitchEnvWaveform();
         this.pitchMulState = 1;
-        this.pitchLock = false;
         update(0);
     }
 
@@ -86,7 +72,9 @@ public class NSChannel extends MIDISynthesizer.Channel {
     @Override
     public void render(float[] buffer, int offset, int frames, float leftVol, float rightVol) {
         double sampleSeconds = getSampleSeconds();
-        double effectiveCycleSeconds = (pitchLock ? 1.0d : getCycleSeconds()) / pitchMulState;
+        double effectiveCycleSeconds = ((patch.fixedFrequency != 0) ? (1.0d / patch.fixedFrequency) : getCycleSeconds()) / pitchMulState;
+        // this is a divisor since we are dividing cycleSeconds
+        effectiveCycleSeconds /= octaveShiftMultiplier;
         double sampleAdv = sampleSeconds / effectiveCycleSeconds;
         leftVol *= volume;
         rightVol *= volume;
@@ -110,19 +98,19 @@ public class NSChannel extends MIDISynthesizer.Channel {
             timeInStage -= stageEndTime;
             if (stage == 0) {
                 // just finished attack/decay; we hold in sustain
-                if (skipSustainStage) {
-                    // or not
-                    stage = 2;
-                    stageEndTime = release;
-                } else {
+                if (patch.sustainEnabled) {
                     stage = 1;
                     // or until note off releases us
                     stageEndTime = Float.MAX_VALUE;
+                } else {
+                    // or not
+                    stage = 2;
+                    stageEndTime = patch.releaseMs / 1000f;
                 }
             } else if (stage == 1) {
                 // sustain -> release
                 stage = 2;
-                stageEndTime = release;
+                stageEndTime = patch.releaseMs / 1000f;
             } else if (stage >= 2) {
                 // release: nope
                 stageEndTime = Float.MIN_VALUE;

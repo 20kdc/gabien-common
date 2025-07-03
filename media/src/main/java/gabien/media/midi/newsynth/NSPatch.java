@@ -31,6 +31,8 @@ public class NSPatch {
     public final NSUnloopedWaveform pitchEnvWaveform = new NSUnloopedWaveform();
     public int strikeMs = 100;
     public int releaseMs = 500;
+    public int fixedFrequency = 0;
+    public int octaveShift = 0;
     public boolean sustainEnabled = true;
     public boolean noiseEnabled = false;
 
@@ -93,6 +95,7 @@ public class NSPatch {
         DatumWriter lst = writer.visitList(DatumSrcLoc.NONE);
         lst.visitId("name", DatumSrcLoc.NONE);
         lst.visitString(name, DatumSrcLoc.NONE);
+        lst.indent++;
         lst.visitNewline();
         lst.visitId("sustainEnabled", DatumSrcLoc.NONE);
         lst.visitBoolean(sustainEnabled, DatumSrcLoc.NONE);
@@ -102,12 +105,21 @@ public class NSPatch {
         lst.visitInt(strikeMs, DatumSrcLoc.NONE);
         lst.visitId("releaseMs", DatumSrcLoc.NONE);
         lst.visitInt(releaseMs, DatumSrcLoc.NONE);
+        lst.visitId("fixedFrequency", DatumSrcLoc.NONE);
+        lst.visitInt(fixedFrequency, DatumSrcLoc.NONE);
+        lst.visitId("octaveShift", DatumSrcLoc.NONE);
+        lst.visitInt(octaveShift, DatumSrcLoc.NONE);
+        lst.visitNewline();
         lst.visitId("env", DatumSrcLoc.NONE);
         volumeWaveform.writeToDatum(writer);
+        lst.visitNewline();
         lst.visitId("wave", DatumSrcLoc.NONE);
         mainWaveform.writeToDatum(writer);
+        lst.visitNewline();
         lst.visitId("pitchEnv", DatumSrcLoc.NONE);
         pitchEnvWaveform.writeToDatum(writer);
+        lst.indent--;
+        lst.visitNewline();
         lst.visitEnd(DatumSrcLoc.NONE);
     }
 
@@ -125,6 +137,10 @@ public class NSPatch {
                     return new DatumTreeCallbackVisitor<Long>((obj) -> strikeMs = (int) (long) obj);
                 if (key.equals("releaseMs"))
                     return new DatumTreeCallbackVisitor<Long>((obj) -> releaseMs = (int) (long) obj);
+                if (key.equals("fixedFrequency"))
+                    return new DatumTreeCallbackVisitor<Long>((obj) -> fixedFrequency = (int) (long) obj);
+                if (key.equals("octaveShift"))
+                    return new DatumTreeCallbackVisitor<Long>((obj) -> octaveShift = (int) (long) obj);
                 if (key.equals("env"))
                     return volumeWaveform.createDatumReadVisitor();
                 if (key.equals("wave"))
