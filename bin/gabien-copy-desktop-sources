@@ -16,6 +16,7 @@ set -e
 
 cp -r "$GABIEN_HOME/uslx/src/main/"* "$1"
 cp -r "$GABIEN_HOME/../datum/java/src/main/"* "$1"
+cp -r "$GABIEN_HOME/datum-aux/src/main/"* "$1"
 cp -r "$GABIEN_HOME/media/src/main/"* "$1"
 cp -r "$GABIEN_HOME/common/src/main/"* "$1"
 cp -r "$GABIEN_HOME/ui/src/main/"* "$1"

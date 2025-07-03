@@ -9,6 +9,9 @@ package gabienapp.newsynth;
 
 import org.eclipse.jdt.annotation.NonNull;
 
+import gabien.media.midi.newsynth.CurvePlotter;
+import gabien.media.midi.newsynth.IEditableCurveWaveform;
+import gabien.media.midi.newsynth.CurvePlotter.NormalizationMode;
 import gabien.render.IGrDriver;
 import gabien.ui.IPointerReceiver;
 import gabien.ui.UIElement;
@@ -19,7 +22,6 @@ import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
 import gabien.wsi.IPointer.PointerType;
-import gabienapp.newsynth.CurvePlotter.NormalizationMode;
 
 /**
  * Created 2nd July, 2025

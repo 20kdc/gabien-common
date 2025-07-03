@@ -6,9 +6,12 @@
  */
 package gabienapp.newsynth;
 
+import gabien.media.midi.DefaultMIDIPalette;
 import gabien.media.midi.MIDISynthesizer;
 import gabien.media.midi.MIDISynthesizer.Channel;
 import gabien.media.midi.MIDISynthesizer.Palette;
+import gabien.media.midi.newsynth.NSChannel;
+import gabien.media.midi.newsynth.NSPatch;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.elements.UITextButton;
 import gabien.ui.layouts.UISplitterLayout;
@@ -26,8 +29,8 @@ public class UINewSynthEditor extends UIProxy {
             @Override
             public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
                 if (bank >= 128)
-                    return null;
-                return new NSChannel(0.5f, 0.5f, patch, false, false);
+                    return DefaultMIDIPalette.INSTANCE.create(parent, bank, program, note, velocity);
+                return new NSChannel(patch);
             }
         }));
     });

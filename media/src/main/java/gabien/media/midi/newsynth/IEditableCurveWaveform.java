@@ -5,7 +5,14 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabienapp.newsynth;
+package gabien.media.midi.newsynth;
+
+import java.util.LinkedList;
+
+import datum.DatumInvalidVisitor;
+import datum.DatumSrcLoc;
+import datum.DatumVisitor;
+import gabien.datum.DatumExpectListVisitor;
 
 /**
  * Created 2nd July, 2025
@@ -38,4 +45,33 @@ public interface IEditableCurveWaveform extends ICurveWaveform {
      * Moves a point to a new location.
      */
     void movePoint(int index, float x, float y);
+    /**
+     * Imports a new point set.
+     */
+    void importPoints(float[] data);
+    /**
+     * Implements a datum read visitor for the points.
+     */
+    default DatumVisitor createDatumReadVisitor() {
+        return new DatumExpectListVisitor(() -> {
+            return new DatumInvalidVisitor() {
+                LinkedList<Float> flts = new LinkedList<>();
+                @Override
+                public void visitFloat(double value, DatumSrcLoc loc) {
+                    flts.add((float) value);
+                }
+                @Override
+                public void visitInt(long value, DatumSrcLoc loc) {
+                    flts.add((float) value);
+                }
+                @Override
+                public void visitEnd(DatumSrcLoc loc) {
+                    float[] res = new float[flts.size()];
+                    for (int i = 0; i < res.length; i++)
+                        res[i] = flts.get(i);
+                    importPoints(res);
+                }
+            };
+        });
+    }
 }

@@ -4,7 +4,7 @@
  * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
-package gabienapp.newsynth;
+package gabien.media.midi.newsynth;
 
 import gabien.media.midi.MIDISynthesizer;
 import gabien.uslx.append.MathsX;
@@ -66,15 +66,15 @@ public class NSChannel extends MIDISynthesizer.Channel {
 
     public final boolean skipSustainStage;
 
-    public NSChannel(float strike, float release, NSPatch patch, boolean pitchLock, boolean skipSustainStage) {
-        this.stageEndTime = this.strike = strike;
-        this.skipSustainStage = skipSustainStage;
-        this.release = release;
+    public NSChannel(NSPatch patch) {
+        this.stageEndTime = this.strike = patch.strikeMs / 1000f;
+        this.skipSustainStage = !patch.sustainEnabled;
+        this.release = patch.releaseMs / 1000f;
         this.waveform = patch.getMainWaveform();
         this.envelope = patch.getEnvWaveform();
         this.pitchEnv = patch.getPitchEnvWaveform();
-        this.pitchMulState = 0;
-        this.pitchLock = pitchLock;
+        this.pitchMulState = 1;
+        this.pitchLock = false;
         update(0);
     }
 

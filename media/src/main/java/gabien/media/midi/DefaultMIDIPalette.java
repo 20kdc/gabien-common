@@ -9,6 +9,8 @@ package gabien.media.midi;
 import java.util.Random;
 
 import gabien.media.midi.MIDISynthesizer.Channel;
+import gabien.media.midi.oldsynth.CrashChannel;
+import gabien.media.midi.oldsynth.MLDIChannel;
 
 /**
  * "Eclipse Debug Editing and its applications for MIDI Synthesis"
@@ -31,8 +33,11 @@ public enum DefaultMIDIPalette implements MIDISynthesizer.Palette {
             // big crash
             if (note == 49 || note == 55 || note == 57)
                 return new CrashChannel(new Random(bank + program + note + velocity), 1.0d, 0.2d, false);
+            // 3rd july: this honestly ruins some tracks
+            // so while we're using this percussion bank for more complete NewSynth tests...
             //                     A      D      S      R      M      V      PMF               PMT   PMD    PL    MST
-            return new MLDIChannel(0.01f, 0,     1,     0.10f, 1.00f, 0.30f, 50 + (note * 2),  25,   1,     true, 0);
+            //return new MLDIChannel(0.01f, 0,     1,     0.10f, 1.00f, 0.30f, 50 + (note * 2),  25,   1,     true, 0);
+            return null;
         }
         // parameters for the synthesizer!
         //           vwPlADSR

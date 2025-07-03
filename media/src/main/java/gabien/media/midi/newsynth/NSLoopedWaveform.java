@@ -5,14 +5,17 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package gabienapp.newsynth;
+package gabien.media.midi.newsynth;
 
 /**
  * Synth waveform impl.
  * Created 2nd July, 2025
  */
-public class NSUnloopedWaveform implements IEditableCurveWaveform {
-    public float[] pointData = new float[] {0, 0.5f};
+public class NSLoopedWaveform implements IEditableCurveWaveform {
+    public float[] pointData = new float[] {
+        0, 0.5f,
+        0.5f, 0.25f
+    };
 
     @Override
     public int pointCount() {
@@ -46,21 +49,26 @@ public class NSUnloopedWaveform implements IEditableCurveWaveform {
 
     private int mapPointIdx(int pointIdx) {
         int count = pointData.length / 2;
+        while (pointIdx < 0)
+            pointIdx += count;
+        return (pointIdx % count) << 1;
+    }
+
+    private int mapPointGen(int pointIdx) {
+        int count = pointData.length / 2;
         if (pointIdx < 0)
-            return 0;
-        if (pointIdx >= count)
-            return pointData.length - 2;
-        return pointIdx << 1;
+            pointIdx -= count;
+        return pointIdx / count;
     }
 
     @Override
     public float pointX(int pointIdx) {
-        return pointData[mapPointIdx(pointIdx)];
+        return pointData[mapPointIdx(pointIdx)] + mapPointGen(pointIdx);
     }
 
     @Override
     public float pointY(int pointIdx) {
-        return pointData[mapPointIdx(pointIdx) + 1];
+        return pointData[(mapPointIdx(pointIdx)) + 1];
     }
 
     @Override
@@ -68,5 +76,10 @@ public class NSUnloopedWaveform implements IEditableCurveWaveform {
         pointIdx = mapPointIdx(pointIdx);
         pointData[pointIdx] = x;
         pointData[pointIdx + 1] = y;
+    }
+
+    @Override
+    public void importPoints(float[] data) {
+        pointData = data;
     }
 }
