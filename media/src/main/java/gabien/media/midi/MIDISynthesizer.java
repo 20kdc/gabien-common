@@ -20,7 +20,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
     public int channelEnableSwitches = 0xF;
 
     private final Palette pal;
-    private final MIDIChannel[] midiChannels = new MIDIChannel[16];
+    public final MIDIChannel[] midiChannels = new MIDIChannel[16];
 
     public MIDISynthesizer(int rate, @NonNull Palette pal, int capacity) {
         sampleRate = rate;
@@ -138,9 +138,9 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
          */
         public float pan;
 
-        public final Channel[] synthChannels;
+        private final Channel[] synthChannels;
         // [note]
-        public final Channel[] noteChannels = new Channel[128];
+        private final Channel[] noteChannels = new Channel[128];
 
         /**
          * Saved pitch bend in notes.
@@ -236,6 +236,14 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
                 if (synthChannels[i] != null)
                     if (synthChannels[i].update(time))
                         synthChannels[i] = null;
+        }
+
+        public int getActivity() {
+            int activity = 0;
+            for (int i = 0; i < synthChannels.length; i++)
+                if (synthChannels[i] != null)
+                    activity++;
+            return activity;
         }
     }
 

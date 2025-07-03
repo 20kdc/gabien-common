@@ -13,7 +13,6 @@ import datum.DatumInvalidVisitor;
 import datum.DatumSrcLoc;
 import datum.DatumVisitor;
 import datum.DatumWriter;
-import gabien.datum.DatumExpectListVisitor;
 import gabien.datum.DatumKVDVisitor;
 import gabien.datum.DatumTreeCallbackVisitor;
 import gabien.media.midi.MIDISynthesizer;
@@ -60,26 +59,24 @@ public class NSPalette implements MIDISynthesizer.Palette {
     }
 
     public DatumVisitor createDatumReadVisitor() {
-        return new DatumExpectListVisitor(() -> {
-            patches.clear();
-            Arrays.fill(programList, null);
-            return new DatumKVDVisitor() {
-                NSPatch lastPatch;
-                @Override
-                public DatumVisitor handle(String key, DatumSrcLoc loc) {
-                    if (key.equals("patch")) {
-                        NSPatch newPatch = new NSPatch();
-                        lastPatch = newPatch;
-                        patches.add(newPatch);
-                        return newPatch.createDatumReadVisitor();
-                    }
-                    if (key.equals("assign"))
-                        return new DatumTreeCallbackVisitor<Long>((obj) -> {
-                            programList[(int) (long) obj] = lastPatch;
-                        });
-                    return DatumInvalidVisitor.INSTANCE;
+        patches.clear();
+        Arrays.fill(programList, null);
+        return new DatumKVDVisitor() {
+            NSPatch lastPatch;
+            @Override
+            public DatumVisitor handle(String key, DatumSrcLoc loc) {
+                if (key.equals("patch")) {
+                    NSPatch newPatch = new NSPatch();
+                    lastPatch = newPatch;
+                    patches.add(newPatch);
+                    return newPatch.createDatumReadVisitor();
                 }
-            };
-        });
+                if (key.equals("assign"))
+                    return new DatumTreeCallbackVisitor<Long>((obj) -> {
+                        programList[(int) (long) obj] = lastPatch;
+                    });
+                return DatumInvalidVisitor.INSTANCE;
+            }
+        };
     }
 }

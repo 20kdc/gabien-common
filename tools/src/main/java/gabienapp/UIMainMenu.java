@@ -18,6 +18,8 @@ import gabien.uslx.io.HexByteEncoding;
 import gabien.wsi.IPeripherals;
 import gabienapp.newsynth.UINewSynthEditor;
 
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,6 +28,8 @@ import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import datum.DatumReaderTokenSource;
+import datum.DatumWriter;
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
 import gabien.atlas.AtlasSet;
@@ -38,6 +42,7 @@ import gabien.media.audio.fileio.WavIO;
 import gabien.media.midi.DefaultMIDIPalette;
 import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDITracker;
+import gabien.media.midi.newsynth.NSPalette;
 import gabien.media.riff.RIFFNode;
 import gabien.pva.PVAFile;
 import gabien.render.IGrDriver;
@@ -57,8 +62,15 @@ public class UIMainMenu extends UIProxy {
     public final UIScrollLayout vsl = new UIScrollLayout(true, 16);
     public final UILabel lbl = new UILabel("RIFF Clipboard: (none!)", 16);
     public RIFFNode riffClipboard;
+    public final NSPalette newSynthPalette = new NSPalette();
     public WindowCreatingUIElementConsumer ui;
+    public static final String PALEDIT_PATH = "../media/src/main/resources/assets/gabien.media.midi.scm";
     public UIMainMenu(WindowCreatingUIElementConsumer ui) {
+        try {
+            new DatumReaderTokenSource(PALEDIT_PATH, new FileReader(PALEDIT_PATH)).visit(newSynthPalette.createDatumReadVisitor());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
         this.ui = ui;
         proxySetElement(vsl, false);
         LinkedList<UIElement> ve = new LinkedList<>();
@@ -121,8 +133,12 @@ public class UIMainMenu extends UIProxy {
                 }
             });
         }));
-        ve.add(new UITextButton("MIDI Testing Range", 16, () -> {
+        ve.add(new UITextButton("MIDI Testing Range (OldSynth)", 16, () -> {
             UIMIDIPlayer player = new UIMIDIPlayer(DefaultMIDIPalette.INSTANCE);
+            ui.accept(player);
+        }));
+        ve.add(new UITextButton("MIDI Testing Range (NewSynth)", 16, () -> {
+            UIMIDIPlayer player = new UIMIDIPlayer(newSynthPalette);
             ui.accept(player);
         }));
         ve.add(new UITextButton("MIDI Instrument Checker", 16, () -> {
@@ -193,5 +209,21 @@ public class UIMainMenu extends UIProxy {
     public void copyRIFF(RIFFNode rn) {
         riffClipboard = rn.copy();
         lbl.setText("RIFF Clipboard: " + rn.chunkId);
+    }
+    public void saveNewSynth() {
+        try {
+            FileWriter fw = new FileWriter(PALEDIT_PATH);
+            DatumWriter pw = new DatumWriter(fw);
+            pw.visitComment("gabien-common - Cross-platform game and UI framework");
+            pw.visitComment("Written starting in 2016 by contributors (see CREDITS.txt)");
+            pw.visitComment("To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.");
+            pw.visitComment("A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.");
+            pw.visitComment("");
+            pw.visitComment("This file is edited using gabien-tools.");
+            newSynthPalette.writeToDatum(pw);
+            fw.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }

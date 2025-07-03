@@ -7,6 +7,8 @@
 
 package gabien.media.midi.newsynth;
 
+import java.util.Random;
+
 import datum.DatumInvalidVisitor;
 import datum.DatumSrcLoc;
 import datum.DatumVisitor;
@@ -30,7 +32,7 @@ public class NSPatch {
     public int strikeMs = 100;
     public int releaseMs = 500;
     public boolean sustainEnabled = true;
-    public boolean noiseEnabled = true;
+    public boolean noiseEnabled = false;
 
     private final float[] mainWaveformCache = new float[CACHED_WAVEFORM_LEN];
     private final float[] envWaveformCache = new float[CACHED_WAVEFORM_LEN];
@@ -77,7 +79,12 @@ public class NSPatch {
     public synchronized void regenCaches() {
         // make sure only one thread is writing here at a time
         cacheDirty = false;
-        CurvePlotter.resolve(mainWaveform, mainWaveformCache, NormalizationMode.RecentreDC);
+        CurvePlotter.resolve(mainWaveform, mainWaveformCache, noiseEnabled ? NormalizationMode.None : NormalizationMode.RecentreDC);
+        if (noiseEnabled) {
+            Random r = new Random(name.hashCode());
+            for (int i = 0; i < mainWaveformCache.length; i++)
+                mainWaveformCache[i] *= r.nextGaussian();
+        }
         CurvePlotter.resolve(volumeWaveform, envWaveformCache, NormalizationMode.None);
         CurvePlotter.resolve(pitchEnvWaveform, pitchEnvWaveformCache, NormalizationMode.None);
     }

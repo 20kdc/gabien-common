@@ -23,6 +23,7 @@ import gabien.media.midi.MIDITimer;
 import gabien.media.midi.MIDITracker;
 import gabien.ui.UIElement;
 import gabien.ui.UIElement.UIProxy;
+import gabien.ui.elements.UILabel;
 import gabien.ui.elements.UIScrollbar;
 import gabien.ui.elements.UITextButton;
 import gabien.ui.layouts.UIScrollLayout;
@@ -54,6 +55,8 @@ public class UIMIDIPlayer extends UIProxy {
     public AtomicReference<Double> uiSeekRequest = new AtomicReference<Double>();
     private final MIDISynthesizer.Palette palette;
     private final UITextButton[] channels = new UITextButton[16];
+    private final UILabel programSummary = new UILabel("program summary", 16);
+    String programSummaryShunt = "";
 
     public UIMIDIPlayer(MIDISynthesizer.Palette palette) {
         this.palette = palette;
@@ -75,7 +78,13 @@ public class UIMIDIPlayer extends UIProxy {
             channels[i] = new UITextButton(Integer.toHexString(i).toUpperCase(), 32, () -> {}).togglable(true);
         UIScrollLayout channelsSc = new UIScrollLayout(false, 16, channels);
 
-        proxySetElement(new UISplitterLayout(mainControls, channelsSc, true, 0), true);
+        proxySetElement(new UISplitterLayout(mainControls, new UISplitterLayout(channelsSc, programSummary, true, 0), true, 0), true);
+    }
+
+    @Override
+    public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        super.update(deltaTime, selected, peripherals);
+        programSummary.setText(programSummaryShunt);
     }
 
     @Override
@@ -106,9 +115,25 @@ public class UIMIDIPlayer extends UIProxy {
         @Override
         public void pullData(@NonNull short[] interleaved, int ofs, int frames) {
             synth.channelEnableSwitches = 0;
-            for (int i = 0; i < 16; i++)
+            StringBuilder programSummaryBuilder = new StringBuilder();
+            for (int i = 0; i < 16; i++) {
                 if (channels[i].state)
                     synth.channelEnableSwitches |= 1 << i;
+                int calcVal = synth.midiChannels[i].program;
+                if (synth.midiChannels[i].bank >= 128)
+                    calcVal += 128;
+                programSummaryBuilder.append(Integer.toHexString(i).toUpperCase() + ": ");
+                String calcX = Integer.toHexString(calcVal);
+                if (calcX.length() == 1)
+                    programSummaryBuilder.append("0");
+                programSummaryBuilder.append(calcX);
+                programSummaryBuilder.append(" ");
+                int ac = synth.midiChannels[i].getActivity();
+                for (int j = 0; j < ac; j++)
+                    programSummaryBuilder.append("=");
+                programSummaryBuilder.append("\n");
+            }
+            programSummaryShunt = programSummaryBuilder.toString();
             // System.out.println("Oooo");
             Double seekRequest = uiSeekRequest.getAndSet(null);
             if (seekRequest != null) {
