@@ -7,8 +7,10 @@
 package gabien.media.midi;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.LinkedList;
 
 /**
@@ -51,6 +53,28 @@ public final class MIDISequence {
             // "single sequence" form
             return new MIDISequence[] {new MIDISequence(div, trks)};
         }
+    }
+
+    /**
+     * Exports a format-0 sequence.
+     */
+    public void exportSequenceFile(OutputStream outp) throws IOException {
+        DataOutputStream dos = new DataOutputStream(outp);
+        writeHeader(dos, 0, tracks.length, division);
+        for (int i = 0; i < tracks.length; i++) {
+            dos.writeInt(0x4d54726b);
+            dos.writeInt(tracks[i].length);
+            dos.write(tracks[i]);
+        }
+    }
+
+    public static void writeHeader(DataOutputStream outp, int fmt, int trk, int div) throws IOException {
+        DataOutputStream dos = new DataOutputStream(outp);
+        dos.writeInt(0x4d546864);
+        dos.writeInt(6);
+        dos.writeShort(fmt);
+        dos.writeShort(trk);
+        dos.writeShort(div);
     }
 
     /**

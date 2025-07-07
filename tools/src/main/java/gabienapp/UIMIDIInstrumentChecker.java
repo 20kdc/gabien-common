@@ -17,6 +17,7 @@ import gabien.media.audio.AudioIOCRSet;
 import gabien.media.audio.AudioIOFormat;
 import gabien.media.audio.AudioIOSample;
 import gabien.media.audio.AudioIOSource;
+import gabien.media.midi.DefaultMIDIPalette;
 import gabien.ui.UIDynamicProxy;
 import gabien.ui.UIElement;
 import gabien.ui.elements.UILabel;
@@ -116,7 +117,7 @@ public class UIMIDIInstrumentChecker extends UIDynamicProxy {
             }
         }
         rebuilderThread = new Thread(() -> {
-            rebuilderThreadSavedResult = new MIDIInstrumentCheckerProcessor(program);
+            rebuilderThreadSavedResult = new MIDIInstrumentCheckerProcessor(DefaultMIDIPalette.INSTANCE, program, 64);
         });
         rebuilderThread.start();
     }

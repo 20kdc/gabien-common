@@ -6,12 +6,15 @@
  */
 package gabienapp;
 
-import java.io.IOException;
+import java.io.OutputStream;
 
 import gabien.GaBIEn;
 import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
 import gabien.media.midi.DefaultMIDIPalette;
+import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDISynthesizer;
+import gabien.media.midi.MIDITimer;
+import gabien.media.midi.MIDITracker;
 import gabien.render.IDrawable;
 
 /**
@@ -20,32 +23,51 @@ import gabien.render.IDrawable;
  */
 public class MIDIInstrumentCheckerProcessor {
     public static final int SAMPLE_RATE = 44100;
-    public final int SWITCHOFF_AT = SAMPLE_RATE * 8;
     public final int SAMPLE_COUNT = SAMPLE_RATE * 8;
     public final int WAVEFORM_W = 512;
-    public final int WAVEFORM_CHUNK = (SAMPLE_COUNT / 128) * 2;
+    public final int WAVEFORM_CHUNK = (SAMPLE_COUNT / WAVEFORM_W) * 2;
     public final int WAVEFORM_H = 64;
     public final IDrawable resultDrawable;
     public final float[] sampleReference;
     public final float[] sampleResult;
+    public final String REFERENCE = "/media/era3-sync/external/music/modarc/soundfonts/gzdoom.sf2";
 
-    public MIDIInstrumentCheckerProcessor(int program) {
+    public MIDIInstrumentCheckerProcessor(MIDISynthesizer.Palette pal, int program, int note) {
+        String prefix = "sf-comparison/" + program + "-" + note;
+        MIDISequence sequence = new MIDISequence((short) 1, new byte[][] {
+            new byte[] {
+                    0, (byte) 0xC0, (byte) program,
+                    0, (byte) 0x90, (byte) note, (byte) 127,
+                    8, (byte) 0x80, (byte) note, (byte) 127
+            }
+        });
+        if (GaBIEn.getInFile(prefix + ".wav") == null) {
+            try {
+                OutputStream os2 = GaBIEn.getOutFile(prefix + ".mid");
+                sequence.exportSequenceFile(os2);
+                os2.close();
+                ProcessBuilder pb = new ProcessBuilder("fluidsynth", "-g1", "-F", prefix + ".wav", REFERENCE, prefix + ".mid");
+                pb.start().waitFor();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
         try {
-            sampleReference = ReadAnySupportedAudioSource.open(GaBIEn.getInFile("sf-comparison/" + program + ".wav"), true).readAllAsF32();
-        } catch (IOException e) {
+            sampleReference = ReadAnySupportedAudioSource.open(GaBIEn.getInFile(prefix + ".wav"), true).readAllAsF32();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        MIDISynthesizer ms = new MIDISynthesizer(SAMPLE_RATE, DefaultMIDIPalette.INSTANCE, 1);
+        MIDISynthesizer ms = new MIDISynthesizer(SAMPLE_RATE, pal, 1);
+        MIDITracker mtrk = new MIDITracker(sequence, ms);
+        MIDITimer mtmr = new MIDITimer(mtrk);
         ms.globalVolume = 1.0f;
-        ms.receiveEvent((byte) 0xC0, new byte[] {(byte) program}, 0, 1);
-        ms.receiveEvent((byte) 0x90, new byte[] {(byte) 64, (byte) 127}, 0, 2);
         sampleResult = new float[SAMPLE_COUNT * 2];
+        mtmr.resolve();
         for (int i = 0; i < sampleResult.length; i += 2) {
-            if (i == SWITCHOFF_AT * 2) {
-                ms.receiveEvent((byte) 0x80, new byte[] {(byte) 64, (byte) 127}, 0, 2);
-            }
             ms.render(sampleResult, i, 1);
             ms.update(1.0d / SAMPLE_RATE);
+            mtmr.currentTime += 1.0d / SAMPLE_RATE;
+            mtmr.resolve();
         }
         float[] vcRef = dataIntoVolumeCompare(sampleReference);
         float[] rsRef = dataIntoVolumeCompare(sampleResult);

@@ -29,8 +29,6 @@ import gabienapp.UIMainMenu;
 public class UINSPatchEditor extends UIProxy {
     private NSPatch patch;
     public UIMainMenu menu;
-    public final UITextButton bonk = new UITextButton("bonk", 16, () -> {
-    });
     public final UITextBox datumScript = new UITextBox("", 8).setMultiLine();
     public final UITextBox patchName = new UITextBox("", 24);
     public final UINumberBox strikeBox = new UINumberBox(0, 16);

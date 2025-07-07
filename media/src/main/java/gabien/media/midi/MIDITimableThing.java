@@ -13,7 +13,7 @@ package gabien.media.midi;
 public interface MIDITimableThing {
     /**
      * The current definition of the time unit.
-     * The caller is expected to 
+     * Notably, this definition may change, so the driving element is expected to keep track of 'relative time'. 
      */
     public double getTicksToSeconds();
 
