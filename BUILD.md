@@ -91,12 +91,12 @@ Use default annotations is on (provided by USLX) and inherit null annotations is
 
 Android is awkward. According to Android developer documentation, there are two methods of performing an Android build: The Gradle way and the manual way.
 
-I have an axe to grind with Gradle
+I have an axe to grind with Gradle, so I had to make the manual way palatable.
 
-**Thanks to <https://github.com/REAndroid/ARSCLib>, I have now _almost_ completely removed any need to install the Android SDK from this repository.**
+**Thanks to <https://github.com/REAndroid/ARSCLib>, I have removed any need to install the Android SDK from this repository.**
 
-In any case, here's how you might set `ANDROID_JAR_D8`:
+The main thing you need to keep in mind is this command: `keytool -genkeypair -keyalg RSA -validity 36500` and that the expected key in the user keystore is called `mykey` with password `android`.
 
-```
-export ANDROID_JAR_D8=~/Android/Sdk/platforms/android-7/android.jar
-```
+Pretty much everything else will be handled for you by the build script. No Android SDK required. The build script doesn't secretly install a whole SDK behind your back, either; it just grabs anything absolutely necessary from Maven. (This mechanism also gives you architecture-independence 'for free'; only `gabien-natives` should involve native code that isn't part of the JDK.)
+
+If something goes wrong, it should be reasonably easy to find where it went wrong and go fix it.
