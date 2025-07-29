@@ -10,7 +10,6 @@ import java.io.OutputStream;
 
 import gabien.GaBIEn;
 import gabien.media.audio.fileio.ReadAnySupportedAudioSource;
-import gabien.media.midi.DefaultMIDIPalette;
 import gabien.media.midi.MIDISequence;
 import gabien.media.midi.MIDISynthesizer;
 import gabien.media.midi.MIDITimer;
