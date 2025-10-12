@@ -8,10 +8,18 @@
 #ifndef BADGPU_INTERNAL_H_
 #define BADGPU_INTERNAL_H_
 
+// BadGPU used to be used to contain all the prototypes for the UNA build.
+// This was a silly workaround for a questionable use of `zig cc`.
+// Because we don't need the system libc to do these builds, we're using Clang now, and the include support has been moved to generic-unix-libc.
 #include <stddef.h>
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 
 #ifdef WIN32
 #include <windows.h>
+#else
+#include <dlfcn.h>
 #endif
 
 #include "badgpu.h"
@@ -26,36 +34,20 @@
 #define KHRABI
 #endif
 
-#ifndef WIN32
-// Because Zig can get picky about the standard library, let's define these...
-void * malloc(size_t sz);
-void free(void * mem);
-void * memset(void * mem, int c, size_t len);
-void * memcpy(void * dst, const void * src, size_t len);
-void * dlopen(const char * fn, int flags);
-void * dlsym(void * mod, const char * symbol);
-int dlclose(void * mod);
-#ifndef ANDROID
-int printf(const char * fmt, ...);
-#else
+// This is a very nasty little trick we pull. We really should be better... but we're not.
+#include <stdio.h>
+#ifdef ANDROID
 #include <stdarg.h>
 int __android_log_vprint(int prio, const char * tag, const char * fmt, va_list ap);
 // static inline here is used over BADGPU_INLINE because the Android GCC can't inline this function... and is loud about it
-static inline int printf(const char * fmt, ...) {
+static inline int __badgpu_android_printf(const char * fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     int res = __android_log_vprint(3, "BadGPU", fmt, ap);
     va_end(ap);
     return res;
 }
-#endif
-int strcmp(const char * a, const char * b);
-char * strstr(const char * h, const char * n);
-float fmodf(float, float);
-float floorf(float);
-#else
-#include <stdio.h>
-#include <math.h>
+#define printf __badgpu_android_printf
 #endif
 
 // Separate declaration of these so they don't end up in API.

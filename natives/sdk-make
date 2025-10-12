@@ -19,9 +19,8 @@ else
 fi
 
 COMMONFLAGS="-Wno-attributes -Ofast -shared"
-TARGETS="x86-linux-gnu"
+TARGETS_U="i386-linux-gnu x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
-TARGETS_NSL="x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
 SOURCES="c/version.c c/badgpu_jni.c c/loader_jni.c c/vorbis_jni.c c/mp3_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_gl.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_sw.c c/badgpu/badgpu_swtnl.c c/badgpu/badgpu_swclip.c c/badgpu/badgpu_swrop.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c c/badgpu/badgpu_wsi_egl.c"
 SOURCES_U="c/badgpu/badgpu_wsi_zzz.c"
 SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
@@ -29,29 +28,31 @@ SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
 
 # Tools & etc.
 ZIG=thirdparty/zig/zig
+CLANG="clang"
 # in theory, we shouldn't be using API level 9 libraries, but you need to use those to get access to ANativeWindow_fromSurface in the NDK.
 # assume it's a packaging error or something. if it isn't, then it isn't.
 NDK_PLATFORM9=thirdparty/android-ndk-r9d/platforms/android-9
 NDK_PLATFORM21=thirdparty/android-ndk-r12b/platforms/android-21
 NDK_ARM_GCC=thirdparty/android-ndk-r9d/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc
 NDK_MIPS_GCC=thirdparty/android-ndk-r9d/toolchains/mipsel-linux-android-4.6/prebuilt/linux-x86_64/bin/mipsel-linux-android-gcc
+NDK_X86_GCC=thirdparty/android-ndk-r9d/toolchains/x86-4.6/prebuilt/linux-x86_64/bin/i686-linux-android-gcc
+NDK_AARCH64_GCC=thirdparty/android-ndk-r12b/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin/aarch64-linux-android-gcc
+NDK_X86_64_GCC=thirdparty/android-ndk-r12b/toolchains/x86_64-4.9/prebuilt/linux-x86_64/bin/x86_64-linux-android-gcc
 
 # Continue...
 
-for TARGET in $TARGETS ; do
- echo $TARGET
- "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS
+for TARGET in $TARGETS_U ; do
+ echo $TARGET generic-unix
+ "$CLANG" -target $TARGET -fPIC -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib -nostdlibinc -fuse-ld=lld -isystem c/generic-unix-libc
 done
+
 # LTO not yet supported
 for TARGET in $TARGETS_M ; do
- echo $TARGET
+ echo $TARGET macish
  "$ZIG" cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
 done
-# on most of the Linuxy targets, use "fake libc" (this particularly works well with the Androids)
-for TARGET in $TARGETS_NSL ; do
- echo $TARGET
- "$ZIG" cc -target $TARGET -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib
-done
+# ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
+# ideally, would do the BSDs, but no libc and can't override
 # Windows with style
 doMinGWW64Build() {
  echo $1 mingw-w64
@@ -63,22 +64,15 @@ doMinGWW64Build x86_64-windows-gnu x86_64-w64-mingw32
 # ANDROID IS REALLY REALLY WEIRD
 echo THE ANDROID BUILDS
 doAndroidBuild() {
-echo $1 zig
- "$ZIG" cc -target $1 -flto -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS -nostdlib $2/libc.so $2/libdl.so $2/libm.so $2/liblog.so $2/libandroid.so $2/libEGL.so $2/libGLESv1_CM.so -I $3
-}
-doAndroidBuildGCC() {
- echo $1 gcc
+ echo $1 android-ndk
  $2 -Wno-psabi -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM
 }
-# this PARTICULAR ONE crashes Zig's clang for some reason
-doAndroidBuildGCC arm-linux-android $NDK_ARM_GCC $NDK_PLATFORM9/arch-arm
-doAndroidBuild aarch64-linux-android $NDK_PLATFORM21/arch-arm64/usr/lib    $NDK_PLATFORM21/arch-arm64/usr/include
-doAndroidBuild x86-linux-android     $NDK_PLATFORM9/arch-x86/usr/lib       $NDK_PLATFORM9/arch-x86/usr/include
-doAndroidBuild x86_64-linux-android  $NDK_PLATFORM21/arch-x86_64/usr/lib64 $NDK_PLATFORM21/arch-x86_64/usr/include
-doAndroidBuildGCC mipsel-linux-android $NDK_MIPS_GCC $NDK_PLATFORM9/arch-mips
+doAndroidBuild arm-linux-android     $NDK_ARM_GCC     $NDK_PLATFORM9/arch-arm
+doAndroidBuild mipsel-linux-android  $NDK_MIPS_GCC    $NDK_PLATFORM9/arch-mips
+doAndroidBuild x86-linux-android     $NDK_X86_GCC     $NDK_PLATFORM9/arch-x86
+doAndroidBuild aarch64-linux-android $NDK_AARCH64_GCC $NDK_PLATFORM21/arch-arm64
+doAndroidBuild x86_64-linux-android  $NDK_X86_64_GCC  $NDK_PLATFORM21/arch-x86_64
 echo THE ANDROID BUILDS ARE OVER NOW
-# ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
-# ideally, would do the BSDs, but no libc and can't override
 rm -f $LIBUNA/*.lib
 rm -f $LIBUNA/*.pdb
 # strip anything we can

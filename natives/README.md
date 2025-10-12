@@ -34,17 +34,23 @@ gabien-natives contains MP3 and Vorbis decoders that have been stripped down to 
 
 1. Be running Linux or something that can imitate it, via say Docker. (The build process is already enough of a mess...)
 2. You need `i686-w64-mingw32-gcc` and `x86_64-w64-mingw32-gcc`.
-3. You need the Android NDK, versions `r9d` and `r12b`.
-4. You need Zig `0.11.0-dev.2892+fd6200eda` ; other versions may work, no guarantee
-5. You need to *symlink* the NDK and Zig into `thirdparty` as follows:
+3. You need `clang` and `lld`.
+4. You need the Android NDK, versions `r9d` and `r12b`.
+5. You need Zig `0.11.0-dev.2892+fd6200eda` ; other versions may work, no guarantee
+	* As of recent, `0.16.0-dev.725+923ddd94a` was tested.
+	* These days, Zig is only used here to support macOS.
+		* They have stated plans to rewrite libc functions in Zig for some targets; this may interfere with our licensing guarantees.
+		* Pinning the version forever is an option, but I have a better idea: Using Clang directly and accepting `libSystem.tbd` from an acceptable version of Zig, if possible.
+			* CGL already has to be dynamically linked manually; all else falls to `generic-unix-libc`.
+6. You need to *symlink* the NDK and Zig into `thirdparty` as follows:
 
-```
-natives/thirdparty/android-ndk-r9d (to corresponding NDK)
-natives/thirdparty/android-ndk-r12b (to corresponding NDK)
-natives/thirdparty/zig (to Zig directory, NOT to Zig binary!)
-```
+	```
+	natives/thirdparty/android-ndk-r9d (to corresponding NDK)
+	natives/thirdparty/android-ndk-r12b (to corresponding NDK)
+	natives/thirdparty/zig (to Zig directory, NOT to Zig binary!)
+	```
 
-The procedure is then to run `sdk-make`.
+	The procedure is then to run `sdk-make`.
 
 ## Install Instructions
 
