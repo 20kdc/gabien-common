@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.3.3`
+ * Version: `1.4.0`
  *
  * ## Formatting Policy
  *
@@ -628,6 +628,23 @@ BADGPU_EXPORT void badgpuPixelsConvert(BADGPUTextureLoadFormat fF,
  * This is a library function and thus does not need an instance.
  */
 BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
+    int16_t height, void * data);
+
+/*
+ * ### `badgpuPixelsConvertRGBX8888ToARGBI32InPlace`
+ *
+ * A dedicated function to convert `RGBX8888` to `ARGBI32` in-place.
+ *
+ * The A channel is forced to 255.
+ * (This function specifically exists due to either an AWT or NVIDIA bug,
+ *   which causes `BufferedImage.TYPE_INT_RGB` to blend alpha.)
+ *
+ * This has particular optimization effort put towards it that is not evident
+ *  in the general conversion functions.
+ *
+ * This is a library function and thus does not need an instance.
+ */
+BADGPU_EXPORT void badgpuPixelsConvertRGBX8888ToARGBI32InPlace(int16_t width,
     int16_t height, void * data);
 
 /*

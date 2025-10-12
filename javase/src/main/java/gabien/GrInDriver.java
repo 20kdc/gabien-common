@@ -295,7 +295,9 @@ class GrInDriver implements IGrInDriver {
                 return;
             }
             // Note conversion happens on the callback thread.
-            BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(backBuffer.width, backBuffer.height, ia, 0);
+            // Random bug on Twilight. It looks like TYPE_INT_RGB is *actually* TYPE_INT_ARGB on NVIDIA.
+            // Since we NEVER want this sort of thing to happen, added the 'RGBX' function as a workaround.
+            BadGPUUnsafe.pixelsConvertRGBX8888ToARGBI32InPlaceI(backBuffer.width, backBuffer.height, ia, 0);
             // So WSIImage is never premultiplied to keep the API looking sensible.
             // But TYPE_INT_ARGB_PRE exists and it counts as 'doing the right thing'.
             final BufferedImage bi = dlBI.acquire(backBuffer.width, backBuffer.height);

@@ -91,6 +91,18 @@ void J_BADGPU(pixelsConvertRGBA8888ToARGBI32InPlaceI)(void * env, void * self, i
     JNIIA_R(data, 0);
 }
 
+void J_BADGPU(pixelsConvertRGBX8888ToARGBI32InPlaceB)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIBA_L(data);
+    badgpuPixelsConvertRGBX8888ToARGBI32InPlace(w, h, data);
+    JNIBA_R(data, 0);
+}
+
+void J_BADGPU(pixelsConvertRGBX8888ToARGBI32InPlaceI)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
+    JNIIA_L(data);
+    badgpuPixelsConvertRGBX8888ToARGBI32InPlace(w, h, data);
+    JNIIA_R(data, 0);
+}
+
 void J_BADGPU(pixelsConvertARGBI32PremultipliedToStraightInPlaceB)(void * env, void * self, int32_t w, int32_t h, JNIBA_ARG(data)) {
     JNIBA_L(data);
     badgpuPixelsConvertARGBI32PremultipliedToStraightInPlace(w, h, (void *) data);

@@ -197,6 +197,66 @@ BADGPU_EXPORT void badgpuPixelsConvertRGBA8888ToARGBI32InPlace(int16_t width,
     }
 }
 
+BADGPU_EXPORT void badgpuPixelsConvertRGBX8888ToARGBI32InPlace(int16_t width,
+    int16_t height, void * data) {
+    if (width <= 0 || height <= 0)
+        return;
+    size_t pixels = ((size_t) width) * (size_t) height;
+    // this all really has to be tested against clang
+    //  because that's what Zig uses
+    // despite gcc having better autovec for this stuff
+    // clang can't autovec it so do what we can
+    if (sizeof(void *) != 4) {
+        // 64-bit "fast-path"
+        // interestingly clang is perfectly willing to vectorize this
+        uint64_t * data64 = data;
+        while (pixels >= 2) {
+            pixels -= 2;
+            if (BADGPU_LITTLE_ENDIAN()) {
+                // LE
+                //             IN 0x__BBGGRR__BBGGRR
+                //            OUT 0xAARRGGBBAARRGGBB
+                uint64_t ag = *data64;
+                uint64_t b = ag & 0x00FF000000FF0000UL;
+                uint64_t g = ag & 0x0000FF000000FF00UL;
+                uint64_t r = ag & 0x000000FF000000FFUL;
+                *data64 = g | (b >> 16) | (r << 16) | 0xFF000000FF000000;
+            } else {
+                // BE
+                //              IN 0xRRGGBB__RRGGBB__
+                //             OUT 0xAARRGGBBAARRGGBB
+                uint64_t rgb = *data64;
+                rgb &=             0xFFFFFF00FFFFFF00UL;
+                *data64 = (rgb >> 8) | 0xFF000000FF000000;
+            }
+            data64++;
+        }
+        data = data64;
+    }
+    uint8_t * data8 = data;
+    // LE
+    while (pixels--) {
+        uint8_t tmpR = data8[0];
+        uint8_t tmpG = data8[1];
+        uint8_t tmpB = data8[2];
+        uint8_t tmpA = data8[3];
+        if (BADGPU_LITTLE_ENDIAN()) {
+            // LE
+            data8[0] = tmpB;
+            data8[1] = tmpG;
+            data8[2] = tmpR;
+            data8[3] = 255;
+        } else {
+            // BE
+            data8[0] = 255;
+            data8[1] = tmpR;
+            data8[2] = tmpG;
+            data8[3] = tmpB;
+        }
+        data8 += 4;
+    }
+}
+
 BADGPU_EXPORT void badgpuPixelsConvertARGBI32StraightToPremultipliedInPlace(
     int16_t width, int16_t height, uint32_t * data) {
     if (width <= 0 || height <= 0)
