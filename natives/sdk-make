@@ -51,6 +51,7 @@ if [ "$GABIEN_NATIVES_SKIP_MAW" = "" ]; then
  for TARGET in $TARGETS_M ; do
   echo $TARGET macish
   "$ZIG" cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
+  # "$CLANG" -target $TARGET -fPIC -flto $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib -nostdlibinc -fuse-ld=lld -isystem c/generic-unix-libc thirdparty/zig/lib/libc/darwin/libSystem.tbd -Wl,-platform_version,macos,11.0.0,128
  done
 else
  echo macish SKIPPED
