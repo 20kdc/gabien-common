@@ -46,26 +46,38 @@ for TARGET in $TARGETS_U ; do
  "$CLANG" -target $TARGET -fPIC -flto $SOURCES $SOURCES_U -o $LIBUNA/natives.$TARGET $COMMONFLAGS -nostdlib -nostdlibinc -fuse-ld=lld -isystem c/generic-unix-libc
 done
 
-# LTO not yet supported
-for TARGET in $TARGETS_M ; do
- echo $TARGET macish
- "$ZIG" cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
-done
+if [ "$GABIEN_NATIVES_SKIP_MAW" = "" ]; then
+ # LTO not yet supported
+ for TARGET in $TARGETS_M ; do
+  echo $TARGET macish
+  "$ZIG" cc -target $TARGET $SOURCES $SOURCES_M -o $LIBUNA/natives.$TARGET $COMMONFLAGS
+ done
+else
+ echo macish SKIPPED
+fi
 # ideally, would do 32-bit RISC-V, but I had errors with Zig and I can't figure out which ABI to use, so nope
 # ideally, would do the BSDs, but no libc and can't override
 # Windows with style
 doMinGWW64Build() {
- echo $1 mingw-w64
- $2-gcc -Wno-psabi -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
- $2-strip $LIBUNA/natives.$1
+ if [ "$GABIEN_NATIVES_SKIP_MAW" = "" ]; then
+  echo $1 mingw-w64
+  $2-gcc -Wno-psabi -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
+  $2-strip $LIBUNA/natives.$1
+ else
+  echo $1 mingw-w64 SKIPPED
+ fi
 }
 doMinGWW64Build x86-windows-gnu i686-w64-mingw32
 doMinGWW64Build x86_64-windows-gnu x86_64-w64-mingw32
 # ANDROID IS REALLY REALLY WEIRD
 echo THE ANDROID BUILDS
 doAndroidBuild() {
- echo $1 android-ndk
- $2 -Wno-psabi -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM
+ if [ "$GABIEN_NATIVES_SKIP_MAW" = "" ]; then
+  echo $1 android-ndk
+  $2 -Wno-psabi -DANDROID $SOURCES $SOURCES_U c/android_jni.c -o $LIBUNA/natives.$1 $COMMONFLAGS --sysroot $3 -ldl -lm -llog -landroid -lEGL -lGLESv1_CM
+ else
+  echo $1 android-ndk SKIPPED
+ fi
 }
 doAndroidBuild arm-linux-android     $NDK_ARM_GCC     $NDK_PLATFORM9/arch-arm
 doAndroidBuild mipsel-linux-android  $NDK_MIPS_GCC    $NDK_PLATFORM9/arch-mips

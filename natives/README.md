@@ -32,6 +32,9 @@ gabien-natives contains MP3 and Vorbis decoders that have been stripped down to 
 
 ## Build Instructions
 
+**NOTE: You can skip Mac, Android, and Windows builds (aka all the complex ones) with `GABIEN_NATIVES_SKIP_MAW=1` in environment.**
+Doing this means _you do not need to put anything in the `natives/thirdparty` directory,_ but the resulting natives only work on Linux. You also still need `clang` and `lld`.
+
 1. Be running Linux or something that can imitate it, via say Docker. (The build process is already enough of a mess...)
 2. You need `i686-w64-mingw32-gcc` and `x86_64-w64-mingw32-gcc`.
 3. You need `clang` and `lld`.
