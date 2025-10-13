@@ -19,6 +19,7 @@ public class CABS {
     /**
      * Reads a CABS chunk.
      */
+    @SuppressWarnings("resource")
     public static byte[] readChunk(InputStream is) throws IOException {
         int a = is.read();
         if (a == -1)

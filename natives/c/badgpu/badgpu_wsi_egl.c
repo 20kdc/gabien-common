@@ -252,15 +252,44 @@ BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed
         if (!attemptInitSurfacelessDisplay(ctx, logDetailed))
             return badgpu_newWsiCtxError(error, "Could not create / initialize EGLDisplay" REMINDER_PINCH);
     // alright, EGL initialized... can we use it?
-    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, locationsGLES1, "BADGPU_GLES1_LIBRARY", logDetailed, 0))
-        return (BADGPUWSIContext) ctx;
-    if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, locationsGL, "BADGPU_GL_LIBRARY", logDetailed, 0))
-        return (BADGPUWSIContext) ctx;
-    // we're getting a little desperate, disable WSI features
-    if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, locationsGLES1, "BADGPU_GLES1_LIBRARY", logDetailed, 1))
-        return (BADGPUWSIContext) ctx;
-    if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, locationsGL, "BADGPU_GL_LIBRARY", logDetailed, 1))
-        return (BADGPUWSIContext) ctx;
+
+#define BADGPU_EGLSEQ_DESKTOP 1
+#define BADGPU_EGLSEQ_NOWSI 2
+    int sequence[4];
+    int preferDesktop;
+    if (badgpu_getEnvFlag("BADGPU_PREFER_DESKTOP")) {
+        preferDesktop = 1;
+    } else if (badgpu_getEnvFlag("BADGPU_PREFER_GLES")) {
+        preferDesktop = 0;
+    } else {
+        // For now, leave it like this.
+        preferDesktop = 0;
+    }
+    // Context type takes precedence over NOWSI.
+    // This is because on HW where context type matters, it *REALLY* matters, more than NOWSI.
+    if (preferDesktop) {
+        sequence[0] = BADGPU_EGLSEQ_DESKTOP;
+        sequence[1] = BADGPU_EGLSEQ_DESKTOP | BADGPU_EGLSEQ_NOWSI;
+        sequence[2] = 0;
+        sequence[3] = BADGPU_EGLSEQ_NOWSI;
+    } else {
+        // On most platforms, we want ES *then* Desktop
+        sequence[0] = 0;
+        sequence[1] = BADGPU_EGLSEQ_NOWSI;
+        sequence[2] = BADGPU_EGLSEQ_DESKTOP;
+        sequence[3] = BADGPU_EGLSEQ_DESKTOP | BADGPU_EGLSEQ_NOWSI;
+    }
+    int seqIdx;
+    for (seqIdx = 0; seqIdx < 4; seqIdx++) {
+        int noWSI = (sequence[seqIdx] & BADGPU_EGLSEQ_NOWSI) ? 1 : 0;
+        if (sequence[seqIdx] & BADGPU_EGLSEQ_DESKTOP) {
+            if (attemptEGL(ctx, EGL_OPENGL_BIT, EGL_OPENGL_API, BADGPUContextType_GL, locationsGL, "BADGPU_GL_LIBRARY", logDetailed, noWSI))
+                return (BADGPUWSIContext) ctx;
+        } else {
+            if (attemptEGL(ctx, EGL_OPENGL_ES_BIT, EGL_OPENGL_ES_API, BADGPUContextType_GLESv1, locationsGLES1, "BADGPU_GLES1_LIBRARY", logDetailed, noWSI))
+                return (BADGPUWSIContext) ctx;
+        }
+    }
     return badgpu_newWsiCtxError(error, "Failed to setup either a GLESv1 config or a desktop GL config." REMINDER_PINCH);
 }
 
