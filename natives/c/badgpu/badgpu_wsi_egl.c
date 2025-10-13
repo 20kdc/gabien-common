@@ -166,8 +166,13 @@ static BADGPUBool attemptEGL(BADGPUWSICtx ctx, int32_t ctxTypeAttrib, int32_t ap
         return 0;
     }
     ctx->cfg = config;
+    ctx->glContextType = ctxTypeBG;
+
     // Try to load GL library. This is NOT essential as we can probably get the functions from eglGetProcAddress.
-    ctx->glLibrary = badgpu_dlOpen(glLocations, glLibraryName);
+    // (We may also need to make a point of skipping this for apitrace. It didn't work, but...)
+    if (!badgpu_getEnvFlag("BADGPU_SKIP_LIBGL"))
+        ctx->glLibrary = badgpu_dlOpen(glLocations, glLibraryName);
+
     return 1;
 }
 
@@ -263,7 +268,17 @@ BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed
         preferDesktop = 0;
     } else {
         // For now, leave it like this.
+#ifdef ANDROID
         preferDesktop = 0;
+#else
+        // WORKAROUND: On anything other than Android, we will try desktop.
+        // This is because NVIDIA 580.65.06 behaves extremely poorly.
+        // See badgpu_glbind.c GL_OES_blend_equation_separate check for the full saga.
+        // NVIDIA drivers have a worse-than-nothing GLES implementation and a dodgy eglGetProcAddress.
+        // They trick the GL binding into trying to use OES endpoints that don't exist.
+        // We have workarounds, but let's try to avoid using them if we can avoid it.
+        preferDesktop = 1;
+#endif
     }
     // Context type takes precedence over NOWSI.
     // This is because on HW where context type matters, it *REALLY* matters, more than NOWSI.

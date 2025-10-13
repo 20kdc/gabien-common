@@ -655,7 +655,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstanceWithWSI(uint32_t flags, const char
         return NULL;
     }
     bi->base.isBound = 1;
-    const char * failedFn = badgpu_glBind(wsi, &bi->gl, desktopExt);
+    const char * failedFn = badgpu_glBind(wsi, &bi->gl, desktopExt, bi->base.canPrintf);
     if (failedFn) {
         wsi->close(wsi);
         if (error)

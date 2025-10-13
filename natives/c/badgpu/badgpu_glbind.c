@@ -6,9 +6,10 @@
  */
 
 #include "badgpu_glbind.h"
+#include <string.h>
 
 // returns failed function name, if any
-const char * badgpu_glBind(BADGPUWSIContext ctx, BADGPUGLBind * into, int desktopExt) {
+const char * badgpu_glBind(BADGPUWSIContext ctx, BADGPUGLBind * into, int desktopExt, int logDetailed) {
     // Function bind
 #define CHKGLFN(fn) \
 if (!(into->fn)) \
@@ -23,6 +24,16 @@ CHKGLFN(fn)
 #define BINDGLFN2(fn, ext) into->fn = ctx->getProcAddress(ctx, "gl" #fn #ext); \
 if (!into->fn) into->fn = ctx->getProcAddress(ctx, "gl" #fn); \
 CHKGLFN(fn)
+
+#define BINDGLFN2_REV(fn, ext) into->fn = ctx->getProcAddress(ctx, "gl" #fn); \
+if (!into->fn) into->fn = ctx->getProcAddress(ctx, "gl" #fn #ext); \
+CHKGLFN(fn)
+
+    // I spent a day debugging an NVIDIA setup because of this BS.
+    // I wonder how many users this cost.
+    void * fakeProcAddress = ctx->getProcAddress(ctx, "glBADGPUThisFunctionDoesNotExist");
+    if (fakeProcAddress && logDetailed)
+        printf("BADGPU: GL implementation is lying about support.\n");
 
     BINDGLFN(GetError);
     BINDGLFN(Enable);
@@ -83,8 +94,27 @@ CHKGLFN(fn)
         BINDGLFN(ClearDepth);
         BINDGLFN(DepthRange);
     } else {
+        const char * extensions = into->GetString(GL_EXTENSIONS);
         BINDGLFN2(BlendFuncSeparate, OES);
         BINDGLFN2(BlendEquationSeparate, OES);
+        if (fakeProcAddress && extensions && !strstr(extensions, "GL_OES_blend_equation_separate")) {
+            // WORKAROUND: So this code means I owe you an explanation.
+            // On NVIDIA on Linux, GetProcAddress is happy to lie about functions existing that silently fail.
+            // Worst of all is that apparently they CBA to alias glBlendFuncSeparateOES to glBlendFuncSeparate.
+            // Binding to the unsuffixed functions, however, works as expected.
+            // That in mind, if all three apply:
+            // 1. We caught the implementation lying (by asking for a fake function)
+            // 2. We're on OpenGL ES
+            // 3. glBlendEquationSeparateOES is not "supposed" to exist by spec
+            // Then:
+            // 1. The implementation is probably NVIDIA's, because who doesn't implement `GL_OES_blend_equation_separate`
+            // 2. The implementation has probably just fed us dummy pointers
+            // 3. If we ask for the 'real' (unsuffixed) functions, they'll work.
+            if (logDetailed)
+                printf("BADGPU: badgpu_glbind.c: GL_OES_blend_equation_separate is not supported, but we didn't fail function resolution. Due to NVIDIA, this is suspicious. Working around it.\n");
+            BINDGLFN2_REV(BlendFuncSeparate, OES);
+            BINDGLFN2_REV(BlendEquationSeparate, OES);
+        }
         BINDGLFN2(GenFramebuffers, OES);
         BINDGLFN2(DeleteFramebuffers, OES);
         BINDGLFN2(GenRenderbuffers, OES);

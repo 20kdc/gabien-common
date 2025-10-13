@@ -146,7 +146,7 @@ typedef struct BADGPUGLBind {
 } BADGPUGLBind;
 
 // returns failed function name, if any
-const char * badgpu_glBind(BADGPUWSIContext ctx, BADGPUGLBind * into, int desktopExt);
+const char * badgpu_glBind(BADGPUWSIContext ctx, BADGPUGLBind * into, int desktopExt, int logDetailed);
 
 #endif
 
