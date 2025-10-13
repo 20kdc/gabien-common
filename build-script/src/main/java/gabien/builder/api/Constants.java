@@ -13,7 +13,7 @@ package gabien.builder.api;
  */
 public class Constants {
     // This line is changed after each release.
-    public static final String NATIVES_VERSION = "obligatory-vali";
+    public static final String NATIVES_VERSION = "irritable-woodpecker";
     public static final String NATIVES_URL = "jar:https://github.com/20kdc/gabien-common/releases/download/natives." + NATIVES_VERSION + "/natives-sdk.zip!/natives.jar";
     // ./umvn install-file '-Durl=jar:https://github.com/20kdc/gabien-common/releases/download/natives.musical-sparrow/natives-sdk.zip!/natives.jar' -DgroupId=t20kdc.scratchpad -DartifactId=exampleNativesDL -Dversion=8.6 -Dpackaging=jar
     public static final String ANDROID_PLATFORM_URL = "https://github.com/Sable/android-platforms/raw/df22ea560a601037654042633e15e1b2bc9c3c6e/android-7/android.jar";
