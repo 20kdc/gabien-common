@@ -43,43 +43,55 @@ public class ParamSet {
         while (offset < end) {
             String arg = args[offset++];
             if (contentArgsOnly || !arg.startsWith("--")) {
-                offset--;
-                arg = "";
-            } else if (arg.equals("--")) {
-                offset--;
-                arg = "";
-                contentArgsOnly = true;
-            }
-            Param p = paramsMap.get(arg);
-            if (p == null) {
-                if (arg.equals("")) {
+                // content arg
+                Param p = paramsMap.get("");
+                if (p == null) {
                     diag.error("This does not accept content args.");
                 } else {
-                    diag.error("Unknown arg " + arg + ".");
-                }
-            } else {
-                if (!paramsSpecified.add(p))
-                    if (!p.isMultiple)
-                        diag.warn(p.niceName + " specified multiple times.");
-                if (p instanceof Switch) {
-                    try {
-                        ((Switch) p).apply();
-                    } catch (Exception ex) {
-                        throw new RuntimeException(ex);
-                    }
-                } else if (p instanceof Value) {
-                    if (offset < end) {
-                        String value = args[offset++];
+                    if (!paramsSpecified.add(p))
+                        if (!p.isMultiple)
+                            diag.warn(p.niceName + " specified multiple times.");
+                    if (p instanceof Value) {
                         try {
-                            ((Value) p).applyValue(value);
+                            ((Value) p).applyValue(arg);
                         } catch (Exception ex) {
                             throw new RuntimeException(ex);
                         }
                     } else {
-                        diag.error(p.niceName + " expected value.");
+                        diag.error(p.niceName + " uses unexpected param type.");
                     }
+                }
+            } else if (arg.equals("--")) {
+                contentArgsOnly = true;
+            } else {
+                // regular arg
+                Param p = paramsMap.get(arg);
+                if (p == null) {
+                    diag.error("Unknown arg " + arg + ".");
                 } else {
-                    diag.error(p.niceName + " uses unexpected param type.");
+                    if (!paramsSpecified.add(p))
+                        if (!p.isMultiple)
+                            diag.warn(p.niceName + " specified multiple times.");
+                    if (p instanceof Switch) {
+                        try {
+                            ((Switch) p).apply();
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    } else if (p instanceof Value) {
+                        if (offset < end) {
+                            String value = args[offset++];
+                            try {
+                                ((Value) p).applyValue(value);
+                            } catch (Exception ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        } else {
+                            diag.error(p.niceName + " expected value.");
+                        }
+                    } else {
+                        diag.error(p.niceName + " uses unexpected param type.");
+                    }
                 }
             }
         }
