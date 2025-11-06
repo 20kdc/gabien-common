@@ -49,14 +49,6 @@ assign 73
 assign 75
 assign 77
 assign 79
-assign 81
-assign 83
-assign 85
-assign 87
-assign 89
-assign 91
-assign 93
-assign 95
 assign 97
 assign 100
 assign 102
@@ -99,10 +91,16 @@ assign 66
 assign 70
 assign 74
 assign 78
+assign 80
 assign 82
+assign 85
 assign 86
+assign 89
 assign 90
+assign 91
+assign 93
 assign 94
+assign 95
 assign 98
 assign 101
 assign 105
@@ -136,7 +134,7 @@ assign 64
 assign 68
 assign 72
 assign 76
-assign 80
+assign 83
 assign 84
 assign 88
 assign 92
@@ -155,6 +153,8 @@ patch (name "saw/GFZ2 lead"
 	pitchEnv (0.0 0.5 0.18426966667175293 0.35499998927116394 0.26516854763031006 0.4950000047683716 0.2775280773639679 0.375 0.324719101190567 0.5049999952316284 0.3709483742713928 0.5)
 )
 assign 30
+assign 81
+assign 87
 patch (name "y d_bunny 7B"
 	sustainEnabled #f noiseEnabled #f strikeMs 100 releaseMs 1 fixedFrequency 0 octaveShift 4 mainWaveformSamples 8192
 	env (0.0 0.0 0.125 0.0 0.25 0.0 0.25999999046325684 0.5 0.25732484459877014 0.8849999904632568 0.2800000011920929 0.5 0.4993630647659302 0.0 0.6407643556594849 0.0)
