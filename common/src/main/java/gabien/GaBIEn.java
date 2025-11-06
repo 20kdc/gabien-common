@@ -812,6 +812,7 @@ public final class GaBIEn {
         } catch (Exception ex) {
             // do nothing
         }
+        AssetFS.READER = GaBIEn::getResource;
         if (setupTimeLogger && (timeLogger == null))
             timeLogger = new TimeLogger(getOutFile("gTimeLogger.bin"));
         // If VOPEKS has already been initialized, skip initializing it again.

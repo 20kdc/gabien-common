@@ -33,10 +33,14 @@ public class NSPatch {
     public int releaseMs = 500;
     public int fixedFrequency = 0;
     public int octaveShift = 0;
+    /**
+     * Particularly when noise is involved, the resolution of the main waveform is paramount.
+     */
+    public int mainWaveformSamples = 8192;
     public boolean sustainEnabled = true;
     public boolean noiseEnabled = false;
 
-    private final float[] mainWaveformCache = new float[CACHED_WAVEFORM_LEN];
+    private float[] mainWaveformCache = new float[1];
     private final float[] envWaveformCache = new float[CACHED_WAVEFORM_LEN];
     private final float[] pitchEnvWaveformCache = new float[CACHED_WAVEFORM_LEN];
     private volatile boolean cacheDirty = true;
@@ -81,6 +85,8 @@ public class NSPatch {
     public synchronized void regenCaches() {
         // make sure only one thread is writing here at a time
         cacheDirty = false;
+        if (mainWaveformCache.length != mainWaveformSamples)
+            mainWaveformCache = new float[mainWaveformSamples];
         CurvePlotter.resolve(mainWaveform, mainWaveformCache, noiseEnabled ? NormalizationMode.None : NormalizationMode.RecentreDC);
         if (noiseEnabled) {
             Random r = new Random(name.hashCode());
@@ -109,6 +115,8 @@ public class NSPatch {
         lst.visitInt(fixedFrequency, DatumSrcLoc.NONE);
         lst.visitId("octaveShift", DatumSrcLoc.NONE);
         lst.visitInt(octaveShift, DatumSrcLoc.NONE);
+        lst.visitId("mainWaveformSamples", DatumSrcLoc.NONE);
+        lst.visitInt(mainWaveformSamples, DatumSrcLoc.NONE);
         lst.visitNewline();
         lst.visitId("env", DatumSrcLoc.NONE);
         volumeWaveform.writeToDatum(writer);
@@ -141,6 +149,8 @@ public class NSPatch {
                     return new DatumTreeCallbackVisitor<Long>((obj) -> fixedFrequency = (int) (long) obj);
                 if (key.equals("octaveShift"))
                     return new DatumTreeCallbackVisitor<Long>((obj) -> octaveShift = (int) (long) obj);
+                if (key.equals("mainWaveformSamples"))
+                    return new DatumTreeCallbackVisitor<Long>((obj) -> mainWaveformSamples = (int) (long) obj);
                 if (key.equals("env"))
                     return volumeWaveform.createDatumReadVisitor();
                 if (key.equals("wave"))

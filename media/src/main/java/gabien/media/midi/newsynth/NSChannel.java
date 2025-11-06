@@ -14,8 +14,8 @@ import gabien.uslx.append.MathsX;
  * Created 2nd July, 2025.
  */
 public class NSChannel extends MIDISynthesizer.Channel {
-    // Position in wave 0-1
-    double internalCounter;
+    // Position in wave 0-waveform.length
+    float internalCounter;
 
     /**
      * Current volume register
@@ -71,17 +71,16 @@ public class NSChannel extends MIDISynthesizer.Channel {
 
     @Override
     public void render(float[] buffer, int offset, int frames, float leftVol, float rightVol) {
-        double sampleSeconds = getSampleSeconds();
-        double effectiveCycleSeconds = ((patch.fixedFrequency != 0) ? (1.0d / patch.fixedFrequency) : getCycleSeconds()) / pitchMulState;
+        float sampleSeconds = (float) getSampleSeconds();
+        float effectiveCycleSeconds = (float) (((patch.fixedFrequency != 0) ? (1.0d / patch.fixedFrequency) : getCycleSeconds()) / pitchMulState);
         // this is a divisor since we are dividing cycleSeconds
         effectiveCycleSeconds /= octaveShiftMultiplier;
-        double sampleAdv = sampleSeconds / effectiveCycleSeconds;
+        float sampleAdv = (sampleSeconds / effectiveCycleSeconds) * waveform.length;
         leftVol *= volume;
         rightVol *= volume;
         while (frames > 0) {
-            internalCounter = (internalCounter + sampleAdv) % 1;
-            float idx = (float) (internalCounter * waveform.length);
-            float wf = MathsX.linearSample1d(idx, waveform, true);
+            internalCounter = (internalCounter + sampleAdv) % waveform.length;
+            float wf = MathsX.linearSample1d(internalCounter, waveform, true);
             buffer[offset++] += wf * leftVol;
             buffer[offset++] += wf * rightVol;
             frames--;

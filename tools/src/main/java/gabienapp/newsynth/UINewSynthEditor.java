@@ -66,9 +66,17 @@ public class UINewSynthEditor extends UIProxy {
         contents.clear();
         contents.add(new UILabel(" - programs - ", 16));
         for (int i = 0; i < 256; i++) {
-            String ugly = Integer.toHexString(i);
-            if (ugly.length() == 1)
-                ugly = "0" + ugly;
+            String ugly;
+            if (i >= 128) {
+                ugly = Integer.toString(i - 128);
+                while (ugly.length() < 3)
+                    ugly = "0" + ugly;
+                ugly = "p" + ugly;
+            } else {
+                ugly = Integer.toHexString(i);
+                if (ugly.length() == 1)
+                    ugly = "0" + ugly;
+            }
             NSPatch patch = menu.newSynthPalette.programList[i];
             if (patch != null) {
                 ugly += "\n" + patch.name;

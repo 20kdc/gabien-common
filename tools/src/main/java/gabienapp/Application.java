@@ -8,6 +8,7 @@ package gabienapp;
 
 import gabien.GaBIEn;
 import gabien.GaBIEnUI;
+import gabien.media.midi.DefaultMIDIPalette;
 import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.theming.ThemingCentral;
 
@@ -16,6 +17,7 @@ import gabien.ui.theming.ThemingCentral;
  */
 public class Application {
     public static void gabienmain() {
+        DefaultMIDIPalette.initialize();
         GaBIEnUI.sysThemeRoot.setThemeOverride(ThemingCentral.themes[1]);
         WindowCreatingUIElementConsumer wcuiec = new WindowCreatingUIElementConsumer();
         wcuiec.accept(new UIMainMenu(wcuiec));

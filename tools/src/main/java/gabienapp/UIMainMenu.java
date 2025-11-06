@@ -133,7 +133,7 @@ public class UIMainMenu extends UIProxy {
                 }
             });
         }));
-        ve.add(new UITextButton("MIDI Testing Range (OldSynth)", 16, () -> {
+        ve.add(new UITextButton("MIDI Testing Range (Default)", 16, () -> {
             UIMIDIPlayer player = new UIMIDIPlayer(DefaultMIDIPalette.INSTANCE);
             ui.accept(player);
         }));

@@ -31,6 +31,7 @@ public class UINSPatchEditor extends UIProxy {
     public UIMainMenu menu;
     public final UITextBox datumScript = new UITextBox("", 8).setMultiLine();
     public final UITextBox patchName = new UITextBox("", 24);
+    public final UINumberBox mssBox = new UINumberBox(0, 16);
     public final UINumberBox strikeBox = new UINumberBox(0, 16);
     public final UINumberBox releaseBox = new UINumberBox(0, 16);
     public final UINumberBox fBox = new UINumberBox(0, 16);
@@ -59,14 +60,16 @@ public class UINSPatchEditor extends UIProxy {
         pitch.normalized = false;
         pitch.onWaveformChange = this::onAnyInternalChange;
 
+        mssBox.onEdit = this::onAnyInternalChange;
         strikeBox.onEdit = this::onAnyInternalChange;
         releaseBox.onEdit = this::onAnyInternalChange;
         fBox.onEdit = this::onAnyInternalChange;
         oBox.onEdit = this::onAnyInternalChange;
 
+        UISplitterLayout waveAttrMSS = new UISplitterLayout(new UILabel("Wave Samples ", 16), mssBox, false, 0);
         UISplitterLayout envAttrStrike = new UISplitterLayout(new UILabel(" Strike (2nd quarter) ms. ", 16), strikeBox, false, 0);
         UISplitterLayout envAttrRelease = new UISplitterLayout(new UILabel(" Release (3nd quarter) ms. ", 16), releaseBox, false, 0);
-        UIScrollLayout waveAttributes = new UIScrollLayout(false, 16, noiseEnabled);
+        UIScrollLayout waveAttributes = new UIScrollLayout(false, 16, noiseEnabled, waveAttrMSS);
         UIScrollLayout envelopeAttributes = new UIScrollLayout(false, 16, envAttrStrike, envAttrRelease, sustainEnabled);
         UISplitterLayout pitchAttrFixed = new UISplitterLayout(new UILabel(" Fixed-Frequency: ", 16), fBox, false, 0);
         UISplitterLayout pitchAttrOctave = new UISplitterLayout(new UILabel(" Octave Shift: ", 16), oBox, false, 0);
@@ -86,7 +89,7 @@ public class UINSPatchEditor extends UIProxy {
         UIScrollLayout checkColumn = new UIScrollLayout(true, 24,
                 new UILabel("IMPORT/EXPORT", 16).centred(), datumScript,
                 new UILabel("SINGLE-PATCH PLAYBACK", 16).centred(), midi);
-        proxySetElement(new UISplitterLayout(patchNameAndLabel, new UISplitterLayout(waveColumn, checkColumn, false, 1), true, 0), true);
+        proxySetElement(new UISplitterLayout(patchNameAndLabel, new UISplitterLayout(waveColumn, checkColumn, false, 0), true, 0), true);
 
         datumScript.onEdit = () -> {
             try {
@@ -115,6 +118,9 @@ public class UINSPatchEditor extends UIProxy {
     public void onAnyInternalChange() {
         // update patch values
         patch.name = patchName.getText();
+        int mss = (int) mssBox.getNumber();
+        if (mss >= 1)
+            patch.mainWaveformSamples = mss;
         patch.strikeMs = (int) strikeBox.getNumber();
         patch.releaseMs = (int) releaseBox.getNumber();
         patch.fixedFrequency = (int) fBox.getNumber();
@@ -134,6 +140,7 @@ public class UINSPatchEditor extends UIProxy {
 
     public void onAnyExternalChange() {
         patchName.setText(patch.name);
+        mssBox.setNumber(patch.mainWaveformSamples);
         strikeBox.setNumber(patch.strikeMs);
         releaseBox.setNumber(patch.releaseMs);
         fBox.setNumber(patch.fixedFrequency);

@@ -45,6 +45,7 @@ public abstract class ReadAnySupportedAudioSource {
             }
             if (ms.length == 0)
                 throw new IOException("MIDI without tracks!");
+            DefaultMIDIPalette.initialize();
             MIDISynthesizer synth = new MIDISynthesizer(22050, DefaultMIDIPalette.INSTANCE, MIDI_POLYPHONY);
             return new MIDISynthesizerSource(ms[0], synth, 2);
         } else {
