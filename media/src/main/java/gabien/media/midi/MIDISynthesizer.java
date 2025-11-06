@@ -17,8 +17,6 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
     public final double sampleTime;
     public float globalVolume = DEFAULT_GLOBAL_VOLUME;
 
-    public int channelEnableSwitches = 0xF;
-
     private final Palette pal;
     public final MIDIChannel[] midiChannels = new MIDIChannel[16];
 
@@ -48,12 +46,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         if (si >= 0x80 && si <= 0x8F && length >= 2) {
             midiChannels[mch].noteOff(data[offset] & 0x7F, data[offset + 1] & 0x7F);
         } else if (si >= 0x90 && si <= 0x9F && length >= 2) {
-            if ((channelEnableSwitches & (1 << mch)) == 0) {
-                // channel disabled; perform note off but don't perform note on
-                midiChannels[mch].noteOff(data[offset] & 0x7F, 127);
-            } else {
-                midiChannels[mch].noteOn(data[offset] & 0x7F, data[offset + 1] & 0x7F);
-            }
+            midiChannels[mch].noteOn(data[offset] & 0x7F, data[offset + 1] & 0x7F);
         } else if (si >= 0xB0 && si <= 0xBF && length >= 2) {
             // Control Change
             int cc = data[offset] & 0x7F;
@@ -120,6 +113,12 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
      */
     public final class MIDIChannel {
         /**
+         * If the channel is externally enabled (i.e. from UI or synth user).
+         * Disabling this disables 'note on' actions.
+         */
+        public boolean enabled = true;
+
+        /**
          * MIDI bank
          */
         public int bank;
@@ -165,6 +164,9 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         public void noteOn(int note, int velocity) {
             if (noteChannels[note] != null)
                 noteChannels[note].noteOff(127);
+
+            if (!enabled)
+                return;
 
             Channel target = pal.create(MIDISynthesizer.this, bank, program, note, velocity);
             if (target == null)

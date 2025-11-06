@@ -35,6 +35,8 @@ import gabien.wsi.IPeripherals;
  * Created 15th February, 2024.
  */
 public class UIMIDIPlayer extends UIProxy {
+    private static final boolean DEBUG_ENABLE_SEEKING = true;
+
     private TheThingThatDoesTheStuff audioSource;
     public final UITextButton open = new UITextButton("open", 32, () -> {
         GaBIEn.startFileBrowser("Input MIDI", false, "", (str) -> {
@@ -115,14 +117,13 @@ public class UIMIDIPlayer extends UIProxy {
             synth.clear();
             tracker = new MIDITracker(sequence, synth);
             timer = new MIDITimer(tracker);
+            // timer.resolve();
         }
         @Override
         public void pullData(@NonNull short[] interleaved, int ofs, int frames) {
-            synth.channelEnableSwitches = 0;
             StringBuilder programSummaryBuilder = new StringBuilder();
             for (int i = 0; i < 16; i++) {
-                if (channels[i].state)
-                    synth.channelEnableSwitches |= 1 << i;
+                synth.midiChannels[i].enabled = channels[i].state;
                 int calcVal = synth.midiChannels[i].program;
                 if (synth.midiChannels[i].bank >= 128)
                     calcVal += 128;
@@ -140,7 +141,7 @@ public class UIMIDIPlayer extends UIProxy {
             programSummaryShunt = programSummaryBuilder.toString();
             // System.out.println("Oooo");
             Double seekRequest = uiSeekRequest.getAndSet(null);
-            if (seekRequest != null) {
+            if (seekRequest != null && DEBUG_ENABLE_SEEKING) {
                 dataPtr = data.length;
                 reinitTrackerAndTimer();
                 int target = seqTiming.secondsToTick(seekRequest * seqTiming.lengthSeconds);
