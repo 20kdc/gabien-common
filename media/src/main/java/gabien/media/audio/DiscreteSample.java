@@ -15,7 +15,7 @@ import gabien.uslx.append.TemporaryResultsBuffer;
  * Created on 10th June 2022 as part of project WTFr7
  */
 public abstract class DiscreteSample extends AudioIOCRSet {
-    private final TemporaryResultsBuffer.F32 tmpFloats; 
+    private final TemporaryResultsBuffer.F32 tmpFloats;
 
     /**
      * Length in frames
@@ -70,5 +70,27 @@ public abstract class DiscreteSample extends AudioIOCRSet {
         getExtendedF32(frame2, tmpIB, loop);
         for (int i = 0; i < channels; i++)
             buffer[i] = MathsX.lerpUnclamped(buffer[i], tmpIB[i], frac);
+    }
+
+    /**
+     * A (bad, but usable) resampler.
+     */
+    public final AudioIOSample resample(AudioIOCRSet set, boolean loop) {
+        float[] tmp = new float[channels];
+        float[] tmp2 = new float[set.channels];
+        AudioIOSample res = new AudioIOSample(set, AudioIOFormat.F_F32, (int) ((set.sampleRate * (long) length) / sampleRate));
+        double cvt = sampleRate / (double) set.sampleRate;
+        for (int i = 0; i < res.length; i++) {
+            getInterpolatedF32(i * cvt, tmp, loop);
+            if (channels > 1) {
+                tmp2[0] = tmp[0];
+                tmp2[1] = tmp[1];
+            } else if (channels > 0) {
+                tmp2[0] = tmp[0];
+                tmp2[1] = tmp[0];
+            }
+            res.setF32(i, tmp2);
+        }
+        return res;
     }
 }
