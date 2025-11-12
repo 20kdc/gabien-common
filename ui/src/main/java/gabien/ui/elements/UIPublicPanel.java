@@ -7,6 +7,8 @@
 
 package gabien.ui.elements;
 
+import java.util.LinkedList;
+
 import gabien.render.IGrDriver;
 import gabien.render.ITexRegion;
 import gabien.ui.UIElement;
@@ -35,8 +37,6 @@ public class UIPublicPanel extends UIElement.UIPanel {
 
     @Override
     protected void layoutRunImpl() {
-        // TODO Auto-generated method stub
-        
     }
 
     @Override
@@ -53,5 +53,43 @@ public class UIPublicPanel extends UIElement.UIPanel {
             }
         }
         super.renderLayer(igd, layer);
+    }
+
+    // -- proxy methods --
+
+    public final void publicPanelAddElement(UIElement uie) {
+        layoutAddElement(uie);
+    }
+
+    public final void publicPanelRemoveElement(UIElement uie) {
+        layoutRemoveElement(uie);
+    }
+
+    public final void publicPanelSetElementVis(UIElement uie, boolean visible) {
+        layoutSetElementVis(uie, visible);
+    }
+
+    public final boolean publicPanelContainsElement(UIElement uie) {
+        return layoutContainsElement(uie);
+    }
+
+    public final boolean publicPanelElementVisible(UIElement uie) {
+        return layoutElementVisible(uie);
+    }
+
+    public final void publicPanelSelect(UIElement uie) {
+        layoutSelect(uie);
+    }
+
+    public final LinkedList<UIElement> publicPanelGetElements() {
+        return layoutGetElements();
+    }
+
+    public final Iterable<UIElement> publicPanelGetElementsIterable() {
+        return layoutGetElementsIterable();
+    }
+
+    public final int publicPanelGetElementsCount() {
+        return layoutGetElementsCount();
     }
 }
