@@ -18,6 +18,14 @@ public class TextTools {
      * Renders text to a chunk.
      */
     public static RenderedTextChunk renderString(String text, IFixedSizeFont font, boolean textBlack) {
+        int r = textBlack ? 0 : 255;
+        return renderString(text, font, r, r, r, 255);
+    }
+
+    /**
+     * Renders text to a chunk.
+     */
+    public static RenderedTextChunk renderString(String text, IFixedSizeFont font, int r, int g, int b, int a) {
         char[] textArray = text.toCharArray();
         int textStart = 0;
         int textPtr = 0;
@@ -25,8 +33,7 @@ public class TextTools {
         while (true) {
             if (textPtr == textArray.length || textArray[textPtr] == '\n') {
                 // draw segment (or final segment)
-                int r = textBlack ? 0 : 255;
-                chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, r, r, r, 255));
+                chunks.add(font.renderLine(textArray, textStart, textPtr - textStart, r, g, b, a));
                 if (textPtr == textArray.length)
                     break;
                 chunks.add(RenderedTextChunk.CRLF.INSTANCE);

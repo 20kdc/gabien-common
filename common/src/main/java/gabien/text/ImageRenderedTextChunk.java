@@ -47,9 +47,13 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
     }
 
     @Override
-    public void renderTo(IGrDriver igd, int x, int y, int cX, int cY, int hlh) {
+    public void renderTo(IGrDriver igd, int x, int y, int cX, int cY, int hlh, int r, int g, int b, int a) {
         ITexRegion res = getIImage();
-        igd.blitImage(x + cX + offsetX, y + cY + offsetY, res);
+        x = x + cX + offsetX;
+        y = y + cY + offsetY;
+        float w = res.getRegionWidth();
+        float h = res.getRegionHeight();
+        igd.drawScaledColoured(0, 0, w, h, x, y, w, h, res, r / 255f, g / 255f, b / 255f, a / 255f);
     }
 
     public static void background(IGrDriver igd, int x, int y, int w, int h, int margin, int r, int g, int b, int a) {

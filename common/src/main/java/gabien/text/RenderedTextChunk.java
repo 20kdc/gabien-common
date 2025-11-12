@@ -55,7 +55,16 @@ public abstract class RenderedTextChunk {
     /**
      * Blits the text to an output.
      */
-    public abstract void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn);
+    public final void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
+        renderTo(igd, x, y, cursorXIn, cursorYIn, highestLineHeightIn, 255, 255, 255, 255);
+    }
+
+    /**
+     * Blits the text to an output.
+     *
+     * This has an additional colour multiplier on top of the one already used when originally rendering the text.
+     */
+    public abstract void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a);
 
     /**
      * Draws a background under text.
@@ -78,14 +87,29 @@ public abstract class RenderedTextChunk {
      * Auto-offset for ease of use.
      */
     public final void renderRootAutoOffset(IGrDriver igd, int x, int y) {
-        renderRoot(igd, x, y + autoOffset);
+        renderRootAutoOffset(igd, x, y, 255, 255, 255, 255);
     }
 
     /**
      * renderTo, but with args set to reasonable values given this is the root chunk.
      */
     public final void renderRoot(IGrDriver igd, int x, int y) {
-        renderTo(igd, x, y, 0, 0, highestLineHeight);
+        renderRoot(igd, x, y, 255, 255, 255, 255);
+    }
+
+    /**
+     * renderTo, but with args set to reasonable values given this is the root chunk.
+     * Auto-offset for ease of use.
+     */
+    public final void renderRootAutoOffset(IGrDriver igd, int x, int y, int r, int g, int b, int a) {
+        renderRoot(igd, x, y + autoOffset, r, g, b, a);
+    }
+
+    /**
+     * renderTo, but with args set to reasonable values given this is the root chunk.
+     */
+    public final void renderRoot(IGrDriver igd, int x, int y, int r, int g, int b, int a) {
+        renderTo(igd, x, y, 0, 0, highestLineHeight, r, g, b, a);
     }
 
     /**
@@ -130,7 +154,7 @@ public abstract class RenderedTextChunk {
         }
 
         @Override
-        public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
+        public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
         }
 
         @Override
@@ -194,9 +218,9 @@ public abstract class RenderedTextChunk {
         }
 
         @Override
-        public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
+        public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int r, int g, int b, int a) {
             for (RenderedTextChunk rtc : components) {
-                rtc.renderTo(igd, x, y, cursorXIn, cursorYIn, highestLineHeightIn);
+                rtc.renderTo(igd, x, y, cursorXIn, cursorYIn, highestLineHeightIn, r, g, b, a);
                 cursorXIn = rtc.cursorX(cursorXIn);
                 cursorYIn = rtc.cursorY(cursorYIn, highestLineHeightIn);
             }

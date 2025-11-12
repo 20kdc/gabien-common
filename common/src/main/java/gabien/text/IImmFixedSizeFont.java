@@ -64,8 +64,12 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
         return new RenderedTextChunk(getLineHeight(), getContentHeight(), 0) {
 
             @Override
-            public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
-                drawLine(igd, x + cursorXIn, y + cursorYIn, text, r, g, b, a);
+            public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int ri, int gi, int bi, int ai) {
+                ri = (r * ri) / 255;
+                gi = (g * gi) / 255;
+                bi = (b * bi) / 255;
+                ai = (a * ai) / 255;
+                drawLine(igd, x + cursorXIn, y + cursorYIn, text, ri, gi, bi, ai);
             }
 
             @Override
@@ -93,8 +97,12 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
         return new RenderedTextChunk(getLineHeight(), getContentHeight(), 0) {
 
             @Override
-            public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn) {
-                drawLine(igd, x + cursorXIn, y + cursorYIn, text, index, length, r, g, b, a);
+            public void renderTo(IGrDriver igd, int x, int y, int cursorXIn, int cursorYIn, int highestLineHeightIn, int ri, int gi, int bi, int ai) {
+                ri = (r * ri) / 255;
+                gi = (g * gi) / 255;
+                bi = (b * bi) / 255;
+                ai = (a * ai) / 255;
+                drawLine(igd, x + cursorXIn, y + cursorYIn, text, index, length, ri, gi, bi, ai);
             }
 
             @Override
