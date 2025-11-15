@@ -80,16 +80,20 @@ public abstract class DiscreteSample extends AudioIOCRSet {
         float[] tmp2 = new float[set.channels];
         AudioIOSample res = new AudioIOSample(set, AudioIOFormat.F_F32, (int) ((set.sampleRate * (long) length) / sampleRate));
         double cvt = sampleRate / (double) set.sampleRate;
-        for (int i = 0; i < res.length; i++) {
-            getInterpolatedF32(i * cvt, tmp, loop);
-            if (channels > 1) {
-                tmp2[0] = tmp[0];
-                tmp2[1] = tmp[1];
-            } else if (channels > 0) {
-                tmp2[0] = tmp[0];
-                tmp2[1] = tmp[0];
+        if (set.channels != 0) {
+            for (int i = 0; i < res.length; i++) {
+                getInterpolatedF32(i * cvt, tmp, loop);
+                if (channels > 1) {
+                    tmp2[0] = tmp[0];
+                    if (tmp2.length > 1)
+                        tmp2[1] = tmp[1];
+                } else if (channels > 0) {
+                    tmp2[0] = tmp[0];
+                    if (tmp2.length > 1)
+                        tmp2[1] = tmp[0];
+                }
+                res.setF32(i, tmp2);
             }
-            res.setF32(i, tmp2);
         }
         return res;
     }
