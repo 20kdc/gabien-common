@@ -325,10 +325,7 @@ BADGPU_INLINE BADGPUSIMDVec4 badgpu_alignVector(BADGPUVector v) {
 
 BADGPU_INLINE BADGPUSIMDVec4 badgpu_vecLerp(BADGPUSIMDVec4 a, BADGPUSIMDVec4 b, float v) {
     BADGPUSIMDVec4 res = {
-        badgpu_lerp(a.x, b.x, v),
-        badgpu_lerp(a.y, b.y, v),
-        badgpu_lerp(a.z, b.z, v),
-        badgpu_lerp(a.w, b.w, v)
+        .v4 = (a.v4 * badgpu_vec4_1c(1 - v).v4) + (b.v4 * badgpu_vec4_1c(v).v4)
     };
     return res;
 }
@@ -360,6 +357,45 @@ BADGPU_INLINE BADGPURasterizerVertex badgpu_rvtxLerp(BADGPURasterizerVertex a, B
         .v = badgpu_lerp(a.v, b.v, v)
     };
     return res;
+}
+
+BADGPU_INLINE BADGPUSIMDVec4 badgpu_vecBurp(BADGPUSIMDVec4 a, BADGPUSIMDVec4 b, BADGPUSIMDVec4 c, float aB, float bB, float cB) {
+    BADGPUSIMDVec4 res = {
+        .v4 = ((a.v4 * badgpu_vec4_1c(aB).v4) + (b.v4 * badgpu_vec4_1c(bB).v4) + (c.v4 * badgpu_vec4_1c(cB).v4))
+    };
+    return res;
+}
+
+BADGPU_INLINE BADGPURasterizerVertex badgpu_rvtxBurp(BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c, float aB, float bB, float cB) {
+
+    BADGPUSIMDVec4 tca = {
+        .x = a.u,
+        .y = a.v
+    };
+    BADGPUSIMDVec4 tcb = {
+        .x = b.u,
+        .y = b.v
+    };
+    BADGPUSIMDVec4 tcc = {
+        .x = c.u,
+        .y = c.v
+    };
+    BADGPUSIMDVec4 tcr = badgpu_vecBurp(tca, tcb, tcc, aB, bB, cB);
+    BADGPURasterizerVertex res = {
+        .p = badgpu_vecBurp(a.p, b.p, c.p, aB, bB, cB),
+        .c = badgpu_vecBurp(a.c, b.c, c.c, aB, bB, cB),
+        .u = tcr.x,
+        .v = tcr.y
+    };
+    return res;
+}
+
+BADGPU_INLINE float badgpu_len2d(float x, float y) {
+    return sqrtf((x * x) + (y * y));
+}
+
+BADGPU_INLINE float badgpu_dot2d(float x1, float y1, float x2, float y2) {
+    return (x1 * x2) + (y1 * y2);
 }
 
 BADGPUBool badgpu_swtnl_drawGeom(

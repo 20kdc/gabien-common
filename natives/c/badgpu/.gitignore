@@ -5,9 +5,5 @@ badgputest
 badgputest.exe
 badgputest_egl.exe
 badgputest_tce
-tmp.qoi
-tmp.png
-tmp2.qoi
-tmp2.png
-tmp3.qoi
-tmp3.png
+*.qoi
+*.png

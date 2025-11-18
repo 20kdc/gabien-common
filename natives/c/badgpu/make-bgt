@@ -1,9 +1,19 @@
 #!/bin/sh
-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c badgpu_tce.c badgpu_dl.c badgpu_wsi_zzz.c badgpu_wsi_egl.c badgputest.c -o badgputest -ldl -lm &&
+set -e
+gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c badgpu_tce.c badgpu_dl.c badgpu_wsi_zzz.c badgpu_wsi_egl.c badgputest.c -o badgputest -ldl -lm
 gcc -Wno-psabi -Ofast -g badgpu_tce.c badgputest_tce.c -o badgputest_tce &&
-i686-w64-mingw32-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c  badgpu_tce.c badgpu_dl.c badgpu_wsi_wgl.c badgpu_wsi_egl.c badgputest.c -o badgputest.exe -lopengl32 -lgdi32 &&
-./badgputest "$@" &&
-qoiconv tmp.qoi tmp.png &&
-qoiconv tmp2.qoi tmp2.png &&
-qoiconv tmp3.qoi tmp3.png &&
+i686-w64-mingw32-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c  badgpu_tce.c badgpu_dl.c badgpu_wsi_wgl.c badgpu_wsi_egl.c badgputest.c -o badgputest.exe -lopengl32 -lgdi32
+./badgputest
+./badgputest egl
+qoiconv tmp.qoi tmp.png
+qoiconv tmp2.qoi tmp2.png
+qoiconv tmp3.qoi tmp3.png
+BADGPU_DEBUG_SWCLIP=1 ./badgputest
+qoiconv tmp.qoi tmp_swclip.png
+qoiconv tmp2.qoi tmp2_swclip.png
+qoiconv tmp3.qoi tmp3_swclip.png
+./badgputest sw
+qoiconv tmp.qoi tmp_sw.png
+qoiconv tmp2.qoi tmp2_sw.png
+qoiconv tmp3.qoi tmp3_sw.png
 ./badgputest_tce

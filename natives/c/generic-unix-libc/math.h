@@ -9,6 +9,7 @@
 
 extern float fmodf(float, float);
 extern float floorf(float);
+extern float sqrtf(float);
 extern double exp(double);
 extern double log(double);
 extern double floor(double);

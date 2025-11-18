@@ -12,7 +12,9 @@
 #include "badgpu_internal.h"
 
 #define CLIPCON_NON 0
+// point-B inbounds
 #define CLIPCON_POS 1
+// A-point inbounds
 #define CLIPCON_NEG 2
 #define CLIPCON_CUT 3
 
@@ -81,7 +83,7 @@ static clipconclusion_t bswClipperInner(float ax, float aw, float bx, float bw) 
 #define PLANE_COUNT 4
 
 // Finds the clip point (0-1) between two vectors for the given plane.
-static clipconclusion_t bswClipper(const BADGPUVector * a, const BADGPUVector * b, const BADGPURasterizerContext * ctx, int planeIndex) {
+static clipconclusion_t bswClipper(const BADGPUSIMDVec4 * a, const BADGPUSIMDVec4 * b, const BADGPURasterizerContext * ctx, int planeIndex) {
     if (planeIndex == 0) {
         return bswClipperInner(a->x, a->w, b->x, b->w);
     } else if (planeIndex == 1) {
@@ -105,26 +107,17 @@ void badgpu_swclip_drawPoint(struct BADGPUInstancePriv * bi, const BADGPURasteri
     bi->drawPointBackend(bi, ctx, a, plSize);
 }
 
-// Clipper currently seems to find a lot of edge cases where it crashes. probably needs a rewrite
-#define DISABLE_CLIPPER
-
 static void bswDrawLineClipper(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize, int planeIndex) {
-#ifndef DISABLE_CLIPPER
     while (planeIndex < PLANE_COUNT) {
         clipconclusion_t clip = bswClipper(&a.p, &b.p, ctx, planeIndex);
         planeIndex++;
         if (clip.type == CLIPCON_CUT)
             return;
-        if (clip.type == CLIPCON_NEG) {
-            bswDrawLineClipper(bi, ctx, badgpu_rvtxLerp(a, b, clip.point), b, plSize, planeIndex);
-            return;
-        }
-        if (clip.type == CLIPCON_POS) {
-            bswDrawLineClipper(bi, ctx, a, badgpu_rvtxLerp(a, b, clip.point), plSize, planeIndex);
-            return;
-        }
+        else if (clip.type == CLIPCON_NEG)
+            a = badgpu_rvtxLerp(a, b, clip.point);
+        else if (clip.type == CLIPCON_POS)
+            b = badgpu_rvtxLerp(a, b, clip.point);
     }
-#endif
     bi->drawLineBackend(bi, ctx, a, b, plSize);
 }
 
@@ -133,36 +126,23 @@ void badgpu_swclip_drawLine(struct BADGPUInstancePriv * bi, const BADGPURasteriz
 }
 
 static void bswDrawTriangleClipper(struct BADGPUInstancePriv * bi, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c, int planeIndex) {
-#ifndef DISABLE_CLIPPER
     while (planeIndex < PLANE_COUNT) {
         clipconclusion_t clipAB = bswClipper(&a.p, &b.p, ctx, planeIndex);
         clipconclusion_t clipBC = bswClipper(&b.p, &c.p, ctx, planeIndex);
         clipconclusion_t clipCA = bswClipper(&c.p, &a.p, ctx, planeIndex);
-        if (clipAB.type == CLIPCON_CUT && clipBC.type == CLIPCON_CUT) {
-            return;
-        } else if (clipBC.type == CLIPCON_CUT && clipCA.type == CLIPCON_CUT) {
-            return;
-        } else if (clipAB.type == CLIPCON_CUT && clipCA.type == CLIPCON_CUT) {
-            return;
-        } else if (clipAB.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
-            BADGPURasterizerVertex mid = badgpu_rvtxLerp(a, b, clipAB.point);
-            bswDrawTriangleClipper(bi, ctx, a, mid, c, planeIndex);
-            bswDrawTriangleClipper(bi, ctx, mid, b, c, planeIndex);
-            return;
-        } else if (clipBC.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
-            BADGPURasterizerVertex mid = badgpu_rvtxLerp(b, c, clipBC.point);
-            bswDrawTriangleClipper(bi, ctx, a, mid, c, planeIndex);
-            bswDrawTriangleClipper(bi, ctx, a, b, mid, planeIndex);
-            return;
-        } else if (clipCA.type != CLIPCON_NON && clipAB.type != CLIPCON_CUT) {
-            BADGPURasterizerVertex mid = badgpu_rvtxLerp(c, a, clipCA.point);
-            bswDrawTriangleClipper(bi, ctx, mid, b, c, planeIndex);
-            bswDrawTriangleClipper(bi, ctx, a, b, mid, planeIndex);
+        planeIndex++;
+        // To prevent the crashing problem with the previous iteration, only allow triangles we can prove are okay.
+        // We can figure out the rest once it works.
+        if (clipAB.type == CLIPCON_NON && clipBC.type == CLIPCON_NON) {
+            continue;
+        } else if (clipBC.type == CLIPCON_NON && clipCA.type == CLIPCON_NON) {
+            continue;
+        } else if (clipCA.type == CLIPCON_NON && clipAB.type == CLIPCON_NON) {
+            continue;
+        } else {
             return;
         }
-        planeIndex++;
     }
-#endif
     bi->drawTriangleBackend(bi, ctx, a, b, c);
 }
 

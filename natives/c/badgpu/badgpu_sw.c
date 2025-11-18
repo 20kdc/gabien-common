@@ -72,12 +72,18 @@ static BADGPUTexture bswNewTexture(struct BADGPUInstancePriv * instance, int16_t
 
 // Samples texture. U/V have already been multiplied into texture space.
 BADGPU_INLINE BADGPUSIMDVec4 bswSampleTexture(const BADGPUTextureSW * tex, int flags, float u, float v) {
-    u = flags & BADGPUDrawFlags_WrapS ? fmodf(u, 1) : (u < 0 ? 0 : (u > 1 ? 1 : u));
-    v = flags & BADGPUDrawFlags_WrapT ? fmodf(v, 1) : (v < 0 ? 0 : (v > 1 ? 1 : v));
     int ui = (int) floorf(u);
     int vi = (int) floorf(v);
-    ui = ui < 0 ? 0 : (ui >= tex->w ? tex->w - 1 : ui);
-    vi = vi < 0 ? 0 : (vi >= tex->h ? tex->h - 1 : vi);
+    ui = flags & BADGPUDrawFlags_WrapS ? (
+        ui < 0 ?
+        ((tex->w - 1) - ((-ui) % tex->w)) :
+        (ui % tex->w)
+    ) : (ui < 0 ? 0 : (ui >= tex->w - 1 ? tex->w - 1 : ui));
+    vi = flags & BADGPUDrawFlags_WrapT ? (
+        vi < 0 ?
+        ((tex->h - 1) - ((-vi) % tex->h)) :
+        (vi % tex->h)
+    ) : (vi < 0 ? 0 : (vi >= tex->h - 1 ? tex->h - 1 : vi));
     return badgpu_sw_p2v4(tex->data[ui + (vi * tex->w)]);
 }
 
@@ -241,7 +247,6 @@ static void bswDrawLine(
     return;
 }
 
-
 static void bswDrawTriangle(
     struct BADGPUInstancePriv * instance,
     const BADGPURasterizerContext * ctx,
@@ -283,7 +288,7 @@ static void bswDrawTriangle(
     float wcx = ctx->vX + (((ndccx + 1) / 2) * ctx->vW);
     float wcy = ctx->vY + (((ndccy + 1) / 2) * ctx->vH);
 
-    // temp: do rectangles only
+    // calc bounding rectangle
     int bbL = (int) (wax < wbx ? (wax < wcx ? wax : wcx) : (wbx < wcx ? wbx : wcx));
     int bbU = (int) (way < wby ? (way < wcy ? way : wcy) : (wby < wcy ? wby : wcy));
     int bbR = (int) (wax > wbx ? (wax > wcx ? wax : wcx) : (wbx > wcx ? wbx : wcx));
@@ -297,21 +302,50 @@ static void bswDrawTriangle(
     if (region.d > bbD)
         region.d = bbD;
 
-    int x, y;
+    float centreX = (wax + wbx + wcx) / 3;
+    float centreY = (way + wby + wcy) / 3;
 
-    BADGPUSIMDVec4 pixel = a.c;
-    if (ctx->texture)
-        pixel = badgpu_vectorByVector(bswSampleTexture(BG_TEXTURE_SW(ctx->texture), ctx->flags, a.u, a.v), pixel);
+    float xAB = wbx - wax;
+    float yAB = wby - way;
+    float xBC = wcx - wbx;
+    float yBC = wcy - wby;
+    float xCA = wax - wcx;
+    float yCA = way - wcy;
+
+    float lAB = badgpu_len2d(xAB, yAB);
+    float lBC = badgpu_len2d(xBC, yBC);
+    float lCA = badgpu_len2d(xCA, yCA);
+
+    float onxAB = -yAB / lAB;
+    float onyAB = xAB / lAB;
+    float onxBC = -yBC / lBC;
+    float onyBC = xBC / lBC;
+    float onxCA = -yCA / lCA;
+    float onyCA = xCA / lCA;
+
+    float xABC = (badgpu_dot2d(-xCA, -yCA, onxAB, onyAB) * lAB) / 2;
+
+    int x, y;
 
     for (y = region.u; y < region.d; y++) {
         for (x = region.l; x < region.r; x++) {
+            float hAB = (badgpu_dot2d(x - wax, y - way, onxAB, onyAB) * lAB) / 2;
+            float hBC = (badgpu_dot2d(x - wbx, y - wby, onxBC, onyBC) * lBC) / 2;
+            float hCA = (badgpu_dot2d(x - wcx, y - wcy, onxCA, onyCA) * lCA) / 2;
+            // This **really** shouldn't be broken.
+            //if (hAB < 0 || hBC < 0 || hCA < 0)
+            //continue;
+
+            BADGPURasterizerVertex pxd = badgpu_rvtxBurp(a, b, c, hBC / xABC, hCA / xABC, hAB / xABC);
+            BADGPUSIMDVec4 pixel = pxd.c;
+            if (ctx->texture)
+                pixel = badgpu_vectorByVector(bswSampleTexture(BG_TEXTURE_SW(ctx->texture), ctx->flags, pxd.u, pxd.v), pixel);
             size_t p = x + (y * vpW);
             uint32_t * rgb = ctx->sTexture ? (BG_TEXTURE_SW(ctx->sTexture)->data + p) : NULL;
             if (rgb)
                 rop.txFunc(&rop, rgb, pixel);
         }
     }
-    return;
 }
 
 // -- the instance --
