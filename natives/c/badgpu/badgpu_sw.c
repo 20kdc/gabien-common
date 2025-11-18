@@ -262,6 +262,11 @@ static void bswDrawTriangle(
         return;
     badgpu_swrop_t rop;
     badgpu_ropConfigure(&rop, ctx->flags, ctx->sFlags, ctx->blendProgram);
+
+    // for now just discard anything with stencil requirements
+    if ((rop.flags & BADGPUDrawFlags_StencilTest) && (ctx->stFunc != BADGPUCompare_Always))
+        return;
+
     // fix UVs into pixel space
     if (ctx->texture) {
         a.u = a.u * BG_TEXTURE_SW(ctx->texture)->w;
@@ -324,6 +329,7 @@ static void bswDrawTriangle(
     float onyCA = xCA / lCA;
 
     float xABC = (badgpu_dot2d(-xCA, -yCA, onxAB, onyAB) * lAB) / 2;
+    int expectedSign = (xABC < 0);
 
     int x, y;
 
@@ -332,11 +338,13 @@ static void bswDrawTriangle(
             float hAB = (badgpu_dot2d(x - wax, y - way, onxAB, onyAB) * lAB) / 2;
             float hBC = (badgpu_dot2d(x - wbx, y - wby, onxBC, onyBC) * lBC) / 2;
             float hCA = (badgpu_dot2d(x - wcx, y - wcy, onxCA, onyCA) * lCA) / 2;
-            // This **really** shouldn't be broken.
-            //if (hAB < 0 || hBC < 0 || hCA < 0)
-            //continue;
+            if ((hAB < 0) != expectedSign || (hBC < 0) != expectedSign || (hCA < 0) != expectedSign)
+                continue;
+            float wA = hBC / xABC;
+            float wB = hCA / xABC;
+            float wC = hAB / xABC;
 
-            BADGPURasterizerVertex pxd = badgpu_rvtxBurp(a, b, c, hBC / xABC, hCA / xABC, hAB / xABC);
+            BADGPURasterizerVertex pxd = badgpu_rvtxBurp(a, b, c, wA, wB, wC);
             BADGPUSIMDVec4 pixel = pxd.c;
             if (ctx->texture)
                 pixel = badgpu_vectorByVector(bswSampleTexture(BG_TEXTURE_SW(ctx->texture), ctx->flags, pxd.u, pxd.v), pixel);
