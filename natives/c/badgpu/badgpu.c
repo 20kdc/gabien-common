@@ -91,11 +91,10 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     if (flags & BADGPUNewInstanceFlags_NeverInternalRasterizer)
         return NULL;
     // try 'alternative' renderers; these are increasingly bad, but might be better than nothing
-#ifdef WIN32
-    // for currently shipping applications, this renderer should be okay by next version.
-    if (!instance)
-        instance = badgpu_newD3D7Instance(flags, error);
-#endif
+    // crashes too often r/n
+    //if (!instance)
+    // instance = badgpu_newD3D7Instance(flags, error);
+    // awful
     //if (!instance)
     // instance = badgpu_newSoftwareInstance(flags, error);
     return instance;

@@ -38,7 +38,9 @@ static inline DWORD checkD3DErr(BADGPUInstanceD3D7 * bi, DWORD res) {
 typedef struct BADGPUTextureD3D7 {
     BADGPUTexturePriv base;
     int w, h;
+    float txMulX, txMulY;
     IDirectDrawSurface7 * surface;
+    IDirectDrawSurface7 * surfaceBackup;
     // due to an odd rule that all render targets must either have depth or none of them can
     IDirectDrawSurface7 * surfaceZ;
 } BADGPUTextureD3D7;
@@ -70,6 +72,8 @@ static void destroyD3D7Texture(BADGPUObject obj) {
     BADGPUTextureD3D7 * tex = BG_TEXTURE_D3D7(obj);
     if (tex->surface)
         IDirectDrawSurface7_Release(tex->surface);
+    if (tex->surfaceBackup)
+        IDirectDrawSurface7_Release(tex->surfaceBackup);
     if (tex->surfaceZ)
         IDirectDrawSurface7_Release(tex->surfaceZ);
     badgpuUnref((BADGPUObject) tex->base.i);
@@ -123,19 +127,37 @@ static IDirectDrawSurface7 * createARGB32ISurface(BADGPUInstanceD3D7 * bi, int w
     return surf;
 }
 
+static int coercePOT(int v) {
+    int i = 1;
+    while (i < v && i < 32768)
+        i *= 2;
+    return i;
+}
+
 static BADGPUTexture bd3d7NewTexture(struct BADGPUInstancePriv * instance, int16_t width, int16_t height, const void * data) {
     BADGPUInstanceD3D7 * bi = BG_INSTANCE_D3D7(instance);
 
-    IDirectDrawSurface7 * surf = createARGB32ISurface(bi, width, height);
-
+    // We need to coerce width/height into POT.
+    // Wine will let us get away with not doing this, but Windows won't.
+    int coercedW = coercePOT(width), coercedH = coercePOT(height);
+    float txMulX = width / (float) coercedW;
+    float txMulY = height / (float) coercedH;
+    IDirectDrawSurface7 * surf = createARGB32ISurface(bi, coercedW, coercedH);
     if (!surf) {
         badgpuErr(instance, "badgpuNewTexture: D3D7: Unable to allocate surface.");
+        return NULL;
+    }
+    IDirectDrawSurface7 * surfBackup = createARGB32ISurface(bi, coercedW, coercedH);
+    if (!surfBackup) {
+        IDirectDrawSurface7_Release(surf);
+        badgpuErr(instance, "badgpuNewTexture: D3D7: Unable to allocate surface backup.");
         return NULL;
     }
 
     BADGPUTextureD3D7 * tex = malloc(sizeof(BADGPUTextureD3D7));
     if (!tex) {
         IDirectDrawSurface7_Release(surf);
+        IDirectDrawSurface7_Release(surfBackup);
         badgpuErr(instance, "badgpuNewTexture: D3D7: Unable to allocate memory.");
         return NULL;
     }
@@ -143,7 +165,10 @@ static BADGPUTexture bd3d7NewTexture(struct BADGPUInstancePriv * instance, int16
 
     tex->w = width;
     tex->h = height;
+    tex->txMulX = txMulX;
+    tex->txMulY = txMulY;
     tex->surface = surf;
+    tex->surfaceBackup = surfBackup;
     tex->surfaceZ = NULL;
     tex->base.i = BG_INSTANCE(badgpuRef((BADGPUInstance) instance));
 
@@ -339,12 +364,14 @@ static BADGPUBool bd3d7DrawGeom(
     }
 
     IDirectDrawSurface7 * rtSurface;
+    IDirectDrawSurface7 * rtSurfaceBackup;
     int rtWidth, rtHeight;
 
     // Figure out how we're rendering
     if (sTexture) {
         BADGPUTextureD3D7 * sTextureI = BG_TEXTURE_D3D7(sTexture);
         rtSurface = sTextureI->surface;
+        rtSurfaceBackup = sTextureI->surfaceBackup;
         rtWidth = sTextureI->w;
         rtHeight = sTextureI->h;
     }
@@ -355,12 +382,26 @@ static BADGPUBool bd3d7DrawGeom(
 
     BADGPUInstanceD3D7 * i = BG_INSTANCE_D3D7(instance);
 
-    IDirect3DDevice7_SetRenderTarget(i->d3ddev, rtSurface, 0);
+    RECT scissor, *scissorBackup = NULL;
 
     {
-        RECT scissor = bd3d7AdjustedScissor(rtWidth, rtHeight, sFlags, sScX, sScY, sScWidth, sScHeight);
         RECT viewport = { vX, vY, vX + vW, vY + vH };
+
+        scissor = bd3d7AdjustedScissor(rtWidth, rtHeight, sFlags, sScX, sScY, sScWidth, sScHeight);
         bd3d7ChopRect(&scissor, &viewport);
+
+        // Do we need to perform the scissor backup process? :(
+        if (scissor.left != viewport.left || scissor.right != viewport.right || scissor.top != viewport.top || scissor.bottom != viewport.bottom) {
+            POINT copyDst = {viewport.left, viewport.top};
+            // Answer: Yes, we do. Get it ready...
+            scissorBackup = &scissor;
+            // See the other call post-drawcall.
+            IDirect3DDevice7_Load(i->d3ddev, rtSurfaceBackup, &copyDst, rtSurface, &viewport, 0);
+            IDirect3DDevice7_SetRenderTarget(i->d3ddev, rtSurfaceBackup, 0);
+        } else {
+            IDirect3DDevice7_SetRenderTarget(i->d3ddev, rtSurface, 0);
+        }
+
         D3DVIEWPORT7 vp = {
             .dwX = viewport.left,
             .dwY = viewport.top,
@@ -386,6 +427,20 @@ static BADGPUBool bd3d7DrawGeom(
     D3DMATRIX viewMatrix = bd3d7TranslateMatrix(mvMatrix);
     IDirect3DDevice7_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_VIEW, &viewMatrix);
 
+    if (flags & BADGPUDrawFlags_Blend) {
+        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_ALPHABLENDENABLE, TRUE);
+        D3DBLEND srcBlend = D3DBLEND_ONE;
+        D3DBLEND dstBlend = D3DBLEND_ZERO;
+        if (BADGPU_BP_RGBS(blendProgram) == BADGPUBlendWeight_SrcA)
+            srcBlend = D3DBLEND_SRCALPHA;
+        if (BADGPU_BP_RGBD(blendProgram) == BADGPUBlendWeight_InvertSrcA)
+            dstBlend = D3DBLEND_INVSRCALPHA;
+        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_SRCBLEND, srcBlend);
+        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_DESTBLEND, dstBlend);
+    } else {
+        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_ALPHABLENDENABLE, FALSE);
+    }
+
     IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_LIGHTING, FALSE);
     IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_CULLMODE, D3DCULL_NONE);
 
@@ -404,13 +459,27 @@ static BADGPUBool bd3d7DrawGeom(
             // and offset
             mtx._42 += 1;
         }
+        mtx._11 *= textureI->txMulX;
+        mtx._21 *= textureI->txMulX;
+        mtx._31 *= textureI->txMulX;
+        mtx._41 *= textureI->txMulX;
+        mtx._12 *= textureI->txMulY;
+        mtx._22 *= textureI->txMulY;
+        mtx._32 *= textureI->txMulY;
+        mtx._42 *= textureI->txMulY;
         IDirect3DDevice7_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_TEXTURE0, &mtx);
         IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 
         IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_MAGFILTER, (flags & BADGPUDrawFlags_MagLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
         IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_MINFILTER, (flags & BADGPUDrawFlags_MinLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, (flags & BADGPUDrawFlags_WrapS) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, (flags & BADGPUDrawFlags_WrapT) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+        if (0) {
+            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, (flags & BADGPUDrawFlags_WrapS) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, (flags & BADGPUDrawFlags_WrapT) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+        } else {
+            // forcing wrapping helps debug some issues
+            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
+            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+        }
     }
 
     IDirect3DDevice7_BeginScene(i->d3ddev);
@@ -438,6 +507,13 @@ static BADGPUBool bd3d7DrawGeom(
 
     IDirect3DDevice7_SetTexture(i->d3ddev, 0, NULL);
     IDirect3DDevice7_SetRenderTarget(i->d3ddev, i->sacrifice, 0);
+
+    if (scissorBackup) {
+        // Rendering was *really* done on the backup surface. Retrieve the appropriately clipped results.
+        POINT copyDst = {scissorBackup->left, scissorBackup->top};
+        IDirect3DDevice7_Load(i->d3ddev, rtSurface, &copyDst, rtSurfaceBackup, scissorBackup, 0);
+    }
+
     return 1;
 }
 
