@@ -65,6 +65,8 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     }
     BADGPUBool logDetailed = (flags & BADGPUNewInstanceFlags_CanPrintf) ? 1 : 0;
     BADGPUWSIContext wsi;
+    BADGPUInstance instance = NULL;
+    // -- attempt 1 --
     if (flags & BADGPUNewInstanceFlags_PreferEGL) {
         wsi = badgpu_newWsiCtxEGL(error, logDetailed);
         if (!wsi && !badgpu_newWsiCtxPlatformIsEGL())
@@ -74,10 +76,28 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
         if (!wsi && !badgpu_newWsiCtxPlatformIsEGL())
             wsi = badgpu_newWsiCtxEGL(NULL, logDetailed);
     }
-    // error provided by preferred hardware source
-    if (!wsi)
+    if (wsi) {
+        instance = badgpuNewInstanceWithWSI(flags, error, wsi);
+    } else {
+        *error = "All WSI setup attempts failed";
+    }
+    if (instance)
+        return instance;
+    // -- attempt 2 --
+    // diagnostics before 'alternative' renderers
+    if (logDetailed && *error)
+        printf("BADGPU: Unable to setup GL: %s\n", *error);
+    // should we give up now?
+    if (flags & BADGPUNewInstanceFlags_NeverInternalRasterizer)
         return NULL;
-    BADGPUInstance instance = badgpuNewInstanceWithWSI(flags, error, wsi);
+    // try 'alternative' renderers; these are increasingly bad, but might be better than nothing
+#ifdef WIN32
+    // for currently shipping applications, this renderer should be okay by next version.
+    if (!instance)
+        instance = badgpu_newD3D7Instance(flags, error);
+#endif
+    //if (!instance)
+    // instance = badgpu_newSoftwareInstance(flags, error);
     return instance;
 }
 

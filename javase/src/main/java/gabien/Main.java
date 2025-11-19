@@ -88,6 +88,7 @@ abstract class Main {
      */
     private static void mainInner(String[] args) throws Exception{
         boolean tryForceOpenGL = false;
+        boolean disableDDraw = true;
         boolean ignoreDPI = false;
         boolean useInternalBrowser = false;
         boolean isTimeLogging = false;
@@ -97,6 +98,8 @@ abstract class Main {
             for (String s : args) {
                 if (s.equalsIgnoreCase("forceOpenGL"))
                     tryForceOpenGL = true;
+                if (s.equalsIgnoreCase("noDisableDDraw"))
+                    disableDDraw = false;
                 if (s.equalsIgnoreCase("debug"))
                     newInstanceFlags |= BadGPU.NewInstanceFlags.BackendCheck | BadGPU.NewInstanceFlags.BackendCheckAggressive;
                 if (s.equalsIgnoreCase("stopImmediately"))
@@ -120,6 +123,12 @@ abstract class Main {
                 if (s.equalsIgnoreCase("swrRefused"))
                     newInstanceFlags |= BadGPU.NewInstanceFlags.NeverInternalRasterizer;
             }
+        }
+        if (disableDDraw) {
+            // Enabling DDraw support seems to cause breakage under at least Wine.
+            // We're doing a CPU round-trip either way, so it's probably for the best to stick to GDI.
+            System.setProperty("sun.java2d.noddraw", "true");
+            System.setProperty("sun.java2d.d3d", "false");
         }
         if (tryForceOpenGL) {
             System.setProperty("sun.java2d.opengl", "true");

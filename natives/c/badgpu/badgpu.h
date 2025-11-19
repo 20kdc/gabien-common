@@ -8,7 +8,7 @@
 /*
  * # BadGPU C Header And API Specification
  *
- * Version: `1.4.0`
+ * Version: `1.4.1`
  *
  * ## Formatting Policy
  *
@@ -437,6 +437,8 @@ typedef enum BADGPUNewInstanceFlags {
     BADGPUNewInstanceFlags_PreferEGL = 8,
     // If the BadGPU implementation supports an internal rasterizer,
     //  never use it.
+    // (For ABI reasons, the meaning of this flag has been adjusted to also
+    //  include any non-GL rasterizer.)
     // This flag is ignored by badgpuNewInstanceWithWSI.
     BADGPUNewInstanceFlags_NeverInternalRasterizer = 16,
     // Never use any external accelerated graphics API. If the BadGPU

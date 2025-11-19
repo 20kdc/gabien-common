@@ -294,10 +294,10 @@ static void bswDrawTriangle(
     float wcy = ctx->vY + (((ndccy + 1) / 2) * ctx->vH);
 
     // calc bounding rectangle
-    int bbL = (int) (wax < wbx ? (wax < wcx ? wax : wcx) : (wbx < wcx ? wbx : wcx));
-    int bbU = (int) (way < wby ? (way < wcy ? way : wcy) : (wby < wcy ? wby : wcy));
-    int bbR = (int) (wax > wbx ? (wax > wcx ? wax : wcx) : (wbx > wcx ? wbx : wcx));
-    int bbD = (int) (way > wby ? (way > wcy ? way : wcy) : (wby > wcy ? wby : wcy));
+    int bbL = (int) (wax < wbx ? (wax < wcx ? wax : wcx) : (wbx < wcx ? wbx : wcx)) - 1;
+    int bbU = (int) (way < wby ? (way < wcy ? way : wcy) : (wby < wcy ? wby : wcy)) - 1;
+    int bbR = (int) (wax > wbx ? (wax > wcx ? wax : wcx) : (wbx > wcx ? wbx : wcx)) + 1;
+    int bbD = (int) (way > wby ? (way > wcy ? way : wcy) : (wby > wcy ? wby : wcy)) + 1;
     if (region.l < bbL)
         region.l = bbL;
     if (region.u < bbU)

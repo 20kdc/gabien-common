@@ -195,3 +195,18 @@ void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv * bi, const BADG
     };
     HARNESS_FWD_ALL(BADGPUPrimitiveType_Triangles, 1.0f, 3);
 }
+
+void badgpu_swtnl_harnessSetup(struct BADGPUInstancePriv * bi)  {
+    bi->drawPointBackend = bi->drawPointFrontend = badgpu_swtnl_harnessDrawPoint;
+    bi->drawLineBackend = bi->drawLineFrontend = badgpu_swtnl_harnessDrawLine;
+    bi->drawTriangleBackend = bi->drawTriangleFrontend = badgpu_swtnl_harnessDrawTriangle;
+
+    if (badgpu_getEnvFlag("BADGPU_DEBUG_SWTNL")) {
+        bi->drawGeomFrontend = badgpu_swtnl_drawGeom;
+        if (badgpu_getEnvFlag("BADGPU_DEBUG_SWCLIP")) {
+            bi->drawPointFrontend = badgpu_swclip_drawPoint;
+            bi->drawLineFrontend = badgpu_swclip_drawLine;
+            bi->drawTriangleFrontend = badgpu_swclip_drawTriangle;
+        }
+    }
+}

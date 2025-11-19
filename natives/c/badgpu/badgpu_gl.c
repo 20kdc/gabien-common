@@ -618,18 +618,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstanceWithWSI(uint32_t flags, const char
     bi->base.readPixelsRGBA8888 = bglReadPixelsRGBA8888;
     bi->base.drawClear = bglDrawClear;
     bi->base.drawGeomBackend = bi->base.drawGeomFrontend = bglDrawGeom;
-    bi->base.drawPointBackend = bi->base.drawPointFrontend = badgpu_swtnl_harnessDrawPoint;
-    bi->base.drawLineBackend = bi->base.drawLineFrontend = badgpu_swtnl_harnessDrawLine;
-    bi->base.drawTriangleBackend = bi->base.drawTriangleFrontend = badgpu_swtnl_harnessDrawTriangle;
-
-    if (badgpu_getEnvFlag("BADGPU_DEBUG_SWTNL")) {
-        bi->base.drawGeomFrontend = badgpu_swtnl_drawGeom;
-        if (badgpu_getEnvFlag("BADGPU_DEBUG_SWCLIP")) {
-            bi->base.drawPointFrontend = badgpu_swclip_drawPoint;
-            bi->base.drawLineFrontend = badgpu_swclip_drawLine;
-            bi->base.drawTriangleFrontend = badgpu_swclip_drawTriangle;
-        }
-    }
+    badgpu_swtnl_harnessSetup(&bi->base);
 
     // determine context type stuff
     int desktopExt = 0;

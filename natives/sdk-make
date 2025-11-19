@@ -23,7 +23,7 @@ TARGETS_U="i386-linux-gnu x86_64-linux-gnu aarch64-linux-gnu riscv64-linux-gnu"
 TARGETS_M="x86_64-macos aarch64-macos"
 SOURCES="c/version.c c/badgpu_jni.c c/loader_jni.c c/vorbis_jni.c c/mp3_jni.c c/badgpu/badgpu.c c/badgpu/badgpu_gl.c c/badgpu/badgpu_glbind.c c/badgpu/badgpu_sw.c c/badgpu/badgpu_swtnl.c c/badgpu/badgpu_swclip.c c/badgpu/badgpu_swrop.c c/badgpu/badgpu_tce.c c/badgpu/badgpu_dl.c c/badgpu/badgpu_wsi_egl.c"
 SOURCES_U="c/badgpu/badgpu_wsi_zzz.c"
-SOURCES_W="c/badgpu/badgpu_wsi_wgl.c"
+SOURCES_W="c/badgpu/badgpu_wsi_wgl.c c/badgpu/badgpu_d3d7.c"
 SOURCES_M="c/badgpu/badgpu_wsi_cgl.c"
 
 # Tools & etc.
@@ -62,7 +62,7 @@ fi
 doMinGWW64Build() {
  if [ "$GABIEN_NATIVES_SKIP_MAW" = "" ]; then
   echo $1 mingw-w64
-  $2-gcc -Wno-psabi -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -Wl,--kill-at
+  $2-gcc -Wno-psabi -flto $SOURCES $SOURCES_W -o $LIBUNA/natives.$1 $COMMONFLAGS -lgdi32 -lopengl32 -lddraw -ldxguid -Wl,--kill-at
   $2-strip $LIBUNA/natives.$1
  else
   echo $1 mingw-w64 SKIPPED

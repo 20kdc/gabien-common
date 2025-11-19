@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
 #include <dlfcn.h>
@@ -430,10 +431,12 @@ BADGPUBool badgpu_swtnl_drawGeom(
 );
 
 // emulation harness
-
 void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, float plSize);
 void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize);
 void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c);
+
+// Assuming a full external pipeline (like GL and D3D7), sets up the harness based on environment variables.
+void badgpu_swtnl_harnessSetup(struct BADGPUInstancePriv *);
 
 // clipper
 
