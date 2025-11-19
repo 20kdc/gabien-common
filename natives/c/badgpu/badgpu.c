@@ -55,7 +55,12 @@ uint32_t badgpu_findVertexCount(uint32_t iStart, uint32_t iCount, const uint16_t
 // Instance Creation
 
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
-    if (flags & BADGPUNewInstanceFlags_ForceInternalRasterizer) {
+#ifdef WIN32
+    if (badgpu_getEnvFlag("BADGPU_FORCE_D3D7")) {
+        return badgpu_newD3D7Instance(flags, error);
+    }
+#endif
+    if (badgpu_getEnvFlag("BADGPU_FORCE_INTERNAL_RASTERIZER") || (flags & BADGPUNewInstanceFlags_ForceInternalRasterizer)) {
         return badgpu_newSoftwareInstance(flags, error);
     }
     BADGPUBool logDetailed = (flags & BADGPUNewInstanceFlags_CanPrintf) ? 1 : 0;

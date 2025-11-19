@@ -23,6 +23,8 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h);
 
 void render3DTest(BADGPUTexture tex, BADGPUDSBuffer dsb, BADGPUTexture texSrc, const float * clipPlane);
 
+void renderDemoTriangle(BADGPUTexture texDst, int w, int h);
+
 int main(int argc, char ** argv) {
     int flags = BADGPUNewInstanceFlags_CanPrintf | BADGPUNewInstanceFlags_BackendCheck;
     for (int i = 1; i < argc; i++) {
@@ -60,6 +62,8 @@ int main(int argc, char ** argv) {
     renderFlagMain(tex2, T_WIDTH, T_HEIGHT);
 
     renderTex2Tex(tex2, tex, T_WIDTH / 2, T_HEIGHT / 2);
+
+    renderDemoTriangle(tex2, T_WIDTH, T_HEIGHT);
 
     // Test restrained clear.
     badgpuDrawClear(tex2, NULL, BADGPUSessionFlags_MaskAll | BADGPUSessionFlags_Scissor, T_WIDTH - 32, 0, 32, 32,
@@ -233,6 +237,36 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
         0, 0, w, h,
         // Fragment Shader
         texSrc, &matrix,
+        NULL, BADGPUCompare_Always, 0,
+        // Blending
+        0
+    );
+}
+
+void renderDemoTriangle(BADGPUTexture texDst, int w, int h) {
+    float pos[] = {
+        0, 0.5,
+        -0.5, -0.5,
+        0.5, -0.5
+    };
+    float col[] = {
+        1, 0, 0, 1,
+        0, 1, 0, 1,
+        0, 0, 1, 1
+    };
+    badgpuDrawGeomNoDS(
+        texDst, BADGPUSessionFlags_MaskAll, 0, 0, 0, 0,
+        0,
+        // Vertex Loader
+        2, pos, col, 2, NULL,
+        BADGPUPrimitiveType_Triangles, 1,
+        0, 3, NULL,
+        // Vertex Shader
+        NULL,
+        // Viewport
+        0, 0, w, h,
+        // Fragment Shader
+        NULL, NULL,
         NULL, BADGPUCompare_Always, 0,
         // Blending
         0

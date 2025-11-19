@@ -7,3 +7,4 @@ badgputest_egl.exe
 badgputest_tce
 *.qoi
 *.png
+compile_flags.txt

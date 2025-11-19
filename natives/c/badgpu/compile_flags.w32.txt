@@ -1,0 +1,5 @@
+clang
+-target
+i686-windows-gnu
+-I
+/usr/i686-w64-mingw32/include/

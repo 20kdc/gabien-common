@@ -88,6 +88,11 @@ BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed
 // Creates a new software renderer instance.
 BADGPUInstance badgpu_newSoftwareInstance(BADGPUNewInstanceFlags flags, const char ** error);
 
+#ifdef WIN32
+// Creates a new D3D7 instance.
+BADGPUInstance badgpu_newD3D7Instance(BADGPUNewInstanceFlags flags, const char ** error);
+#endif
+
 // OBJ
 
 // Object Management

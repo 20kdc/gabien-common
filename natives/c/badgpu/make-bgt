@@ -1,19 +1,32 @@
 #!/bin/sh
 set -e
+echo Host
 gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c badgpu_tce.c badgpu_dl.c badgpu_wsi_zzz.c badgpu_wsi_egl.c badgputest.c -o badgputest -ldl -lm
-gcc -Wno-psabi -Ofast -g badgpu_tce.c badgputest_tce.c -o badgputest_tce &&
-i686-w64-mingw32-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c  badgpu_tce.c badgpu_dl.c badgpu_wsi_wgl.c badgpu_wsi_egl.c badgputest.c -o badgputest.exe -lopengl32 -lgdi32
+echo TCE
+gcc -Wno-psabi -Ofast -g badgpu_tce.c badgputest_tce.c -o badgputest_tce
+echo MinGW
+i686-w64-mingw32-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c badgpu_d3d7.c badgpu_tce.c badgpu_dl.c badgpu_wsi_wgl.c badgpu_wsi_egl.c badgputest.c -o badgputest.exe -lopengl32 -lgdi32 -ldxguid -lddraw
+
+copy_tests() {
+	qoiconv tmp.qoi tmp_$1.png
+	qoiconv tmp2.qoi tmp2_$1.png
+	qoiconv tmp3.qoi tmp3_$1.png
+}
+
 ./badgputest
 ./badgputest egl
-qoiconv tmp.qoi tmp.png
-qoiconv tmp2.qoi tmp2.png
-qoiconv tmp3.qoi tmp3.png
+copy_tests egl
+
 BADGPU_DEBUG_SWCLIP=1 ./badgputest
-qoiconv tmp.qoi tmp_swclip.png
-qoiconv tmp2.qoi tmp2_swclip.png
-qoiconv tmp3.qoi tmp3_swclip.png
+copy_tests swclip
+
 ./badgputest sw
-qoiconv tmp.qoi tmp_sw.png
-qoiconv tmp2.qoi tmp2_sw.png
-qoiconv tmp3.qoi tmp3_sw.png
+copy_tests swrast
+
+wine badgputest.exe
+copy_tests wine
+
+BADGPU_FORCE_D3D7=1 wine badgputest.exe
+copy_tests d3d7
+
 ./badgputest_tce
