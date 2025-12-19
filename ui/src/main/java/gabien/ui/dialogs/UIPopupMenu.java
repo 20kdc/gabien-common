@@ -8,8 +8,10 @@
 package gabien.ui.dialogs;
 
 import java.util.LinkedList;
+import java.util.function.Consumer;
 
 import gabien.ui.UIElement;
+import gabien.ui.elements.UIButton;
 import gabien.ui.elements.UITextButton;
 import gabien.ui.layouts.UIScrollLayout;
 import gabien.uslx.append.ArrayIterable;
@@ -39,10 +41,14 @@ public class UIPopupMenu extends UIElement.UIProxy {
         LinkedList<UIElement> elms = new LinkedList<>();
         for (final Entry ent : entries) {
             final int fi = i++;
-            UITextButton utb = new UITextButton(ent.text, h, () -> {
+            final UITextButton utb = new UITextButton(ent.text, h, null);
+            utb.onClick = () -> {
                 optionExecute(fi);
-                ent.action.run();
-            });
+                if (ent.actionButtonRef != null)
+                    ent.actionButtonRef.accept(utb);
+                else if (ent.action != null)
+                    ent.action.run();
+            };
             elms.add(utb);
         }
         usl.panelsSet(elms);
@@ -76,10 +82,19 @@ public class UIPopupMenu extends UIElement.UIProxy {
 
     public static final class Entry {
         public final String text;
-        public final Runnable action;
+        private final Runnable action;
+        private final Consumer<UIButton<?>> actionButtonRef;
+
         public Entry(String txt, Runnable a) {
             text = txt;
             action = a;
+            actionButtonRef = null;
+        }
+
+        public Entry(String txt, Consumer<UIButton<?>> a) {
+            text = txt;
+            action = null;
+            actionButtonRef = a;
         }
     }
 }
