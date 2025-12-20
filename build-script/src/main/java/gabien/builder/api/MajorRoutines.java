@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -99,6 +100,16 @@ public class MajorRoutines {
         staging2.mkdirs();
         TreeMap<String, byte[]> jarContents = new TreeMap<>();
         integrateZip(jarContents, new FileInputStream(appJar));
+        // we need to remove things from the JAR that can't be accessed, keeping in mind that only assets/ files can be accessed
+        // in practice this deletes the .class files and should reduce build sizes to before the build system changes
+        for (String s : new LinkedList<>(jarContents.keySet())) {
+            if (s.contains("/")) {
+                if (s.startsWith("assets/") || s.startsWith("META-INF/"))
+                    continue;
+                // get rid of it
+                jarContents.remove(s);
+            }
+        }
         jarContents.put("res/drawable/icon.png", Files.readAllBytes(icon.toPath()));
         // Merge in everything, run d8
         env.cd(CommandEnv.GABIEN_HOME).run(CommandEnv.INCEPT_COMMAND, "d8", "--release", "--lib", MavenRepository.getJARFile(Constants.COORDS_ANDROID_PLATFORM).getAbsolutePath(), "--output", staging2.getAbsolutePath(), appJar.getAbsolutePath());
