@@ -19,6 +19,7 @@ import gabien.datum.DatumKVDVisitor;
 import gabien.datum.DatumODec1Visitor;
 import gabien.datum.DatumSeqVisitor;
 import gabien.datum.DatumODec1Visitor.Handler;
+import gabien.render.IDrawable;
 import gabien.render.ITexRegion;
 import gabien.ui.FontManager;
 import gabien.ui.LAFChain;
@@ -50,10 +51,10 @@ public final class Theme {
     // this may end up unexpectedly caching things past engine resets, but luckily those only happen in tests...
     public static final Attr<FontManager> FM_GLOBAL = new BuiltinAttr<>("fontManager", 14, FontManager.class, new FontManager(null, false));
     // 15
-    public static final Attr<IIcon> IC_ARROW_UP = new IAttr("arrowUp", 15, DefaultArrowIcon.DARK_U);
-    public static final Attr<IIcon> IC_ARROW_RIGHT = new IAttr("arrowRight", 16, DefaultArrowIcon.DARK_R);
-    public static final Attr<IIcon> IC_ARROW_DOWN = new IAttr("arrowDown", 17, DefaultArrowIcon.DARK_D);
-    public static final Attr<IIcon> IC_ARROW_LEFT = new IAttr("arrowLeft", 18, DefaultArrowIcon.DARK_L);
+    public static final Attr<IDrawable> IC_ARROW_UP = new IAttr("arrowUp", 15, DefaultArrowIcon.DARK_U);
+    public static final Attr<IDrawable> IC_ARROW_RIGHT = new IAttr("arrowRight", 16, DefaultArrowIcon.DARK_R);
+    public static final Attr<IDrawable> IC_ARROW_DOWN = new IAttr("arrowDown", 17, DefaultArrowIcon.DARK_D);
+    public static final Attr<IDrawable> IC_ARROW_LEFT = new IAttr("arrowLeft", 18, DefaultArrowIcon.DARK_L);
     public static final Attr<IBorder> B_NOTABPANEL = new BAttr("noTabPanel", 19);
 
     private final static Attr<?>[] allBI = {
@@ -173,9 +174,9 @@ public final class Theme {
             super(id, iid, IBorder.class, FallbackBorder.INSTANCE);
         }
     }
-    private static class IAttr extends BuiltinAttr<IIcon> {
-        public IAttr(String id, int iid, IIcon d) {
-            super(id, iid, IIcon.class, d);
+    private static class IAttr extends BuiltinAttr<IDrawable> {
+        public IAttr(String id, int iid, IDrawable d) {
+            super(id, iid, IDrawable.class, d);
         }
     }
 

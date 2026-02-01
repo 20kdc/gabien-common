@@ -7,8 +7,8 @@
 
 package gabien.ui.elements;
 
+import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
-import gabien.ui.theming.IIcon;
 import gabien.uslx.append.Rect;
 
 /**
@@ -28,7 +28,7 @@ public abstract class UIBaseIconButton<ThisClass extends UIBaseIconButton<?>> ex
         setForcedBounds(null, new Rect(sz));
     }
 
-    protected abstract IIcon getCurrentIcon(boolean textBlack);
+    protected abstract IDrawable getCurrentIcon(boolean textBlack);
 
     @Override
     public void renderContents(boolean textBlack, IGrDriver igd) {
@@ -38,6 +38,7 @@ public abstract class UIBaseIconButton<ThisClass extends UIBaseIconButton<?>> ex
         int efs = Math.min(sw, sh);
         int x = (sw - efs) / 2;
         int y = (sh - efs) / 2;
-        getCurrentIcon(textBlack).draw(igd, bw + x, bw + y, efs - (bw * 2));
+        int sz = efs - (bw * 2);
+        getCurrentIcon(textBlack).drawTo(bw + x, bw + y, sz, sz, igd);
     }
 }

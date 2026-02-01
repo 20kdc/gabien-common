@@ -9,7 +9,7 @@ package gabien.ui.elements;
 
 import java.util.function.Function;
 
-import gabien.ui.theming.IIcon;
+import gabien.render.IDrawable;
 
 /**
  * A button with an icon on it.
@@ -18,15 +18,15 @@ import gabien.ui.theming.IIcon;
  * Split between base/subclass 2nd December 2023. 
  */
 public class UIIconButton extends UIBaseIconButton<UIIconButton> {
-    public Function<Boolean, IIcon> symbol;
+    public Function<Boolean, IDrawable> symbol;
 
-    public UIIconButton(Function<Boolean, IIcon> symbol, int fontSize, Runnable runnable) {
+    public UIIconButton(Function<Boolean, IDrawable> symbol, int fontSize, Runnable runnable) {
         super(fontSize, runnable);
         this.symbol = symbol;
     }
 
     @Override
-    protected IIcon getCurrentIcon(boolean textBlack) {
+    protected IDrawable getCurrentIcon(boolean textBlack) {
         return symbol.apply(textBlack);
     }
 }

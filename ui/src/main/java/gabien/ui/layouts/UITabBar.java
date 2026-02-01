@@ -7,6 +7,7 @@
 
 package gabien.ui.layouts;
 
+import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
 import gabien.text.TextTools;
 import gabien.ui.FontManager;
@@ -16,7 +17,6 @@ import gabien.ui.UILayer;
 import gabien.ui.elements.UIBorderedElement;
 import gabien.ui.elements.UIScrollbar;
 import gabien.ui.theming.IBorder;
-import gabien.ui.theming.IIcon;
 import gabien.ui.theming.Theme;
 
 import java.util.HashSet;
@@ -364,7 +364,7 @@ public class UITabBar extends UIElement.UIPanel {
                 int size = h - (tabIcoMargin * 2);
                 int subMargin = tabIcoMargin / 2;
                 igd.clearRect(0, 0, 0, x + w - ((icoBack - tabIcoMargin) + subMargin), y + tabIcoMargin - subMargin, size + (subMargin * 2), size + (subMargin * 2));
-                i.draw(igd, x + w - (icoBack - tabIcoMargin), y + tabIcoMargin, size);
+                i.getIcon().drawTo(x + w - (icoBack - tabIcoMargin), y + tabIcoMargin, size, size, igd);
                 icoBack += h;
             }
         }
@@ -451,7 +451,9 @@ public class UITabBar extends UIElement.UIPanel {
         super.handleMousewheel(x, y, north);
     }
 
-    public interface TabIcon extends IIcon {
+    public interface TabIcon {
+        IDrawable getIcon();
+
         // The 'parent' instance provided must be usable to remove the tab.
         void click(Tab parent);
     }

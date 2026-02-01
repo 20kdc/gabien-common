@@ -9,13 +9,12 @@ package gabien.pva;
 import gabien.pva.PVAFile.FrameElm;
 import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
-import gabien.ui.theming.IIcon;
 
 /**
  * PVA Frame as a Drawable
  * Created October 26th, 2023
  */
-public class PVAFrameDrawable implements IDrawable, IIcon {
+public class PVAFrameDrawable implements IDrawable {
     public final PVARenderer renderer;
     public final FrameElm[] frameData;
 
@@ -41,10 +40,5 @@ public class PVAFrameDrawable implements IDrawable, IIcon {
     @Override
     public void drawTo(float x, float y, float w, float h, IGrDriver target) {
         renderer.renderInline(frameData, target, x, y, w, h);
-    }
-
-    @Override
-    public void draw(IGrDriver igd, int x, int y, int size) {
-        renderer.renderInline(frameData, igd, x, y, size, size);
     }
 }

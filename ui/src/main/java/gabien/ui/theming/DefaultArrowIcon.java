@@ -6,13 +6,14 @@
  */
 package gabien.ui.theming;
 
+import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
 
 /**
  * Just to make the scrollbars nicer.
  * Created 29th October, 2023.
  */
-public class DefaultArrowIcon implements IIcon {
+public class DefaultArrowIcon implements IDrawable {
     // size of the grid used for the points
     private final static int PSC = 8;
     private int[] points = {
@@ -45,13 +46,23 @@ public class DefaultArrowIcon implements IIcon {
     }
 
     @Override
-    public void draw(IGrDriver igd, int x, int y, int size) {
-        float aX = ((points[0] * size) / (float) PSC) + x;
-        float aY = ((points[1] * size) / (float) PSC) + y;
-        float bX = ((points[2] * size) / (float) PSC) + x;
-        float bY = ((points[3] * size) / (float) PSC) + y;
-        float cX = ((points[4] * size) / (float) PSC) + x;
-        float cY = ((points[5] * size) / (float) PSC) + y;
+    public float getRegionWidth() {
+        return 16;
+    }
+
+    @Override
+    public float getRegionHeight() {
+        return 16;
+    }
+
+    @Override
+    public void drawTo(float x, float y, float w, float h, IGrDriver igd) {
+        float aX = ((points[0] * w) / (float) PSC) + x;
+        float aY = ((points[1] * h) / (float) PSC) + y;
+        float bX = ((points[2] * w) / (float) PSC) + x;
+        float bY = ((points[3] * h) / (float) PSC) + y;
+        float cX = ((points[4] * w) / (float) PSC) + x;
+        float cY = ((points[5] * h) / (float) PSC) + y;
         igd.drawXYSTRGBA(IGrDriver.BLEND_NORMAL, 0, null, aX, aY, 0, 0, r, g, b, a, bX, bY, 0, 0, r, g, b, a, cX, cY, 0, 0, r, g, b, a);
     }
 }

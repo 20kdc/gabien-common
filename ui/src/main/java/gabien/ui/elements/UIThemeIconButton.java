@@ -9,7 +9,7 @@ package gabien.ui.elements;
 
 import org.eclipse.jdt.annotation.NonNull;
 
-import gabien.ui.theming.IIcon;
+import gabien.render.IDrawable;
 import gabien.ui.theming.Theme;
 
 /**
@@ -17,14 +17,14 @@ import gabien.ui.theming.Theme;
  * Created 2nd December 2023. 
  */
 public class UIThemeIconButton extends UIBaseIconButton<UIThemeIconButton> {
-    public @NonNull Theme.Attr<IIcon> iconAttr;
-    public UIThemeIconButton(@NonNull Theme.Attr<IIcon> symbol, int fontSize, Runnable runnable) {
+    public @NonNull Theme.Attr<IDrawable> iconAttr;
+    public UIThemeIconButton(@NonNull Theme.Attr<IDrawable> symbol, int fontSize, Runnable runnable) {
         super(fontSize, runnable);
         iconAttr = symbol;
     }
 
     @Override
-    protected IIcon getCurrentIcon(boolean textBlack) {
+    protected IDrawable getCurrentIcon(boolean textBlack) {
         return iconAttr.get(this);
     }
 }

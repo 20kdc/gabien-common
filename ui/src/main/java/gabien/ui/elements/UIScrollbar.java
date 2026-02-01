@@ -9,12 +9,12 @@ package gabien.ui.elements;
 
 import org.eclipse.jdt.annotation.Nullable;
 
+import gabien.render.IDrawable;
 import gabien.render.IGrDriver;
 import gabien.ui.IPointerReceiver;
 import gabien.ui.UIElement;
 import gabien.ui.UILayer;
 import gabien.ui.theming.IBorder;
-import gabien.ui.theming.IIcon;
 import gabien.ui.theming.Theme;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
@@ -134,7 +134,7 @@ public class UIScrollbar extends UIElement {
         }
     }
 
-    private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, Theme.Attr<IIcon> icoAttr) {
+    private void drawNPB(Theme theme, IGrDriver igd, double timer, Rect box, Theme.Attr<IDrawable> icoAttr) {
         boolean down = timer > 0;
         Theme.Attr<IBorder> borderId = down ? Theme.B_BTNP : Theme.B_BTN;
         int iconSize = Math.min(box.width, box.height) - (carriageBorder * 2);
@@ -142,8 +142,8 @@ public class UIScrollbar extends UIElement {
         if (UIBorderedElement.getMoveDownFlag(theme, borderId))
             yOffset += carriageBorder;
         UIBorderedElement.drawBorder(theme, igd, borderId, carriageBorder, box.x, box.y + yOffset, box.width, box.height);
-        IIcon icon = icoAttr.get(getTheme());
-        icon.draw(igd, box.x + ((box.width - iconSize) / 2), box.y + yOffset + ((box.height - iconSize) / 2), iconSize);
+        IDrawable icon = icoAttr.get(getTheme());
+        icon.drawTo(box.x + ((box.width - iconSize) / 2), box.y + yOffset + ((box.height - iconSize) / 2), iconSize, iconSize, igd);
     }
 
     @Override

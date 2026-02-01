@@ -18,15 +18,17 @@
 	</properties>
 
 	<modules>
+		<!-- Remember to include in gabien-unzip-desktop-jars. -->
 		<module>uslx</module>
 		<module>datum-aux</module>
 		<module>media</module>
 		<module>common</module>
 		<module>ui</module>
-		<module>javase</module>
-		<module>android</module>
 		<!-- natives not included, install via natives-sdk release -->
 		<module>natives-util</module>
+		<!-- Platform-specific -->
+		<module>javase</module>
+		<module>android</module>
 		<!-- tools, native examples not included; it adds build time to application projects -->
 	</modules>
 
