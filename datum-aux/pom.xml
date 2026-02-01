@@ -22,5 +22,11 @@
 			<artifactId>datum</artifactId>
 			<version>1.0</version>
 		</dependency>
+		<!-- I don't like including USLX here, but GenericUtils fits there better than here. -->
+		<dependency>
+			<groupId>t20kdc.hs2</groupId>
+			<artifactId>gabien-uslx</artifactId>
+			<version>0.666-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 </project>
