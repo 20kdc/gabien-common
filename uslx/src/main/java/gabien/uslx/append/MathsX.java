@@ -80,6 +80,15 @@ public final class MathsX {
     }
 
     /**
+     * Division, but it acts kind of like bit-shift.
+     */
+    public static int seqDiv(int x, int length) {
+        if (x < 0)
+            x -= (length - 1);
+        return x / length;
+    }
+
+    /**
      * Modulo, but handling negative values in the first parameter in a way that makes sense for positions in looped sequences.
      * For example, seqModulo(-1, 4) is 3.
      */
