@@ -27,9 +27,10 @@ public class WSIImageDriver extends WSIImage.RW {
     public WSIImageDriver(@Nullable int[] ints, int w, int h) {
         super(GaBIEn.internal, w < 0 ? 0 : w, h < 0 ? 0 : h);
         if (w > 0 && h > 0) {
-            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             if (ints != null)
-                bitmap.setPixels(ints, 0, w, 0, 0, w, h);
+                bmp.setPixels(ints, 0, w, 0, 0, w, h);
+            bitmap = bmp;
         } else {
             bitmap = null;
         }
@@ -50,6 +51,7 @@ public class WSIImageDriver extends WSIImage.RW {
     @Override
     @NonNull
     public byte[] createPNG() {
+        Bitmap bitmap = this.bitmap;
         if (bitmap == null)
             return new WSIImageDriver(null, 1, 1).createPNG();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

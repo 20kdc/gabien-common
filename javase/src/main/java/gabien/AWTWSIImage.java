@@ -40,7 +40,8 @@ public class AWTWSIImage extends WSIImage.RW {
             bufWR = null;
         } else {
             buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-            bufWR = buf.getRaster();
+            WritableRaster bufWR = buf.getRaster();
+            this.bufWR = bufWR;
             if (colours != null)
                 bufWR.setDataElements(0, 0, width, height, colours);
         }
@@ -48,14 +49,16 @@ public class AWTWSIImage extends WSIImage.RW {
 
     @Override
     public void getPixels(@NonNull int[] colours) {
+        WritableRaster bufWR = this.bufWR;
         if (bufWR != null)
-            bufWR.getDataElements(0, 0, buf.getWidth(), buf.getHeight(), colours);
+            bufWR.getDataElements(0, 0, width, height, colours);
     }
 
     @Override
     public void setPixels(@NonNull int[] colours) {
+        WritableRaster bufWR = this.bufWR;
         if (bufWR != null)
-            bufWR.setDataElements(0, 0, buf.getWidth(), buf.getHeight(), colours);
+            bufWR.setDataElements(0, 0, width, height, colours);
     }
 
     @Override

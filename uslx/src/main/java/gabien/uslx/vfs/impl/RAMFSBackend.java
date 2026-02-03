@@ -67,12 +67,14 @@ public final class RAMFSBackend extends FSBackend {
     }
 
     public @Nullable VFSNode getParentVFSNode() {
+        FSBackend parent = this.parent;
         if (parent == null)
             return null;
         return ((RAMFSBackend) parent).getVFSNode();
     }
 
     public @Nullable VFSNode getVFSNode() {
+        FSBackend parent = this.parent;
         if (parent == null)
             return vfsRoot;
         VFSNode parentVFSNode = ((RAMFSBackend) parent).getVFSNode();
@@ -102,6 +104,7 @@ public final class RAMFSBackend extends FSBackend {
 
     @Override
     public String getAbsolutePath() {
+        FSBackend parent = this.parent;
         if (parent == null)
             return "/";
         if (parent.parent == null)

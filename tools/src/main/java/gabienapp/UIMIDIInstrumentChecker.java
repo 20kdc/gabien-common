@@ -44,6 +44,7 @@ public class UIMIDIInstrumentChecker extends UIDynamicProxy {
 
     @Override
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
+        Thread rebuilderThread = this.rebuilderThread;
         if (rebuilderThread != null) {
             if (!rebuilderThread.isAlive()) {
                 try {

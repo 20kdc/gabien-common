@@ -107,6 +107,7 @@ public class UIMainMenu extends UIProxy {
                         InputStream inp = GaBIEn.getInFile(str);
                         MIDISequence mf = MIDISequence.from(inp)[0];
                         OutputStream os = GaBIEn.getOutFile("tmp.txt");
+                        assert os != null;
                         AtomicInteger time = new AtomicInteger(0);
                         MIDITracker mt = new MIDITracker(mf, (status, data, offset, length) -> {
                             String res = time.get() + ": " + HexByteEncoding.toHexString(status) + ":" + HexByteEncoding.toHexString(data, offset, length) + ": ";
@@ -180,9 +181,9 @@ public class UIMainMenu extends UIProxy {
             ui.accept(uic);
         }));
         ve.add(new UITextButton("Render Text", 16, () -> {
-            IFixedSizeFont ifsf1 = GaBIEn.getNativeFont(64, 0, null, false);
-            IFixedSizeFont ifsf2 = GaBIEn.getNativeFont(32, FontStyle.ITALIC, null, false);
-            IFixedSizeFont ifsf3 = GaBIEn.getNativeFont(32, FontStyle.ITALIC | FontStyle.BOLD, null, false);
+            IFixedSizeFont ifsf1 = GaBIEn.getNativeFontFallback(64, 0, null);
+            IFixedSizeFont ifsf2 = GaBIEn.getNativeFontFallback(32, FontStyle.ITALIC, null);
+            IFixedSizeFont ifsf3 = GaBIEn.getNativeFontFallback(32, FontStyle.ITALIC | FontStyle.BOLD, null);
             RenderedTextChunk chk1 = ifsf1.renderLine("Test text", 255, 255, 255, 255);
             RenderedTextChunk chk2 = ifsf2.renderLine(" comes in", 255, 255, 255, 255);
             RenderedTextChunk chk3 = ifsf3.renderLine(" many ", 255, 255, 255, 255);

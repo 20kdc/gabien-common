@@ -50,8 +50,9 @@ public class UIScrollbar extends UIElement {
 
     // zones
     private Rect boxNegative = Rect.ZERO;
-    private @Nullable Rect boxCarriage;
-    private @Nullable Rect boxCarriageFloor;
+    private boolean hasCarriage = false;
+    private Rect boxCarriage = Rect.ZERO;
+    private Rect boxCarriageFloor = Rect.ZERO;
     private Rect boxPositive = Rect.ZERO;
 
     public UIScrollbar(boolean vert, int sc) {
@@ -84,8 +85,9 @@ public class UIScrollbar extends UIElement {
 
         if (carriageLength < (barSize * 2)) {
             // not enough room for carriage
-            boxCarriage = null;
-            boxCarriageFloor = null;
+            hasCarriage = false;
+            boxCarriage = Rect.ZERO;
+            boxCarriageFloor = Rect.ZERO;
             if (vertical) {
                 boxNegative = new Rect(0, 0, barSize, barLength >> 1);
                 boxPositive = new Rect(0, boxNegative.height, barSize, barLength - boxNegative.height);
@@ -95,6 +97,7 @@ public class UIScrollbar extends UIElement {
             }
         } else {
             // carriage-layout
+            hasCarriage = true;
             boxNegative = new Rect(0, 0, barSize, barSize);
             if (vertical) {
                 boxPositive = new Rect(0, barLength - barSize, barSize, barSize);
@@ -117,7 +120,7 @@ public class UIScrollbar extends UIElement {
         Theme theme = getTheme();
         drawNPB(theme, igd, negativeButtonTimer, boxNegative, vertical ? Theme.IC_ARROW_UP : Theme.IC_ARROW_LEFT);
         drawNPB(theme, igd, positiveButtonTimer, boxPositive, vertical ? Theme.IC_ARROW_DOWN : Theme.IC_ARROW_RIGHT);
-        if (boxCarriage != null) {
+        if (hasCarriage) {
             // Carriage
             UIBorderedElement.drawBorder(theme, igd, Theme.B_SBTRAY, carriageBorder, boxCarriage);
             // Nub
@@ -156,7 +159,7 @@ public class UIScrollbar extends UIElement {
 
     @Override
     public IPointerReceiver handleNewPointer(IPointer state) {
-        if ((boxCarriage != null) && boxCarriage.contains(state.getX(), state.getY())) {
+        if (hasCarriage && boxCarriage.contains(state.getX(), state.getY())) {
             // This could be improved, but this will do for now.
             return new IPointerReceiver() {
                 @Override
@@ -166,7 +169,7 @@ public class UIScrollbar extends UIElement {
     
                 @Override
                 public void handlePointerUpdate(IPointer pointer) {
-                    if (boxCarriage == null)
+                    if (!hasCarriage)
                         return;
 
                     // intended range is 0 - (carriageFloorLength - nubSize)

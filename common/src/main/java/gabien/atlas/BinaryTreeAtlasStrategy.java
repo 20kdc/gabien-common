@@ -93,6 +93,10 @@ public final class BinaryTreeAtlasStrategy implements IAtlasStrategy {
                 }
             }
             if (mode == Occupancy.SPLIT) {
+                TreeNode a = this.a;
+                TreeNode b = this.b;
+                assert a != null;
+                assert b != null;
                 // split node... prefer to use already highly allocated areas if necessary
                 // note that this is written to prefer A-side in case of a tie
                 // this is because A-side is "set up" by above code to match size
@@ -115,8 +119,8 @@ public final class BinaryTreeAtlasStrategy implements IAtlasStrategy {
                         a.modWeight(-a.weight);
                         b.modWeight(-b.weight);
                         // ...and remove
-                        a = null;
-                        b = null;
+                        this.a = null;
+                        this.b = null;
                     }
                 }
                 return res;

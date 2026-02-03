@@ -39,7 +39,8 @@ public final class SimpleAtlasBuilder {
         // Entries are nulled as completed
         Entry[] entriesArray = entries.toArray(new Entry[0]);
         final Comparator<Size> sizeSorter = pageStrategy.getSortingAlgorithm();
-        Arrays.sort(entriesArray, (a, b) -> sizeSorter.compare(a.sz, b.sz));
+        if (sizeSorter != null)
+            Arrays.sort(entriesArray, (a, b) -> sizeSorter.compare(a.sz, b.sz));
         int amountInArray = entriesArray.length;
         AtlasSet res = new AtlasSet();
         while (amountInArray > 0) {

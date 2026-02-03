@@ -308,6 +308,9 @@ public abstract class FSBackend {
 
         @Override
         public String getAbsolutePath() {
+            FSBackend parent = this.parent;
+            if (parent == null)
+                return myName;
             return parent.getAbsolutePath() + "/" + myName;
         }
 

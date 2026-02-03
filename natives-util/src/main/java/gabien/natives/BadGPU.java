@@ -233,6 +233,7 @@ public abstract class BadGPU extends BadGPUEnum {
         }
     }
     // inter-object operations
+    @SuppressWarnings("null")
     public static boolean drawClear(
         @Nullable Texture sTexture, @Nullable DSBuffer sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         float cR, float cG, float cB, float cA, float depth, int stencil
@@ -308,6 +309,7 @@ public abstract class BadGPU extends BadGPUEnum {
             if (matrixTOfs < 0 || (matrixTOfs + 16) > matrixT.length)
                 throw new IllegalArgumentException("matrixT out of bounds");
     }
+    @SuppressWarnings("null")
     public static boolean drawGeom(
         @Nullable Texture sTexture, @Nullable DSBuffer sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,

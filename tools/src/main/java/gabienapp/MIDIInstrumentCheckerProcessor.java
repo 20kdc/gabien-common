@@ -43,6 +43,7 @@ public class MIDIInstrumentCheckerProcessor {
         if (GaBIEn.getInFile(prefix + ".wav") == null) {
             try {
                 OutputStream os2 = GaBIEn.getOutFile(prefix + ".mid");
+                assert os2 != null;
                 sequence.exportSequenceFile(os2);
                 os2.close();
                 ProcessBuilder pb = new ProcessBuilder("fluidsynth", "-g1", "-F", prefix + ".wav", REFERENCE, prefix + ".mid");

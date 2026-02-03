@@ -38,19 +38,21 @@ public class InstallExternalTool extends Tool {
 
     @Override
     public void run(CommandEnv diag) {
-        boolean wekaTaso = false;
+        boolean missingOnly = false;
         String[] effectivePackages = packages;
         if (effectivePackages.length == 0) {
             effectivePackages = EXTERNAL.keySet().toArray(new String[0]);
-            wekaTaso = true;
+            missingOnly = true;
         }
 
         boolean foundLicenses = false;
         LinkedList<ExternalJAR> wouldInstall = new LinkedList<>();
         for (String s : effectivePackages) {
             ExternalJAR ex = EXTERNAL.get(s);
-            if (ex == null)
+            if (ex == null) {
                 diag.error("Unknown dependency " + s);
+                continue;
+            }
             if (ex.license != null) {
                 diag.info(ex.id + " - license: " + ex.license);
                 diag.info(" " + ex.url);
@@ -60,7 +62,7 @@ public class InstallExternalTool extends Tool {
                 diag.info(" " + ex.url);
             }
             if (ex.appearsInstalled()) {
-                if (wekaTaso) {
+                if (missingOnly) {
                     diag.info(" already installed");
                     continue;
                 } else {

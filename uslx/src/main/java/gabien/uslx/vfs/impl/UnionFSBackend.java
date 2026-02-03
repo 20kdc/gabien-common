@@ -131,6 +131,7 @@ public final class UnionFSBackend extends FSBackend {
     public @NonNull OutputStream openWrite() throws IOException {
         // when using a union fs, we need to account for directories that might not exist here
         // but they do exist elsewhere
+        FSBackend parent = this.parent;
         if (parent != null)
             if (parent.getState() instanceof DirectoryState)
                 parent.mkdirs();

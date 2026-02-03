@@ -34,7 +34,7 @@ public abstract class LAFChain {
     // This is what holds the LAFChain to the parent.
     // If the LAFChain would be GC'd, the holder gets finalized.
     // This disconnects things upstream.
-    private RefSyncSet<LAFChain>.Holder lafParentHolder;
+    private @Nullable RefSyncSet<LAFChain>.Holder lafParentHolder;
 
     /**
      * Actual calculated theme.
@@ -59,12 +59,14 @@ public abstract class LAFChain {
      */
     public void setLAFParent(@Nullable LAFChain.Node parent) {
         if (lafParentHolder != null) {
-           lafParent.children.remove(lafParentHolder);
-           lafParentHolder = null;
+            LAFChain.Node oldParent = lafParent;
+            if (oldParent != null)
+                oldParent.children.remove(lafParentHolder);
+            lafParentHolder = null;
         }
         lafParent = parent;
-        if (lafParent != null)
-            lafParentHolder = lafParent.children.addWeak(this);
+        if (parent != null)
+            lafParentHolder = parent.children.addWeak(this);
         themeUpdate();
     }
 

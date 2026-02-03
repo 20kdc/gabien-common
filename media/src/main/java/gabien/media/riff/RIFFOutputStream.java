@@ -113,6 +113,7 @@ public class RIFFOutputStream extends LEDataOutputStream {
 
     @Override
     public void close() throws IOException {
+        ByteArrayOutputStream buffer = this.buffer;
         if (buffer != null) {
             int sz = buffer.size();
             targetDos.writeInt(sz);
