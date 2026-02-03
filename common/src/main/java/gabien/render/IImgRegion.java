@@ -19,7 +19,7 @@ public interface IImgRegion extends ITexRegion {
     /**
      * Gets the underlying image of this texture region.
      */
-    @NonNull IImage getSurface();
+    IImage getSurface();
 
     /**
      * Returns the texture S value for a given input coordinate.

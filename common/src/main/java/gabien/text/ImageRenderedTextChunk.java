@@ -6,6 +6,8 @@
  */
 package gabien.text;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
 import gabien.render.ITexRegion;
@@ -68,7 +70,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
 
     public static class WSI extends ImageRenderedTextChunk {
         public final WSIImage render;
-        private IImage renderUpload;
+        private @Nullable IImage renderUpload;
 
         public WSI(int offsetX, int offsetY, int measureX, int lineHeight, int ascent, int descent, WSIImage r) {
             super(offsetX, offsetY, measureX, lineHeight, ascent, descent);
@@ -78,8 +80,9 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         @Override
         public IImage getIImage() {
             synchronized (this) {
+                IImage renderUpload = this.renderUpload;
                 if (renderUpload == null)
-                    renderUpload = render.upload("Text");
+                    return this.renderUpload = render.upload("Text");
                 return renderUpload;
             }
         }
@@ -92,7 +95,7 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
 
     public static class GPU extends ImageRenderedTextChunk {
         public final IImage render;
-        private WSIImage renderDownload;
+        private @Nullable WSIImage renderDownload;
 
         public GPU(int offsetX, int offsetY, int measureX, int lineHeight, int ascent, int descent, IImage r) {
             super(offsetX, offsetY, measureX, lineHeight, ascent, descent);
@@ -107,8 +110,9 @@ public abstract class ImageRenderedTextChunk extends RenderedTextChunk {
         @Override
         public WSIImage getIWSIImage() {
             synchronized (this) {
+                WSIImage renderDownload = this.renderDownload;
                 if (renderDownload == null)
-                    renderDownload = render.download();
+                    return this.renderDownload = render.download();
                 return renderDownload;
             }
         }

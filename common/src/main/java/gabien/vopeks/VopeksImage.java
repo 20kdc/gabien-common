@@ -32,7 +32,7 @@ public final class VopeksImage extends IImage {
     /**
      * Creates a new VopeksImage.
      */
-    public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, BadGPU.TextureLoadFormat tlf, int[] init) {
+    public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, BadGPU.TextureLoadFormat tlf, int[] init) {
         super(id, w, h);
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
@@ -43,7 +43,7 @@ public final class VopeksImage extends IImage {
     /**
      * Creates a new VopeksImage.
      */
-    public VopeksImage(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, BadGPU.TextureLoadFormat tlf, byte[] init) {
+    public VopeksImage(Vopeks vopeks, @Nullable String id, int w, int h, BadGPU.TextureLoadFormat tlf, byte[] init) {
         super(id, w, h);
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
@@ -75,7 +75,7 @@ public final class VopeksImage extends IImage {
         // and so forth...
     }
 
-    public static void getPixelsAsync(Vopeks vopeks, IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone) {
+    public static void getPixelsAsync(Vopeks vopeks, IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, int[] data, int dataOfs, Runnable onDone) {
         vopeks.putTask((instance) -> {
             try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
                 BadGPU.Texture texture = image.getTextureFromTask();
@@ -86,7 +86,7 @@ public final class VopeksImage extends IImage {
         });
     }
 
-    public static void getPixelsAsync(Vopeks vopeks, IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone) {
+    public static void getPixelsAsync(Vopeks vopeks, IImage image, int x, int y, int w, int h, BadGPU.TextureLoadFormat format, byte[] data, int dataOfs, Runnable onDone) {
         vopeks.putTask((instance) -> {
             try (TimeLogger.Source src = TimeLogger.open(vopeks.timeLoggerReadPixelsTask)) {
                 BadGPU.Texture texture = image.getTextureFromTask();

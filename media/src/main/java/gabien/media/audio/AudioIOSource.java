@@ -21,11 +21,11 @@ import gabien.uslx.append.ArrayConversions;
  * Created on 6th June 2022 as part of project VE2Bun
  */
 public abstract class AudioIOSource implements Closeable {
-    public final @NonNull AudioIOCRSet crSet;
+    public final AudioIOCRSet crSet;
     // Format hint for copying.
     public final @Nullable AudioIOFormat formatHint;
 
-    public AudioIOSource(@NonNull AudioIOCRSet cr, @Nullable AudioIOFormat hint) {
+    public AudioIOSource(AudioIOCRSet cr, @Nullable AudioIOFormat hint) {
         crSet = cr;
         formatHint = hint;
     }
@@ -40,25 +40,25 @@ public abstract class AudioIOSource implements Closeable {
      * Retrieves the next frames into the given double array at the given position.
      * Length is channels doubles.
      */
-    public abstract void nextFrames(@NonNull double[] frame, int at, int frames) throws IOException;
+    public abstract void nextFrames(double[] frame, int at, int frames) throws IOException;
 
     /**
      * Retrieves the next frames into the given float array at the given position.
      * Length is channels floats.
      */
-    public abstract void nextFrames(@NonNull float[] frame, int at, int frames) throws IOException;
+    public abstract void nextFrames(float[] frame, int at, int frames) throws IOException;
 
     /**
      * Retrieves the next frames into the given int array at the given position, as signed 32-bit PCM.
      * Length is channels ints.
      */
-    public abstract void nextFrames(@NonNull int[] frame, int at, int frames) throws IOException;
+    public abstract void nextFrames(int[] frame, int at, int frames) throws IOException;
 
     /**
      * Retrieves the next frames into the given byte array in the given format at the given position.
      * Very inefficient (goes through F64 for everything AND usually allocs!).
      */
-    public void nextFramesInFormat(@NonNull AudioIOFormat fmt, @NonNull byte[] frame, int at, int frames) throws IOException {
+    public void nextFramesInFormat(AudioIOFormat fmt, byte[] frame, int at, int frames) throws IOException {
         double[] tmp = new double[frames * crSet.channels];
         nextFrames(tmp, 0, frames);
         for (int i = 0; i < tmp.length; i++) {
@@ -114,7 +114,7 @@ public abstract class AudioIOSource implements Closeable {
         private final byte[] tmpBuf;
         public final AudioIOFormat format;
 
-        public SourceBytes(@NonNull AudioIOCRSet crSet, @NonNull AudioIOFormat format) {
+        public SourceBytes(AudioIOCRSet crSet, AudioIOFormat format) {
             super(crSet, format);
             tmpBuf = new byte[crSet.channels * format.bytesPerSample];
             this.format = format;
@@ -125,10 +125,10 @@ public abstract class AudioIOSource implements Closeable {
          * Length is channels * format.bytesPerSample bytes.
          * Order is of course little-endian.
          */
-        public abstract void nextFrames(@NonNull byte[] frame, int at, int frames) throws IOException;
+        public abstract void nextFrames(byte[] frame, int at, int frames) throws IOException;
 
         @Override
-        public final void nextFrames(@NonNull double[] frame, int at, int frames) throws IOException {
+        public final void nextFrames(double[] frame, int at, int frames) throws IOException {
             for (int i = 0; i < frames; i++) {
                 nextFrames(tmpBuf, 0, 1);
                 for (int j = 0; j < crSet.channels; j++)
@@ -137,7 +137,7 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public final void nextFrames(@NonNull float[] frame, int at, int frames) throws IOException {
+        public final void nextFrames(float[] frame, int at, int frames) throws IOException {
             for (int i = 0; i < frames; i++) {
                 nextFrames(tmpBuf, 0, 1);
                 for (int j = 0; j < crSet.channels; j++)
@@ -146,7 +146,7 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public final void nextFrames(@NonNull int[] frame, int at, int frames) throws IOException {
+        public final void nextFrames(int[] frame, int at, int frames) throws IOException {
             for (int i = 0; i < frames; i++) {
                 nextFrames(tmpBuf, 0, 1);
                 for (int j = 0; j < crSet.channels; j++)
@@ -155,7 +155,7 @@ public abstract class AudioIOSource implements Closeable {
         }
 
         @Override
-        public void nextFramesInFormat(@NonNull AudioIOFormat fmt, @NonNull byte[] frame, int at, int frames) throws IOException {
+        public void nextFramesInFormat(AudioIOFormat fmt, byte[] frame, int at, int frames) throws IOException {
             if (fmt == format) {
                 nextFrames(frame, at, frames);
             } else {
@@ -171,7 +171,7 @@ public abstract class AudioIOSource implements Closeable {
     public abstract static class SourceS16 extends AudioIOSource {
         private final short[] tmpBuf;
 
-        public SourceS16(@NonNull AudioIOCRSet crSet) {
+        public SourceS16(AudioIOCRSet crSet) {
             super(crSet, AudioIOFormat.F_S16);
             tmpBuf = new short[crSet.channels];
         }
@@ -213,7 +213,7 @@ public abstract class AudioIOSource implements Closeable {
     public abstract static class SourceS32 extends AudioIOSource {
         private final int[] tmpBuf;
 
-        public SourceS32(@NonNull AudioIOCRSet crSet) {
+        public SourceS32(AudioIOCRSet crSet) {
             super(crSet, AudioIOFormat.F_S32);
             tmpBuf = new int[crSet.channels];
         }
@@ -244,7 +244,7 @@ public abstract class AudioIOSource implements Closeable {
     public abstract static class SourceF32 extends AudioIOSource {
         private final float[] tmpBuf;
 
-        public SourceF32(@NonNull AudioIOCRSet crSet) {
+        public SourceF32(AudioIOCRSet crSet) {
             super(crSet, AudioIOFormat.F_F32);
             tmpBuf = new float[crSet.channels];
         }
@@ -274,7 +274,7 @@ public abstract class AudioIOSource implements Closeable {
     public abstract static class SourceF64 extends AudioIOSource {
         private final double[] tmpBuf;
 
-        public SourceF64(@NonNull AudioIOCRSet crSet) {
+        public SourceF64(AudioIOCRSet crSet) {
             super(crSet, AudioIOFormat.F_F64);
             tmpBuf = new double[crSet.channels];
         }

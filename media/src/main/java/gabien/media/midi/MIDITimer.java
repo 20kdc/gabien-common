@@ -6,8 +6,6 @@
  */
 package gabien.media.midi;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 /**
  * Responsible for driving a MIDITracker in the land of seconds.
  * Created February 14th, 2024.
@@ -35,7 +33,7 @@ public class MIDITimer {
      */
     private int lastBaseTick;
 
-    public MIDITimer(@NonNull MIDITimableThing target) {
+    public MIDITimer(MIDITimableThing target) {
         this.target = target;
         lastBaseTTS = target.getTicksToSeconds();
     }

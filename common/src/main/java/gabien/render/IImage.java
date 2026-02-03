@@ -40,12 +40,12 @@ public abstract class IImage implements IImgRegion {
      * The texture.
      * This is only guaranteed to exist on the instance thread.
      */
-    protected BadGPU.Texture texture;
+    protected @Nullable BadGPU.Texture texture;
 
     /**
      * ID for debugging.
      */
-    public final @NonNull String debugId;
+    public final String debugId;
 
     public IImage(@Nullable String id, int w, int h) {
         width = w;
@@ -87,7 +87,7 @@ public abstract class IImage implements IImgRegion {
      * This may be slow, because processing may not have finished on the image yet.
      * Also because this allocates a new buffer.
      */
-    public final @NonNull int[] getPixels() {
+    public final int[] getPixels() {
         int[] res = new int[width * height];
         getPixels(res);
         return res;
@@ -97,7 +97,7 @@ public abstract class IImage implements IImgRegion {
      * Same as the other form, but with a provided buffer.
      * This may be slow, because processing may not have finished on the image yet.
      */
-    public final void getPixels(@NonNull int[] buffer) {
+    public final void getPixels(int[] buffer) {
         getSurface().batchFlush();
         Semaphore sm = new Semaphore(1);
         sm.acquireUninterruptibly();
@@ -108,7 +108,7 @@ public abstract class IImage implements IImgRegion {
     /**
      * 0xAARRGGBB. The buffer is safe to edit, but changes do not propagate back.
      */
-    public final void getPixelsAsync(@NonNull int[] buffer, @NonNull Runnable onDone) {
+    public final void getPixelsAsync(int[] buffer, Runnable onDone) {
         getPixelsAsync(0, 0, width, height, TextureLoadFormat.RGBA8888, buffer, 0, () -> {
             // If it gets here, it's in-bounds.
             BadGPUUnsafe.pixelsConvertRGBA8888ToARGBI32InPlaceI(width, height, buffer, 0);
@@ -117,20 +117,20 @@ public abstract class IImage implements IImgRegion {
         });
     }
 
-    public abstract void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull int[] data, int dataOfs, @NonNull Runnable onDone);
-    public abstract void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, @NonNull byte[] data, int dataOfs, @NonNull Runnable onDone);
+    public abstract void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, int[] data, int dataOfs, Runnable onDone);
+    public abstract void getPixelsAsync(int x, int y, int w, int h, BadGPU.TextureLoadFormat format, byte[] data, int dataOfs, Runnable onDone);
 
     /**
      * Downloads an IImage (presumably from the GPU) to the CPU as an IWSIImage.
      * This may be slow, similarly to performing getPixels.
      * This is a convenience method; for repetitive downloads it's better to reuse buffers.
      */
-    public final @NonNull WSIImage.RW download() {
+    public final WSIImage.RW download() {
         return GaBIEn.createWSIImage(getPixels(), width, height);
     }
 
     // Creates a PNG file.
-    public final @NonNull byte[] createPNG() {
+    public final byte[] createPNG() {
         return download().createPNG();
     }
 

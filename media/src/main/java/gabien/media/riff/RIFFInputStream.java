@@ -9,7 +9,7 @@ package gabien.media.riff;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.media.ChunkedInputStream;
 
@@ -17,20 +17,21 @@ import gabien.media.ChunkedInputStream;
  * Created on 6th June 2022 as part of project VE2Bun
  */
 public class RIFFInputStream extends ChunkedInputStream {
-    public @NonNull final String chunkId;
+    public final String chunkId;
     private String chunkIdTmp;
     private int chunkPaddedLen;
 
     /**
      * Reads chunk header and prepares for further reading.
      */
-    public RIFFInputStream(@NonNull InputStream in) throws IOException {
+    @SuppressWarnings("null")
+    public RIFFInputStream(InputStream in) throws IOException {
         super(in, null);
         chunkId = chunkIdTmp;
     }
 
     @Override
-    protected int readChunkHeader(Object indicator) throws IOException {
+    protected int readChunkHeader(@Nullable Object indicator) throws IOException {
         chunkIdTmp = readFourCC();
         int len = super.readInt();
         chunkPaddedLen = len;

@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.io.LEDataOutputStream;
@@ -21,7 +20,7 @@ import gabien.uslx.io.LEDataOutputStream;
  * Created on 6th June 2022 as part of project VE2Bun
  */
 public class RIFFOutputStream extends LEDataOutputStream {
-    private @NonNull final LEDataOutputStream targetDos;
+    private final LEDataOutputStream targetDos;
     private @Nullable final ByteArrayOutputStream buffer;
     private final int plannedLength;
 
@@ -32,7 +31,7 @@ public class RIFFOutputStream extends LEDataOutputStream {
      * @param id RIFF chunk ID.
      * @throws IOException
      */
-    public RIFFOutputStream(@NonNull OutputStream base, @NonNull String id) throws IOException {
+    public RIFFOutputStream(OutputStream base, String id) throws IOException {
         this(new LEDataOutputStream(base), id);
     }
 
@@ -43,7 +42,7 @@ public class RIFFOutputStream extends LEDataOutputStream {
      * @param id RIFF chunk ID.
      * @throws IOException
      */
-    public RIFFOutputStream(@NonNull LEDataOutputStream base, @NonNull String id) throws IOException {
+    public RIFFOutputStream(LEDataOutputStream base, String id) throws IOException {
         super(new ByteArrayOutputStream());
         targetDos = base;
         buffer = (ByteArrayOutputStream) out;
@@ -64,7 +63,7 @@ public class RIFFOutputStream extends LEDataOutputStream {
      * @param length Length of chunk.
      * @throws IOException
      */
-    public RIFFOutputStream(@NonNull OutputStream base, @NonNull String id, int length) throws IOException {
+    public RIFFOutputStream(OutputStream base, String id, int length) throws IOException {
         super(base);
         targetDos = this;
         buffer = null;

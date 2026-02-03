@@ -7,8 +7,6 @@
 
 package gabien.render;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 import gabien.uslx.append.Block;
 
 /**
@@ -41,7 +39,7 @@ public interface IDrawable {
      * Note that this is specifically referring to how this all works for IDrawable.
      * It doesn't so much apply to, say, ITexRegion, which is usually cut up more due to atlasing/spritesheets.
      */
-    default @NonNull IDrawable subRegion(float x, float y, float w, float h) {
+    default IDrawable subRegion(float x, float y, float w, float h) {
         return new DrawableRegion(this, x, y, w, h);
     }
 

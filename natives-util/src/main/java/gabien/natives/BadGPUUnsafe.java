@@ -7,6 +7,8 @@
 
 package gabien.natives;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Finally, what this project needed.
  * VERSION: 0.26.0
@@ -60,8 +62,8 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native void pixelsConvertARGBI32StraightToPremultipliedInPlaceB(int width, int height, byte[] data, int dataOfs);
     public static native void pixelsConvertARGBI32StraightToPremultipliedInPlaceI(int width, int height, int[] data, int dataOfs);
     // TM
-    public static native long newTextureB(long instance, int width, int height, int fmt, byte[] data, int dataOfs);
-    public static native long newTextureI(long instance, int width, int height, int fmt, int[] data, int dataOfs);
+    public static native long newTextureB(long instance, int width, int height, int fmt, @Nullable byte[] data, int dataOfs);
+    public static native long newTextureI(long instance, int width, int height, int fmt, @Nullable int[] data, int dataOfs);
     public static native long newDSBuffer(long instance, int width, int height);
     public static native boolean generateMipmap(long texture);
     public static native boolean readPixelsB(long texture, int x, int y, int width, int height, int fmt, byte[] data, int dataOfs);
@@ -74,13 +76,13 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean drawGeom(
         long sTexture, long sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, @Nullable float[] vCol, int vColOfs, int vTCD, @Nullable float[] vTC, int vTCOfs,
         int pType, float plSize,
-        int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs,
+        int iStart, int iCount, @Nullable short[] indices, int indicesOfs,
+        @Nullable float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
-        long texture, float[] matrixT, int matrixTOfs,
-        float[] clipPlane, int clipPlaneOfs, int atFunc, float atRef,
+        long texture, @Nullable float[] matrixT, int matrixTOfs,
+        @Nullable float[] clipPlane, int clipPlaneOfs, int atFunc, float atRef,
         int stFunc, int stRef, int stMask,
         int stSF, int stDF, int stDP,
         int dtFunc, float depthN, float depthF, float poFactor, float poUnits,
@@ -89,13 +91,13 @@ public abstract class BadGPUUnsafe extends BadGPUEnum {
     public static native boolean drawGeomNoDS(
         long sTexture, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, @Nullable float[] vCol, int vColOfs, int vTCD, @Nullable float[] vTC, int vTCOfs,
         int pType, float plSize,
-        int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs,
+        int iStart, int iCount, @Nullable short[] indices, int indicesOfs,
+        @Nullable float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
-        long texture, float[] matrixT, int matrixTOfs,
-        float[] clipPlane, int clipPlaneOfs, int atFunc, float atRef,
+        long texture, @Nullable float[] matrixT, int matrixTOfs,
+        @Nullable float[] clipPlane, int clipPlaneOfs, int atFunc, float atRef,
         int blendProgram
     );
 

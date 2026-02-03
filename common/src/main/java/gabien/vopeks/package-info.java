@@ -8,4 +8,5 @@
 /**
  * Batching BadGPU-powered 2D renderer.
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 package gabien.vopeks;

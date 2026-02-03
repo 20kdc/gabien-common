@@ -32,6 +32,7 @@ class VopeksBatchPool extends ObjectPool<VopeksBatch> {
         return new VopeksBatch(vopeks, parent, this);
     }
 
+    @SuppressWarnings("null")
     @Override
     public void reset(@NonNull VopeksBatch element) {
         element.cropL = 0;

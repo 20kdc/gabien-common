@@ -53,7 +53,7 @@ public class MIDIInstrumentCheckerProcessor {
             }
         }
         try {
-            sampleReference = ReadAnySupportedAudioSource.open(GaBIEn.getInFile(prefix + ".wav"), true).readAllAsF32();
+            sampleReference = ReadAnySupportedAudioSource.open(GaBIEn.getInFileOrThrow(prefix + ".wav"), true).readAllAsF32();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

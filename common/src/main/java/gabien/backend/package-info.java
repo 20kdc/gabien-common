@@ -9,4 +9,5 @@
  * This contains classes for use by GaBIEn backends.
  * These APIs are not for use by applications.
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 package gabien.backend;

@@ -133,6 +133,7 @@ public class NSPatch {
 
     public DatumVisitor createDatumReadVisitor() {
         return new DatumExpectListVisitor(() -> new DatumKVDVisitor() {
+            @SuppressWarnings("null")
             @Override
             public DatumVisitor handle(String key, DatumSrcLoc loc) {
                 if (key.equals("name"))

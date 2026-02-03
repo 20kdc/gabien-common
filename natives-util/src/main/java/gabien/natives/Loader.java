@@ -17,6 +17,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.uslx.licensing.LicenseComponent;
 import gabien.uslx.licensing.LicenseManager;
 
@@ -38,11 +40,11 @@ public abstract class Loader {
         LicenseManager.I.dependency(LicenseComponent.LC_GABIEN, LC_MINIMP3);
     }
 
-    public static InputStream assetLookupJavaSE(String str) {
+    public static @Nullable InputStream assetLookupJavaSE(String str) {
         return ClassLoader.getSystemClassLoader().getResourceAsStream("assets/" + str);
     }
 
-    public static File destinationSetupJavaSE(String fnf) {
+    public static @Nullable File destinationSetupJavaSE(String fnf) {
         File tmp;
         try {
             tmp = File.createTempFile(fnf, null);

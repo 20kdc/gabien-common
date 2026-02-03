@@ -33,7 +33,7 @@ public interface ITexRegion extends IDrawable {
     /**
      * Creates an IImage copy. Useful for tiling.
      */
-    default @NonNull IImage copy(float x, float y, int w, int h) {
+    default IImage copy(float x, float y, int w, int h) {
         // We don't want any unnecessary OSBs because they carry a lot of baggage.
         // So we make one temporarily just for the blitting code, then steal it.
         IGrDriver osb = GaBIEn.makeOffscreenBuffer(w, h, "ITexRegion.copy (OSB)");
@@ -44,7 +44,7 @@ public interface ITexRegion extends IDrawable {
     /**
      * Creates an IImage copy. Useful for tiling.
      */
-    default @NonNull IImage copy() {
+    default IImage copy() {
         return copy(0, 0, (int) getRegionWidth(), (int) getRegionHeight());
     }
 

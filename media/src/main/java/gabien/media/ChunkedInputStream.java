@@ -9,7 +9,6 @@ package gabien.media;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.io.LEDataInputStream;
@@ -27,7 +26,7 @@ public abstract class ChunkedInputStream extends LEDataInputStream {
     /**
      * A subclass of this class is expected to.
      */
-    public ChunkedInputStream(@NonNull InputStream in, @Nullable Object indicator) throws IOException {
+    public ChunkedInputStream(InputStream in, @Nullable Object indicator) throws IOException {
         super(in);
         chunkLen = readChunkHeader(indicator);
         holdoffLimiters = false;
@@ -38,7 +37,7 @@ public abstract class ChunkedInputStream extends LEDataInputStream {
      * @param indicator Indication value in the event that grabbing the chunk length is a non-obvious procedure.
      * @return Chunk length.
      */
-    protected abstract int readChunkHeader(Object indicator) throws IOException;
+    protected abstract int readChunkHeader(@Nullable Object indicator) throws IOException;
 
     /**
      * Gets remaining bytes in the chunk.
@@ -68,6 +67,8 @@ public abstract class ChunkedInputStream extends LEDataInputStream {
         return res;
     }
 
+    // This warning is bogus because the parent method 'should' be NonNull.
+    @SuppressWarnings("null")
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (holdoffLimiters)

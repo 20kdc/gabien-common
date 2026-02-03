@@ -6,7 +6,7 @@
  */
 
 /**
- * Texture atlas builder and other such things.
+ * 'Extensions to the standard library' - everybody has at least one
  */
 @org.eclipse.jdt.annotation.NonNullByDefault
-package gabien.atlas;
+package gabien.uslx;

@@ -10,8 +10,6 @@ package gabien.media.audio.fileio;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 import gabien.media.audio.AudioIOCRSet;
 import gabien.media.audio.AudioIOSource;
 import gabien.media.midi.MIDISequence;
@@ -29,7 +27,7 @@ public class MIDISynthesizerSource extends AudioIOSource.SourceF32 {
     private final int frameCount, chunkSize;
     private int totalFramesConsumed;
 
-    public MIDISynthesizerSource(@NonNull MIDISequence sequence, @NonNull MIDISynthesizer synth, double cooloff) {
+    public MIDISynthesizerSource(MIDISequence sequence, MIDISynthesizer synth, double cooloff) {
         super(new AudioIOCRSet(2, synth.sampleRate));
         double totalTime = sequence.calcTimingInformation().lengthSeconds + cooloff;
         synthesizer = synth;
@@ -47,7 +45,7 @@ public class MIDISynthesizerSource extends AudioIOSource.SourceF32 {
     }
 
     @Override
-    public void nextFrames(@NonNull float[] frame, int at, int frames) throws IOException {
+    public void nextFrames(float[] frame, int at, int frames) throws IOException {
         while (frames > 0) {
             if (frames > chunkSize) {
                 nextFramesChunk(frame, at, chunkSize);

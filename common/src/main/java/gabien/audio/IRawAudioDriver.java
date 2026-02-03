@@ -7,8 +7,6 @@
 
 package gabien.audio;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 /**
  * Interface to an audio output.
  * Created on 09/12/15.
@@ -24,11 +22,11 @@ public interface IRawAudioDriver {
          * Offset is an absolute, while frames is the number of frames (each frame being a left and right sample).
          * Can be called from another thread.
          */
-        void pullData(@NonNull short[] interleaved, int ofs, int frames);
+        void pullData(short[] interleaved, int ofs, int frames);
     }
 
     /**
      * Set a new audio source, replacing the previous.
      */
-    @NonNull IRawAudioSource setRawAudioSource(@NonNull IRawAudioSource src);
+    IRawAudioSource setRawAudioSource(IRawAudioSource src);
 }

@@ -42,7 +42,7 @@ public class UIMIDIPlayer extends UIProxy {
         GaBIEn.startFileBrowser("Input MIDI", false, "", (str) -> {
             if (str != null) {
                 try {
-                    InputStream inp = GaBIEn.getInFile(str);
+                    InputStream inp = GaBIEn.getInFileOrThrow(str);
                     MIDISequence mf = MIDISequence.from(inp)[0];
                     GaBIEn.getRawAudio().setRawAudioSource(audioSource = new TheThingThatDoesTheStuff(mf));
                 } catch (IOException e) {

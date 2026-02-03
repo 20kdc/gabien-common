@@ -45,7 +45,7 @@ public final class BinaryTreeAtlasStrategy implements IAtlasStrategy {
         Occupancy mode = Occupancy.NONE;
         @Nullable TreeNode a, b, p;
         int weight;
-        TreeNode(Rect l, TreeNode p) {
+        TreeNode(Rect l, @Nullable TreeNode p) {
             this.p = p;
             location = l;
             modWeight(1);

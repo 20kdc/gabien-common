@@ -56,14 +56,17 @@ public interface IEditableCurveWaveform extends ICurveWaveform {
         return new DatumExpectListVisitor(() -> {
             return new DatumInvalidVisitor() {
                 LinkedList<Float> flts = new LinkedList<>();
+                @SuppressWarnings("null")
                 @Override
                 public void visitFloat(double value, DatumSrcLoc loc) {
                     flts.add((float) value);
                 }
+                @SuppressWarnings("null")
                 @Override
                 public void visitInt(long value, DatumSrcLoc loc) {
                     flts.add((float) value);
                 }
+                @SuppressWarnings("null")
                 @Override
                 public void visitEnd(DatumSrcLoc loc) {
                     float[] res = new float[flts.size()];

@@ -20,6 +20,7 @@ import gabien.wsi.ITextEditingSession;
  * Created on 05/03/2020.
  */
 public class ProxyPeripherals<T extends IPeripherals> implements IPeripherals {
+    @SuppressWarnings("null")
     public T target;
 
     @Override

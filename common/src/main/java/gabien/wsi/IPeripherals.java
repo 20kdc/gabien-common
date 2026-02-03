@@ -10,7 +10,6 @@ package gabien.wsi;
 import java.util.HashSet;
 import java.util.function.Function;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -37,5 +36,5 @@ public interface IPeripherals {
      * Starts a new text editing session (any previous session will automatically be ended).
      * feedback provides live editing feedback.
      */
-    ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback);
+    ITextEditingSession openTextEditingSession(String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback);
 }

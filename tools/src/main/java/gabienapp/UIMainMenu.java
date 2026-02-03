@@ -78,7 +78,7 @@ public class UIMainMenu extends UIProxy {
             GaBIEn.startFileBrowser("Open PVA File", false, "", (str) -> {
                 if (str != null) {
                     try {
-                        PVAFile pf = new PVAFile(GaBIEn.getInFile(str), false);
+                        PVAFile pf = new PVAFile(GaBIEn.getInFileOrThrow(str), false);
                         ui.accept(new UIPVAViewer(pf));
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -104,9 +104,9 @@ public class UIMainMenu extends UIProxy {
             GaBIEn.startFileBrowser("Convert from MIDI", false, "", (str) -> {
                 if (str != null) {
                     try {
-                        InputStream inp = GaBIEn.getInFile(str);
+                        InputStream inp = GaBIEn.getInFileOrThrow(str);
                         MIDISequence mf = MIDISequence.from(inp)[0];
-                        OutputStream os = GaBIEn.getOutFile("tmp.txt");
+                        OutputStream os = GaBIEn.getOutFileOrThrow("tmp.txt");
                         assert os != null;
                         AtomicInteger time = new AtomicInteger(0);
                         MIDITracker mt = new MIDITracker(mf, (status, data, offset, length) -> {

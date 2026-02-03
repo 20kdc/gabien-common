@@ -9,7 +9,6 @@ package gabien.backend;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
@@ -23,7 +22,7 @@ import gabien.uslx.append.TimeLogger;
 public abstract class WSIDownloadPair<T> {
     private final @Nullable TimeLogger.Source timeLoggerAcquire;
     private final @Nullable TimeLogger.Source[] timeLoggerHeld;
-    private final @NonNull Object[] canon;
+    private final Object[] canon;
     private final ArrayBlockingQueue<T> queue;
 
     public WSIDownloadPair(String n, int capacity) {

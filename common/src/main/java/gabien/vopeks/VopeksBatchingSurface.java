@@ -12,6 +12,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPU.Texture;
 import gabien.natives.BadGPUUnsafe;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
@@ -34,7 +35,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
     private volatile boolean wasDisposed;
 
     private final VopeksBatchPool batchPool;
-    private VopeksBatch currentBatch = null;
+    private @Nullable VopeksBatch currentBatch = null;
     private final int maxVerticesInBatch;
     private final float[] stagingV;
     private final float[] stagingC;
@@ -50,7 +51,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksBatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init, int maxVerticesInBatch) {
+    public VopeksBatchingSurface(Vopeks vopeks, @Nullable String id, int w, int h, @Nullable int[] init, int maxVerticesInBatch) {
         super(id, w, h);
         this.vopeks = vopeks;
         batchPool = new VopeksBatchPool(vopeks, this, 1);
@@ -85,9 +86,11 @@ public final class VopeksBatchingSurface extends IGrDriver {
         int cropH = scD - scU;
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
-            BadGPUUnsafe.drawClear(texture.pointer, 0,
-                    BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor, scL, scU, cropW, cropH,
-                    r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f, 0, 0);
+            Texture tx = texture;
+            if (tx != null)
+                BadGPUUnsafe.drawClear(tx.pointer, 0,
+                        BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor, scL, scU, cropW, cropH,
+                        r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f, 0, 0);
         });
     }
 
@@ -96,7 +99,9 @@ public final class VopeksBatchingSurface extends IGrDriver {
         batchFlush();
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
-            BadGPUUnsafe.generateMipmap(texture.pointer);
+            Texture tx = texture;
+            if (tx != null)
+                BadGPUUnsafe.generateMipmap(tx.pointer);
         });
     }
 
@@ -207,7 +212,7 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * cropEssential being false implies that the scissor bounds can't be more cropped than this, but can be less.
      * This function returns the batching-optimal ITexRegion picked if any.
      */
-    private @Nullable IImgRegion batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int blendMode, int drawFlagsEx, ITexRegion iU) {
+    private @Nullable IImgRegion batchStartGroup(int vertices, boolean hasColours, boolean cropEssential, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU) {
         // Presumably, other user calls to other surfaces may have been made between groups.
         // We can assume that as long as we remain internally consistent:
         // Other threads aren't a concern in terms of the reference timeline.
@@ -219,47 +224,52 @@ public final class VopeksBatchingSurface extends IGrDriver {
         // If we delayed until the flush, then surface-A-flush would be the point where surface-B-group-A is notified,
         //  and by that point it's too late to split the two groups.
         batchReferenceBarrier();
-        if (currentBatch != null)
-            if ((currentBatch.vertexCount + vertices) > maxVerticesInBatch)
+        VopeksBatch batch = currentBatch;
+        if (batch != null)
+            if ((batch.vertexCount + vertices) > maxVerticesInBatch) {
                 batchFlush();
+                batch = null;
+            }
         // ok, so now that the current batch is dealt with, do the pick here
         IImgRegion tex = null;
         IImage srf = null;
         if (iU != null)
-            tex = iU.pickImgRegion(currentBatch != null ? currentBatch.tex : null);
+            tex = iU.pickImgRegion(batch != null ? batch.tex : null);
         if (tex != null)
             srf = tex.getSurface();
         // calculate this here so that it can be pushed forward if necessary
         // in particular matchesState may be happier if this is pushed all the way...
-        if (currentBatch == null || !currentBatch.matchesState(cropEssential, upcomingCropL, upcomingCropU, upcomingCropR, upcomingCropD, blendMode, drawFlagsEx, srf)) {
+        batch = currentBatch;
+        if (batch == null || !batch.matchesState(cropEssential, upcomingCropL, upcomingCropU, upcomingCropR, upcomingCropD, blendMode, drawFlagsEx, srf)) {
             batchFlush();
+            batch = null;
             // Setup the reference.
             // Note that we only have to worry about this at the start of a batch.
             // If something happens, it'll reference-barrier, which will flush us, so we'll re-reference next group.
             if (srf != null)
                 srf.batchReference(this);
-            currentBatch = batchPool.get();
-            currentBatch.hasColours = hasColours;
-            currentBatch.cropEssential = cropEssential;
+            batch = currentBatch = batchPool.get();
+            batch.hasColours = hasColours;
+            batch.cropEssential = cropEssential;
             if (cropEssential) {
-                currentBatch.cropL = upcomingCropL;
-                currentBatch.cropU = upcomingCropU;
-                currentBatch.cropR = upcomingCropR;
-                currentBatch.cropD = upcomingCropD;
+                batch.cropL = upcomingCropL;
+                batch.cropU = upcomingCropU;
+                batch.cropR = upcomingCropR;
+                batch.cropD = upcomingCropD;
             } else {
-                currentBatch.cropL = 0;
-                currentBatch.cropU = 0;
-                currentBatch.cropR = width;
-                currentBatch.cropD = height;
+                batch.cropL = 0;
+                batch.cropU = 0;
+                batch.cropR = width;
+                batch.cropD = height;
             }
-            currentBatch.blendMode = blendMode;
-            currentBatch.drawFlagsEx = drawFlagsEx;
-            currentBatch.tex = srf;
+            batch.blendMode = blendMode;
+            batch.drawFlagsEx = drawFlagsEx;
+            batch.tex = srf;
         }
-        if (hasColours && !currentBatch.hasColours) {
+        if (hasColours && !batch.hasColours) {
             // upgrade batch to having colours
-            Arrays.fill(stagingC, 0, currentBatch.vertexCount * 4, 1.0f);
-            currentBatch.hasColours = true;
+            Arrays.fill(stagingC, 0, batch.vertexCount * 4, 1.0f);
+            batch.hasColours = true;
         }
         return tex;
     }
@@ -267,38 +277,41 @@ public final class VopeksBatchingSurface extends IGrDriver {
     @Override
     public synchronized void batchFlush() {
         // Now actually do the batching thing
-        if (currentBatch != null) {
-            // Sizes
-            int groupVLen = currentBatch.vertexCount * 2;
-            int groupCLen = currentBatch.vertexCount * 4;
-            int groupTLen = currentBatch.tex != null ? (currentBatch.vertexCount * 2) : 0;
-            int groupTotalLen = groupVLen + groupCLen + groupTLen;
-
-            // Layout
-            float[] megabuffer = vopeks.floatPool.get(groupTotalLen);
-
-            int groupVOfs = 0;
-            int groupCOfs = groupVOfs + groupVLen;
-            int groupTOfs = groupCOfs + groupCLen;
-
-            currentBatch.megabuffer = megabuffer;
-            currentBatch.verticesOfs = groupVOfs;
-            currentBatch.coloursOfs = groupCOfs;
-            currentBatch.texCoordsOfs = groupTOfs;
-
-            // Copy
-            System.arraycopy(stagingV, 0, megabuffer, groupVOfs, groupVLen);
-            System.arraycopy(stagingC, 0, megabuffer, groupCOfs, groupCLen);
-            if (currentBatch.tex != null) {
-                System.arraycopy(stagingT, 0, megabuffer, groupTOfs, groupTLen);
-                // And that's the deadline hit...
-                currentBatch.tex.batchUnreference(this);
-            }
-
-            // Put
-            vopeks.putTask(currentBatch);
-        }
+        VopeksBatch batch = currentBatch;
         currentBatch = null;
+        if (batch == null)
+            return;
+        IImage batchTex = batch.tex;
+        // Sizes
+        int groupVLen = batch.vertexCount * 2;
+        int groupCLen = batch.vertexCount * 4;
+        int groupTLen = batchTex != null ? (batch.vertexCount * 2) : 0;
+        int groupTotalLen = groupVLen + groupCLen + groupTLen;
+
+        // Layout
+        float[] megabuffer = vopeks.floatPool.get(groupTotalLen);
+
+        int groupVOfs = 0;
+        int groupCOfs = groupVOfs + groupVLen;
+        int groupTOfs = groupCOfs + groupCLen;
+
+        batch.megabuffer = megabuffer;
+        batch.verticesOfs = groupVOfs;
+        batch.coloursOfs = groupCOfs;
+        batch.texCoordsOfs = groupTOfs;
+
+        // Copy
+        System.arraycopy(stagingV, 0, megabuffer, groupVOfs, groupVLen);
+        System.arraycopy(stagingC, 0, megabuffer, groupCOfs, groupCLen);
+        if (batchTex != null)
+            System.arraycopy(stagingT, 0, megabuffer, groupTOfs, groupTLen);
+
+        // Put
+        vopeks.putTask(batch);
+
+        // And that's the deadline hit...
+        if (batchTex != null)
+            batchTex.batchUnreference(this);
     }
 
     /**
@@ -306,8 +319,10 @@ public final class VopeksBatchingSurface extends IGrDriver {
      * For ease of use, X/Y coordinates are converted to the -1 to 1 representation here.
      */
     private void batchWriteXYSTRGBA(float x, float y, float s, float t, float r, float g, float b, float a, @Nullable IImgRegion tf) {
-        int vertexBase2 = currentBatch.vertexCount * 2;
-        int vertexBase4 = currentBatch.vertexCount * 4;
+        @SuppressWarnings("null")
+        @NonNull VopeksBatch batch = currentBatch;
+        int vertexBase2 = batch.vertexCount * 2;
+        int vertexBase4 = batch.vertexCount * 4;
         stagingV[vertexBase2] = (x - halfWF) / halfWF;
         stagingV[vertexBase2 + 1] = (y - halfHF) / halfHF;
         if (tf != null) {
@@ -316,12 +331,12 @@ public final class VopeksBatchingSurface extends IGrDriver {
             stagingT[vertexBase2] = nS;
             stagingT[vertexBase2 + 1] = nT;
         }
-        if (currentBatch.hasColours) {
+        if (batch.hasColours) {
             stagingC[vertexBase4] = r;
             stagingC[vertexBase4 + 1] = g;
             stagingC[vertexBase4 + 2] = b;
             stagingC[vertexBase4 + 3] = a;
         }
-        currentBatch.vertexCount++;
+        batch.vertexCount++;
     }
 }

@@ -18,27 +18,27 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
     /**
      * Immediately render the line to a surface.
      */
-    void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull String text, int r, int g, int b, int a);
+    void drawLine(IGrDriver igd, int x, int y, String text, int r, int g, int b, int a);
 
     /**
      * Immediately render the line to a surface.
      */
-    void drawLine(@NonNull IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, int r, int g, int b, int a);
+    void drawLine(IGrDriver igd, int x, int y, char[] text, int index, int length, int r, int g, int b, int a);
 
     /**
      * Immediately render the background to a surface.
      */
-    void drawBackground(IGrDriver igd, int x, int y, @NonNull String text, int r, int g, int b, int a);
+    void drawBackground(IGrDriver igd, int x, int y, String text, int r, int g, int b, int a);
 
     /**
      * Immediately render the background to a surface.
      */
-    void drawBackground(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, int r, int g, int b, int a);
+    void drawBackground(IGrDriver igd, int x, int y, char[] text, int index, int length, int r, int g, int b, int a);
 
     /**
      * Immediately render the line and background to a surface.
      */
-    default void drawLAB(IGrDriver igd, int x, int y, @NonNull String text, boolean textBlack) {
+    default void drawLAB(IGrDriver igd, int x, int y, String text, boolean textBlack) {
         int l = textBlack ? 255 : 0;
         int c = textBlack ? 0 : 255;
         drawBackground(igd, x, y, text, l, l, l, 255);
@@ -48,7 +48,7 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
     /**
      * Immediately render the line and background to a surface.
      */
-    default void drawLAB(IGrDriver igd, int x, int y, @NonNull char[] text, int index, int length, boolean textBlack) {
+    default void drawLAB(IGrDriver igd, int x, int y, char[] text, int index, int length, boolean textBlack) {
         int l = textBlack ? 255 : 0;
         int c = textBlack ? 0 : 255;
         drawBackground(igd, x, y, text, index, length, l, l, l, 255);

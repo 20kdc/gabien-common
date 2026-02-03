@@ -6,8 +6,6 @@
  */
 package gabien.text;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 /**
  * Fixed-size font interface.
  * This can be, and is intentionally allowed to be, implemented both by userspace and by the gabien backend.
@@ -29,21 +27,21 @@ public interface IFixedSizeFont {
      * Measures the horizontal width of the given text.
      * The text shouldn't contain newlines.
      */
-    int measureLine(@NonNull String text, boolean withLastAdvance);
+    int measureLine(String text, boolean withLastAdvance);
 
     /**
      * Measures the horizontal width of the given text.
      * The text shouldn't contain newlines.
      */
-    int measureLine(@NonNull char[] text, int index, int length, boolean withLastAdvance);
+    int measureLine(char[] text, int index, int length, boolean withLastAdvance);
 
     /**
      * The fancy new way to render text that's more GPU-aware.
      */
-    RenderedTextChunk renderLine(@NonNull String text, int r, int g, int b, int a);
+    RenderedTextChunk renderLine(String text, int r, int g, int b, int a);
 
     /**
      * The fancy new way to render text that's more GPU-aware.
      */
-    RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a);
+    RenderedTextChunk renderLine(char[] text, int index, int length, int r, int g, int b, int a);
 }

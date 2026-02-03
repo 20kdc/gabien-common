@@ -108,6 +108,7 @@ public class TextTools {
         /**
          * This constructor doesn't initialize the PlainCached, so you don't have to set properties immediately.
          */
+        @SuppressWarnings("null")
         public PlainCached() {
         }
 

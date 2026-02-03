@@ -6,7 +6,7 @@
  */
 package gabien.backend;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
 import gabien.text.IFixedSizeFont;
@@ -17,19 +17,19 @@ import gabien.text.ITypeface;
  * Created 16th February 2023.
  */
 public final class NativeFontCache {
-    private ITypeface defaultTypeface;
+    private @Nullable ITypeface defaultTypeface;
 
-    private String lastTypefaceName = null;
-    private ITypeface lastTypeface = null;
+    private @Nullable String lastTypefaceName = null;
+    private @Nullable ITypeface lastTypeface = null;
 
-    private String lastFontName = null;
+    private @Nullable String lastFontName = null;
     private int lastFontSize = -1;
     private int lastFontStyle = -1;
-    private IFixedSizeFont lastFont = null;
+    private @Nullable IFixedSizeFont lastFont = null;
 
     private int lastDefaultFontSize = -1;
     private int lastDefaultFontStyle = -1;
-    private IFixedSizeFont lastDefaultFont = null;
+    private @Nullable IFixedSizeFont lastDefaultFont = null;
 
     private final IGaBIEn backend;
 
@@ -38,10 +38,10 @@ public final class NativeFontCache {
         GaBIEn.verify(backend);
     }
 
-    private ITypeface getTypeface(@NonNull String name) {
+    private @Nullable ITypeface getTypeface(String name) {
         synchronized (this) {
             if (lastTypeface != null)
-                if (lastTypefaceName.equals(name))
+                if (lastTypefaceName != null && lastTypefaceName.equals(name))
                     return lastTypeface;
         }
         ITypeface tf = backend.getNativeTypeface(name);
@@ -66,9 +66,9 @@ public final class NativeFontCache {
         }
         ITypeface gdt;
         synchronized (this) {
-            if (defaultTypeface == null)
-                defaultTypeface = backend.getDefaultTypeface();
             gdt = defaultTypeface;
+            if (gdt == null)
+                defaultTypeface = gdt = backend.getDefaultTypeface();
         }
         IFixedSizeFont res = gdt.derive(size, style);
         synchronized (this) {
@@ -82,12 +82,12 @@ public final class NativeFontCache {
     /**
      * Proxy to IGaBIEn.getNativeFont
      */
-    public IFixedSizeFont getNativeFont(int size, int style, String name) {
+    public @Nullable IFixedSizeFont getNativeFont(int size, int style, String name) {
         synchronized (this) {
             if (lastFont != null)
                 if (lastFontSize == size)
                     if (lastFontStyle == style)
-                        if (lastFontName.equals(name))
+                        if (lastFontName != null && lastFontName.equals(name))
                             return lastFont;
         }
         ITypeface tf = getTypeface(name);

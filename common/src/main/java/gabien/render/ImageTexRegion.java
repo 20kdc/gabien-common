@@ -15,7 +15,7 @@ import org.eclipse.jdt.annotation.NonNull;
  * Created 14th June, 2023.
  */
 public final class ImageTexRegion implements IImgRegion {
-    public final @NonNull IImage base;
+    public final IImage base;
     public final float x, y, w, h, sW, sH;
 
     /**

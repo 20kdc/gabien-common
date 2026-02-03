@@ -7,7 +7,6 @@
 
 package gabien.natives;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.append.ThreadOwned;
@@ -21,7 +20,7 @@ public abstract class BadGPU extends BadGPUEnum {
     private BadGPU() {
     }
 
-    public static @NonNull Instance newInstance(int newInstanceFlags) {
+    public static Instance newInstance(int newInstanceFlags) {
         long instance = BadGPUUnsafe.newInstance(newInstanceFlags, InstanceCreationException.class);
         if (instance == 0)
             throw new InstanceCreationException("Unknown error");
@@ -141,13 +140,13 @@ public abstract class BadGPU extends BadGPUEnum {
             return res == 0 ? null : new Texture(this, res);
         }
 
-        public @Nullable Texture newTexture(int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
+        public @Nullable Texture newTexture(int width, int height, TextureLoadFormat fmt, @Nullable byte[] data, int dataOfs) {
             newTextureChecks(width, height, fmt, dataOfs, (data != null) ? data.length : -1);
             long res;
             res = BadGPUUnsafe.newTextureB(pointer, width, height, fmt.value, data, dataOfs);
             return res == 0 ? null : new Texture(this, res);
         }
-        public @Nullable Texture newTexture(int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
+        public @Nullable Texture newTexture(int width, int height, TextureLoadFormat fmt, @Nullable int[] data, int dataOfs) {
             newTextureChecks(width, height, fmt, dataOfs, (data != null) ? (data.length * 4) : -1);
             long res;
             res = BadGPUUnsafe.newTextureI(pointer, width, height, fmt.value, data, dataOfs);
@@ -198,6 +197,7 @@ public abstract class BadGPU extends BadGPUEnum {
                 throw new InvalidatedPointerException(this);
         }
         // Regular readPixels is normal.
+        @SuppressWarnings("unused")
         public boolean readPixels(int x, int y, int width, int height, TextureLoadFormat fmt, byte[] data, int dataOfs) {
             if (width == 0 || height == 0)
                 return true;
@@ -206,6 +206,7 @@ public abstract class BadGPU extends BadGPUEnum {
             readPixelsChecks(x, y, width, height, fmt, dataOfs, data.length);
             return BadGPUUnsafe.readPixelsB(pointer, x, y, width, height, fmt.value, data, dataOfs);
         }
+        @SuppressWarnings("unused")
         public boolean readPixels(int x, int y, int width, int height, TextureLoadFormat fmt, int[] data, int dataOfs) {
             if (width == 0 || height == 0)
                 return true;
@@ -252,7 +253,7 @@ public abstract class BadGPU extends BadGPUEnum {
                 sTexture != null ? sTexture.pointer : 0, sDSBuffer != null ? sDSBuffer.pointer : 0, sFlags, sScX, sScY, sScWidth, sScHeight,
                 cR, cG, cB, cA, depth, stencil);
     }
-    private static int getVertexCount(int iStart, int iCount, short[] indices, int indicesOfs) {
+    private static int getVertexCount(int iStart, int iCount, @Nullable short[] indices, int indicesOfs) {
         if (iStart < 0)
             throw new IllegalArgumentException("Not supposed to have iStart be < 0");
         if ((iCount < 0) || (iCount > 65536))
@@ -273,9 +274,9 @@ public abstract class BadGPU extends BadGPUEnum {
         }
         return vCount;
     }
-    private static void checkVL(int flags, int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
-            int iStart, int iCount, short[] indices, int indicesOfs,
-            float[] matrixA, int matrixAOfs, float[] clipPlane, int clipPlaneOfs, float[] matrixT, int matrixTOfs) {
+    private static void checkVL(int flags, int vPosD, float[] vPos, int vPosOfs, @Nullable float[] vCol, int vColOfs, int vTCD, @Nullable float[] vTC, int vTCOfs,
+            int iStart, int iCount, @Nullable short[] indices, int indicesOfs,
+            @Nullable float[] matrixA, int matrixAOfs, @Nullable float[] clipPlane, int clipPlaneOfs, @Nullable float[] matrixT, int matrixTOfs) {
         if (vPosD < 2 || vPosD > 4)
             throw new IllegalArgumentException("vPosD out of range");
         if (vTCD < 2 || vTCD > 4)
@@ -313,13 +314,13 @@ public abstract class BadGPU extends BadGPUEnum {
     public static boolean drawGeom(
         @Nullable Texture sTexture, @Nullable DSBuffer sDSBuffer, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, @Nullable float[] vCol, int vColOfs, int vTCD, @Nullable float[] vTC, int vTCOfs,
         PrimitiveType pType, float plSize,
-        int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs,
+        int iStart, int iCount, @Nullable short[] indices, int indicesOfs,
+        @Nullable float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
-        @Nullable Texture texture, float[] matrixT, int matrixTOfs,
-        float[] clipPlane, int clipPlaneOfs, Compare atFunc, float atRef,
+        @Nullable Texture texture, @Nullable float[] matrixT, int matrixTOfs,
+        @Nullable float[] clipPlane, int clipPlaneOfs, Compare atFunc, float atRef,
         Compare stFunc, int stRef, int stMask,
         StencilOp stSF, StencilOp stDF, StencilOp stDP,
         Compare dtFunc, float depthN, float depthF, float poFactor, float poUnits,
@@ -362,13 +363,13 @@ public abstract class BadGPU extends BadGPUEnum {
     public static boolean drawGeomNoDS(
         @Nullable Texture sTexture, int sFlags, int sScX, int sScY, int sScWidth, int sScHeight,
         int flags,
-        int vPosD, float[] vPos, int vPosOfs, float[] vCol, int vColOfs, int vTCD, float[] vTC, int vTCOfs,
+        int vPosD, float[] vPos, int vPosOfs, @Nullable float[] vCol, int vColOfs, int vTCD, @Nullable float[] vTC, int vTCOfs,
         PrimitiveType pType, float plSize,
-        int iStart, int iCount, short[] indices, int indicesOfs,
-        float[] matrixA, int matrixAOfs,
+        int iStart, int iCount, @Nullable short[] indices, int indicesOfs,
+        @Nullable float[] matrixA, int matrixAOfs,
         int vX, int vY, int vW, int vH,
-        @Nullable Texture texture, float[] matrixT, int matrixTOfs,
-        float[] clipPlane, int clipPlaneOfs, Compare atFunc, float atRef,
+        @Nullable Texture texture, @Nullable float[] matrixT, int matrixTOfs,
+        @Nullable float[] clipPlane, int clipPlaneOfs, Compare atFunc, float atRef,
         int blendProgram
     ) {
         if (sTexture == null)

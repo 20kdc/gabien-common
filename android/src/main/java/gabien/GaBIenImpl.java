@@ -162,7 +162,7 @@ public final class GaBIenImpl implements IGaBIEn {
         return true;
     }
 
-    public InputStream getResource(String resource) {
+    public @Nullable InputStream getResource(String resource) {
         AssetManager am = AndroidPortGlobals.applicationContext.getAssets();
         try {
             return am.open(resource);

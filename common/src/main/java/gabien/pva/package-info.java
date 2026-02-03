@@ -6,7 +6,7 @@
  */
 
 /**
- * Texture atlas builder and other such things.
+ * Vector animation format.
  */
 @org.eclipse.jdt.annotation.NonNullByDefault
-package gabien.atlas;
+package gabien.pva;

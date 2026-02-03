@@ -13,8 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import org.eclipse.jdt.annotation.NonNull;
-
 /**
  * Abstraction for RIFF metadata.
  * Created on 7th June 2022 as part of project VE2Bun
@@ -33,7 +31,7 @@ public class RIFFInfoChunk {
         keys.put(id, value.getBytes(StandardCharsets.UTF_8));
     }
     
-    public void readInterior(@NonNull InputStream is) throws IOException {
+    public void readInterior(InputStream is) throws IOException {
         while (is.available() > 0) {
             RIFFInputStream ris = new RIFFInputStream(is);
             keys.put(ris.chunkId, ris.readToEnd());
@@ -41,7 +39,7 @@ public class RIFFInfoChunk {
         }
     }
 
-    public void write(@NonNull OutputStream os) throws IOException {
+    public void write(OutputStream os) throws IOException {
         RIFFOutputStream ros = new RIFFOutputStream(os, "LIST");
         ros.writeBytes("INFO");
         for (Entry<String, byte[]> entry : keys.entrySet())

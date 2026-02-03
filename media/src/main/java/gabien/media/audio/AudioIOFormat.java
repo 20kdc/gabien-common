@@ -87,22 +87,22 @@ public abstract class AudioIOFormat {
     /**
      * Retrieves the data from the byte array as a signed 32-bit PCM value.
      */
-    public abstract int asS32(@NonNull byte[] from, int at);
+    public abstract int asS32(byte[] from, int at);
 
     /**
      * Retrieves the data from the byte array as a 64-bit floating-point value.
      */
-    public abstract double asF64(@NonNull byte[] from, int at);
+    public abstract double asF64(byte[] from, int at);
 
     /**
      * Writes a signed 32-bit PCM value to the byte array in this format.
      */
-    public abstract void ofS32(@NonNull byte[] to, int at, int val);
+    public abstract void ofS32(byte[] to, int at, int val);
 
     /**
      * Writes a 64-bit floating point value to the byte array in this format.
      */
-    public abstract void ofF64(@NonNull byte[] to, int at, double val);
+    public abstract void ofF64(byte[] to, int at, double val);
 
     public static class NoConv extends AudioIOFormat {
         public NoConv(int fmt, int req, int bitsPS, int bytesPS) {

@@ -9,4 +9,5 @@
  * High-level rendering APIs.
  * @see gabien.vopeks
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 package gabien.render;

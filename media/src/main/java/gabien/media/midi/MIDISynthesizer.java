@@ -6,7 +6,7 @@
  */
 package gabien.media.midi;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Created 14th February, 2024.
@@ -20,7 +20,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
     private final Palette pal;
     public final MIDIChannel[] midiChannels = new MIDIChannel[16];
 
-    public MIDISynthesizer(int rate, @NonNull Palette pal, int capacity) {
+    public MIDISynthesizer(int rate, Palette pal, int capacity) {
         sampleRate = rate;
         sampleTime = 1.0d / rate;
         this.pal = pal;
@@ -256,7 +256,7 @@ public final class MIDISynthesizer implements MIDIEventReceiver {
         /**
          * Creates the channel for a given setting.
          */
-        Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity);
+        @Nullable Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity);
     }
 
     /**

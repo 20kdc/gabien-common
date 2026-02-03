@@ -10,7 +10,6 @@ package gabien.backend;
 import java.io.File;
 import java.io.InputStream;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.audio.IRawAudioDriver;
@@ -40,7 +39,7 @@ public interface IGaBIEn {
      * Gets a resource from the application binary.
      * Failing that, returns null.
      */
-    InputStream getResource(String resource);
+    @Nullable InputStream getResource(String resource);
 
     IRawAudioDriver getRawAudio(); // This is a singleton, but may be created when used.
     void hintShutdownRawAudio();
@@ -51,16 +50,16 @@ public interface IGaBIEn {
      * Decodes an image from an InputStream.
      * On error, this version of the function should return null.
      */
-    @Nullable WSIImage decodeWSIImage(@NonNull InputStream a);
+    @Nullable WSIImage decodeWSIImage(InputStream a);
 
     // Make a WSI image from a buffer.
     // Note that the colours are 0xAARRGGBB.
-    WSIImage.RW createWSIImage(@NonNull int[] colours, int width, int height);
+    WSIImage.RW createWSIImage(int[] colours, int width, int height);
 
     /**
      * Gets the name of the font referred to by getDefaultTypeface.
      */
-    @NonNull String getDefaultNativeFontName();
+    String getDefaultNativeFontName();
 
     /**
      * Gets font overrides UILabel can use.
@@ -74,13 +73,13 @@ public interface IGaBIEn {
      * Returns a native font by name, unless it does not exist (in which case returns null).
      * The GaBIEn version of this method is partially cached.
      */
-    @Nullable ITypeface getNativeTypeface(@NonNull String name);
+    @Nullable ITypeface getNativeTypeface(String name);
 
     /**
      * Returns the default/fallback native font.
      * The GaBIEn version of this method is partially cached.
      */
-    @NonNull ITypeface getDefaultTypeface();
+    ITypeface getDefaultTypeface();
 
     /**
      * Tries to start a text editor for the given file path.
@@ -99,7 +98,7 @@ public interface IGaBIEn {
      * The default implementation delegates to the gabien.natives.Loader JavaSE handling,
      *  as this is almost always what you want, except on Android which is picky.
      */
-    default File nativeDestinationSetup(String name) {
+    default @Nullable File nativeDestinationSetup(String name) {
         return gabien.natives.Loader.destinationSetupJavaSE(name);
     }
 

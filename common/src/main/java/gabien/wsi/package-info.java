@@ -8,4 +8,5 @@
 /**
  * Windowing and things like that.
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 package gabien.wsi;

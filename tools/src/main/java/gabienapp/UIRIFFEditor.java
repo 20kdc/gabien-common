@@ -34,7 +34,7 @@ public class UIRIFFEditor extends UIProxy {
         UIScrollLayout menuBar = new UIScrollLayout(false, 8, new UITextButton("Open RIFF", 16, () -> {
             GaBIEn.startFileBrowser("Open RIFF", false, "", (res) -> {
                 if (res != null) {
-                    try (InputStream inp = GaBIEn.getInFile(res)) {
+                    try (InputStream inp = GaBIEn.getInFileOrThrow(res)) {
                         node = RIFFNode.read(inp);
                         regenerateContents();
                     } catch (Exception ex) {
@@ -45,7 +45,7 @@ public class UIRIFFEditor extends UIProxy {
         }), new UILabel(" ", 16), new UITextButton("Save", 16, () -> {
             GaBIEn.startFileBrowser("Save RIFF", true, "", (res) -> {
                 if (res != null) {
-                    try (OutputStream oup = GaBIEn.getOutFile(res)) {
+                    try (OutputStream oup = GaBIEn.getOutFileOrThrow(res)) {
                         node.write(oup);
                     } catch (Exception ex) {
                         ex.printStackTrace();

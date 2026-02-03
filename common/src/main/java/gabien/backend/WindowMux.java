@@ -9,6 +9,8 @@ package gabien.backend;
 
 import java.util.LinkedList;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import gabien.GaBIEn;
 import gabien.render.IImage;
 import gabien.wsi.IDesktopPeripherals;
@@ -38,7 +40,7 @@ public class WindowMux implements IGaBIEnMultiWindow {
         underlyingWindow = underlying;
     }
     
-    public Window getCurrentWindow() {
+    public @Nullable Window getCurrentWindow() {
         if (!windowsSystem.isEmpty())
             return windowsSystem.getLast();
         if (!windows.isEmpty())
@@ -69,7 +71,7 @@ public class WindowMux implements IGaBIEnMultiWindow {
         return wnd;
     }
     
-    private void performWindowTransition(Window o) {
+    private void performWindowTransition(@Nullable Window o) {
         Window n = getCurrentWindow();
         if (o == n)
             return;

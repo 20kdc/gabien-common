@@ -7,7 +7,6 @@
 
 package gabien.render;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
@@ -383,12 +382,12 @@ public abstract class IGrDriver extends RenderTarget {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitImage(float x, float y, @NonNull ITexRegion i) {
+    public final void blitImage(float x, float y, ITexRegion i) {
         float srcw = i.getRegionWidth(), srch = i.getRegionHeight();
         blitScaledImage(0, 0, srcw, srch, x, y, srcw, srch, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, @NonNull ITexRegion i, int blendMode, int drawFlagsEx) {
+    public final void blitImage(float srcx, float srcy, float srcw, float srch, float x, float y, ITexRegion i, int blendMode, int drawFlagsEx) {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, srcw, srch, i, blendMode, drawFlagsEx);
     }
 
@@ -402,11 +401,11 @@ public abstract class IGrDriver extends RenderTarget {
         blitScaledImage(srcx, srcy, srcw, srch, x, y, acw, ach, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitScaledImage(float x, float y, float acw, float ach, @NonNull ITexRegion i) {
+    public final void blitScaledImage(float x, float y, float acw, float ach, ITexRegion i) {
         blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, BLEND_NORMAL, 0);
     }
 
-    public final void blitScaledImage(float x, float y, float acw, float ach, @NonNull ITexRegion i, int blendMode, int drawFlagsEx) {
+    public final void blitScaledImage(float x, float y, float acw, float ach, ITexRegion i, int blendMode, int drawFlagsEx) {
         blitScaledImage(0, 0, i.getRegionWidth(), i.getRegionHeight(), x, y, acw, ach, i, blendMode, drawFlagsEx);
     }
 
@@ -414,12 +413,12 @@ public abstract class IGrDriver extends RenderTarget {
         drawRotatedScaled(srcx, srcy, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL, 0);
     }
 
-    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, @NonNull ITexRegion i, int blendMode, int drawFlagsEx) {
+    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, ITexRegion i, int blendMode, int drawFlagsEx) {
         float srcw = i.getRegionWidth(), srch = i.getRegionHeight();
         drawRotatedScaled(0, 0, srcw, srch, x, y, acw, ach, angle, i, blendMode, drawFlagsEx);
     }
 
-    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, @NonNull ITexRegion i) {
+    public final void drawRotatedScaled(float x, float y, float acw, float ach, float angle, ITexRegion i) {
         float srcw = i.getRegionWidth(), srch = i.getRegionHeight();
         drawRotatedScaled(0, 0, srcw, srch, x, y, acw, ach, angle, i, BLEND_NORMAL, 0);
     }

@@ -45,7 +45,7 @@ public final class ExtremelyBadAtlasStrategy implements IAtlasStrategy {
     }
 
     @Override
-    public Comparator<Size> getSortingAlgorithm() {
+    public @Nullable Comparator<Size> getSortingAlgorithm() {
         return null;
     }
 }

@@ -9,4 +9,5 @@
  * Audio-related wrapping.
  * For now, very little.
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 package gabien.audio;

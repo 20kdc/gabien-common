@@ -7,7 +7,6 @@
 
 package gabien.render;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
@@ -36,12 +35,12 @@ public abstract class WSIImage {
     /**
      * Writes 0xAARRGGBB data into the given buffer.
      */
-    public abstract void getPixels(@NonNull int[] data);
+    public abstract void getPixels(int[] data);
 
     /**
      * Like regular getPixels but allocates a buffer for you.
      */
-    public final @NonNull int[] getPixels() {
+    public final int[] getPixels() {
         int[] res = new int[width * height];
         getPixels(res);
         return res;
@@ -50,19 +49,19 @@ public abstract class WSIImage {
     /**
      * Creates a PNG file.
      */
-    public abstract @NonNull byte[] createPNG();
+    public abstract byte[] createPNG();
 
     /**
      * Uploads an image to the GPU, creating an IImage.
      */
-    public final @NonNull IImage upload() {
+    public final IImage upload() {
         return upload(null);
     }
 
     /**
      * Uploads an image to the GPU, creating an IImage.
      */
-    public final @NonNull IImage upload(@Nullable String debugId) {
+    public final IImage upload(@Nullable String debugId) {
         int[] tmp = new int[width * height];
         getPixels(tmp);
         return GaBIEn.createImage(debugId, tmp, width, height);
@@ -76,6 +75,6 @@ public abstract class WSIImage {
         /**
          * Updates the pixels in the image.
          */
-        public abstract void setPixels(@NonNull int[] colours);
+        public abstract void setPixels(int[] colours);
     }
 }

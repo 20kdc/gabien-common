@@ -6,7 +6,6 @@
  */
 package gabien.media.midi;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -26,7 +25,7 @@ public final class MIDITracker implements MIDITimableThing {
     private double deltaTimeToSeconds;
     public @Nullable MIDIEventReceiver receiver;
 
-    public MIDITracker(@NonNull MIDISequence s, @Nullable MIDIEventReceiver receiver) {
+    public MIDITracker(MIDISequence s, @Nullable MIDIEventReceiver receiver) {
         this.receiver = receiver;
         sequence = s;
         pointers = new int[s.tracks.length];

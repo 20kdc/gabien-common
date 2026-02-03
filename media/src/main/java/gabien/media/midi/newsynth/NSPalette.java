@@ -9,6 +9,8 @@ package gabien.media.midi.newsynth;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 import datum.DatumInvalidVisitor;
 import datum.DatumSrcLoc;
 import datum.DatumVisitor;
@@ -29,7 +31,7 @@ public class NSPalette implements MIDISynthesizer.Palette {
     public final NSPatch[] programList = new NSPatch[256];
 
     @Override
-    public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
+    public @Nullable Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
         int baseProgram = 0;
         if (bank >= 128) {
             baseProgram = 128;
@@ -62,7 +64,8 @@ public class NSPalette implements MIDISynthesizer.Palette {
         patches.clear();
         Arrays.fill(programList, null);
         return new DatumKVDVisitor() {
-            NSPatch lastPatch;
+            @Nullable NSPatch lastPatch;
+            @SuppressWarnings("null")
             @Override
             public DatumVisitor handle(String key, DatumSrcLoc loc) {
                 if (key.equals("patch")) {

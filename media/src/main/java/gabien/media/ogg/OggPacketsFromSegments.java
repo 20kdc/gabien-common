@@ -63,6 +63,7 @@ public final class OggPacketsFromSegments implements OggSegmentReceiver.Discarda
         packetLen += leni;
         // end-of-packet logic
         if (leni != 255) {
+            byte[] zeroCopySrc = this.zeroCopySrc;
             if (zeroCopySrc == null) {
                 // have to copy
                 byte[] total = collation.toByteArray();
@@ -71,8 +72,8 @@ public final class OggPacketsFromSegments implements OggSegmentReceiver.Discarda
             } else {
                 // can supply packet data directly
                 output.packet(zeroCopySrc, zeroCopyOfs, packetLen);
-                zeroCopySrc = null;
             }
+            this.zeroCopySrc = null;
             packetLen = 0;
         }
     }

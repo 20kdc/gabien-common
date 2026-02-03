@@ -30,12 +30,12 @@ import gabien.uslx.io.LEDataInputStream;
  * Reading support added 6th June, 2022
  */
 public class WavIO {
-    public static AudioIOSource readWAV(@NonNull final InputStream fis, final boolean close) throws IOException {
+    public static AudioIOSource readWAV(final InputStream fis, final boolean close) throws IOException {
         RIFFInputStream ris = new RIFFInputStream(fis);
         ris.readListOrRiffTypeAndVerify("WAVE", "wave");
         return readWAVInterior(ris, close ? fis : null);
     }
-    public static AudioIOSource readWAVInterior(@NonNull final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
+    public static AudioIOSource readWAVInterior(final RIFFInputStream ris, @Nullable final Closeable closeMe) throws IOException {
         AudioIOCRFmt fmt = null;
         while (ris.available() > 0) {
             RIFFInputStream chk = new RIFFInputStream(ris);
@@ -50,7 +50,7 @@ public class WavIO {
         }
         throw new IOException("Never found 'data' chunk");
     }
-    public static AudioIOCRFmt readFMT(@NonNull LEDataInputStream fmtChk) throws IOException {
+    public static AudioIOCRFmt readFMT(LEDataInputStream fmtChk) throws IOException {
         int fmtTag = fmtChk.readUnsignedShort();
         int channels = fmtChk.readUnsignedShort();
         int channelMask = 0;
@@ -67,7 +67,7 @@ public class WavIO {
         }
         return new AudioIOCRFmt(AudioIOFormat.detect(fmtTag, sampleBits), channels, channelMask, sampleRate);
     }
-    public static AudioIOSource readDATA(@NonNull final RIFFInputStream data, @NonNull AudioIOCRFmt fmt, @Nullable final Closeable closeMe) throws IOException {
+    public static AudioIOSource readDATA(final RIFFInputStream data, AudioIOCRFmt fmt, @Nullable final Closeable closeMe) throws IOException {
         final int frameBytes = fmt.format.bytesPerSample * fmt.channels;
         final int frameCount = data.chunkLen / frameBytes;
         return new AudioIOSource.SourceBytes(fmt, fmt.format) {
@@ -89,7 +89,7 @@ public class WavIO {
         };
     }
 
-    public static void writeWAV(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource, @NonNull AudioIOFormat fmt) throws IOException {
+    public static void writeWAV(OutputStream fos, AudioIOSource dataSource, AudioIOFormat fmt) throws IOException {
         int interiorContent = 4 + sizeWAVInterior(dataSource, fmt);
         RIFFOutputStream riffChunk = new RIFFOutputStream(fos, "RIFF", interiorContent);
         // Filetype
@@ -100,7 +100,7 @@ public class WavIO {
         dataSource.close();
     }
 
-    public static void writeWAVInterior(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource, @NonNull AudioIOFormat fmt) throws IOException {
+    public static void writeWAVInterior(OutputStream fos, AudioIOSource dataSource, AudioIOFormat fmt) throws IOException {
         // Details of the format.
         int requirements = inferFullRequirements(dataSource, fmt);
         int fmtSize = fmtSizeFromRequirements(requirements);
@@ -110,7 +110,7 @@ public class WavIO {
         writeWAVInteriorDATA(fos, dataSource, fmt);
     }
 
-    public static int sizeWAVInterior(@NonNull AudioIOSource dataSource, @NonNull AudioIOFormat fmt) throws IOException {
+    public static int sizeWAVInterior(AudioIOSource dataSource, AudioIOFormat fmt) throws IOException {
         // Details of the format.
         AudioIOCRSet cr = dataSource.crSet;
         int frameCount = dataSource.frameCount();
@@ -127,7 +127,7 @@ public class WavIO {
         return interiorContent;
     }
 
-    public static void writeWAVInteriorFMT(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource, @NonNull AudioIOFormat fmt, int fmtSize) throws IOException {
+    public static void writeWAVInteriorFMT(OutputStream fos, AudioIOSource dataSource, AudioIOFormat fmt, int fmtSize) throws IOException {
         // Details of the format.
         AudioIOCRSet cr = dataSource.crSet;
         try (RIFFOutputStream fmtChunk = new RIFFOutputStream(fos, "fmt ", fmtSize)) {
@@ -155,7 +155,7 @@ public class WavIO {
         }
     }
 
-    public static void writeWAVInteriorFACT(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource) throws IOException {
+    public static void writeWAVInteriorFACT(OutputStream fos, AudioIOSource dataSource) throws IOException {
         int frameCount = dataSource.frameCount();
         // fact {
         RIFFOutputStream factChunk = new RIFFOutputStream(fos, "fact", 4);
@@ -164,7 +164,7 @@ public class WavIO {
         // }
     }
 
-    public static void writeWAVInteriorDATA(@NonNull OutputStream fos, @NonNull AudioIOSource dataSource, @NonNull AudioIOFormat fmt) throws IOException {
+    public static void writeWAVInteriorDATA(OutputStream fos, AudioIOSource dataSource, AudioIOFormat fmt) throws IOException {
         // Details of the format.
         AudioIOCRSet cr = dataSource.crSet;
         int frameCount = dataSource.frameCount();
@@ -188,7 +188,7 @@ public class WavIO {
         // }
     }
 
-    private static int inferFullRequirements(@NonNull AudioIOSource dataSource, @NonNull AudioIOFormat fmt) throws IOException {
+    private static int inferFullRequirements(AudioIOSource dataSource, AudioIOFormat fmt) throws IOException {
         // Expand requirements.
         int requirements = fmt.requirements;
         // channel mask implies EXT_MODE

@@ -6,7 +6,7 @@
  */
 
 /**
- * Texture atlas builder and other such things.
+ * Media
  */
 @org.eclipse.jdt.annotation.NonNullByDefault
-package gabien.atlas;
+package gabien.media.ogg;

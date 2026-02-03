@@ -26,9 +26,10 @@ class VopeksBatch implements ITask {
 
     private final IImage parent;
 
-    private final ObjectPool<VopeksBatch> srcPool;
+    @Nullable private final ObjectPool<VopeksBatch> srcPool;
 
-    VopeksBatch(@NonNull Vopeks vopeks, @NonNull IImage parent, @Nullable ObjectPool<VopeksBatch> pool) {
+    @SuppressWarnings("null")
+    VopeksBatch(Vopeks vopeks, IImage parent, @Nullable ObjectPool<VopeksBatch> pool) {
         this.vopeks = vopeks;
         this.parent = parent;
         this.srcPool = pool;
@@ -38,8 +39,10 @@ class VopeksBatch implements ITask {
     int vertexCount;
     int blendMode = IGrDriver.BLEND_NONE;
     int drawFlagsEx = 0;
-    IImage tex;
-    float[] megabuffer; int verticesOfs, coloursOfs, texCoordsOfs;
+    @Nullable IImage tex;
+    @SuppressWarnings("null")
+    @NonNull float[] megabuffer;
+    int verticesOfs, coloursOfs, texCoordsOfs;
     boolean hasColours;
     boolean cropEssential;
 
@@ -79,7 +82,7 @@ class VopeksBatch implements ITask {
             srcPool.finish(this);
     }
 
-    public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, IImage tex) {
+    public boolean matchesState(boolean cropEssential, int cropL, int cropU, int cropR, int cropD, int blendMode, int drawFlagsEx, @Nullable IImage tex) {
         if (cropEssential) {
             if (cropL != this.cropL || cropU != this.cropU || cropR != this.cropR || cropD != this.cropD) {
                 // System.out.println("break batch: SCO " + cropL + "," + cropU + "," + cropR + "," + cropD + " -> " + this.cropL + "," + this.cropU + "," + this.cropR + "," + this.cropD);

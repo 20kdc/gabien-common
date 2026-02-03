@@ -24,6 +24,7 @@ public class EmulatedFileBrowser implements IGaBIEnFileBrowser {
     
     public EmulatedFileBrowser(IGaBIEn backend) {
         this.backend = backend;
+        browserDirectory = GaBIEn.absolutePathOf(".");
         setBrowserDirectory(".");
     }
 
@@ -36,6 +37,7 @@ public class EmulatedFileBrowser implements IGaBIEnFileBrowser {
     public void startFileBrowser(String text, boolean saving, String exts, Consumer<String> result, String initialName) {
         // Need to setup an environment for a file browser.
         final WindowCreatingUIElementConsumer wc = new WindowCreatingUIElementConsumer() {
+            @SuppressWarnings("null")
             @Override
             protected WindowSpecs setupSpecs(UIElement o, int scale, boolean fullscreen, boolean resizable) {
                 WindowSpecs ws = super.setupSpecs(o, scale, fullscreen, resizable);

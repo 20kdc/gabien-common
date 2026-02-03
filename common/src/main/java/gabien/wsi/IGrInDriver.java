@@ -7,7 +7,6 @@
 
 package gabien.wsi;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.GaBIEn;
@@ -167,7 +166,7 @@ public interface IGrInDriver {
      * Helper to maintain backbuffer width/height.
      * Otherwise, shuts down the passed-in backbuffer and returns a new one.
      */
-    default @NonNull IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer) {
+    default IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer) {
         return ensureBackBuffer(backBuffer, 1);
     }
 
@@ -175,7 +174,7 @@ public interface IGrInDriver {
      * Helper to maintain backbuffer width/height.
      * Otherwise, shuts down the passed-in backbuffer and returns a new one.
      */
-    default @NonNull IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer, int supersampling) {
+    default IGrDriver ensureBackBuffer(@Nullable IGrDriver backBuffer, int supersampling) {
         int w = getWidth() * supersampling;
         int h = getHeight() * supersampling;
         if (backBuffer != null) {

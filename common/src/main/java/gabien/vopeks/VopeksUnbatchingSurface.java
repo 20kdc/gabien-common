@@ -10,6 +10,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.natives.BadGPU;
+import gabien.natives.BadGPU.Texture;
 import gabien.natives.BadGPUUnsafe;
 import gabien.render.IGrDriver;
 import gabien.render.IImage;
@@ -42,7 +43,7 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
     /**
      * Creates a new texture for rendering, and possibly initializes it.
      */
-    public VopeksUnbatchingSurface(@NonNull Vopeks vopeks, @Nullable String id, int w, int h, int[] init) {
+    public VopeksUnbatchingSurface(Vopeks vopeks, @Nullable String id, int w, int h, @Nullable int[] init) {
         super(id, w, h);
         this.vopeks = vopeks;
         vopeks.putTask((instance) -> {
@@ -70,9 +71,11 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
         int cropH = scD - scU;
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
-            BadGPUUnsafe.drawClear(texture.pointer, 0,
-                    BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor, scL, scU, cropW, cropH,
-                    r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f, 0, 0);
+            Texture tx = texture;
+            if (tx != null)
+                BadGPUUnsafe.drawClear(tx.pointer, 0,
+                        BadGPU.SessionFlags.MaskRGBA | BadGPU.SessionFlags.Scissor, scL, scU, cropW, cropH,
+                        r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f, 0, 0);
         });
     }
 
@@ -81,7 +84,9 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
         batchFlush();
         batchReferenceBarrier();
         vopeks.putTask((instance) -> {
-            BadGPUUnsafe.generateMipmap(texture.pointer);
+            Texture tx = texture;
+            if (tx != null)
+                BadGPUUnsafe.generateMipmap(tx.pointer);
         });
     }
 
@@ -166,7 +171,7 @@ public final class VopeksUnbatchingSurface extends IGrDriver {
         });
     }
 
-    private void batchSend(boolean hasColours, boolean cropEssential, int blendMode, int drawFlagsEx, ITexRegion iU, float[] data) {
+    private void batchSend(boolean hasColours, boolean cropEssential, int blendMode, int drawFlagsEx, @Nullable ITexRegion iU, float[] data) {
         batchReferenceBarrier();
         int vertexCount = hasColours ? (data.length / 8) : (data.length / 4);
         // ok, so now that the current batch is dealt with, do the pick here

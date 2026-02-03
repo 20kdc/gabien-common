@@ -8,4 +8,5 @@
 /**
  * Text APIs. (Rendering, etc.)
  */
+@org.eclipse.jdt.annotation.NonNullByDefault
 package gabien.text;

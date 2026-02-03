@@ -9,7 +9,6 @@ package gabien.atlas;
 
 import java.util.Comparator;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
 import gabien.uslx.append.Rect;
@@ -39,7 +38,7 @@ public interface IAtlasStrategy {
      * @param atlasSize The atlas size.
      * @return A newly prepared instance.
      */
-    @NonNull Instance instance(@NonNull Size atlasSize);
+    Instance instance(Size atlasSize);
 
     /**
      * Gets a recommended mechanism for sorting placements, if any.
@@ -52,6 +51,6 @@ public interface IAtlasStrategy {
          * Returns null if the placement couldn't be added.
          * @return Placement or null on failure.
          */
-        @Nullable Rect add(@NonNull Size size);
+        @Nullable Rect add(Size size);
     }
 }
