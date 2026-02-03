@@ -6,10 +6,11 @@
  */
 package gabien.pva;
 
-import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+
+import gabien.uslx.io.InputStreamUtils;
 
 /**
  * Compression-Aware Bulk Storage reader.
@@ -19,7 +20,6 @@ public class CABS {
     /**
      * Reads a CABS chunk.
      */
-    @SuppressWarnings("resource")
     public static byte[] readChunk(InputStream is) throws IOException {
         int a = is.read();
         if (a == -1)
@@ -42,7 +42,7 @@ public class CABS {
             // nothing!
             {
                 byte[] buf1 = new byte[len - 5];
-                new DataInputStream(is).readFully(buf1);
+                InputStreamUtils.readFully(is, buf1);
                 return buf1;
             }
         case 1:
@@ -50,7 +50,7 @@ public class CABS {
             {
                 int columns = is.read();
                 byte[] buf1 = new byte[len - 6];
-                new DataInputStream(is).readFully(buf1);
+                InputStreamUtils.readFully(is, buf1);
                 byte[] buf2 = new byte[len - 6];
                 transpose(buf1, buf2, columns);
                 return buf2;
