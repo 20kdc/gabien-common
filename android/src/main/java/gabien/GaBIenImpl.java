@@ -162,6 +162,7 @@ public final class GaBIenImpl implements IGaBIEn {
         return true;
     }
 
+    @Override
     public @Nullable InputStream getResource(String resource) {
         AssetManager am = AndroidPortGlobals.applicationContext.getAssets();
         try {
@@ -205,6 +206,7 @@ public final class GaBIenImpl implements IGaBIEn {
         }
     }
 
+    @Override
     public void ensureQuit() {
         System.exit(0);
     }

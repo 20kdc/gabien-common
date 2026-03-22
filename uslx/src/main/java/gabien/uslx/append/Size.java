@@ -21,6 +21,7 @@ public class Size {
         height = i2;
     }
 
+    @Override
     public int hashCode() {
         return toString().hashCode();
     }

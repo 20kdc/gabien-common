@@ -92,6 +92,7 @@ public interface IImmFixedSizeFont extends IFixedSizeFont {
     /**
      * Fallback for compat. with non-immediate fonts
      */
+    @Override
     default RenderedTextChunk renderLine(@NonNull char[] text, int index, int length, int r, int g, int b, int a) {
         final int wla = measureLine(text, index, length, true);
         return new RenderedTextChunk(getLineHeight(), getContentHeight(), 0) {

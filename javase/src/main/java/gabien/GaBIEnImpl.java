@@ -85,10 +85,12 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         return null;
     }
 
+    @Override
     public InputStream getResource(String resource) {
         return ClassLoader.getSystemClassLoader().getResourceAsStream("assets/" + resource);
     }
 
+    @Override
     public IGrInDriver makeGrIn(String name, int w, int h, WindowSpecs ws) {
         return new gabien.GrInDriver(name, ws, w, h);
     }
@@ -98,10 +100,12 @@ public class GaBIEnImpl implements IGaBIEn, IGaBIEnMultiWindow, IGaBIEnFileBrows
         return false;
     }
 
+    @Override
     public void ensureQuit() {
         System.exit(0);
     }
 
+    @Override
     public IRawAudioDriver getRawAudio() {
         if (sound == null) {
             try {

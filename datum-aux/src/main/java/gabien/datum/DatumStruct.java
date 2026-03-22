@@ -50,7 +50,6 @@ public class DatumStruct<GT> implements DatumStructBase<GT> {
     public final Map<String, DatumKVDHVisitor.Handler<DatumStruct<GT>, Object>> getStructPrototype() {
         @SuppressWarnings("rawtypes")
         final Class clz = getClass();
-        @SuppressWarnings({ "unchecked" })
         Map<String, DatumKVDHVisitor.Handler<DatumStruct<GT>, Object>> res = (Map<String, DatumKVDHVisitor.Handler<DatumStruct<GT>, Object>>) PROTOTYPES.get(clz);
         if (res == null) {
             res = new HashMap<>();

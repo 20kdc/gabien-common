@@ -15,6 +15,7 @@ import org.eclipse.jdt.annotation.Nullable;
  * Creation date unknown.
  */
 public final class Rect extends Size {
+    @SuppressWarnings("hiding")
     public static final Rect ZERO = new Rect(0, 0, 0, 0);
 
     public final int x, y, right, bottom;

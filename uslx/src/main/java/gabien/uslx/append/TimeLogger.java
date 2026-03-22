@@ -24,6 +24,7 @@ public final class TimeLogger implements AutoCloseable {
     private ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(256);
 
     private Thread runner = new Thread("TimeLogger") {
+        @Override
         public void run() {
             while (true) {
                 try {

@@ -7,6 +7,8 @@
 
 package gabien.natives;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Wrapper for "minimp3_g", a customized version of minimp3 mainly for build reasons
  * Created 3rd November, 2023.
@@ -23,6 +25,6 @@ public abstract class MP3Unsafe extends MP3Enum {
     public static native int getLastFrameBytes(long instance);
     public static native int getLastFrameSampleRate(long instance);
     public static native int getLastFrameChannels(long instance);
-    public static native int decodeFrame(long instance, byte[] packet, int packetOfs, int packetLen, float[] output, int outputOfs);
+    public static native int decodeFrame(long instance, byte[] packet, int packetOfs, int packetLen, @Nullable float[] output, int outputOfs);
     public static native void free(long instance);
 }

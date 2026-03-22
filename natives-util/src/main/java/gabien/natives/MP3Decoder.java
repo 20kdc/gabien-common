@@ -8,6 +8,8 @@ package gabien.natives;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Safe wrapper around the MP3 decoding logic.
  * Created 3rd November, 2023.
@@ -67,7 +69,7 @@ public final class MP3Decoder extends MP3Enum implements AutoCloseable {
      * The output array must have at least MAX_SAMPLES_PER_FRAME room available (the API becomes unsafe otherwise).
      * Data is written in the usual interleaved sample-major, channel-minor form.
      */
-    public final synchronized int decodeFrame(byte[] packet, int packetOffset, int packetLength, float[] output, int outputOffset) {
+    public final synchronized int decodeFrame(byte[] packet, int packetOffset, int packetLength, @Nullable float[] output, int outputOffset) {
         if (!valid.get())
             throw new InvalidatedPointerException(this);
         if (packetOffset < 0 || packetOffset > packet.length || packetLength - packetOffset > packet.length || packetLength < 0)
