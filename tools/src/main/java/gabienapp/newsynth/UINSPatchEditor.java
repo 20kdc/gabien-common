@@ -78,7 +78,7 @@ public class UINSPatchEditor extends UIProxy {
                 new UILabel("WAVE", 16).centred(), waveform, waveAttributes,
                 new UILabel("ENVELOPE", 16).centred(), envelope, envelopeAttributes,
                 new UILabel("PITCH-ENV", 16).centred(), pitch, pitchAttributes);
-        UIMIDIPlayer midi = new UIMIDIPlayer(new Palette() {
+        UIMIDIPlayer midi = new UIMIDIPlayer(menu.ui, new Palette() {
             @Override
             public Channel create(MIDISynthesizer parent, int bank, int program, int note, int velocity) {
                 if (bank >= 128)

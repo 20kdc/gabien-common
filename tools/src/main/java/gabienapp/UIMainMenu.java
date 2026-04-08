@@ -7,6 +7,7 @@
 package gabienapp;
 
 import gabien.ui.WindowCreatingUIElementConsumer;
+import gabien.ui.dialogs.UIAutoclosingPopupMenu;
 import gabien.ui.dialogs.UICredits;
 import gabien.ui.elements.UILabel;
 import gabien.ui.elements.UIPublicPanel;
@@ -105,29 +106,51 @@ public class UIMainMenu extends UIProxy {
                 if (str != null) {
                     try {
                         InputStream inp = GaBIEn.getInFileOrThrow(str);
-                        MIDISequence mf = MIDISequence.from(inp)[0];
-                        OutputStream os = GaBIEn.getOutFileOrThrow("tmp.txt");
-                        assert os != null;
-                        AtomicInteger time = new AtomicInteger(0);
-                        MIDITracker mt = new MIDITracker(mf, (status, data, offset, length) -> {
-                            String res = time.get() + ": " + HexByteEncoding.toHexString(status) + ":" + HexByteEncoding.toHexString(data, offset, length) + ": ";
+                        midiFindSequence(ui, MIDISequence.from(inp), (mf) -> {
                             try {
-                                os.write(res.getBytes(StandardCharsets.UTF_8));
-                                os.write(data, offset, length);
-                                os.write(10);
-                            } catch (IOException ioe) {
-                                // :(
-                                ioe.printStackTrace();
+                                OutputStream os = GaBIEn.getOutFileOrThrow("tmp.txt");
+                                assert os != null;
+                                AtomicInteger time = new AtomicInteger(0);
+                                MIDITracker mt = new MIDITracker(mf, (status, data, offset, length) -> {
+                                    String res = time.get() + ": " + HexByteEncoding.toHexString(status) + ":" + HexByteEncoding.toHexString(data, offset, length) + ": ";
+                                    try {
+                                        os.write(res.getBytes(StandardCharsets.UTF_8));
+                                        os.write(data, offset, length);
+                                        os.write(10);
+                                    } catch (IOException ioe) {
+                                        // :(
+                                        ioe.printStackTrace();
+                                    }
+                                });
+                                while (true) {
+                                    int ticks = mt.getTickOfNextEvent();
+                                    if (ticks == -1)
+                                        break;
+                                    time.set(ticks);
+                                    mt.runNextEvent();
+                                }
+                                os.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
                         });
-                        while (true) {
-                            int ticks = mt.getTickOfNextEvent();
-                            if (ticks == -1)
-                                break;
-                            time.set(ticks);
-                            mt.runNextEvent();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }));
+        ve.add(new UITextButton("MIDI Type-2 Splitter (DOTT)", 16, () -> {
+            GaBIEn.startFileBrowser("Convert from MIDI", false, "", (str) -> {
+                if (str != null) {
+                    try {
+                        InputStream inp = GaBIEn.getInFileOrThrow(str);
+                        MIDISequence[] res = MIDISequence.from(inp);
+                        for (int i = 0; i < res.length; i++) {
+                            OutputStream os = GaBIEn.getOutFileOrThrow(str + "." + i + ".mid");
+                            res[i].exportSequenceFile(os);
+                            os.close();
                         }
-                        os.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -135,11 +158,11 @@ public class UIMainMenu extends UIProxy {
             });
         }));
         ve.add(new UITextButton("MIDI Testing Range (Default)", 16, () -> {
-            UIMIDIPlayer player = new UIMIDIPlayer(DefaultMIDIPalette.INSTANCE);
+            UIMIDIPlayer player = new UIMIDIPlayer(ui, DefaultMIDIPalette.INSTANCE);
             ui.accept(player);
         }));
         ve.add(new UITextButton("MIDI Testing Range (NewSynth)", 16, () -> {
-            UIMIDIPlayer player = new UIMIDIPlayer(newSynthPalette);
+            UIMIDIPlayer player = new UIMIDIPlayer(ui, newSynthPalette);
             ui.accept(player);
         }));
         ve.add(new UITextButton("MIDI Instrument Checker", 16, () -> {
@@ -206,6 +229,23 @@ public class UIMainMenu extends UIProxy {
         ve.add(lbl);
         vsl.panelsSet(ve);
         setForcedBounds(null, new Rect(0, 0, 640, 480));
+    }
+    public static void midiFindSequence(WindowCreatingUIElementConsumer ui, MIDISequence[] seq, Consumer<MIDISequence> c) {
+        if (seq.length == 0) {
+            System.err.println("NO SEQUENCES IN MIDI!!!!");
+        } else if (seq.length == 1) {
+            c.accept(seq[0]);
+        } else {
+            String[] seqN = new String[seq.length];
+            Runnable[] seqR = new Runnable[seq.length];
+            for (int i = 0; i < seq.length; i++) {
+                final int fi = i;
+                seqN[fi] = "" + fi;
+                seqR[fi] = () -> c.accept(seq[fi]);
+            }
+            UIAutoclosingPopupMenu popup = new UIAutoclosingPopupMenu(seqN, seqR, 16, 16, true);
+            ui.accept(popup);
+        }
     }
     public void copyRIFF(RIFFNode rn) {
         riffClipboard = rn.copy();

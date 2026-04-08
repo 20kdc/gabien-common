@@ -22,6 +22,7 @@ import gabien.media.midi.MIDISynthesizer;
 import gabien.media.midi.MIDITimer;
 import gabien.media.midi.MIDITracker;
 import gabien.ui.UIElement;
+import gabien.ui.WindowCreatingUIElementConsumer;
 import gabien.ui.UIElement.UIProxy;
 import gabien.ui.elements.UILabel;
 import gabien.ui.elements.UIScrollbar;
@@ -37,14 +38,16 @@ import gabien.wsi.IPeripherals;
 public class UIMIDIPlayer extends UIProxy {
     private static final boolean DEBUG_ENABLE_SEEKING = true;
 
+    public WindowCreatingUIElementConsumer ui;
     private TheThingThatDoesTheStuff audioSource;
     public final UITextButton open = new UITextButton("open", 32, () -> {
         GaBIEn.startFileBrowser("Input MIDI", false, "", (str) -> {
             if (str != null) {
                 try {
                     InputStream inp = GaBIEn.getInFileOrThrow(str);
-                    MIDISequence mf = MIDISequence.from(inp)[0];
-                    GaBIEn.getRawAudio().setRawAudioSource(audioSource = new TheThingThatDoesTheStuff(mf));
+                    UIMainMenu.midiFindSequence(ui, MIDISequence.from(inp), (mf) -> {
+                        GaBIEn.getRawAudio().setRawAudioSource(audioSource = new TheThingThatDoesTheStuff(mf));
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -64,7 +67,8 @@ public class UIMIDIPlayer extends UIProxy {
     private final UILabel programSummary = new UILabel("program summary", 16);
     String programSummaryShunt = "";
 
-    public UIMIDIPlayer(MIDISynthesizer.Palette palette) {
+    public UIMIDIPlayer(WindowCreatingUIElementConsumer ui, MIDISynthesizer.Palette palette) {
+        this.ui = ui;
         this.palette = palette;
         scrollbar = new UIScrollbar(false, 16) {
             double myViewOfMyValue = 0;
