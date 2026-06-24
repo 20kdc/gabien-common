@@ -31,6 +31,8 @@ public class Peripherals implements IPeripherals {
     public int offsetX, offsetY;
 
     public ReentrantLock pointersLock = new ReentrantLock();
+    public int trueMouseX, trueMouseY, trueMouseWheel;
+    public boolean mouseIsConnected = false;
     public HashSet<UPointer> pointersThatWePretendDoNotExist = new HashSet<UPointer>();
     public HashSet<UPointer> pointersJustDown = new HashSet<UPointer>();
     public HashMap<Integer, UPointer> pointersMap = new HashMap<Integer, UPointer>();
@@ -73,6 +75,7 @@ public class Peripherals implements IPeripherals {
         pointersLock.lock();
         pointersThatWePretendDoNotExist.addAll(pointersMap.values());
         pointersJustDown.clear();
+        trueMouseWheel = 0;
         pointersLock.unlock();
         if (currentTextEditingSession != null)
             currentTextEditingSession.endSession();
@@ -81,6 +84,21 @@ public class Peripherals implements IPeripherals {
     @Override
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback) {
         return new TextEditingSession(this, text, multiLine, textHeight, feedback);
+    }
+
+    @Override
+    public int getMousewheelBuffer() {
+        int res = 0;
+        pointersLock.lock();
+        if (trueMouseWheel < 0) {
+            res = -1;
+            trueMouseWheel++;
+        } else if (trueMouseWheel > 0) {
+            res = 1;
+            trueMouseWheel--;
+        }
+        pointersLock.unlock();
+        return res;
     }
 
     public void gdUpdateTextboxHoldingMALock() {
@@ -109,6 +127,8 @@ public class Peripherals implements IPeripherals {
             up.actualX = x;
             up.actualY = y;
         }
+        trueMouseX = x;
+        trueMouseY = y;
         pointersLock.unlock();
     }
 
@@ -120,6 +140,36 @@ public class Peripherals implements IPeripherals {
             ptr.actualX = x;
             ptr.actualY = y;
         }
+        trueMouseX = x;
+        trueMouseY = y;
+        pointersLock.unlock();
+    }
+
+    @Override
+    public boolean mouseIsConnected() {
+        return mouseIsConnected;
+    }
+
+    @Override
+    public int getMouseX() {
+        return trueMouseX;
+    }
+
+    @Override
+    public int getMouseY() {
+        return trueMouseY;
+    }
+
+    /**
+     * Used by MainActivity to forward The Mouse (as opposed to pointers).
+     */
+    public void gdMouseForward(int x, int y, int wheel, boolean doEnableMouseConnect) {
+        pointersLock.lock();
+        trueMouseX = x;
+        trueMouseY = y;
+        trueMouseWheel += wheel;
+        if (doEnableMouseConnect)
+            mouseIsConnected = true;
         pointersLock.unlock();
     }
 

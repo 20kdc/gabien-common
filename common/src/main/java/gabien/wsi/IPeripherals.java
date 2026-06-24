@@ -37,4 +37,53 @@ public interface IPeripherals {
      * feedback provides live editing feedback.
      */
     ITextEditingSession openTextEditingSession(String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback);
+
+    /**
+     * Does a mouse appear to be connected?
+     * (If so, mouse X/Y variables respond accordingly.)
+     * DO NOT USE THIS FOR UI TOGGLES -- USE IDesktopPeripherals CHECK.
+     * ONLY use this to determine if mouse X/Y is valid.
+     * Note that if this is false, X/Y is invalid.
+     * (There is an exception to this, but it is not generally relevant.)
+     */
+    default boolean mouseIsConnected() {
+        return false;
+    }
+
+    // Mouse management.
+
+    default int getMouseX() {
+        return 0;
+    }
+    default int getMouseY() {
+        return 0;
+    }
+
+    /**
+     * Gives -1, 0, or 1. (-1 is north.)
+     * This is stateful, like isKeyJustPressed.
+     * If this returns any value other than 0,
+     * getMouseX/getMouseY must point to a valid mouse position at a point in time >= the time of the last mousewheel event.
+     */
+    default int getMousewheelBuffer() {
+        return 0;
+    }
+
+    default boolean isKeyDown(int key) {
+        return false;
+    }
+
+    /**
+     * Note that if this returns true, it won't return again for any other call for that key until another press happens.
+     */
+    default boolean isKeyJustPressed(int key) {
+        return false;
+    }
+
+    /**
+     * Creates a set of all the active keycodes (think for keybinders)
+     */
+    default HashSet<Integer> activeKeys() {
+        return new HashSet<>();
+    }
 }

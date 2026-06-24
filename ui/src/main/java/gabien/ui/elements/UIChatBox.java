@@ -45,8 +45,9 @@ public class UIChatBox extends UILabel {
             if (editingSession == null)
                 editingSession = peripherals.openTextEditingSession(text, false, contents.textHeight, null);
             Rect crib = getContentsRelativeInputBounds();
+            // We continue to use an IDesktopPeripherals check here just in case of 'weird' Android IMEs.
             if (peripherals instanceof IDesktopPeripherals)
-                if (((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_UP))
+                if (peripherals.isKeyJustPressed(IGrInDriver.VK_UP))
                     editingSession.setText(history);
             text = editingSession.maintain(crib.x, crib.y, crib.width, crib.height);
             // Enter confirmation.

@@ -33,6 +33,11 @@ class DesktopPeripherals implements IDesktopPeripherals, IGJSEPeripheralsInterna
     }
 
     @Override
+    public boolean mouseIsConnected() {
+        return true;
+    }
+
+    @Override
     public int getMouseX() {
         return parent.mouseX + offsetX;
     }

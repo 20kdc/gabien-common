@@ -44,35 +44,4 @@ public final class DeadDesktopPeripherals implements IDesktopPeripherals {
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback) {
         return new DeadTextEditingSession(text);
     }
-
-    @Override
-    public int getMouseX() {
-        return 0;
-    }
-
-    @Override
-    public int getMouseY() {
-        return 0;
-    }
-
-    @Override
-    public int getMousewheelBuffer() {
-        return 0;
-    }
-
-    @Override
-    public boolean isKeyDown(int key) {
-        return false;
-    }
-
-    @Override
-    public boolean isKeyJustPressed(int key) {
-        return false;
-    }
-
-    @Override
-    public HashSet<Integer> activeKeys() {
-        return new HashSet<Integer>();
-    }
-
 }

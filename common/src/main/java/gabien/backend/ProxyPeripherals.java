@@ -47,4 +47,40 @@ public class ProxyPeripherals<T extends IPeripherals> implements IPeripherals {
     public ITextEditingSession openTextEditingSession(@NonNull String text, boolean multiLine, int textHeight, @Nullable Function<String, String> feedback) {
         return target.openTextEditingSession(text, multiLine, textHeight, feedback);
     }
+
+    @Override
+    public boolean mouseIsConnected() {
+        return target.mouseIsConnected();
+    }
+
+    @Override
+    public int getMouseX() {
+        return target.getMouseX();
+    }
+
+    @Override
+    public int getMouseY() {
+        return target.getMouseY();
+    }
+
+    @Override
+    public int getMousewheelBuffer() {
+        return target.getMousewheelBuffer();
+    }
+
+    @Override
+    public boolean isKeyDown(int key) {
+        return target.isKeyDown(key);
+    }
+
+    @Override
+    public boolean isKeyJustPressed(int key) {
+        return target.isKeyJustPressed(key);
+    }
+
+    @Override
+    public HashSet<Integer> activeKeys() {
+        return target.activeKeys();
+    }
+
 }

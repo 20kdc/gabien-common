@@ -17,7 +17,6 @@ import gabien.ui.IPointerReceiver;
 import gabien.ui.UIElement;
 import gabien.ui.UILayer;
 import gabien.uslx.append.Size;
-import gabien.wsi.IDesktopPeripherals;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
@@ -58,18 +57,16 @@ public final class UINSWaveformEditor extends UIElement {
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
         if (!selected)
             return;
-        if (peripherals instanceof IDesktopPeripherals) {
-            boolean insert = ((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_INSERT);
-            boolean delete = ((IDesktopPeripherals) peripherals).isKeyJustPressed(IGrInDriver.VK_DELETE);
-            if (insert) {
-                selectedPoint = sw.addPoint(selectedPoint);
-                onWaveformChange.run();
-            }
-            if (delete) {
-                sw.rmPoint(selectedPoint);
-                prevPoint();
-                onWaveformChange.run();
-            }
+        boolean insert = peripherals.isKeyJustPressed(IGrInDriver.VK_INSERT);
+        boolean delete = peripherals.isKeyJustPressed(IGrInDriver.VK_DELETE);
+        if (insert) {
+            selectedPoint = sw.addPoint(selectedPoint);
+            onWaveformChange.run();
+        }
+        if (delete) {
+            sw.rmPoint(selectedPoint);
+            prevPoint();
+            onWaveformChange.run();
         }
     }
 

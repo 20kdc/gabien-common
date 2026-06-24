@@ -18,7 +18,6 @@ import java.util.WeakHashMap;
 import java.util.function.Consumer;
 
 import gabien.uslx.append.*;
-import gabien.wsi.IDesktopPeripherals;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 import gabien.wsi.IPointer;
@@ -154,12 +153,10 @@ public class WindowCreatingUIElementConsumer implements Consumer<UIElement> {
             aw.lastActivePointers = pointersNext;
 
             // Mousewheel
-            if (aw.peripherals instanceof IDesktopPeripherals) {
-                IDesktopPeripherals idp = (IDesktopPeripherals) aw.peripherals;
-                int ip = idp.getMousewheelBuffer();
-                if (ip != 0)
-                    aw.ue.handleMousewheel(idp.getMouseX(), idp.getMouseY(), ip == -1);
-            }
+            int ip = aw.peripherals.getMousewheelBuffer();
+            if (ip != 0)
+                aw.ue.handleMousewheel(aw.peripherals.getMouseX(), aw.peripherals.getMouseY(), ip == -1);
+
             if (aw.igd.stillRunning()) {
                 aw.igd.flush(backbuffer);
             }

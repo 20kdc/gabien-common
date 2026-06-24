@@ -6,43 +6,11 @@
  */
 package gabien.backend;
 
-import java.util.HashSet;
-
 import gabien.wsi.IDesktopPeripherals;
 
 /**
  * Created on 05/03/2020.
  */
 public class ProxyDesktopPeripherals<T extends IDesktopPeripherals> extends ProxyPeripherals<T> implements IDesktopPeripherals {
-
-    @Override
-    public int getMouseX() {
-        return target.getMouseX();
-    }
-
-    @Override
-    public int getMouseY() {
-        return target.getMouseY();
-    }
-
-    @Override
-    public int getMousewheelBuffer() {
-        return target.getMousewheelBuffer();
-    }
-
-    @Override
-    public boolean isKeyDown(int key) {
-        return target.isKeyDown(key);
-    }
-
-    @Override
-    public boolean isKeyJustPressed(int key) {
-        return target.isKeyJustPressed(key);
-    }
-
-    @Override
-    public HashSet<Integer> activeKeys() {
-        return target.activeKeys();
-    }
 
 }

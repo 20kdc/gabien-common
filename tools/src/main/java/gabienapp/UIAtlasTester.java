@@ -16,7 +16,6 @@ import gabien.ui.UIElement;
 import gabien.ui.UILayer;
 import gabien.uslx.append.Rect;
 import gabien.uslx.append.Size;
-import gabien.wsi.IDesktopPeripherals;
 import gabien.wsi.IGrInDriver;
 import gabien.wsi.IPeripherals;
 
@@ -50,19 +49,18 @@ public class UIAtlasTester extends UIElement {
 
     @Override
     public void update(double deltaTime, boolean selected, IPeripherals peripherals) {
-        IDesktopPeripherals dp = (IDesktopPeripherals) peripherals;
         boolean planRegen = false;
-        if (dp.isKeyJustPressed(IGrInDriver.VK_A)) {
+        if (peripherals.isKeyJustPressed(IGrInDriver.VK_A)) {
             mode++;
             mode %= 2;
             planRegen = true;
-        } else if (dp.isKeyJustPressed(IGrInDriver.VK_S)) {
+        } else if (peripherals.isKeyJustPressed(IGrInDriver.VK_S)) {
             st++;
             st %= AllAtlasStrategies.strategies.length;
             planRegen = true;
-        } else if (dp.isKeyJustPressed(IGrInDriver.VK_D)) {
+        } else if (peripherals.isKeyJustPressed(IGrInDriver.VK_D)) {
             planRegen = true;
-        } else if (dp.isKeyJustPressed(IGrInDriver.VK_F)) {
+        } else if (peripherals.isKeyJustPressed(IGrInDriver.VK_F)) {
             for (int i = 0; i < 128; i++) {
                 atlas = calculate(AllAtlasStrategies.strategies[st], new Size(512, 512), createTestCase());
                 boolean done = false;
