@@ -7,6 +7,9 @@
 
 package java.util.function;
 
+import gabien.fakej8.GaBIEnPolyfillIdentityFunction;
+import gabien.fakej8.GaBIEnPolyfillUtilities;
+
 /**
  * Created on 22/04/16.
  * Turned into Java 8 polyfill 17th October 2023.
@@ -20,9 +23,7 @@ public interface Function<T, R> {
      * You usually never want to call this API.
      */
     default <V> Function<T, V> andThen(Function<? super R, ? extends V> next) {
-        if (next == null)
-            throw new NullPointerException("next");
-        return (v) -> next.apply(apply(v));
+        return GaBIEnPolyfillUtilities.andThen(this, next);
     }
 
     /**

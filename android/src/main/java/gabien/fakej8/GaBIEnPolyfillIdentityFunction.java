@@ -5,14 +5,16 @@
  * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
  */
 
-package java.util.function;
+package gabien.fakej8;
+
+import java.util.function.Function;
 
 /**
  * Identity function implementation.
  * You should never access or even see this class outside of the java.util.function.Function implementation.
  * Created 17th October 2023.
  */
-enum GaBIEnPolyfillIdentityFunction implements Function<Object, Object> {
+public enum GaBIEnPolyfillIdentityFunction implements Function<Object, Object> {
     I;
 
     @Override

@@ -7,6 +7,8 @@
 
 package java.util.function;
 
+import gabien.fakej8.GaBIEnPolyfillUtilities;
+
 /**
  * replacement for 1.8 stuff Created on 22/04/16.
  * Turned into Java 8 polyfill 17th October 2023.
@@ -23,9 +25,6 @@ public interface Consumer<T> {
      * You usually never want to call this API.
      */
     default Consumer<T> andThen(Consumer<? super T> next) {
-        return (v) -> {
-            this.accept(v);
-            next.accept(v);
-        };
+        return GaBIEnPolyfillUtilities.andThen(this, next);
     }
 }
