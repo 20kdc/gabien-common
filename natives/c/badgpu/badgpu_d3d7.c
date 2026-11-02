@@ -449,16 +449,16 @@ static BADGPUBool bd3d7DrawGeom(
         IDirect3DDevice7_SetTexture(i->d3ddev, 0, textureI->surface);
 
         D3DMATRIX mtx = bd3d7TranslateMatrix(matrixT);
-        if (0) {
-            // Invert Y
-            //   IO
-            mtx._12 *= -1;
-            mtx._22 *= -1;
-            mtx._32 *= -1;
-            mtx._42 *= -1;
-            // and offset
-            mtx._42 += 1;
-        }
+#if 0
+        // Invert Y
+        //   IO
+        mtx._12 *= -1;
+        mtx._22 *= -1;
+        mtx._32 *= -1;
+        mtx._42 *= -1;
+        // and offset
+        mtx._42 += 1;
+#endif
         mtx._11 *= textureI->txMulX;
         mtx._21 *= textureI->txMulX;
         mtx._31 *= textureI->txMulX;
@@ -472,14 +472,14 @@ static BADGPUBool bd3d7DrawGeom(
 
         IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_MAGFILTER, (flags & BADGPUDrawFlags_MagLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
         IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_MINFILTER, (flags & BADGPUDrawFlags_MinLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
-        if (0) {
-            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, (flags & BADGPUDrawFlags_WrapS) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
-            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, (flags & BADGPUDrawFlags_WrapT) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
-        } else {
-            // forcing wrapping helps debug some issues
-            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-            IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
-        }
+#if 1
+        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, (flags & BADGPUDrawFlags_WrapS) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, (flags & BADGPUDrawFlags_WrapT) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+#else
+        // forcing wrapping helps debug some issues
+        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
+        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+#endif
     }
 
     IDirect3DDevice7_BeginScene(i->d3ddev);
