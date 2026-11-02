@@ -12,19 +12,17 @@
 #include "badgpu.h"
 #include "badgpu_internal.h"
 #include "badgpu_sw.h"
-#include <d3d.h>
-#include <d3dtypes.h>
-#include <ddraw.h>
+#include <d3d9.h>
+#include <d3d9caps.h>
+#include <d3d9types.h>
+#include <windows.h>
 
 typedef struct BADGPUInstanceD3D {
     BADGPUInstancePriv base;
-    IDirectDraw7 * ddraw;
-    IDirect3D7 * d3d;
-    IDirectDrawSurface7 * sacrifice;
-    IDirectDrawSurface7 * sacrificeZ;
-    IDirect3DDevice7 * d3ddev;
-    DDDEVICEIDENTIFIER2 devInfo;
-    DWORD memCap;
+    IDirect3D9 * d3d;
+    IDirect3DSurface9 * sacrifice;
+    IDirect3DDevice9 * d3ddev;
+    HWND hwnd;
 } BADGPUInstanceD3D;
 #define BG_INSTANCE_D3D(x) ((BADGPUInstanceD3D *) (x))
 
@@ -39,50 +37,47 @@ typedef struct BADGPUTextureD3D {
     BADGPUTexturePriv base;
     int w, h;
     float txMulX, txMulY;
-    IDirectDrawSurface7 * surface;
-    IDirectDrawSurface7 * surfaceBackup;
-    // due to an odd rule that all render targets must either have depth or none of them can
-    IDirectDrawSurface7 * surfaceZ;
+    IDirect3DSurface9 * surface;
+    IDirect3DSurface9 * surfaceBackup;
+    // due to an odd rule that all render targets must have depth
+    IDirect3DSurface9 * surfaceZ;
 } BADGPUTextureD3D;
 #define BG_TEXTURE_D3D(x) ((BADGPUTextureD3D *) (x))
 
 typedef struct BADGPUDSBufferD3D {
     BADGPUDSBufferPriv base;
     int w, h;
-    IDirectDrawSurface7 * surface;
+    IDirect3DSurface9 * surface;
 } BADGPUDSBufferD3D;
 #define BG_DSBUFFER_D3D(x) ((BADGPUDSBufferD3D *) (x))
 
 static void destroyD3DInstance(BADGPUObject obj) {
     BADGPUInstanceD3D * i = BG_INSTANCE_D3D(obj);
-    if (i->d3ddev)
-        IDirect3DDevice7_Release(i->d3ddev);
-    if (i->d3d)
-        IDirect3D7_Release(i->d3d);
-    if (i->sacrifice && i->sacrificeZ)
-        IDirectDrawSurface7_DeleteAttachedSurface(i->sacrifice, 0, i->sacrificeZ);
-    if (i->sacrificeZ)
-        IDirectDrawSurface7_Release(i->sacrificeZ);
     if (i->sacrifice)
-        IDirectDrawSurface7_Release(i->sacrifice);
-    IDirectDraw_Release(i->ddraw);
+        IDirect3DSurface9_Release(i->sacrifice);
+    if (i->d3ddev)
+        IDirect3DDevice9_Release(i->d3ddev);
+    if (i->hwnd)
+        DestroyWindow(i->hwnd);
+    if (i->d3d)
+        IDirect3D9_Release(i->d3d);
     free(obj);
 }
 static void destroyD3DTexture(BADGPUObject obj) {
     BADGPUTextureD3D * tex = BG_TEXTURE_D3D(obj);
     if (tex->surface)
-        IDirectDrawSurface7_Release(tex->surface);
+        IDirect3DSurface9_Release(tex->surface);
     if (tex->surfaceBackup)
-        IDirectDrawSurface7_Release(tex->surfaceBackup);
+        IDirect3DSurface9_Release(tex->surfaceBackup);
     if (tex->surfaceZ)
-        IDirectDrawSurface7_Release(tex->surfaceZ);
+        IDirect3DSurface9_Release(tex->surfaceZ);
     badgpuUnref((BADGPUObject) tex->base.i);
     free(obj);
 }
 static void destroyD3DDSBuffer(BADGPUObject obj) {
     BADGPUDSBufferD3D * tex = BG_DSBUFFER_D3D(obj);
     if (tex->surface)
-        IDirectDrawSurface7_Release(tex->surface);
+        IDirect3DSurface9_Release(tex->surface);
     badgpuUnref((BADGPUObject) tex->base.i);
     free(obj);
 }
@@ -90,40 +85,18 @@ static void destroyD3DDSBuffer(BADGPUObject obj) {
 static const char * bd3dGetMetaInfo(struct BADGPUInstancePriv * instance, BADGPUMetaInfoType mi) {
     BADGPUInstanceD3D * i = BG_INSTANCE_D3D(instance);
     if (mi == BADGPUMetaInfoType_Vendor)
-        return "BadGPU on D3D7";
+        return "BadGPU on D3D9";
     if (mi == BADGPUMetaInfoType_Renderer)
-        return i->devInfo.szDescription;
+        return "?r";
     if (mi == BADGPUMetaInfoType_Version)
-        return i->devInfo.szDriver;
+        return "?v";
     return NULL;
 }
 
-static DDPIXELFORMAT pixfmt_ARGB32I = {
-    .dwSize = sizeof(DDPIXELFORMAT),
-    .dwFlags = DDPF_RGB | DDPF_ALPHAPIXELS,
-    .dwRGBBitCount = 32,
-    .dwRGBAlphaBitMask = 0xFF000000,
-    .dwRBitMask = 0x00FF0000,
-    .dwGBitMask = 0x0000FF00,
-    .dwBBitMask = 0x000000FF
-};
-
-static IDirectDrawSurface7 * createARGB32ISurface(BADGPUInstanceD3D * bi, int width, int height) {
-    DDSURFACEDESC2 surfDesc;
-    IDirectDrawSurface7 * surf;
-
-    memset(&surfDesc, 0, sizeof(surfDesc));
-    surfDesc.dwSize = sizeof(surfDesc);
-    surfDesc.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS | DDSD_PIXELFORMAT | DDSD_TEXTURESTAGE;
-    surfDesc.dwTextureStage = 0;
-    surfDesc.dwWidth = width;
-    surfDesc.dwHeight = height;
-    surfDesc.ddsCaps.dwCaps = DDSCAPS_TEXTURE | DDSCAPS_3DDEVICE | bi->memCap;
-    surfDesc.ddpfPixelFormat = pixfmt_ARGB32I;
-
-    if (checkD3DErr(bi, IDirectDraw7_CreateSurface(bi->ddraw, &surfDesc, &surf, NULL)))
+static IDirect3DSurface9 * createARGB32ISurface(BADGPUInstanceD3D * bi, int width, int height) {
+    IDirect3DSurface9 * surf = NULL;
+    if (checkD3DErr(bi, IDirect3DDevice9_CreateRenderTarget(bi->d3ddev, width, height, D3DFMT_A8B8G8R8, D3DMULTISAMPLE_NONE, 0, TRUE, &surf, NULL)))
         return NULL;
-
     return surf;
 }
 
@@ -142,22 +115,22 @@ static BADGPUTexture bd3dNewTexture(struct BADGPUInstancePriv * instance, int16_
     int coercedW = coercePOT(width), coercedH = coercePOT(height);
     float txMulX = width / (float) coercedW;
     float txMulY = height / (float) coercedH;
-    IDirectDrawSurface7 * surf = createARGB32ISurface(bi, coercedW, coercedH);
+    IDirect3DSurface9 * surf = createARGB32ISurface(bi, coercedW, coercedH);
     if (!surf) {
         badgpuErr(instance, "badgpuNewTexture: D3D: Unable to allocate surface.");
         return NULL;
     }
-    IDirectDrawSurface7 * surfBackup = createARGB32ISurface(bi, coercedW, coercedH);
+    IDirect3DSurface9 * surfBackup = createARGB32ISurface(bi, coercedW, coercedH);
     if (!surfBackup) {
-        IDirectDrawSurface7_Release(surf);
+        IDirect3DSurface9_Release(surf);
         badgpuErr(instance, "badgpuNewTexture: D3D: Unable to allocate surface backup.");
         return NULL;
     }
 
     BADGPUTextureD3D * tex = malloc(sizeof(BADGPUTextureD3D));
     if (!tex) {
-        IDirectDrawSurface7_Release(surf);
-        IDirectDrawSurface7_Release(surfBackup);
+        IDirect3DSurface9_Release(surf);
+        IDirect3DSurface9_Release(surfBackup);
         badgpuErr(instance, "badgpuNewTexture: D3D: Unable to allocate memory.");
         return NULL;
     }
@@ -174,21 +147,20 @@ static BADGPUTexture bd3dNewTexture(struct BADGPUInstancePriv * instance, int16_
 
     if (data) {
         int i;
-        DDSURFACEDESC2 desc = {};
-        desc.dwSize = sizeof(desc);
-        if (checkD3DErr(bi, IDirectDrawSurface7_Lock(tex->surface, NULL, &desc, DDLOCK_WAIT | DDLOCK_NOSYSLOCK | DDLOCK_WRITEONLY, NULL))) {
+        D3DLOCKED_RECT lockRect = {};
+        if (checkD3DErr(bi, IDirect3DSurface9_LockRect(tex->surface, &lockRect, NULL, 0))) {
             badgpuErr(instance, "badgpuNewTexture: D3D: Failed to lock surface");
             destroyD3DTexture((BADGPUObject) tex);
             return NULL;
         }
 
         for (i = 0; i < height; i++) {
-            void * texdata = desc.lpSurface + (i * desc.lPitch);
+            void * texdata = lockRect.pBits + (i * lockRect.Pitch);
             memcpy(texdata, data, width * sizeof(uint32_t));
             data += width * sizeof(uint32_t);
         }
 
-        IDirectDrawSurface7_Unlock(tex->surface, NULL);
+        IDirect3DSurface9_UnlockRect(tex->surface);
     }
 
     return (BADGPUTexture) tex;
@@ -222,18 +194,23 @@ static BADGPUBool bd3dReadPixelsARGBI32(void * texture, uint16_t x, uint16_t y, 
     if (x + w > tex->w || y + h > tex->h)
         return badgpuErr(tex->base.i, "badgpuReadPixels: D3D: Read out of range");
 
-    DDSURFACEDESC2 desc = {};
-    desc.dwSize = sizeof(desc);
-    if (checkD3DErr(BG_INSTANCE_D3D(tex->base.i), IDirectDrawSurface7_Lock(tex->surface, NULL, &desc, DDLOCK_WAIT | DDLOCK_NOSYSLOCK | DDLOCK_READONLY, NULL)))
+    RECT makeRect = {
+        .left = x,
+        .top = y,
+        .right = x + w,
+        .bottom = y + h,
+    };
+    D3DLOCKED_RECT lockRect = {};
+    if (checkD3DErr(BG_INSTANCE_D3D(tex->base.i), IDirect3DSurface9_LockRect(tex->surface, &lockRect, &makeRect, D3DLOCK_READONLY)))
         return badgpuErr(tex->base.i, "badgpuReadPixels: D3D: Failed to lock surface");
 
     for (i = 0; i < height; i++) {
-        void * texdata = desc.lpSurface + (i * desc.lPitch);
+        void * texdata = lockRect.pBits + (i * lockRect.Pitch);
         memcpy(data, texdata, width * sizeof(uint32_t));
         data += width;
     }
 
-    IDirectDrawSurface7_Unlock(tex->surface, NULL);
+    IDirect3DSurface9_UnlockRect(tex->surface);
     return 1;
 }
 
@@ -263,11 +240,13 @@ static BADGPUBool bd3dDrawClear(
     if (sTexture && (sFlags & BADGPUSessionFlags_MaskRGBA)) {
         BADGPUTextureD3D * tex = BG_TEXTURE_D3D(sTexture);
         RECT target = bd3dAdjustedScissor(tex->w, tex->h, sFlags, sScX, sScY, sScWidth, sScHeight);
+        /*
         DDBLTFX bltfx = {
             .dwSize = sizeof(DDBLTFX),
             .dwFillColor = badgpu_sw_v42p(badgpu_vec4(cR, cG, cB, cA))
         };
-        IDirectDrawSurface7_Blt(tex->surface, &target, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &bltfx);
+        IDirect3DSurface9_Blt(tex->surface, &target, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &bltfx);
+        */
     }
     return 1;
 }
@@ -331,6 +310,7 @@ static BADGPUBool bd3dDrawGeom(
     // Blending
     uint32_t blendProgram
 ) {
+    /*
     // HACK: make badgpu_test work before we have real stencil support
     if ((flags & BADGPUDrawFlags_StencilTest) && (stFunc != BADGPUCompare_Always))
         return 1;
@@ -396,10 +376,10 @@ static BADGPUBool bd3dDrawGeom(
             // Answer: Yes, we do. Get it ready...
             scissorBackup = &scissor;
             // See the other call post-drawcall.
-            IDirect3DDevice7_Load(i->d3ddev, rtSurfaceBackup, &copyDst, rtSurface, &viewport, 0);
-            IDirect3DDevice7_SetRenderTarget(i->d3ddev, rtSurfaceBackup, 0);
+            IDirect3DDevice9_Load(i->d3ddev, rtSurfaceBackup, &copyDst, rtSurface, &viewport, 0);
+            IDirect3DDevice9_SetRenderTarget(i->d3ddev, rtSurfaceBackup, 0);
         } else {
-            IDirect3DDevice7_SetRenderTarget(i->d3ddev, rtSurface, 0);
+            IDirect3DDevice9_SetRenderTarget(i->d3ddev, rtSurface, 0);
         }
 
         D3DVIEWPORT7 vp = {
@@ -411,7 +391,7 @@ static BADGPUBool bd3dDrawGeom(
             .dvMinZ = 0.0,
             .dvMaxZ = 1.0
         };
-        IDirect3DDevice7_SetViewport(i->d3ddev, &vp);
+        IDirect3DDevice9_SetViewport(i->d3ddev, &vp);
         // nudge values to fix rasterization
         float epsilonX = 1.0f / vp.dwWidth;
         float epsilonY = 1.0f / vp.dwHeight;
@@ -421,32 +401,32 @@ static BADGPUBool bd3dDrawGeom(
             0, 0, 1, 0,
             -epsilonX, epsilonY, 0, 1,
         };
-        IDirect3DDevice7_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_PROJECTION, &adj);
+        IDirect3DDevice9_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_PROJECTION, &adj);
     }
 
     D3DMATRIX viewMatrix = bd3dTranslateMatrix(mvMatrix);
-    IDirect3DDevice7_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_VIEW, &viewMatrix);
+    IDirect3DDevice9_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_VIEW, &viewMatrix);
 
     if (flags & BADGPUDrawFlags_Blend) {
-        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_ALPHABLENDENABLE, TRUE);
+        IDirect3DDevice9_SetRenderState(i->d3ddev, D3DRENDERSTATE_ALPHABLENDENABLE, TRUE);
         D3DBLEND srcBlend = D3DBLEND_ONE;
         D3DBLEND dstBlend = D3DBLEND_ZERO;
         if (BADGPU_BP_RGBS(blendProgram) == BADGPUBlendWeight_SrcA)
             srcBlend = D3DBLEND_SRCALPHA;
         if (BADGPU_BP_RGBD(blendProgram) == BADGPUBlendWeight_InvertSrcA)
             dstBlend = D3DBLEND_INVSRCALPHA;
-        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_SRCBLEND, srcBlend);
-        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_DESTBLEND, dstBlend);
+        IDirect3DDevice9_SetRenderState(i->d3ddev, D3DRENDERSTATE_SRCBLEND, srcBlend);
+        IDirect3DDevice9_SetRenderState(i->d3ddev, D3DRENDERSTATE_DESTBLEND, dstBlend);
     } else {
-        IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_ALPHABLENDENABLE, FALSE);
+        IDirect3DDevice9_SetRenderState(i->d3ddev, D3DRENDERSTATE_ALPHABLENDENABLE, FALSE);
     }
 
-    IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_LIGHTING, FALSE);
-    IDirect3DDevice7_SetRenderState(i->d3ddev, D3DRENDERSTATE_CULLMODE, D3DCULL_NONE);
+    IDirect3DDevice9_SetRenderState(i->d3ddev, D3DRENDERSTATE_LIGHTING, FALSE);
+    IDirect3DDevice9_SetRenderState(i->d3ddev, D3DRENDERSTATE_CULLMODE, D3DCULL_NONE);
 
     if (texture) {
         BADGPUTextureD3D * textureI = BG_TEXTURE_D3D(texture);
-        IDirect3DDevice7_SetTexture(i->d3ddev, 0, textureI->surface);
+        IDirect3DDevice9_SetTexture(i->d3ddev, 0, textureI->surface);
 
         D3DMATRIX mtx = bd3dTranslateMatrix(matrixT);
 #if 0
@@ -467,22 +447,22 @@ static BADGPUBool bd3dDrawGeom(
         mtx._22 *= textureI->txMulY;
         mtx._32 *= textureI->txMulY;
         mtx._42 *= textureI->txMulY;
-        IDirect3DDevice7_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_TEXTURE0, &mtx);
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
+        IDirect3DDevice9_SetTransform(i->d3ddev, D3DTRANSFORMSTATE_TEXTURE0, &mtx);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_MAGFILTER, (flags & BADGPUDrawFlags_MagLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_MINFILTER, (flags & BADGPUDrawFlags_MinLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_MAGFILTER, (flags & BADGPUDrawFlags_MagLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_MINFILTER, (flags & BADGPUDrawFlags_MinLinear) ? D3DTFG_LINEAR : D3DTFG_POINT);
 #if 1
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, (flags & BADGPUDrawFlags_WrapS) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, (flags & BADGPUDrawFlags_WrapT) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, (flags & BADGPUDrawFlags_WrapS) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, (flags & BADGPUDrawFlags_WrapT) ? D3DTADDRESS_WRAP : D3DTADDRESS_CLAMP);
 #else
         // forcing wrapping helps debug some issues
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-        IDirect3DDevice7_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
+        IDirect3DDevice9_SetTextureStageState(i->d3ddev, 0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
 #endif
     }
 
-    IDirect3DDevice7_BeginScene(i->d3ddev);
+    IDirect3DDevice9_BeginScene(i->d3ddev);
 
     D3DPRIMITIVETYPE pt = D3DPT_TRIANGLELIST;
     if (pType == BADGPUPrimitiveType_Lines)
@@ -501,19 +481,19 @@ static BADGPUBool bd3dDrawGeom(
     DWORD vfFlags = D3DFVF_XYZ | D3DFVF_DIFFUSE;
     if (texture)
         vfFlags |= D3DFVF_TEX1 | D3DFVF_TEXCOORDSIZE4(0);
-    IDirect3DDevice7_DrawPrimitiveStrided(i->d3ddev, pt, vfFlags, &stride, iCount, 0);
+    IDirect3DDevice9_DrawPrimitiveStrided(i->d3ddev, pt, vfFlags, &stride, iCount, 0);
 
-    IDirect3DDevice7_EndScene(i->d3ddev);
+    IDirect3DDevice9_EndScene(i->d3ddev);
 
-    IDirect3DDevice7_SetTexture(i->d3ddev, 0, NULL);
-    IDirect3DDevice7_SetRenderTarget(i->d3ddev, i->sacrifice, 0);
+    IDirect3DDevice9_SetTexture(i->d3ddev, 0, NULL);
+    IDirect3DDevice9_SetRenderTarget(i->d3ddev, i->sacrifice, 0);
 
     if (scissorBackup) {
         // Rendering was *really* done on the backup surface. Retrieve the appropriately clipped results.
         POINT copyDst = {scissorBackup->left, scissorBackup->top};
-        IDirect3DDevice7_Load(i->d3ddev, rtSurface, &copyDst, rtSurfaceBackup, scissorBackup, 0);
+        IDirect3DDevice9_Load(i->d3ddev, rtSurface, &copyDst, rtSurfaceBackup, scissorBackup, 0);
     }
-
+    */
     return 1;
 }
 
@@ -543,23 +523,38 @@ BADGPUInstance badgpu_newD3DInstance(BADGPUNewInstanceFlags flags, const char **
     bi->base.drawGeomBackend = bi->base.drawGeomFrontend = bd3dDrawGeom;
     badgpu_swtnl_harnessSetup(&bi->base);
 
-    if (checkD3DErr(bi, DirectDrawCreateEx(NULL, (void *) &bi->ddraw, &IID_IDirectDraw7, NULL)))
-        INST_ERROR("D3D: Failed to create DirectDraw 7 instance.");
+    bi->d3d = Direct3DCreate9(D3D_SDK_VERSION);
+    if (!bi->d3d)
+        INST_ERROR("D3D: Failed to create D3D9 instance.");
 
-    IDirectDraw7_SetCooperativeLevel(bi->ddraw, NULL, DDSCL_NORMAL);
+    WNDCLASS wc = {
+        .lpfnWndProc = DefWindowProcA,
+        .hInstance = NULL,
+        .hbrBackground = (HBRUSH) GetStockObject (WHITE_BRUSH),
+        .lpszClassName = "gabien_una_d3d_window",
+        .style = CS_HREDRAW | CS_VREDRAW
+    };
+    RegisterClass(&wc);
+    bi->hwnd = CreateWindowA("gabien_una_d3d_window", "una", WS_OVERLAPPEDWINDOW, 0, 0, 0, 0, NULL, NULL, NULL, NULL);
+    if (!bi->hwnd)
+        INST_ERROR("D3D: Failed to create D3D9 window.");
 
-    IDirectDraw7_GetDeviceIdentifier(bi->ddraw, &bi->devInfo, 0);
+    D3DPRESENT_PARAMETERS present = {
+        .Windowed = TRUE,
+        .BackBufferFormat = D3DFMT_UNKNOWN,
+        .BackBufferWidth = 1,
+        .BackBufferHeight = 1,
+        .SwapEffect = D3DSWAPEFFECT_DISCARD,
+    };
 
-    if (checkD3DErr(bi, IDirectDraw7_QueryInterface(bi->ddraw, &IID_IDirect3D7, (void *) &bi->d3d)))
-        INST_ERROR("D3D: Failed to derive D3D from DDRAW.");
+    DWORD behaviourFlags = D3DCREATE_FPU_PRESERVE | D3DCREATE_SOFTWARE_VERTEXPROCESSING;
+    if (checkD3DErr(bi, IDirect3D9_CreateDevice(bi->d3d, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, bi->hwnd, behaviourFlags, &present, &bi->d3ddev)))
+        if (checkD3DErr(bi, IDirect3D9_CreateDevice(bi->d3d, D3DADAPTER_DEFAULT, D3DDEVTYPE_REF, bi->hwnd, behaviourFlags, &present, &bi->d3ddev)))
+            INST_ERROR("D3D: Failed to create device.");
 
-    // Hasn't been tested outside of software emulation, and anything with reasonable acceleration shouldn't be using this in the first place.
-    bi->memCap = DDSCAPS_SYSTEMMEMORY;
     bi->sacrifice = createARGB32ISurface(bi, 8, 8);
     if (!bi->sacrifice)
         INST_ERROR("D3D: Failed to create sacrificial RT.");
-    if (checkD3DErr(bi, IDirect3D7_CreateDevice(bi->d3d, &IID_IDirect3DRGBDevice, bi->sacrifice, &bi->d3ddev)))
-        INST_ERROR("D3D: Failed to create D3D device.");
 
     return (BADGPUInstance) bi;
 }
