@@ -1,15 +1,15 @@
 /*
- * gabien-common - Cross-platform game and UI framework
- * Written starting in 2016 by contributors (see CREDITS.txt)
- * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
- * A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
- */
+* gabien-common - Cross-platform game and UI framework
+* Written starting in 2016 by contributors (see CREDITS.txt)
+* To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+* A copy of the Unlicense should have been supplied as COPYING.txt in this repository. Alternatively, you can find it at <https://unlicense.org/>.
+*/
 
 #include "badgpu.h"
 #include <stdio.h>
 #include <string.h>
 
-void writeQOIFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h);
+void writeTGAFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h);
 
 #define T_WIDTH 320
 #define T_HEIGHT 200
@@ -26,16 +26,23 @@ void render3DTest(BADGPUTexture tex, BADGPUDSBuffer dsb, BADGPUTexture texSrc, c
 void renderDemoTriangle(BADGPUTexture texDst, int w, int h);
 
 int main(int argc, char ** argv) {
+    if (argc != 3) {
+        printf("test VARIANT VARIANT_ID\n");
+        return 1;
+    }
+
     int flags = BADGPUNewInstanceFlags_CanPrintf | BADGPUNewInstanceFlags_BackendCheck;
-    for (int i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "egl")) {
-            flags |= BADGPUNewInstanceFlags_PreferEGL;
-        } else if (!strcmp(argv[i], "sw")) {
-            flags |= BADGPUNewInstanceFlags_ForceInternalRasterizer;
-        } else {
-            printf("Unknown arg %s\n", argv[i]);
-            return 1;
-        }
+    const char * varidx = argv[2];
+    char fmtbuf[32];
+
+    if (!strcmp(argv[1], "egl")) {
+        flags |= BADGPUNewInstanceFlags_PreferEGL;
+    } else if (!strcmp(argv[1], "sw")) {
+        flags |= BADGPUNewInstanceFlags_ForceInternalRasterizer;
+    } else if (!strcmp(argv[1], "z")) {
+    } else {
+        printf("Unknown arg %s\n", argv[1]);
+        return 1;
     }
 
     const char * error;
@@ -74,7 +81,8 @@ int main(int argc, char ** argv) {
     0, 0, 1, 1, 0, 0);
 
     // Save the output.
-    writeQOIFromTex("tmp.qoi", tex2, T_WIDTH, T_HEIGHT);
+    sprintf(fmtbuf, "%s.1.tga", varidx);
+    writeTGAFromTex(fmtbuf, tex2, T_WIDTH, T_HEIGHT);
 
     // 3D scene test
     BADGPUDSBuffer dsb = badgpuNewDSBuffer(bi, T_WIDTH, T_HEIGHT);
@@ -85,14 +93,16 @@ int main(int argc, char ** argv) {
 
     render3DTest(tex2, dsb, tex3, NULL);
 
-    writeQOIFromTex("tmp2.qoi", tex2, T_WIDTH, T_HEIGHT);
+    sprintf(fmtbuf, "%s.2.tga", varidx);
+    writeTGAFromTex(fmtbuf, tex2, T_WIDTH, T_HEIGHT);
 
     // ???
     float clipPlane[4] = {-1.0f, 0, 0.5f, 0.0f};
 
     render3DTest(tex2, dsb, tex3, clipPlane);
 
-    writeQOIFromTex("tmp3.qoi", tex2, T_WIDTH, T_HEIGHT);
+    sprintf(fmtbuf, "%s.3.tga", varidx);
+    writeTGAFromTex(fmtbuf, tex2, T_WIDTH, T_HEIGHT);
 
     if (!badgpuUnref(tex)) {
         puts("hanging references: BADGPUTexture 1");
@@ -127,18 +137,18 @@ void renderFlagMain(BADGPUTexture tex, int w, int h) {
 #define M 0.3333
     float pos[] = {
         -1,  1, 0, 1,
-         1,  1, 0, 1,
-         1,  M, 0, 1,
+        1,  1, 0, 1,
+        1,  M, 0, 1,
         -1,  M, 0, 1,
 
         -1,  M, 0, 1,
-         1,  M, 0, 1,
-         1, -M, 0, 1,
+        1,  M, 0, 1,
+        1, -M, 0, 1,
         -1, -M, 0, 1,
 
         -1, -M, 0, 1,
-         1, -M, 0, 1,
-         1, -1, 0, 1,
+        1, -M, 0, 1,
+        1, -1, 0, 1,
         -1, -1, 0, 1
     };
     float col[] = {
@@ -193,10 +203,10 @@ void renderTex2Tex(BADGPUTexture texDst, BADGPUTexture texSrc, int w, int h) {
     // Mesh to test texture coordinates and colour+texture combo
     float pos[] = {
         -1,  1,
-         1,  1,
-         1, -1,
+        1,  1,
+        1, -1,
         -1,  1,
-         1, -1,
+        1, -1,
         -1, -1
     };
     float col[] = {
@@ -277,10 +287,10 @@ void render3DTestSpecific(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture 
     // Mesh to test 3D
     float pos[] = {
         -1, 1, 1,
-         1, 1, 1,
-         1, 1, 0,
+        1, 1, 1,
+        1, 1, 0,
         -1, 1, 1,
-         1, 1, 0,
+        1, 1, 0,
         -1, 1, 0
     };
     float tc[] = {
@@ -336,10 +346,10 @@ void render3DTest(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc, 
     // Mesh to test 3D
     float pos[] = {
         -1,  1,
-         1,  1,
-         1, -1,
+        1,  1,
+        1, -1,
         -1,  1,
-         1, -1,
+        1, -1,
         -1, -1,
     };
     // Overdraw2 indicator
@@ -367,58 +377,65 @@ void render3DTest(BADGPUTexture tex2, BADGPUDSBuffer dsb, BADGPUTexture texSrc, 
     );
 }
 
-void awfulqoiwriter(const char * name, uint32_t w, uint32_t h, const uint8_t * rgba);
+void awfultgawriter(const char * name, uint32_t w, uint32_t h, const uint8_t * rgba);
 
-void writeQOIFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h) {
+void writeTGAFromTex(const char * name, BADGPUTexture tex, uint32_t w, uint32_t h) {
     uint8_t imgData[((size_t) w) * ((size_t) h) * 4];
     badgpuReadPixels(tex, 0, 0, w, h, BADGPUTextureLoadFormat_RGBA8888, imgData);
-    awfulqoiwriter(name, w, h, imgData);
+    awfultgawriter(name, w, h, imgData);
 }
 
-// This is not how you're supposed to write QOI files.
+// This is not how you're supposed to write PNG files.
 // However, it's also the simplest image format to dump due to not having a lot
 //  of legacy stuff nobody cares about in favour of simplicity.
 // (Hilariously, despite this, it also actually has a reasonable approach to
 //  the whole sRGB/linear light debate. What a world.)
-void awfulqoiwriter(const char * name, uint32_t w, uint32_t h, const uint8_t * rgba) {
+void awfultgawriter(const char * name, uint32_t w, uint32_t h, const uint8_t * rgba) {
     FILE * f = fopen(name, "wb");
-    putc('q', f);
-    putc('o', f);
-    putc('i', f);
-    putc('f', f);
-    putc(w >> 24, f);
-    putc(w >> 16, f);
-    putc(w >> 8, f);
-    putc(w, f);
-    putc(h >> 24, f);
-    putc(h >> 16, f);
-    putc(h >> 8, f);
-    putc(h, f);
-    putc(4, f);
+    putc(0, f); // id
+    putc(0, f); // cmap1
+    putc(2, f); // image
+
+    for (int i = 0; i < 5; i++)
+        putc(0, f); // cmap2
+
+    // 0x08
+
+    putc(0, f); // xo
     putc(0, f);
+
+    putc(h, f);
+    putc(h >> 8, f); // yo
+
+    putc(w, f);
+    putc(w >> 8, f); // xs
+
+    putc(h, f);
+    putc(h >> 8, f); // ys
+
+    // 0x10
+
+    putc(0x20, f); // bit depth
+    putc(0x28, f); // image descriptor
+
     size_t total = ((size_t) w) * ((size_t) h);
     while (total > 0) {
-        putc(255, f);
-        putc(*(rgba++), f);
-        putc(*(rgba++), f);
-        putc(*(rgba++), f);
-        putc(*(rgba++), f);
+        putc(rgba[2], f);
+        putc(rgba[1], f);
+        putc(rgba[0], f);
+        putc(rgba[3], f);
+        rgba += 4;
         total--;
     }
-    // Fun fact: As far as I can tell, this ending being the way it is, is
-    //  the only justification for why the specification insists that you can't
-    //  issue multiple index chunks in a row with the same index.
-    // It's also kind of pointless because one would assume you'd actually be
-    //  decoding the stream if you were reading through for this in the
-    //  first place, but whatever.
+
+    // footer
+
+    for (int i = 0; i < 8; i++)
+        putc(0, f);
+
+    fputs("TRUEVISION-XFILE.", f);
     putc(0, f);
-    putc(0, f);
-    putc(0, f);
-    putc(0, f);
-    putc(0, f);
-    putc(0, f);
-    putc(0, f);
-    putc(1, f);
+
     fclose(f);
 }
 
