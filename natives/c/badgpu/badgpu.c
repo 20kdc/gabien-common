@@ -56,8 +56,8 @@ uint32_t badgpu_findVertexCount(uint32_t iStart, uint32_t iCount, const uint16_t
 
 BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** error) {
 #ifdef WIN32
-    if (badgpu_getEnvFlag("BADGPU_FORCE_D3D7")) {
-        return badgpu_newD3D7Instance(flags, error);
+    if (badgpu_getEnvFlag("BADGPU_FORCE_D3D")) {
+        return badgpu_newD3DInstance(flags, error);
     }
 #endif
     if (badgpu_getEnvFlag("BADGPU_FORCE_INTERNAL_RASTERIZER") || (flags & BADGPUNewInstanceFlags_ForceInternalRasterizer)) {
@@ -93,7 +93,7 @@ BADGPU_EXPORT BADGPUInstance badgpuNewInstance(uint32_t flags, const char ** err
     // try 'alternative' renderers; these are increasingly bad, but might be better than nothing
     // crashes too often r/n
     //if (!instance)
-    // instance = badgpu_newD3D7Instance(flags, error);
+    // instance = badgpu_newD3DInstance(flags, error);
     // awful
     //if (!instance)
     // instance = badgpu_newSoftwareInstance(flags, error);

@@ -90,8 +90,8 @@ BADGPUWSIContext badgpu_newWsiCtxEGL(const char ** error, BADGPUBool logDetailed
 BADGPUInstance badgpu_newSoftwareInstance(BADGPUNewInstanceFlags flags, const char ** error);
 
 #ifdef WIN32
-// Creates a new D3D7 instance.
-BADGPUInstance badgpu_newD3D7Instance(BADGPUNewInstanceFlags flags, const char ** error);
+// Creates a new D3D instance.
+BADGPUInstance badgpu_newD3DInstance(BADGPUNewInstanceFlags flags, const char ** error);
 #endif
 
 // OBJ
@@ -435,7 +435,7 @@ void badgpu_swtnl_harnessDrawPoint(struct BADGPUInstancePriv *, const BADGPURast
 void badgpu_swtnl_harnessDrawLine(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, float plSize);
 void badgpu_swtnl_harnessDrawTriangle(struct BADGPUInstancePriv *, const BADGPURasterizerContext * ctx, BADGPURasterizerVertex a, BADGPURasterizerVertex b, BADGPURasterizerVertex c);
 
-// Assuming a full external pipeline (like GL and D3D7), sets up the harness based on environment variables.
+// Assuming a full external pipeline (like GL and D3D), sets up the harness based on environment variables.
 void badgpu_swtnl_harnessSetup(struct BADGPUInstancePriv *);
 
 // clipper

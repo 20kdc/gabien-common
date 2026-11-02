@@ -1,4 +1,4 @@
-t_all: b_host b_tce b_mingw r_ngl r_egl r_swclip r_swrast r_tce r_wine r_d3d7
+t_all: b_host b_tce b_mingw r_ngl r_egl r_swclip r_swrast r_tce r_wine r_d3d
 
 b_host:
 	echo Host
@@ -10,7 +10,7 @@ b_tce:
 
 b_mingw:
 	echo MinGW
-	i686-w64-mingw32-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c badgpu_d3d7.c badgpu_tce.c badgpu_dl.c badgpu_wsi_wgl.c badgpu_wsi_egl.c badgputest.c -o bin/badgputest.exe -lopengl32 -lgdi32 -ldxguid -lddraw
+	i686-w64-mingw32-gcc -Wno-psabi -Ofast -g badgpu.c badgpu_gl.c badgpu_glbind.c badgpu_sw.c badgpu_swtnl.c badgpu_swclip.c badgpu_swrop.c badgpu_d3d.c badgpu_tce.c badgpu_dl.c badgpu_wsi_wgl.c badgpu_wsi_egl.c badgputest.c -o bin/badgputest.exe -lopengl32 -lgdi32 -ldxguid -lddraw
 
 t_ngl: b_host r_ngl
 t_egl: b_host r_egl
@@ -18,7 +18,7 @@ t_swclip: b_host r_swclip
 t_swrast: b_host r_swrast
 t_tce: b_tce r_tce
 t_wine: b_mingw r_wine
-t_d3d7: b_mingw r_d3d7
+t_d3d: b_mingw r_d3d
 
 r_ngl:
 	cd bin; ./badgputest z ngl
@@ -38,5 +38,5 @@ r_tce:
 r_wine:
 	cd bin; wine badgputest.exe z wine
 
-r_d3d7:
-	cd bin; BADGPU_FORCE_D3D7=1 wine badgputest.exe z d3d7
+r_d3d:
+	cd bin; BADGPU_FORCE_D3D=1 wine badgputest.exe z d3d
